@@ -1,0 +1,14 @@
+C_FILES = arm64_asm.c  arm_backend.c  bungis.c  cque.c  except.c  fs.c  hash.c  lex.c  main.c  mem.c  misc.c  optpass.c  parser.c \
+  arm_loader.c windows.c
+C_OBJS = ${C_FILES:.c=.o}
+A_FILES = exceptAARCH64.s  miscAARCH64.s  swapctxAARCH64.s
+A_OBJS = ${A_FILES:.s=.o}
+LIBS = ` pkg-config --libs sdl2`
+all: aiwnios
+	echo "Done"
+.s.o:
+	gcc -g -c ${.IMPSRC} -o ${.TARGET}
+.c.o: ${C_HEADERS}
+	gcc -w  -g -c ${.IMPSRC} -o ${.TARGET}
+aiwnios: ${C_OBJS} ${A_OBJS}
+	gcc ${.ALLSRC} -lm ${LIBS} -o ${.TARGET}
