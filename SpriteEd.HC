@@ -549,7 +549,7 @@ I64 SpriteQueSelCnt(CSprite *head,Bool val=TRUE)
 {
   I64 res=0;
   CSprite *tmpg=head->next;
-  val=ToBool(val);
+  val=!!val;
   while (tmpg!=head) {
     if (Bt(&tmpg->type,SPf_SEL)==val)
       res++;
@@ -563,7 +563,7 @@ I64 SpriteQueSelAll(CSprite *head,Bool val=TRUE)
   I64 res=0;
   CSprite *tmpg=head->next;
   while (tmpg!=head) {
-    BEqu(&tmpg->type,SPf_SEL,val);
+    LBEqu(&tmpg->type,SPf_SEL,val);
     res++;
     tmpg=tmpg->next;
   }

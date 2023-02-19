@@ -120,7 +120,7 @@ Bool ScanKey(I64 *_ch=NULL,I64 *_scan_code=NULL,Bool echo=FALSE)
     if (_ch) *_ch=ch;
     if (_scan_code) *_scan_code=sc;
     if (echo)
-      ;//PutKey(ch,sc); TODO RESTORE
+      PutKey(ch,sc);
     return TRUE;
   } else {
     if (_ch) *_ch=0;
@@ -163,7 +163,7 @@ I64 GetKey(I64 *_scan_code=NULL,Bool echo=FALSE,Bool raw_cursor=FALSE)
   if (IsRaw && raw_cursor && cursor_on)
     "%c",CH_BACKSPACE;
   if (echo)
-    ;//PutKey(ch,sc); TODO RESTORE
+    PutKey(ch,sc);
   if (_scan_code) *_scan_code=sc;
   return ch;
 }
@@ -181,10 +181,11 @@ I64 GetChar(I64 *_scan_code=NULL,Bool echo=TRUE,Bool raw_cursor=FALSE)
 
 U8 *GetStr(U8 *msg=NULL,U8 *dft=NULL,I64 flags=0)
 {//Returns a $LK,"MAlloc",A="MN:MAlloc"$()ed prompted string.  See $LK,"Flags",A="MN:GSF_SHIFT_ESC_EXIT"$.
-  U8 *st;
+  U8 *st,*(*fp)(I64);
   if (msg)
     Print(msg,dft);
-  st=(*fp_getstr2)(flags);
+  fp=fp_getstr2;
+  st=(*fp)(flags);
   if (!*st) {
     Free(st);
     if (dft)

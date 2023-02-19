@@ -55,8 +55,8 @@ U0 LexPutPos(CCmpCtrl *cc)
     "%s,%d ",cc->lex_include_stk->full_name,cc->lex_include_stk->line_num;
   else {
     ;//PutFileLink(cc->lex_include_stk->full_name,,cc->lex_include_stk->line_num); TODO RESTORE
-    AdamErr("%s,%d\n",
-	  cc->lex_include_stk->full_name,cc->lex_include_stk->line_num);
+    "%s,%d\n",
+	  cc->lex_include_stk->full_name,cc->lex_include_stk->line_num;
     '' CH_SPACE;
   }
   LexPutLine(cc,cc->lex_include_stk->line_start);

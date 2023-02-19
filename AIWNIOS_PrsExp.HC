@@ -333,6 +333,10 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
   if(add_to_prs_stk) {
     switch(intermediate_code_table[rpn->type].arg_cnt) {
       break;case IS_V_ARG:
+      width=rpn->length;
+      while(width--) {
+        PrsPop3(cc->ps);
+      }
       break;case IS_2_ARG:
       rpn->t.arg2_tree=PrsPop3(cc->ps);
       rpn->t.arg1_tree=PrsPop3(cc->ps);
@@ -495,8 +499,9 @@ mul2:
       }
     } 
   }
-  if(add_to_prs_stk)
+  if(add_to_prs_stk) {
     PrsPush3(cc->ps,rpn);
+  }
   if(!rpn->ic_class)
     AssignRawTypeToNode(rpn);
   if(divide) {
@@ -561,10 +566,15 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
   I64 idx;
   CRPN *rpn;
   CMemberLst *lst=fun->member_lst_and_root;
+  CHashClass *last_c=cc->coc.coc_head.next(CRPN*)->ic_class;
+  CCodeMisc *cm;
   for(idx=0;idx!=fun->arg_cnt;idx++) {
     if(idx<start_idx)
       goto next;
+    while(last_c->ptr_stars_cnt)
+      last_c=DerefType(last_c);
     if(lst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
+      last_c=lst->member_class;
       if(lst->member_class->raw_type==RT_F64) {
         RPNAddNew(
           cc,
@@ -577,13 +587,25 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
           cc,
           IC_IMM_I64,
           lst->dft_val,
-          cmp.internal_types[RT_F64]
+          cmp.internal_types[RT_I64]
         );
       }
     } else if(lst->flags&MLF_DOT_DOT_DOT) {
       //Do nothing ,argc/argv are implicit
+    } else if(lst->flags&MLF_LASTCLASS&&last_c) {
+      cm=COCMiscNew(cc,CMT_STR_CONST);
+      cm->str=StrNew(last_c->str);
+      cm->st_len=StrLen(last_c->str)+1;
+      RPNAddNew(
+          cc,
+          IC_STR_CONST,
+          cm,
+          last_c=cmp.internal_types[RT_U8]+1
+        );
     } else {
-      PrintErr(cc,"Missing dft value for argument %d.",idx);
+      DumpRPN(cc->coc.coc_head.next);
+      "PP:%s,%s,%d\n",fun->str,lst->str,start_idx;
+      LexExcept(cc,"Missing dft value for argument at: ");
     }
 next:
     lst=lst->next;
@@ -621,17 +643,20 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
       cls=DerefType(cls);
     "%s",cls->str;
   }
-  "\n";
   switch(intermediate_code_table[rpn->type].arg_cnt) {
     break;case IS_V_ARG:
+    "(%d)\n",rpn->length;
     for(idx=0;idx!=rpn->length;idx++)
       next=DumpRPN(next,indent+1);
     break;case IS_2_ARG: 
+    ",%x,%x\n",rpn->t.arg1_tree,rpn->t.arg2_tree;
     next=DumpRPN(next,indent+1);
     next=DumpRPN(next,indent+1);
     break;case IS_1_ARG:
+    ",%x\n",rpn->t.arg1_tree;
     next=DumpRPN(next,indent+1);
     break;case IS_0_ARG:
+    "\n";
   }
   return next;
 }
@@ -707,6 +732,11 @@ Bool PrsMembers(CCmpCtrl *cc) {
     RPNAddNew(cc,IC_IMM_I64,off,,TRUE);
     RPNAddNew(cc,IC_ADD,off,,TRUE);
   }
+  if(mlst->flags&MLF_FUN) {
+    //TempleOS stores Function class in ->fun_ptr for some reason(when MLF_FUN is set) 
+    cls=mlst->fun_ptr;
+  }
+            
   if(!ic_dim)
     new=RPNAddNew(cc,IC_DEREF,off,cls,TRUE);
   else {
@@ -717,7 +747,7 @@ Bool PrsMembers(CCmpCtrl *cc) {
 
 Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //TODO REMOVE Ul
   I64 cur_prec,stk_ptr,tok=cc->token,idx,arity,v,mode,str_len;
-  CRPN *orig_next=cc->coc.coc_head.next,*argc,*argv;
+  CRPN *orig_next=cc->coc.coc_head.next,*argc,*argv,*next;
   CCodeMisc *misc;
   Bool finish=FALSE;
   CPrsStk *old=cc->ps;
@@ -731,7 +761,7 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
     cc->ps=_ps;
   }
   I64 last_consumes_right=1;
-  CHashFun *ic_fun=NULL;
+  CHashFun *ic_fun=NULL,*last_c=NULL;
   CHashClass *tmpc;
   CMemberLst *mlst;
   //u32[0] is type
@@ -820,6 +850,8 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
           PrsPush(cc->ps,cur_prec);
           PrsPush2(cc->ps,rpn);
         }
+        //After getting an operator,we are no longer accepting function calls for now
+        flags&=~PEF_FUN_BEFORE;
         tok=Lex(cc);
       break;start:
         if(last_consumes_right)
@@ -913,12 +945,20 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
         PrsPush(cc->ps,cur_prec);
         PrsPush2(cc->ps,rpn);
         Lex(cc);
+        //After getting an operator,we are no longer accepting function calls for now
+        flags&=~PEF_FUN_BEFORE;
       break;case TK_DEREFERENCE: //->,not *
       case '.':
       PrsMembers(cc);
+      next=cc->coc.coc_head.next;
+      if(next->ic_class->type&HTT_FUN) {
+        flags|=PEF_FUN_BEFORE;
+      } else
+        flags&=~PEF_FUN_BEFORE;
       break;case '(':
       tok=Lex(cc);
-      if(cc->ps->ptr3&&cc->ps->stk3[cc->ps->ptr3](CRPN*)->ic_class->type&HTT_FUN) {
+      next=cc->coc.coc_head.next;
+      if((flags&PEF_FUN_BEFORE)&&next->ic_class->type&HTT_FUN) {
         last_consumes_right=0;
         if(tok==TK_IDENT&&cc->hash_entry) {
           //Check for typecast 
@@ -933,7 +973,7 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
               RPNAddNew(
                 cc,
                 IC_CALL_INDIRECT,
-                arity,
+                arity+1,
                 ic_fun->return_class
               );
             }
@@ -966,11 +1006,12 @@ typecast:
           if(mlst->flags&MLF_DOT_DOT_DOT) goto vargs;
           if(cc->token==',') {
             if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
+              last_c=mlst->member_class;
               if(mlst->member_class->raw_type==RT_F64) {
                 RPNAddNew(
                   cc,
                   IC_IMM_F64,
-                  mlst->dft_val(F64),
+                  mlst->dft_val,
                   cmp.internal_types[RT_F64]
                 );
                 arity++;
@@ -983,19 +1024,36 @@ typecast:
                 );
                 arity++;
               }
-            }
+            } else if(mlst->flags&MLF_LASTCLASS) {
+              while(last_c->ptr_stars_cnt)
+                last_c=DerefType(last_c);
+              misc=COCMiscNew(cc,CMT_STR_CONST);
+              misc->str=StrNew(last_c->str);
+              misc->st_len=StrLen(last_c->str)+1;
+              RPNAddNew(
+                  cc,
+                  IC_STR_CONST,
+                  misc,
+                  last_c=cmp.internal_types[RT_U8]+1
+                );
+            } else
+              LexExcept(cc,"Missing dft argument at:");
             Lex(cc);
           } else if(cc->token!=')') {
-            PrsExpression(cc,,PEF_NO_COMMA);
+            if(!PrsExpression(cc,,PEF_NO_COMMA))
+              LexExcept(cc,"Expected a function argument at:");
+            PrsPush3(cc->ps,cc->coc.coc_head.next);
             arity++;
             rpn=cc->coc.coc_head.next;
+            last_c=rpn->ic_class;
             if(rpn->ic_class->raw_type==RT_F64&&mlst->member_class->raw_type!=RT_F64) {
-              RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],FALSE);
+              RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
             } else if(rpn->ic_class->raw_type!=RT_F64&&mlst->member_class->raw_type==RT_F64) {
-              RPNAddNew(cc,IC_TO_F64,,cmp.internal_types[RT_F64],FALSE);
+              RPNAddNew(cc,IC_TO_F64,,cmp.internal_types[RT_F64],TRUE);
             }
-            if(cc->token==',')
+            if(cc->token==',') {
               Lex(cc);
+            }
             else if(cc->token==')') {
               goto end_call;
             } else
@@ -1013,8 +1071,10 @@ vargs:
           argc=RPNAddNew(cc,IC_IMM_I64,0);
           idx=0;
           while(cc->token!=')') {
-            if(PrsExpression(cc,NULL,PEF_NO_COMMA))
+            if(PrsExpression(cc,NULL,PEF_NO_COMMA)) {
+              PrsPush3(cc->ps,cc->coc.coc_head.next);
               idx++;
+            }
             if(cc->token==',')
               Lex(cc);
             else if(cc->token==')') {
@@ -1022,11 +1082,11 @@ vargs:
             } else
               LexExcept(cc,"Expected a ')'.");
           }
-          argv=RPNAddNew(cc,IC_VARGS,0);
-          argv->ic_data=argc->ic_data=idx;
+          argv=RPNAddNew(cc,IC_VARGS,idx);
+          argc->ic_data=idx;
         }
         if(cc->token!=')')
-            LexExcept(cc,"Expected a ')'.");
+          LexExcept(cc,"Expected a ')'.");
         Lex(cc);
         arity++; //Include the function in the arity
         RPNAddNew(
@@ -1063,6 +1123,11 @@ found_end_paren:;
       //PushOpers doesnt POP parens
       PrsPop(cc->ps);
       PrsPop2(cc->ps);
+      next=cc->coc.coc_head.next;
+      if(next->ic_class->type&HTT_FUN) {
+        flags|=PEF_FUN_BEFORE;
+      } else
+        flags&=~PEF_FUN_BEFORE;
 paren_unexp:;
       break;case '[':
       Lex(cc);
@@ -1087,6 +1152,11 @@ found_end_square:
       RPNAddNew(cc,IC_ADD);
       RPNAddNew(cc,IC_DEREF);
       last_consumes_right=0;
+      next=cc->coc.coc_head.next;
+      if(next->ic_class->type&HTT_FUN) {
+        flags|=PEF_FUN_BEFORE;
+      } else
+        flags&=~PEF_FUN_BEFORE;
       break;start:
         case TK_STR:
         misc=COCMiscNew(cc,CMT_STR_CONST);
@@ -1134,7 +1204,6 @@ found_end_square:
               CodeMiscHashNew(cc,cc->hash_entry),
               cc->hash_entry,
             );
-            flags|=PEF_FUN_BEFORE;
             ic_fun=cc->hash_entry;
             Lex(cc);
             if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
@@ -1195,6 +1264,8 @@ found_end_square:
                   LexExcept(cc,"Missing ')' at ");
                 Lex(cc);
               }
+              break;default:
+                LexExcept(cc,"Unexpected keyword at: ");
             }
           } else {
             LexExcept(cc,"Unknown symbol at ");
@@ -1208,7 +1279,13 @@ found_end_square:
           rpn=cc->coc.coc_head.next;
           rpn->ic_dim=ic_dim;
         }
-fin_ident:;
+        
+fin_ident:
+        next=cc->coc.coc_head.next;
+        if(next->ic_class->type&HTT_FUN) {
+          flags|=PEF_FUN_BEFORE;
+        } else
+          flags&=~PEF_FUN_BEFORE;
       break;end:
         flags&=~PEF_ADDR_OF;
       break;default:

@@ -505,3 +505,59 @@ U0 XTalkStrWait(CTask *task,U8 *fmt,...)
   Free(buf);
   TaskWait(task);
 }
+
+CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
+       I64 target_cpu=1,I64 flags=1<<JOBf_FREE_ON_COMPLETE,
+       I64 job_code=JOBT_CALL,U8 *aux_str=NULL,I64 aux1=0,I64 aux2=0)
+{//Queue multicore jobs, handled by Seth tasks.
+//Set flags to zero if you wish to get the res.
+  //See $LK,"::/Demo/MultiCore/Lock.HC"$
+  CJobCtrl *ctrl;
+  CJob *tmpc;
+  CTask *seth;
+  if (!(0<=target_cpu<mp_cnt))
+    throw('MultCore');
+  //__AwakeCore(target_cpu); TODO RESTORE
+  tmpc=CAlloc(sizeof(CJob),adam_task);
+  QueInit(tmpc);
+  if (aux_str)
+    tmpc->aux_str=StrNew(aux_str,adam_task);
+  tmpc->job_code=job_code;
+  tmpc->addr=fp_addr;
+  tmpc->fun_arg=data;
+  tmpc->flags=flags;
+  tmpc->aux1=aux1;
+  tmpc->aux2=aux2;
+  seth=cpu_structs[target_cpu].seth_task;
+  tmpc->ctrl=ctrl=&seth->srv_ctrl;
+  while (LBts(&ctrl->flags,JOBCf_LOCKED))
+    Yield;
+  QueIns(tmpc,ctrl->last_waiting);
+  LBtr(&ctrl->flags,JOBCf_LOCKED);
+  return tmpc;
+}
+
+CTask *SpawnQue(U0 (*fp_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
+	I64 target_cpu, CTask *parent=NULL, //NULL means adam
+	I64 stk_size=0,I64 flags=1<<JOBf_ADD_TO_QUE)
+{
+  CTask *res;
+  CJob *tmpc=JobQue(fp_addr,data,target_cpu,
+	flags,JOBT_SPAWN_TASK,task_name,parent,stk_size);
+  CJobCtrl *ctrl;
+
+  while (!Bt(&tmpc->flags,JOBf_DONE)) {
+    LBts(&(Fs->task_flags),TASKf_IDLE);
+    Yield;
+  }
+  LBtr(&(Fs->task_flags),TASKf_IDLE);
+
+  res=tmpc->spawned_task;
+  ctrl=tmpc->ctrl;
+  while (LBts(&ctrl->flags,JOBCf_LOCKED))
+    Yield;
+  QueRem(tmpc);
+  LBtr(&ctrl->flags,JOBCf_LOCKED);
+  JobDel(tmpc);
+  return res;
+}

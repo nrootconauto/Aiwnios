@@ -202,7 +202,7 @@ Bool IsDbgMode()
 U0 ProgressBarsRst(U8 *path=NULL)
 {//Reset all progress bars to zero.
   //CallExtStr("ProgressBarsRegTf",path); TODO RESTORE
-  //MemSet(sys_progresses,0,sizeof(sys_progresses));
+  MemSet(sys_progresses,0,4*sizeof(CProgress));
 }
 
 Bool LBEqu(U8 *ptr,I64 bit,Bool b) {

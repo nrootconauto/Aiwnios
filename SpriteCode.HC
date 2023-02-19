@@ -38,7 +38,7 @@ U0 SpriteElem2Code(CDoc *doc,CSprite *tmpg)
     case SPT_ROTATED_RECT:
       DocPrint(doc,"{(%d,%d):(%d,%d),%0.4f}",tmpg->ppa.x1,tmpg->ppa.y1,
 	    tmpg->ppa.x2-tmpg->ppa.x1,tmpg->ppa.y2-tmpg->ppa.y1,
-	    180/ã*Wrap(tmpg->ppa.angle));
+	    180/pi*Wrap(tmpg->ppa.angle));
       break;
     case SPT_PT:
     case SPT_FLOOD_FILL:
@@ -56,13 +56,13 @@ U0 SpriteElem2Code(CDoc *doc,CSprite *tmpg)
       break;
     case SPT_ELLIPSE:
       DocPrint(doc,"{(%d,%d):(%d,%d),%0.4f}",tmpg->pwha.x1,tmpg->pwha.y1,
-	    tmpg->pwha.width,tmpg->pwha.height,180/ã*Wrap(tmpg->pwha.angle));
+	    tmpg->pwha.width,tmpg->pwha.height,180/pi*Wrap(tmpg->pwha.angle));
       break;
     case SPT_POLYGON:
       DocPrint(doc,"{%d,(%d,%d):(%d,%d),%0.4f}",tmpg->pwhas.sides,
 	    tmpg->pwhas.x1,tmpg->pwhas.y1,
 	    tmpg->pwhas.width,tmpg->pwhas.height,
-	    180/ã*Wrap(tmpg->pwhas.angle));
+	    180/pi*Wrap(tmpg->pwhas.angle));
       break;
     case SPT_TEXT:
     case SPT_TEXT_BOX:
@@ -255,7 +255,7 @@ CSprite *Code2SpriteElem(CCmpCtrl *cc,I64 type)
 	g.ppa.y2+=g.pp.y1;
 	if (cc->token==',') {
 	  Lex(cc); //Skip ,
-	  g.ppa.angle=ã/180*LexExpressionF64(cc);
+	  g.ppa.angle=pi/180*LexExpressionF64(cc);
 	  g.type=SPT_ROTATED_RECT;
 	} else
 	  g.type=SPT_RECT;
@@ -310,7 +310,7 @@ CSprite *Code2SpriteElem(CCmpCtrl *cc,I64 type)
 	if (cc->token!=',')
 	  LexExcept(cc,"Expecting ',' at ");
 	Lex(cc); //Skip ,
-	g.pwha.angle=ã/180*LexExpressionF64(cc);
+	g.pwha.angle=pi/180*LexExpressionF64(cc);
 	break;
     end:
       size=SpriteElemSize(&g)+offset(CSprite.start);
@@ -417,7 +417,7 @@ CSprite *Code2SpriteElem(CCmpCtrl *cc,I64 type)
 	if ('0'<=i<='7')
 	  QueVectU8Put(tmpv,g.npu.num++,i-'0');
       }
-      Bts(&cc->flags,CCf_USE_LAST_U16);
+      LBts(&cc->flags,CCf_USE_LAST_U16);
       Lex(cc); //Load '}'
       g.type=SPT_POLYPT;
       size=SpriteElemQuedBaseSize(SPT_POLYPT);
@@ -453,7 +453,7 @@ CSprite *Code2SpriteElem(CCmpCtrl *cc,I64 type)
 	else if (i=='_')
 	  QueVectU8Put(tmpv,num1++,0);
       }
-      Bts(&cc->flags,CCf_USE_LAST_U16);
+      LBts(&cc->flags,CCf_USE_LAST_U16);
       Lex(cc); //Load '}'
       g.type=SPT_BITMAP;
       size=SpriteElemQuedBaseSize(SPT_BITMAP);

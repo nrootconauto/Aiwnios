@@ -2743,6 +2743,11 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 	if (rpn->raw_type)
 		return rpn->raw_type;
 	switch (rpn->type) {
+    break;
+  case IC_RELOC:
+    rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
+    rpn->ic_class++;
+		return rpn->raw_type = RT_PTR;
 		break;
 	case __IC_VARGS:
 		rpn->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);

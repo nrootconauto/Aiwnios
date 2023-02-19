@@ -913,7 +913,7 @@ U0 PrsStreamBlk(CCmpCtrl *cc)
   else
     LexExcept(cc,"Missing '}' at ");
   while (cc->token && cc->token!='}')
-    ;//ExeCmdLine(cc); TODO RESTORE
+    ExeCmdLine(cc);
 
   MemCpy(&cc->htc,htc,sizeof(CLexHashTableContext));
   cc->flags=cc->flags&~CCF_EXE_BLK |

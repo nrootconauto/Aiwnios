@@ -197,7 +197,4 @@ U0 GrInit2()
 
 GrInit2;
 GrSetUpTables;
-
-Fs->pix_left=0;
-Fs->pix_right=GR_WIDTH;
-Fs->pix_bottom=GR_HEIGHT;
+WinMax;

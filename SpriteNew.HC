@@ -92,7 +92,7 @@ I64 SpriteTypeMask(U8 *elems)
   while (tmpg->type&SPG_TYPE_MASK) {
     if (tmpg->type&SPG_TYPE_MASK>=SPT_TYPES_NUM)
       return 1<<SPT_TYPES_NUM;
-    Bts(&res,tmpg->type&SPG_TYPE_MASK);
+    LBts(&res,tmpg->type&SPG_TYPE_MASK);
     tmpg(U8 *)+=SpriteElemSize(tmpg);
   }
   return res;
@@ -102,7 +102,7 @@ U0 SpriteSelAll(U8 *elems,Bool val)
 {
   CSprite *tmpg=elems-offset(CSprite.start);
   while (tmpg->type&SPG_TYPE_MASK) {
-    BEqu(&tmpg->type,SPf_SEL,val);
+    LBEqu(&tmpg->type,SPf_SEL,val);
     tmpg(U8 *)+=SpriteElemSize(tmpg);
   }
 }

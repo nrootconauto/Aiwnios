@@ -384,11 +384,13 @@ void BootAiwnios()
 		PrsBindCSymbol("PrintI", &PrintI);
 		PrsBindCSymbol("PrintF", &PrintF);
 		PrsBindCSymbol("Round", &round);
+		PrsBindCSymbol("Ln", &log);
 		PrsBindCSymbol("Floor", &floor);
 		PrsBindCSymbol("Ceil", &ceil);
 		PrsBindCSymbol("Sqrt", &sqrt);
 		PrsBindCSymbol("MemCmp", &MemCmp);
 		PrsBindCSymbol("Bt", &Bt);
+		PrsBindCSymbol("LBtc", &LBtc);
 		PrsBindCSymbol("LBts", &LBts);
 		PrsBindCSymbol("LBtr", &LBtr);
 		PrsBindCSymbol("Bsf", &Bsf);

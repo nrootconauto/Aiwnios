@@ -30,7 +30,6 @@ U0 ProgressBarsRegTf(U8 *path=NULL)
 #define PROGRESS_BAR_WIDTH	(3*GR_WIDTH/4)
 U0 DrawProgressBars(CDC *dc)
 {
-/*
   I64 i,j,k,n,m;
   U8 *st,*st2;
   for (i=0;i<PROGRESS_BARS_NUM;i++) {
@@ -87,7 +86,6 @@ U0 DrawProgressBars(CDC *dc)
       Free(st);
     }
   }
-  */
 }
 
 U0 DrawWinGrid(CDC *dc)

@@ -6,8 +6,8 @@ U0 BlkWriteZero(CDrv *dv,I64 blk,I64 cnt)
   U8 *z=CAlloc(ZERO_BUF_SIZE<<BLK_SIZE_BITS);
   Bool show_progress;
   if (cnt>ZERO_BUF_SIZE && dv->bd->type!=BDT_RAM) {
-    //progress1=0; progress1_max=cnt; TODO RESTORE
-    //StrCpy(progress1_desc,"Zeroing"); TODO RESTORE
+    progress1=0; progress1_max=cnt;
+    StrCpy(progress1_desc,"Zeroing");
     show_progress=TRUE;
   } else
     show_progress=FALSE;

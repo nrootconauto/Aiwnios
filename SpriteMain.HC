@@ -326,13 +326,13 @@ CSprite *SMEllipse(CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,CColorROPU32 color)
   res->pwha.height=AbsI64(y1-y2)>>1;
   angle2=Arg(x2-(res->pwha.x1+x),y2-(res->pwha.y1+y));
   if (res->pwha.width<res->pwha.height)
-    angle2-=ã/2.0;
+    angle2-=pi/2.0;
   do {
     angle1=Arg(x2-(res->pwha.x1+x),y2-(res->pwha.y1+y));
     if (res->pwha.width>=res->pwha.height)
       res->pwha.angle=-(angle1-angle2);
     else
-      res->pwha.angle=-(angle1-angle2)+ã/2.0;
+      res->pwha.angle=-(angle1-angle2)+pi/2.0;
     dc->color=color&COLORROP_NO_ROP0_MASK;
     GrEllipse3(dc,res->pwha.x1+x,res->pwha.y1+y,0,
 	  res->pwha.width,res->pwha.height,res->pwha.angle);
@@ -344,7 +344,7 @@ CSprite *SMEllipse(CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,CColorROPU32 color)
   if (res->pwha.width>=res->pwha.height)
     res->pwha.angle=-(angle1-angle2);
   else
-    res->pwha.angle=-(angle1-angle2)+ã/2.0;
+    res->pwha.angle=-(angle1-angle2)+pi/2.0;
   dc->color=color&COLORROP_NO_ROP0_MASK;
   GrEllipse3(dc,res->pwha.x1+x,res->pwha.y1+y,0,
 	res->pwha.width,res->pwha.height,res->pwha.angle);
@@ -374,13 +374,13 @@ CSprite *SMPolygon(CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,I64 sides,
   res->pwhas.sides=sides;
   angle2=Arg(x2-(res->pwhas.x1+x),y2-(res->pwhas.y1+y));
   if (res->pwhas.width<res->pwhas.height)
-    angle2-=ã/2.0;
+    angle2-=pi/2.0;
   do {
     angle1=Arg(x2-(res->pwhas.x1+x),y2-(res->pwhas.y1+y));
     if (res->pwhas.width>=res->pwhas.height)
       res->pwhas.angle=-(angle1-angle2);
     else
-      res->pwhas.angle=-(angle1-angle2)+ã/2.0;
+      res->pwhas.angle=-(angle1-angle2)+pi/2.0;
     dc->color=color&COLORROP_NO_ROP0_MASK;
     GrRegPoly3(dc,res->pwhas.x1+x,res->pwhas.y1+y,0,
 	  res->pwhas.width,res->pwhas.height,
@@ -393,7 +393,7 @@ CSprite *SMPolygon(CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,I64 sides,
   if (res->pwhas.width>=res->pwhas.height)
     res->pwhas.angle=-(angle1-angle2);
   else
-    res->pwhas.angle=-(angle1-angle2)+ã/2.0;
+    res->pwhas.angle=-(angle1-angle2)+pi/2.0;
   dc->color=color&COLORROP_NO_ROP0_MASK;
   GrRegPoly3(dc,res->pwhas.x1+x,res->pwhas.y1+y,0,
 	res->pwhas.width,res->pwhas.height,res->pwhas.sides,

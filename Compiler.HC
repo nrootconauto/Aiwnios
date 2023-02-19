@@ -17,4 +17,3 @@ CMiscInit;
 #include "AsmResolve.HC"
 #include "CMain.HC"
 //AiwniosAotCompile("HCRT_TOS.HC","HCRT.BIN")
-//Cmp("TEST2.HC",,"HCRT2.BIN");

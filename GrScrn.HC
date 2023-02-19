@@ -21,16 +21,17 @@ U0 GrUpdateTaskWin(CTask *task)
   CD3I64 saved_scroll;
   sys_task_being_scrn_updated=task;
   try {
-    if (!Bt(&task->display_flags,DISPLAYf_NO_BORDER))
+    if (!Bt(&task->display_flags,DISPLAYf_NO_BORDER)) {
       TextBorder(Fs,task->win_left,task->win_right,task->win_top,
 	    task->win_bottom,task->border_attr,task==sys_focus_task);
+    }
     TextRect(task->win_left,task->win_right,
 	  task->win_top,task->win_bottom,task->text_attr<<8);
     if (task==sys_winmgr_task) {
       if (gr.fp_wall_paper)
 	(*gr.fp_wall_paper)(task);
     } else if (!(task->win_inhibit&WIF_SELF_DOC))
-      ;//DocUpdateTaskDocs(task); TODO RESTORE
+      DocUpdateTaskDocs(task);
     if (TaskValidate(task)) {
       if (task->draw_it) {
 	dc=DCAlias(gr.dc2,task);
@@ -54,7 +55,6 @@ U0 GrUpdateTaskWin(CTask *task)
   sys_task_being_scrn_updated=NULL;
 }
 
-/*
 U0 GrUpdateTasks()
 {//Only called by WinMgr
   I64 i;
@@ -69,29 +69,30 @@ U0 GrUpdateTasks()
       if (Bt(&task->display_flags,DISPLAYf_SHOW) &&
 	    Bt(gr.win_uncovered_bitmap,task->win_z_num))
 	GrUpdateTaskWin(task);
-      if (!TaskValidate(task)) break;
+      if (!TaskValidate(task)) 
+        break;
       task=task->next_task;
+      Print("task",task);
     } while (task!=task1);
 
     for (i=0;i<mp_cnt;i++) { //Loop through all cores.
       task1=task=cpu_structs[i].seth_task;
       do {
 	if (!TaskValidate(task)) break;
-	GrUpdateTaskODEs(task);
+	//GrUpdateTaskODEs(task); TODO RESTORE
 	if (!TaskValidate(task)) break;
 	task=task->next_task;
       } while (task!=task1);
     }
   } catch {
     PutExcept(FALSE);
-    Dbg("Exception in WinMgr");
+    //Dbg("Exception in WinMgr"); TODO RESTORE
   }
   winmgr.last_ode_time=winmgr.ode_time;
-  ode_alloced_factor=LowPass1(0.1,ode_alloced_factor,
-	Clamp(Gs->idle_factor-0.1,0.2,0.8),1/winmgr.fps);
+  //ode_alloced_factor=LowPass1(0.1,ode_alloced_factor, TODO RESTORE
+	//Clamp(Gs->idle_factor-0.1,0.2,0.8),1/winmgr.fps);
   sys_task_being_scrn_updated=NULL;
 }
-*/
 
 U0 GrFixZoomScale()
 {
@@ -373,7 +374,7 @@ U0 GrUpdateScrn()
   else {
     GrUpdateTextBG;
     GrUpdateTextFG;
-    ; //GrUpdateTasks; TODO RESTORE
+    GrUpdateTasks;
     DCBlotColor8(gr.dc2,gr.dc);
   }
 

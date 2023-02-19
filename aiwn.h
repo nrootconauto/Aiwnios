@@ -656,6 +656,7 @@ int64_t Bsf(int64_t v);
 void *Caller(int64_t c);
 uint64_t ToUpper(uint64_t ch);
 char *WhichFun(char *fptr);
+int64_t LBtc(char*,int64_t);
 
 //
 // These are used by optpass

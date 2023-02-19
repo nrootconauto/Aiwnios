@@ -12,7 +12,7 @@
 #include "GrBitMap.HC"
 #include "GrPrimatives.HC"
 #include "GrComposites.HC"
-/*
+
 #include "ScrnCast.HC"
 
 #define SPE_ABORT	(-1)
@@ -27,24 +27,5 @@
 #include "SpriteEd.HC"
 #include "SpriteMain.HC"
 #include "GrEnd.HC"
-*/
 
-DrawWindowNew;
 PaletteSetStd;
-gr.dc->color=RED;
-
-U0 Poodacle() {
-  I64 x=0,y=0;
-  while(TRUE) {
-    TextPrint(Fs,1,1,RED<<4|GREEN,"HEllo World\n");
-    DCFill;
-    x+=10;
-    y+=10;
-    x%=640;
-    y%=480;
-    GrRect(,x,y,100,100);
-    GrUpdateScrn;
-    Sleep(30);
-  }
-}
-Poodacle;

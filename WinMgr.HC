@@ -439,7 +439,7 @@ U0 WinMgrTask(I64)
   while (TRUE) {
     try {
 wmt_start:
-      if (1) //TODO TRUE?
+      if (0) //TODO TRUE?
 	TaskKillDying;
       WinMgrSleep;
 

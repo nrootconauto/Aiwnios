@@ -116,12 +116,22 @@ TaskInit(adam_task,0);
 #include "Keyboard.HC"
 #include "Message.HC"
 #include "Mouse.HC"
+#include "EdLite.HC"
 #include "KMain.HC"
 U0 InitCPUs() {
   MemSet(&cpu_structs,0,sizeof(CCPU) *64);
   //TODO mp_cnt
   cpu_structs[0].addr=&cpu_structs[0];
-  cpu_structs[0].seth_task=Spawn(&CoreAPSethTask,,,,adam_task,,0); //TODO
+  cpu_structs[0].seth_task=adam_task;
+  //See MultiProc.HC
+  CCPU *c=&cpu_structs;
+  c->addr=c;
+  c->num=0;
+  c->idle_factor=0.01;
+  QueInit(&c->next_dying);
+  adam_task->gs=c;
+  adam_task->task_signature=TASK_SIGNATURE_VAL;
+  //cpu_structs[0].seth_task=Spawn(&CoreAPSethTask,,,,adam_task,,0); //TODO
 }
 InitCPUs;
 class CHashNum:CHash {
@@ -234,6 +244,7 @@ U0 Main(I64 arg) {
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
+//Cmp("TEST2.HC",,"HCRT2.BIN");
 /*
 U0 LexTests() {
 I64 x;
@@ -261,11 +272,43 @@ I64 x;
 LexTests;
 */
 #ifdef COMPONET_GR
+#include "ADskA.HC"
 #include "MakeGr.HC"
 #include "Menu.HC"
 #include "Win.HC"
 #include "WinMgr.HC"
 #include "GodExt.HC"
-
+#include "MakeDoc.HC"
+DrawWindowNew;
+Gs->seth_task=adam_task;
+sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
+U0 Poodacle(I64) {
+  I64 x=0,y=0;
+  PaletteSetStd;
+  WinMax(User);
+  while(TRUE) {
+    DCFill;
+    gr.dc->color=RED;
+    GrRect(,x,y,100,100);
+    x+=5,y+=5;
+    x%=GR_WIDTH;
+    y%=GR_HEIGHT;
+    Refresh;
+  }
+}
+U0 UserStartUp()
+{//Run each time a user a spawned
+  DocTermNew;
+  DocPrint(DocPut,"HEWLLO WORLD\n");
+  //Type("::/Doc/Start.DD");
+  LBts(&(Fs->display_flags),DISPLAYf_SHOW);
+  WinToTop;
+  WinZBufUpdate;
+  //Dir;
+  //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
+  //CPURep;
+}
+Spawn(&Poodacle);
+CoreAPSethTask;
 #endif
 ;

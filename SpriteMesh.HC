@@ -529,7 +529,7 @@ I64 *MeshW2S(CMeshFrame *e,CTask *task)
   if (e->flip_y)
     Mat4x4RotX(r,s->ax);
   else
-    Mat4x4RotX(r,s->ax+ã);
+    Mat4x4RotX(r,s->ax+pi);
   return r;
 }
 
@@ -541,7 +541,7 @@ I64 *MeshS2W(CMeshFrame *e,CTask *task)
   if (e->flip_y)
     Mat4x4RotX(r,-s->ax);
   else
-    Mat4x4RotX(r,-(s->ax+ã));
+    Mat4x4RotX(r,-(s->ax+pi));
   Mat4x4RotY(r,-s->ay);
   Mat4x4RotZ(r,-s->az);
   Mat4x4Scale(r,1/e->view_scale);
@@ -933,25 +933,25 @@ U0 MeshUpdateMenu(CMeshFrame *e)
 {
   CMenuEntry *tmpse;
   if (tmpse=MenuEntryFind(Fs->cur_menu,"View/Grid"))
-    tmpse->checked=ToBool(e->grid_on);
+    tmpse->checked=!!(e->grid_on);
   if (tmpse=MenuEntryFind(Fs->cur_menu,"View/Vertex"))
-    tmpse->checked=ToBool(e->vertex_on);
+    tmpse->checked=!!(e->vertex_on);
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/PlaceVertex"))
-    tmpse->checked=ToBool(e->ed_mode=='v');
+    tmpse->checked=!!(e->ed_mode=='v');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/MoveVertex"))
-    tmpse->checked=ToBool(e->ed_mode=='m');
+    tmpse->checked=!!(e->ed_mode=='m');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/MoveVertexZ"))
-    tmpse->checked=ToBool(e->ed_mode=='M');
+    tmpse->checked=!!(e->ed_mode=='M');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/Triangle"))
-    tmpse->checked=ToBool(e->ed_mode=='t');
+    tmpse->checked=!!(e->ed_mode=='t');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/Polygon"))
-    tmpse->checked=ToBool(e->ed_mode=='n');
+    tmpse->checked=!!(e->ed_mode=='n');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/Fence"))
-    tmpse->checked=ToBool(e->ed_mode=='f');
+    tmpse->checked=!!(e->ed_mode=='f');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"Mode/Prism"))
-    tmpse->checked=ToBool(e->ed_mode=='p');
+    tmpse->checked=!!(e->ed_mode=='p');
   if (tmpse=MenuEntryFind(Fs->cur_menu,"View/FlipY"))
-    tmpse->checked=ToBool(e->flip_y);
+    tmpse->checked=!!(e->flip_y);
 }
 
 I32 *SpriteMeshEd(I32 *head=NULL,I64 *_size=NULL,Bool flip_y=FALSE)
@@ -1206,7 +1206,7 @@ me_chain:
 	      make_tri_vertex_num=0;
 	      break;
 	    case CH_CTRLB:
-	      WinBorder(Bt(&Fs->display_flags,DISPLAYf_NO_BORDER));
+	      WinBorder(Bt(&(Fs->display_flags),DISPLAYf_NO_BORDER));
 	      break;
 	    case CH_CTRLC:
 me_clip_copy:

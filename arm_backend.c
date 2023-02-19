@@ -702,10 +702,12 @@ aloop:
 	}
 	if (stki || vargs_sz)
 		AIWNIOS_ADD_CODE(ARM_addImmX(ARM_REG_SP, ARM_REG_SP, stki * 8 + vargs_sz));
-	tmp.reg = 0;
-	tmp.mode = MD_REG;
-	tmp.raw_type = rpn->raw_type;
-	code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+  if(rpn->raw_type!=RT_U0) {
+    tmp.reg = 0;
+    tmp.mode = MD_REG;
+    tmp.raw_type = rpn->raw_type;
+    code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+  }
 	A_FREE(arg_dsts);
 	rpn2 = ICArgN(rpn, rpn->length);
 	PopTmp(cctrl, rpn2);
@@ -719,7 +721,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 							   indir_off2 = 0, opc;
 	assert(src->mode);
 	CICArg tmp;
-	if (dst->mode == MD_NULL)
+  if (dst->mode == MD_NULL)
 		return code_off;
 	if ((dst->raw_type == RT_F64) == (src->raw_type == RT_F64))
 		if (dst->mode == src->mode) {

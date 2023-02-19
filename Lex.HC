@@ -304,7 +304,6 @@ U0 LexIncludeStr(CCmpCtrl *cc,U8 *abs_filename,U8 *src,Bool actual_file)
 
 CDoc *LexDocRead(U8 *abs_filename,I64 flags)
 {
-/* TODO RESTORE
   CDoc *doc=DocNew(abs_filename);
   U8 *src;
   I64 size=0;
@@ -318,7 +317,6 @@ CDoc *LexDocRead(U8 *abs_filename,I64 flags)
   DocLoad(doc,src,size);
   Free(src);
   return doc;
-  */
 }
 
 I64 cmp_type_flags_src_code[(DOCT_TYPES_NUM+63)/64]={

@@ -35,3 +35,29 @@ CDoc *(*fp_doc_put)(CTask *task=NULL);
 U0 (*fp_set_std_palette)();
 
 I64 sys_semas[SEMA_SEMAS_NUM];
+
+//From KStart32
+CProgress sys_progresses[4];
+#define progress1 sys_progresses[0].val
+#define progress1_max sys_progresses[0].max
+#define progress1_t0 sys_progresses[0].t0
+#define progress1_tf sys_progresses[0].tf
+#define progress1_desc sys_progresses[0].desc
+
+#define progress2 sys_progresses[1].val
+#define progress2_max sys_progresses[1].max
+#define progress2_t0 sys_progresses[1].t0
+#define progress2_tf sys_progresses[1].tf
+#define progress2_desc sys_progresses[1].desc
+
+#define progress3 sys_progresses[2].val
+#define progress3_max sys_progresses[2].max
+#define progress3_t0 sys_progresses[2].t0
+#define progress3_tf sys_progresses[2].tf
+#define progress3_desc sys_progresses[2].desc
+
+#define progress4 sys_progresses[3].val
+#define progress4_max sys_progresses[3].max
+#define progress4_t0 sys_progresses[3].t0
+#define progress4_tf sys_progresses[3].tf
+#define progress4_desc sys_progresses[3].desc

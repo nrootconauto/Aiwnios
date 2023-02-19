@@ -103,3 +103,33 @@ F64 Trunc(F64 a) {
   I64 b=a;
   return b;
 } 
+
+I64 SignI64(I64 a) {
+  if(!a) return a;
+  if(a>0)
+    return  1;
+  else
+    return 0;
+}
+
+F64 Sign(F64 a) {
+  if(!a) return a;
+  if(a>0)
+    return  1;
+  else
+    return 0;
+}
+
+F64 Sqr(F64 a) {
+  return a*a;
+}
+
+F64 Wrap(F64 a,F64 base=-pi)
+{//Returns angle in range [base,base+2*ã)
+  F64 res=a%(2*pi);
+  if (res>=base+2*pi)
+    res-=2*pi;
+  else if (res<base)
+    res+=2*pi;
+  return res;
+}

@@ -1,5 +1,6 @@
 .global LBts
 .global LBtr
+.global LBtc
 .global Bt
 .global Caller
 Bt:
@@ -29,6 +30,23 @@ _Bts_0:
   cbnz w4,_Bts_0
   mov x0,x5
   ret
+
+LBtc:
+  lsr x3,x1,3
+  and x1,x1,0x7
+  add x0,x3,x0
+_Btc_0:
+  ldxrb w3,[x0]
+  mov x4,1
+  lslv w4,w4,w1
+  tst w3,w4
+  cset x5, ne
+  eor w3,w3,w4
+  stxrb w4,w3,[x0]
+  cbnz w4,_Bts_0
+  mov x0,x5
+  ret
+
 
 LBtr:
   lsr x3,x1,3

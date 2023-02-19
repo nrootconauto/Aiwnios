@@ -3793,6 +3793,8 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import I64 LBtc(U8*,I64);
+import F64 Ln(F64);
 import F64 Arg(F64,F64); //ATAN2
 import F64 Tan(F64);
 import F64 Sin(F64);
@@ -4106,3 +4108,5 @@ extern I64 WinToTop(CTask *task=NULL,Bool update_z_buf=TRUE);
 extern Bool WinVert(I64 top,I64 bottom,CTask *task=NULL);
 extern CWinMgrGlbls winmgr;
 extern U0 MsHardSet(I64 x,I64 y,I64 z,I64 l,I64 r);
+extern U8 *GetStr(U8 *msg=NULL,U8 *dft=NULL,I64 flags=0);
+extern U0 UserStartUp();

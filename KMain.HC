@@ -7,9 +7,9 @@ U0 SysGlblsInit()
 
   /*blkdev.dft_iso_filename	=AStrNew(DFT_ISO_FILENAME); TODO  RESTORE
   blkdev.dft_iso_c_filename	=AStrNew(DFT_ISO_C_FILENAME);
-  blkdev.tmp_filename		=AStrNew("~/Tmp.DD.Z");
   blkdev.dvd_boot_is_good=TRUE;
   */
+  blkdev.tmp_filename=StrNew("~/Tmp.DD.Z",adam_task);
   
   rev_bits_table=CAlloc(256);
   set_bits_table=CAlloc(256);
@@ -63,7 +63,7 @@ U0 KMain()
   Fs->win_right=text.cols-2;
   Fs->win_top++;
   Fs->win_bottom=text.rows; //TODO REMOVE
-  //TaskDerivedValsUpdate; TODO RESTORE
+  TaskDerivedValsUpdate;
 
 
   SysDefinesLoad;

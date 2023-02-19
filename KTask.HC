@@ -134,6 +134,7 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->text_attr	=WHITE<<4+BLUE;
   task->border_src	=BDS_CONST;
   //task->border_attr	=DrvTextAttrGet(':'); TODO RESTORE
+  task->border_attr=BLACK<<4|WHITE; //TODO REMOVE
   task->title_src	=TTS_CONST;
   task->win_left	=1;
   task->win_right	=text.cols-2;
@@ -150,9 +151,9 @@ I64 TaskInit(CTask *task,I64 stk_size)
 }
 
 U0 CallPooPoo() {
-  U8 (*foo)(I64)=Fs->user_data;
+  U8 (*foo)(I64);
+  foo=Fs->user_data;
   (*foo)(Fs->user_data2);
-  "EXIT\n";
   Exit;
 }
 
@@ -183,7 +184,7 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
   task->hash_table->next=parent->hash_table;
   MemCpy(task->task_name,task_name,TASK_NAME_LEN);
   StrCpy(task->task_title,task->task_name);
-  //task->title_src=TTS_TASK_NAME; TODO RESTORE
+  task->title_src=TTS_TASK_NAME;
   bl=BreakLock;
   if (Bt(&flags,JOBf_ADD_TO_QUE)) {
     TaskQueInsChild(task);
@@ -244,7 +245,8 @@ I64 ExeCmdLine(CCmpCtrl *cc)
 	if (ptr2<ptr3) *ptr2=0;
       } else
 	if ((ptr=cc->lex_include_stk->line_start) && *ptr)
-	  MemCpy(ptr2,ptr,STR_LEN-1);
+	  MemCpy(ptr2,ptr,StrLen(ptr)+1);
+    PrintI("ptr",ptr);
     }
     cc->flags&=~CCF_HAS_MISC_DATA;
     machine_code=LexStmt2Bin(cc,&type);
@@ -306,10 +308,11 @@ U0 UserTaskCont()
       CmpCtrlDel(cc);
     } catch {
       if ((doc=Fs->put_doc) && doc->doc_signature==DOC_SIGNATURE_VAL)
-	//DocUnlock(doc); TODO RESTORE
+	DocUnlock(doc);
       PutExcept;
     }
   } while (cont);
+  PrintI("BYE",1);
 }
 
 U0 SrvCmdLine(I64 dummy=0)
@@ -322,7 +325,7 @@ U0 SrvCmdLine(I64 dummy=0)
 U0 UserCmdLine(I64 dummy=0)
 {//A user task ends-up calling this.
   Fs->win_inhibit=WIG_USER_TASK_DFT;
-  //CallExtStr("UserStartUp"); TODO RESTORE
+  UserStartUp;
   UserTaskCont;
 }
 
@@ -397,6 +400,7 @@ I64 TaskEnd()
 
   //QueRem
   task->task_signature(I64)=0;
+  PrintF("SIG_INV",5.030);
 
   tmpt =task->next_input_filter_task;
   tmpt1=task->last_input_filter_task;

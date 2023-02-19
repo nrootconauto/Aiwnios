@@ -24,7 +24,12 @@ static void UpdateViewPort() {
     h2=w*480./640;
     w2=w;
     margin_y=(h-h2)/2;
+    if(h<h2) {
+      margin_y=0;
+      goto use_h;
+    }
   } else {
+use_h:
     w2=h*640./480;
     h2=h;
     margin_x=(w-w2)/2;

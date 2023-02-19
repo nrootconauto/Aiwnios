@@ -388,6 +388,7 @@ U0 PrsDotDotDot(CCmpCtrl *cc,CHashFun *tmpf,I64 _reg)
   tmpm->offset=tmpf->size;
   tmpm->size=8;
   tmpf->size+=8;
+  tmpm->dim.total_cnt=1; //Added by nroot
   MemberAdd(cc,tmpm,tmpf,PRS1B_FUN_ARG);
 
   tmpm=MemberLstNew(_reg);
@@ -398,6 +399,7 @@ U0 PrsDotDotDot(CCmpCtrl *cc,CHashFun *tmpf,I64 _reg)
   tmpm->offset=tmpf->size;
   tmpm->size=1; //Close enough(1 count of an I8* ???)
   tmpf->size+=8;//Close enough
+  tmpm->dim.total_cnt=1; //Added by nroot
   MemberAdd(cc,tmpm,tmpf,PRS1B_FUN_ARG);
 
   if (cc->token==')')
