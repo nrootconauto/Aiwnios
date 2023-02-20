@@ -13,9 +13,10 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
       //ICAdd(cc,IC_RET,0,0);
       RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE); //TODO RESTORE
       RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
-      //ARM likes 4byte align for instrcutions
-      while(cc->aotc->rip%4)
-        AOTStoreCodeU8(cc,0);
+      if(cc->flags&CCF_AOT_COMPILE)
+        //ARM likes 4byte align for instrcutions
+        while(cc->aotc->rip%4)
+          AOTStoreCodeU8(cc,0);
       if (res=COCCompile(cc,&size,NULL,_type)) {
 	if (cc->flags&CCF_AOT_COMPILE) {
 	  j=cc->aotc->rip;

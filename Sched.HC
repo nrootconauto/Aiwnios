@@ -88,10 +88,9 @@ U0 Yield() {
       TaskContextRestore(task);
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_TAB)) {
       if(sys_focus_task)
-      TaskContextRestore(task);
+        TaskContextRestore(task);
     }
-    if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)) {
-      TaskFocusNext();
+    if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)&&sys_focus_task) {
       LBts(&sys_focus_task->task_flags,TASKf_KILL_TASK)
       task=sys_focus_task;
       SetFs(sys_focus_task);
@@ -99,6 +98,7 @@ U0 Yield() {
       goto restore;
     }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
+      PrintI("SYS_FOCUS",sys_focus_task);
       if(!sys_focus_task) {
         TaskContextRestore(task);
       }
@@ -127,11 +127,11 @@ next:
   task=task->next_task;
   if(task==Gs->seth_task)
     goto restore;
-  if(!(task->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED))) {
-    goto restore;
-  }
   if(task->wake_jiffy>=__GetTicks) {
     goto next;
+  }
+  if(!(task->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED))) {
+    goto restore;
   }
   SetFs(task);
 restore:

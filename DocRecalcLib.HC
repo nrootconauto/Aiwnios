@@ -202,10 +202,12 @@ U0 DocUpdateTaskDocs(CTask *task)
       task->border_attr=DrvTextAttrGet(*doc->filename.name);
     if (task->title_src==TTS_ED_FILENAME)
       MemCpy(task->task_title,doc->filename.name,STR_LEN-1);
+    PrintI("a",doc);
     DocRecalc(doc,RECALCt_TO_SCRN|RECALCF_HAS_CURSOR);
   }
   if ((doc=DocBorder(task)) && !(doc->flags&DOCF_DONT_SHOW)) {
     WinScrollNull(task,&saved_scroll);
+    PrintI("b",doc);
     DocRecalc(doc,RECALCt_TO_SCRN);
     WinScrollRestore(task,&saved_scroll);
   }

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
+#include <SDL2/SDL.h>
 #define ERR 0x7fFFffFFffFFffFF
 #define A_FREE __AIWNIOS_Free
 #define A_MALLOC(sz,task) __AIWNIOS_MAlloc(sz,task)
@@ -927,3 +928,8 @@ int64_t VFsIsDir(char *name);
 void DrawWindowNew();
 void UpdateScreen(char *px,int64_t w,int64_t h,int64_t wi);
 void GrPaletteColorSet(int64_t i,uint64_t bgr48);
+
+void LaunchSDL(void (*boot_ptr)(void *data),void *data);
+void WaitForSDLQuit();
+void SetKBCallback(void *fptr);
+void SetMSCallback(void *fptr);

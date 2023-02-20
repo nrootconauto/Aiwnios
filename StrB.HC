@@ -75,14 +75,13 @@ U8 *MStrUtil(U8 *src,I64 flags,F64 indent_scale_factor=0)
 U0 GetOutOfDollar()
 {//If a $$ has been printed, print another $$ to exit mode.
   CDoc *doc;
-  /* TODO RESTORE
-  if (IsRaw) {
+  if (0) {
     if (text.raw_flags&RWF_IN_DOLLAR)
       '\d';
   } else {
-    if (fp_doc_put && (doc=(*fp_doc_put)(Fs)) && doc->flags&DOCF_IN_DOLLAR)
+    if (fp_doc_put && (doc=DocPut(Fs)) && doc->flags&DOCF_IN_DOLLAR)
       '\d';
-  }*/
+  }
 }
 
 Bool YorN()

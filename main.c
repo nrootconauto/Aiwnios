@@ -341,6 +341,9 @@ int64_t UnixNow() {
 static double Arg(double x,double y) {
   return atan2(y,x);
 }
+static void __Sleep(int64_t ms) {
+  SDL_Delay(ms);
+}
 void BootAiwnios()
 {
 	//WIP
@@ -400,6 +403,7 @@ void BootAiwnios()
 		PrsBindCSymbol("SetFs", &SetHolyFs);
 		PrsBindCSymbol("Fs", &GetHolyFs);
 		PrsBindCSymbol("__GetTicks", &__GetTicks);
+    PrsBindCSymbol("__Sleep",__Sleep);
 		PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_getcontext);
 		PrsBindCSymbol("AIWNIOS_LongJmp", &AIWNIOS_setcontext);
 		PrsBindCSymbol("IsValidPtr", &IsValidPtr);
@@ -504,16 +508,24 @@ void BootAiwnios()
     PrsBindCSymbol("__GrPaletteColorSet",GrPaletteColorSet);
     PrsBindCSymbol("DrawWindowNew",DrawWindowNew);
     PrsBindCSymbol("UpdateScreen",UpdateScreen);
+    PrsBindCSymbol("SetKBCallback",SetKBCallback);
+    PrsBindCSymbol("SetMSCallback",SetMSCallback);
 	}
+}
+static void Boot(char *bin) {
+  Fs = calloc(sizeof(CTask), 1);
+	TaskInit(Fs, NULL, 0);
+  VFsMountDrive('T',"./");
+  BootAiwnios();
+  if(bin)
+    Load(bin);
 }
 int main()
 {
-	int64_t z = 3;
+  int64_t z = 3;
 	int64_t idx;
-	Fs = calloc(sizeof(CTask), 1);
-	TaskInit(Fs, NULL, 0);
-
-	try {
+	LaunchSDL(&Boot,"HCRT2.BIN");
+  try {
 #ifdef AIWNIOS_TESTS
 		assert(!LBts(&z, 63));
 		assert(z == (3 | (1l << 63)));
@@ -570,8 +582,7 @@ int main()
 		int64_t (*poop7)() = ccmp->cur_fun->fun_ptr;
 		poop7();
 #endif
-    VFsMountDrive('T',"./");
-		BootAiwnios();
+    BootAiwnios();
 #ifdef AIWNIOS_TESTS
 		ccmp->cur_fun = HashFind("Main", Fs->hash_table, HTT_FUN, 1);
 		int64_t (*poop8)() = ccmp->cur_fun->fun_ptr;

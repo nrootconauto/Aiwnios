@@ -22,7 +22,7 @@ Bool TaskValidate(CTask *task)
 {//return TRUE if task looks valid.
   if(!IsValidPtr(task))
     return FALSE;
-  if (task->addr!=task ||
+  if (!task||task->addr!=task ||
 	task->task_signature!=TASK_SIGNATURE_VAL)
     return FALSE;
   else

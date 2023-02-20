@@ -283,9 +283,10 @@ DrawWindowNew;
 Gs->seth_task=adam_task;
 sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 Poodacle(I64) {
+  CTask *t; 
   I64 x=0,y=0;
   PaletteSetStd;
-  WinMax(User);
+  WinMax(t=User);
   while(TRUE) {
     DCFill;
     gr.dc->color=RED;
@@ -299,7 +300,7 @@ U0 Poodacle(I64) {
 U0 UserStartUp()
 {//Run each time a user a spawned
   DocTermNew;
-  DocPrint(DocPut,"HEWLLO WORLD\n");
+  DocPrintPartial(DocPut,"HEWLLO WORLD\n");
   //Type("::/Doc/Start.DD");
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   WinToTop;

@@ -1,6 +1,6 @@
 //http://www.rohitab.com/discuss/topic/39438-keyboard-driver/
 U8 NORMAL_KEY_SCAN_DECODE_TABLE[0x5a]={
-  0, CH_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b', '\t',  'q',
+  0, CH_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', CH_BACKSPACE, '\t',  'q',
   'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', 0, 'a', 's', 'd',
   'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', 0, '\\', 'z', 'x', 'c', 'v', 'b',
   'n', 'm', ',', '.', '/', 0, '*', 0, ' ', 0,	0, 0, 0, 0, 0, 0,
@@ -349,3 +349,52 @@ I64 KbdMsEvtTime()
   else
     return kbd.new_key_timestamp;
 }
+
+I64 kb_mtx=0;
+U0 KBCb(I64 c,I64 s) {
+  U8 *old_rip;
+  CTask *old=Fs;
+  F64 time_out;
+  I64 old_idle_pt_hits;
+  U0 (*cb)(I64);
+  while(LBts(&kb_mtx,0))
+    ; //TODO ATOMIC WAIT
+  SetFs(adam_task);
+  kbd.last_down_scan_code=s;
+  kbd.scan_code=s;
+  LBEqu(&kbd.down_bitmap,s&0x7f,!(s&SCF_KEY_UP));
+  FifoI64Ins(kbd.scan_code_fifo,s);
+  kbd.timestamp=__GetTicks;
+  c=ScanCode2Char(s&0x7f);
+  if(keydev.fp_ctrl_alt_cbs&&!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&'a'<=c<='z') {
+    if(cb=keydev.fp_ctrl_alt_cbs[c-'a'])
+      (*cb)(s);
+  }
+  if(!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&(c=='c'||c=='x')&&TaskValidate(sys_focus_task)) {
+    if(c=='c') {
+       if(!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
+         LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C);
+         goto await_yeild;
+       }
+    } else if(c=='x') {
+      if(!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)) {
+        LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X);
+        await_yeild:
+        time_out=__GetTicks;
+        while(time_out-__GetTicks<ToI64(0.05*1000)) {
+          /*
+          if(IsFrozen(cpu_structs[0])) {
+            InteruptCore(0);
+            break;
+          } else
+            break;
+            */
+          __Sleep(2);
+        }
+      }
+    }
+  }
+  LBtr(&kb_mtx,0);
+  SetFs(old);
+}
+SetKBCallback(&KBCb);

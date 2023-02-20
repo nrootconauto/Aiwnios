@@ -179,6 +179,8 @@ U0 DrawMs(CDC *dc)
   Bool bl=BreakLock;
   x=ms.pos.x;
   y=ms.pos.y;
+  PrintI("FX",x);
+  PrintI("FY",x);
   if(bl) BreakUnlock;
   if (ms.show && ms_hard.installed) {
      {
@@ -200,6 +202,7 @@ U0 DrawMs(CDC *dc)
 
 U0 WinFinalUpdate(CDC *dc)
 {
+  PrintI("FINAL",1);
   if (ms_grid.show)
     DrawWinGrid(dc);
   if (ms_grid.coord)
