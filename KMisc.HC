@@ -40,7 +40,7 @@ I64 BCnt(I64 d)
 
 F64 tS()
 {//Time since boot in seconds as a float.
-  return ToF64(__GetTicks)/1000000.;
+  return __GetTicks/1000.;
 }
 
 Bool Blink(F64 Hz=2.5)
@@ -53,6 +53,7 @@ U0 SleepUntil(I64 wake_jiffy)
 {//Not for power-saving.  It is to make a program pause without hogging the CPU.
   Bool old_idle=LBts(&(Fs->task_flags),TASKf_IDLE);
   Fs->wake_jiffy=wake_jiffy;
+  PrintI("SLEEP",wake_jiffy-__GetTicks);
   Yield;
   if(old_idle)
     LBts(&(Fs->task_flags),TASKf_IDLE);
@@ -65,7 +66,7 @@ U0 Sleep(I64 mS)
   if (!mS)
     Yield;
   else
-    SleepUntil(__GetTicks+mS*JIFFY_FREQ/1000);
+    SleepUntil(__GetTicks+mS);
 }
 
 F64 Ona2Freq(I8 ona)

@@ -310,7 +310,7 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
     //TODO RESTORE???
     //if (ms_hard.install_attempts) //Don't call before boot mouse install attempt
     //  KbdMsHndlr(FALSE,TRUE);
-    SleepUntil(timeout_val);
+    SleepUntil(__GetTicks+33);
   }
   return msg_code;
 }

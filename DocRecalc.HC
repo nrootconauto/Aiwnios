@@ -294,7 +294,7 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
 
   win_task=doc->win_task;
   mem_task=doc->mem_task;
-  blink_flag=Blink;
+  blink_flag=Blink(2.5);
   dc=NULL;
   switch (recalc_flags&RECALCG_MASK) {
     case RECALCt_FIND_CURSOR:
@@ -549,6 +549,7 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
       if (doc_e->de_flags & DOCEF_SCROLLING_X) {
 	j=StrLen(doc_e->tag);
 	if (j && doc_e->scroll_len) {
+    PrintF("cur_time",tS);
 	  i_jif=ToI64(cur_time*FONT_WIDTH*DOC_SCROLL_SPEED)%(j*FONT_WIDTH);
 	  tmp_u32_attr=tmp_u32_attr & 0xFFE0FF00|
 		(FONT_WIDTH-1-i_jif&(FONT_WIDTH-1))<<16;
@@ -1274,10 +1275,6 @@ rc_skip:
 	recalc_flags&RECALCF_HAS_CURSOR) {
     x=doc->x-doc->line_start_col+left +scroll_x/FONT_WIDTH;
     y=doc->y-doc->top_line_num+top+scroll_y/FONT_HEIGHT;
-    PrintI("doc->line_start_col",doc->line_start_col);
-    PrintI("left",left);
-    PrintI("doc->x",doc->x);
-    PrintI("x",x);
     if (0<=x<=right && 0<=y<=bottom &&
 	  x<TEXT_COLS && y<TEXT_ROWS &&
 	  !(doc->flags&DOCF_HIDE_CURSOR)) {

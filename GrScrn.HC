@@ -171,7 +171,7 @@ U0 GrUpdateTextBG()
 	num_rows=TEXT_ROWS,num_cols=TEXT_COLS,i,j,cur_ch,
   w1=gr.dc2->width_internal,w2=-7*w1+8,w3=7*w1,w4=0;
   U32 *src=gr.text_base;
-  Bool blink_flag=Blink;
+  Bool blink_flag=Blink(2.5);
   U8 *dst2=dst,*dst3;
 
   if (gr.pan_text_x||gr.hide_col) {
@@ -261,7 +261,7 @@ U0 GrUpdateTextFG()
 	w1=gr.dc2->width_internal,w2=7*w1,w4=0,
 	num_rows=TEXT_ROWS,num_cols=TEXT_COLS,row,col;
   U8 *dst_start=gr.dc2->body,*dst_end=dst_start+w1*gr.dc2->height-7*w1-8;
-  Bool blink_flag=Blink;
+  Bool blink_flag=Blink(2.5);
 
   if (gr.pan_text_x||gr.hide_col) {
     gr.pan_text_x=ClampI64(gr.pan_text_x,-7,7);
@@ -331,7 +331,7 @@ U0 GrUpdateTextModeText()
   U32 *src=gr.text_base;
   I64 cur_ch,i=TEXT_COLS*TEXT_ROWS;
   U16 *dst=text.vga_text_alias,*dst2=gr.vga_text_cache;
-  Bool blink_flag=Blink;
+  Bool blink_flag=Blink(2.5);
   if (1) {
     while (i--) {
       cur_ch=*src++;

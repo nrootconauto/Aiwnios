@@ -321,9 +321,7 @@ static int64_t MemCmp(char *a ,char *b,int64_t s) {
 }
 static int64_t __GetTicks()
 {
-	struct timespec ts;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-	return ts.tv_nsec / 1000000 + ts.tv_sec * 1000000ll * 1000ll;
+	return SDL_GetTicks();
 }
 static int64_t IsValidPtr(int64_t ptr)
 {

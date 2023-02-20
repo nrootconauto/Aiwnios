@@ -579,7 +579,7 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
         RPNAddNew(
           cc,
           IC_IMM_F64,
-          lst->dft_val(F64),
+          lst->dft_val,
           cmp.internal_types[RT_F64]
         );
       } else {
@@ -1173,7 +1173,7 @@ found_end_square:
         last_consumes_right=0;
         Lex(cc);
         break;case TK_F64:
-        RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+        RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64));
         last_consumes_right=0;
         Lex(cc);
         break;case TK_IDENT:

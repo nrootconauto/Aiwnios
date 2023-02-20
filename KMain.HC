@@ -51,6 +51,7 @@ U0 SysGrInit()
 
 U0 KMain()
 {//Continued from $LK,"KStart64.HC",A="FF:::/Kernel/KStart64.HC,I32 &KMain"$
+  MemSet(sys_semas,0,8*SEMA_SEMAS_NUM);
   CBlkDev *bd;
   //BlkPoolsInit;TODO RESTORE
   SysGlblsInit;

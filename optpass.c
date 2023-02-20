@@ -62,9 +62,11 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 					ic = A_CALLOC(sizeof(CRPN), NULL);
 					ic->type = IC_TO_F64;
 					QueIns(ic, rpn2->base.last);
+          AssignRawTypeToNode(cctrl,ic);
 				} else {
 					ic = A_CALLOC(sizeof(CRPN), NULL);
 					ic->type = IC_TO_I64;
+          AssignRawTypeToNode(cctrl,ic);
 					QueIns(ic, rpn2->base.last);
 				}
 			}

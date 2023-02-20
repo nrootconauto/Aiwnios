@@ -399,6 +399,8 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data2;
 	int64_t backend_user_data3;
 	int64_t backend_user_data4;
+  //Used for returns
+  int64_t epilog_offset;
 } CCmpCtrl;
 #define PRSF_CLASS 1
 #define PRSF_UNION 2

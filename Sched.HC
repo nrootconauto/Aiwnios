@@ -127,14 +127,17 @@ next:
   task=task->next_task;
   if(task==Gs->seth_task)
     goto restore;
-  if(task->wake_jiffy>=__GetTicks) {
+  if(task->wake_jiffy>__GetTicks) {
+    PrintI(task->task_title,task->wake_jiffy-__GetTicks);
+    PrintI("DENY",task);
     goto next;
   }
   if(!(task->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED))) {
     goto restore;
-  }
-  SetFs(task);
+  } else
+    goto next;
 restore:
+  SetFs(task);
   TaskContextRestore(task);
 }
 

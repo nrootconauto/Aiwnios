@@ -19,16 +19,18 @@ U0 CoreAPSethTask()
     ns=0.1*JIFFY_FREQ,t=__GetTicks;
     task1=Fs;
     for(task=Fs->next_task;task!=task1;task=task->next_task) {
+      PrintI(task->task_title,1);
       if(Bt(&task->task_flags,TASKf_SUSPENDED)||Bt(&task->task_flags,TASKf_AWAITING_MSG))
         goto next;
-      if(!Bt(&task->task_flags,TASKf_IDLE))
-        ns=0;
+      PrintI(task->task_title,2);
+      PrintI("TIME",task->wake_jiffy-t);
       if(task->wake_jiffy-t<ns)
         ns=task->wake_jiffy-t;
 next:;
     }
     if(ns>0) {
       Gs->idle_pt_hits+=ns;
+      PrintI("ns",ns);
       __Sleep(ns);
     }
     Yield;

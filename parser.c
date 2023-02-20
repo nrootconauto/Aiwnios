@@ -7,7 +7,8 @@ CCodeCtrl* CodeCtrlPush(CCmpCtrl* ccmp)
 {
 	CCodeCtrl* cctrl = A_MALLOC(sizeof(CCodeCtrl), NULL);
 	cctrl->next = ccmp->code_ctrl;
-	cctrl->ir_code = A_MALLOC(sizeof(CQue), NULL);
+	cctrl->ir_code = A_MALLOC(sizeof(CRPN), NULL);
+  ((CRPN*)cctrl->ir_code)->type=IC_NOP;
 	cctrl->code_misc = A_MALLOC(sizeof(CQue), NULL);
 	QueInit(cctrl->ir_code);
 	QueInit(cctrl->code_misc);

@@ -244,15 +244,16 @@ U0 Main(I64 arg) {
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
+PrintF("MUL",pi*2);
+PrintF("MUL",1e-1 *1000.);
 //Cmp("TEST2.HC",,"HCRT2.BIN");
-/*
-U0 LexTests() {
+/*U0 LexTests() {
 I64 x;
   "ad:%xfs:%x,ah:%x,nxt:%x\n",adam_task,Fs,cmp.asm_hash,adam_task->hash_table->next;
   for(x=0;x!=16;x++)
     "%d,%x\n",x,char_bmp_alpha_numeric_no_at[x];
   CCmpCtrl *cctrl=CmpCtrlNew(
-  "123\n123.456\n||\n_abcdef123\n"
+  "123\n0.1\n||\n_abcdef123\n"
   ,CCF_DONT_FREE_BUF,"Toad.HC");
   "POODLES:%x\n",HashFind("include",Fs->hash_table,-1);
   "%x:\n",123;
@@ -309,7 +310,7 @@ U0 UserStartUp()
   //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
   //CPURep;
 }
-Spawn(&Poodacle);
+Spawn(&Poodacle,,"Poodacle");
 CoreAPSethTask;
 #endif
 ;

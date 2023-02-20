@@ -3103,8 +3103,19 @@ gti_enter:
 		tmp.reg = 0; // 0 is return register
 		tmp.mode = MD_REG;
 		code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);
+    // TempleOS will always store F64 result in RAX(integer register)
+    // Let's merge the two togheter
+    if(tmp.raw_type==RT_F64) {
+      AIWNIOS_ADD_CODE(ARM_fmovI64F64(0,0));
+    } else {
+      //Vise versa
+      AIWNIOS_ADD_CODE(ARM_fmovF64I64(0,0));
+    }
 		// TODO  jump to return area,not generate epilog for each poo poo
-		code_off = FuncEpilog(cctrl, bin, code_off);
+    if(cctrl->code_ctrl->final_pass>=2) {
+      AIWNIOS_ADD_CODE(ARM_b(cctrl->epilog_offset-code_off));
+    } else
+      AIWNIOS_ADD_CODE(ARM_b(0));
 		break;
 	case IC_BASE_PTR:
 		break;
@@ -3216,6 +3227,7 @@ char* OptPassFinal(CCmpCtrl* cctrl,int64_t *res_sz,char **dbg_info)
 		code_off = FuncProlog(cctrl, bin, code_off);
 		for (cnt = 0; cnt != cnt2; cnt++)
 			code_off = __OptPassFinal(cctrl, forwards[cnt], bin, code_off);
+    cctrl->epilog_offset=code_off;
 		code_off = FuncEpilog(cctrl, bin, code_off);
 		for (misc = cctrl->code_ctrl->code_misc->next;
 			 misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
