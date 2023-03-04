@@ -359,7 +359,6 @@ U0 CMiscInit() {
     tmpc->str=StrNew(tmpit->name,adam_task);
     HashAdd(tmpc,cmp.asm_hash);
     cmp.internal_types[tmpc->raw_type]=tmpc;
-    PrintI(tmpc->str,1);
   }
   CmpAddKw(cmp.asm_hash,"include",0);
   CmpAddKw(cmp.asm_hash,"define",1);

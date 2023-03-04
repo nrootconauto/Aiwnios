@@ -1,3 +1,4 @@
+#define lastclass "lastclass"
 // Main TempleOS header
 
 extern class CAOT;
@@ -3793,6 +3794,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 import U0 __Sleep(I64);
 import I64 LBtc(U8*,I64);
 import F64 Ln(F64);
@@ -3871,6 +3873,7 @@ import U0 SetKBCallback(U8 *fptr);
 import U0 SetMSCallback(U8 *fptr);
 #else
 #define public 
+extern U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 extern U0 SetKBCallback(U8 *fptr);
 extern U0 SetMSCallback(U8 *fptr);
 extern U0 __Sleep(I64);
@@ -4042,7 +4045,7 @@ extern CDoc *DocDisplay(CTask *task=NULL);
 extern U0 DocDump(CDoc *doc,I64 uS_delay=0);
 extern CDocEntry *DocEntryCopy(CDoc *doc,CDocEntry *doc_e);
 extern U0 DocEntryDel(CDoc *doc,CDocEntry *doc_e);
-extern Bool DocForm(U8 *_d,U8 *class_name="lastclass",
+extern Bool DocForm(U8 *_d,U8 *class_name=lastclass,
 	I64 dof_flags=0,U8 *header=NULL,U8 *footer=NULL);
 extern U0 DocHelpIdx(CDoc *doc,U8 *idx);
 extern Bool DocHighlightCursor(Bool show=OFF,CDoc *doc=NULL);
@@ -4082,7 +4085,7 @@ extern I64 PopUpColorDither(U8 *header=NULL);
 extern I64 PopUpColorLighting(U8 *header=NULL);
 extern I64 PopUpFile(U8 *filename,
 	Bool warn_ext=TRUE,CTask *parent=NULL,CTask **_pu_task=NULL);
-extern Bool PopUpForm(U8 *_d,U8 *class_name="lastclass",
+extern Bool PopUpForm(U8 *_d,U8 *class_name=lastclass,
 	I64 dof_flags=DOF_SIZE_MIN,U8 *header=NULL,U8 *footer=NULL);
 extern I64 PopUpGetI64(U8 *msg,I64 dft,I64 lo=I64_MIN,I64 hi=I64_MAX);
 extern U8 *PopUpGetStr(U8 *header=NULL);
@@ -4117,3 +4120,6 @@ extern U0 MsHardSet(I64 x,I64 y,I64 z,I64 l,I64 r);
 extern U8 *GetStr(U8 *msg=NULL,U8 *dft=NULL,I64 flags=0);
 extern U0 UserStartUp();
 extern U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...);
+
+extern U0 throw(U64,Bool no_log=FALSE);
+extern U0 GetOutOfDollar();

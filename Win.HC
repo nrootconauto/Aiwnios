@@ -179,8 +179,6 @@ U0 DrawMs(CDC *dc)
   Bool bl=BreakLock;
   x=ms.pos.x;
   y=ms.pos.y;
-  PrintI("FX",x);
-  PrintI("FY",x);
   if(bl) BreakUnlock;
   if (ms.show && ms_hard.installed) {
      {

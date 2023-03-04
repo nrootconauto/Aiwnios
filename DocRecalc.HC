@@ -367,8 +367,6 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
 	    LBtr(&vss->flags,WSSf_SET_TO_POS);
 	  }
 	}
-  PrintI("doc->line_start_col",doc->line_start_col);
-  PrintI("w/2",width/2);    
 	doc->x=doc->line_start_col+width/2;
 	doc->y=doc->top_line_num+height/2;
 	find_cursor=TRUE;
@@ -474,8 +472,6 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
     if (full_refresh) {
       doc_e->x=x;
       doc_e->y=y;
-      PrintI("doc_e",doc_e);
-      PrintI("doc_e->x",x);
       doc_e->page_line_num=doc->page_line_num;
       if (x<doc->min_x) doc->min_x=x;
       if (y<doc->min_y) doc->min_y=y;
@@ -1222,11 +1218,7 @@ rc_skip:
 
     if (doc->cur_entry->type_u8!=DOCT_HEX_ED) {
       doc->y=doc->cur_entry->y;
-      PrintI("doc->cur_entry->x",doc->cur_entry->x);
-      PrintI("doc->cur_col",doc->cur_col);
-      PrintI("&doc->cur_col",&doc->cur_col);
       doc->x=doc->cur_entry->x+doc->cur_col;
-      PrintI("doc->x",doc->x);
     } else {
       doc->y=doc->cur_entry->y+doc->cur_col/3/doc->cur_entry->hex_ed_width;
       x=doc->cur_col%(doc->cur_entry->hex_ed_width*3);

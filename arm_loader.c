@@ -283,3 +283,15 @@ lo_skip:
   LoadPass2((char*)bfh_addr + bfh_addr->patch_table_offset, module_base);
 	return bfh_addr;
 }
+
+void ImportSymbolsToHolyC(void(*cb)(char *name,void *addr)) {
+  int64_t idx=0;
+  CHashExport *h;
+  for(idx=0;idx<=Fs->hash_table->mask;idx++) {
+    for(h=Fs->hash_table->body[idx];h;h=h->base.next) {
+      if(h->base.type&HTT_EXPORT_SYS_SYM) {
+        cb(h->base.str,h->val);
+      }
+    }
+  }
+}

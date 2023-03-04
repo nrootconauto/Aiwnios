@@ -82,7 +82,7 @@ U0 LexExcept(CCmpCtrl *cc,U8 *str=NULL)
 {//Print err msg, $LK,"LexPutPos",A="MN:LexPutPos"$() and throw exception.
   if (str) PrintErr(str);
   //if (!IsRaw) TODO RESTORE
-    AdamErr("Task:%08X %s\n",Fs,str);
+  //  AdamErr("Task:%08X %s\n",Fs,str);
   LexPutPos(cc);
   cc->error_cnt++;
   FlushMsgs;

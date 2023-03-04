@@ -244,8 +244,6 @@ U0 Main(I64 arg) {
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
-PrintF("MUL",pi*2);
-PrintF("MUL",1e-1 *1000.);
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 /*U0 LexTests() {
 I64 x;
@@ -280,6 +278,20 @@ LexTests;
 #include "WinMgr.HC"
 #include "GodExt.HC"
 #include "MakeDoc.HC"
+U0 ImportSymbolsCB(U8 *name,U8 *addr) {
+  CHash *find=HashFind(name,Fs->hash_table,-1);
+  if(find&&find->type&HTT_GLBL_VAR) {
+    find(CHashGlblVar*)->data_addr=addr;
+  } else if(find&&find->type&HTT_FUN&&!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
+    find(CHashFun*)->exe_addr=addr;
+    LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
+  }
+}
+U0 InitSymbols() {
+  ExeFile("KernelA.HH");
+  ImportSymbolsToHolyC(&ImportSymbolsCB);
+}
+InitSymbols;
 DrawWindowNew;
 Gs->seth_task=adam_task;
 sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");

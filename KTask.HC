@@ -245,8 +245,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
 	if (ptr2<ptr3) *ptr2=0;
       } else
 	if ((ptr=cc->lex_include_stk->line_start) && *ptr)
-	  MemCpy(ptr2,ptr,StrLen(ptr)+1);
-    PrintI("ptr",ptr);
+	  MemCpy(ptr2,ptr,MinI64(StrLen(ptr)+1,STR_LEN));
     }
     cc->flags&=~CCF_HAS_MISC_DATA;
     machine_code=LexStmt2Bin(cc,&type);

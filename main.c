@@ -402,6 +402,7 @@ void BootAiwnios()
 		PrsBindCSymbol("Fs", &GetHolyFs);
 		PrsBindCSymbol("__GetTicks", &__GetTicks);
     PrsBindCSymbol("__Sleep",__Sleep);
+    PrsBindCSymbol("ImportSymbolsToHolyC",ImportSymbolsToHolyC);
 		PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_getcontext);
 		PrsBindCSymbol("AIWNIOS_LongJmp", &AIWNIOS_setcontext);
 		PrsBindCSymbol("IsValidPtr", &IsValidPtr);

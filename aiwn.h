@@ -935,3 +935,5 @@ void LaunchSDL(void (*boot_ptr)(void *data),void *data);
 void WaitForSDLQuit();
 void SetKBCallback(void *fptr);
 void SetMSCallback(void *fptr);
+
+void ImportSymbolsToHolyC(void(*cb)(char *name,void *addr));
