@@ -309,7 +309,6 @@ public U0 DrawStdMs(CDC *dc,I64 x,I64 y)
   //called by $LK,"WinFinalUpdate",A="MN:WinFinalUpdate"$().
   dc->thick=1;
   dc->flags&=~(DCF_TRANSFORMATION|DCF_SYMMETRY);
-  PrintI("GERE",1);
   GrArrow3(dc,x+8,y+8,0,x,y,0);
 }
 

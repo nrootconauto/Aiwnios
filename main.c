@@ -345,7 +345,7 @@ static void __Sleep(int64_t ms) {
 void BootAiwnios()
 {
 	//WIP
-	CLexer* lex = LexerNew("None", "#include\"FULL_PACKAGE.HC\";");
+	CLexer* lex = LexerNew("None", "1+1;;;//#include\"FULL_PACKAGE.HC\";");
 	CCmpCtrl* ccmp = CmpCtrlNew(lex);
 	void (*to_run)();
 	CodeCtrlPush(ccmp);
@@ -396,7 +396,7 @@ void BootAiwnios()
 		PrsBindCSymbol("LBtr", &LBtr);
 		PrsBindCSymbol("Bsf", &Bsf);
 		PrsBindCSymbol("Bsr", &Bsr);
-		PrsBindCSymbol("DbgPutS", &puts);
+		PrsBindCSymbol("DbgPutS", &PutS);
 		PrsBindCSymbol("PutS", &PutS);
 		PrsBindCSymbol("SetFs", &SetHolyFs);
 		PrsBindCSymbol("Fs", &GetHolyFs);

@@ -202,14 +202,8 @@ public U0 DocInsEntry(CDoc *doc,CDocEntry *doc_e)
   U8 *dst;
   Bool unlock=DocLock(doc);
   CDocEntry *doc_ce=doc->cur_entry,*doc_ne;
-
-  PrintI("doc_ce->type_u8",doc_ce->type_u8);
-  PrintF("cur_col",doc->cur_col);
-  PrintF("doc_ce->max_col",doc_ce->max_col);
   
   doc_e->x=doc_ce->x;
-  PrintI("doc_ce",doc_ce);
-  PrintF("doc_e->x",doc_e->x);
   doc_e->y=doc_ce->y;
   doc_e->page_line_num=doc_ce->page_line_num;
   MemCpy(&doc_e->settings,&doc_ce->settings,sizeof(CDocSettings));

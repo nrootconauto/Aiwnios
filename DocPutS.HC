@@ -165,23 +165,18 @@ public U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...)
   buf=StrPrintJoin(NULL,fmt,argc,argv);
   ptr=buf;
   if (doc->user_put_s && (*doc->user_put_s)(doc,doc->user_put_data,buf)) {
-    PrintI("doc->user_put_s",doc->user_put_s);
     Free(buf);
     return;
   }
   unlock=DocLock(doc);
   if (doc->cur_entry->type_u8==DOCT_DATA)
     while (ch=*ptr++) {
-      PrintI("CH1",ch);
       DocPutKey(doc,ch,0);
     }
   else
     while (ch=*ptr) {
-      PrintI("DOCF_IN_DOLLAR",doc->flags&DOCF_IN_DOLLAR);
-      PrintI("ch",ch);
       if (!Bt(char_bmp_safe_dollar,ch) ||
 	    doc->flags & (DOCF_OVERSTRIKE|DOCF_IN_DOLLAR)) {
-	PrintI("nsafe",ch);
 	DocPutKey(doc,ch,0);
   ptr++;
       } else {
@@ -201,12 +196,6 @@ public U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...)
 	  i=doc->cur_col;
 	  doc->cur_col+=j;
 	  doc_ce->max_col+=j;
-    PrintI("doc->cur_col",doc->cur_col);
-    PrintI("doc->max_col",doc_ce->max_col);
-    PrintI("doc",doc);
-    PrintF("piu",pi);
-    PrintI("doc->cur_col",&doc->cur_col);
-    PrintI("j",j);
 	  while (i-->0)
 	    *dst++=*src++;
 	  while (j-->0)
@@ -219,8 +208,6 @@ public U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...)
     doc_ne->type=DOCT_TEXT|doc->settings_head.dft_text_attr<<8;
 	  doc_ne->de_flags=doldoc.dft_de_flags[DOCT_TEXT];
 	  QueIns(doc_ne,doc_ce->last);
-	  PrintI("doc_ne",doc_ne);
-	  PrintI("StrLen(ptr2)",StrLen(ptr2));
 	  doc->cur_entry=doc_ne;
 	  doc->cur_col=StrLen(ptr2);
 	}
@@ -232,7 +219,6 @@ public U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...)
     DocUnlock(doc);
   if (!(doc->flags&DOCF_DONT_SWAP_OUT))
     Yield;
-  PrintI("EXIT",ch);
   Free(buf);
 }
 

@@ -545,7 +545,6 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
       if (doc_e->de_flags & DOCEF_SCROLLING_X) {
 	j=StrLen(doc_e->tag);
 	if (j && doc_e->scroll_len) {
-    PrintF("cur_time",tS);
 	  i_jif=ToI64(cur_time*FONT_WIDTH*DOC_SCROLL_SPEED)%(j*FONT_WIDTH);
 	  tmp_u32_attr=tmp_u32_attr & 0xFFE0FF00|
 		(FONT_WIDTH-1-i_jif&(FONT_WIDTH-1))<<16;

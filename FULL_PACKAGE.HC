@@ -244,7 +244,7 @@ U0 Main(I64 arg) {
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
-//Cmp("TEST2.HC",,"HCRT2.BIN");
+Cmp("TEST2.HC",,"HCRT2.BIN");
 /*U0 LexTests() {
 I64 x;
   "ad:%xfs:%x,ah:%x,nxt:%x\n",adam_task,Fs,cmp.asm_hash,adam_task->hash_table->next;

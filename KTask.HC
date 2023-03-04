@@ -311,7 +311,6 @@ U0 UserTaskCont()
       PutExcept;
     }
   } while (cont);
-  PrintI("BYE",1);
 }
 
 U0 SrvCmdLine(I64 dummy=0)

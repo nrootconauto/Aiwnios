@@ -18,6 +18,11 @@ class CRPN:CQue {
     CCodeMisc *misc;
   };
 };
+
+Bool IsPtrNode(CRPN *rpn) {
+  return rpn->ic_class->ptr_stars_cnt||rpn->ic_dim;
+}
+
 U0 RPNDel(CRPN *rpn) {
   QueRem(rpn);
   Free(rpn);
@@ -122,7 +127,7 @@ binop:
       break;case IC_SUB:
       rt1=r->t.arg1_class->raw_type;
       rt2=r->t.arg2_class->raw_type;
-      if(rt1==RT_PTR&&rt2==RT_PTR)
+      if(IsPtrNode(r->t.arg1_tree)&&IsPtrNode(r->t.arg2_tree))
         return r->ic_class=cmp.internal_types[RT_I64];
       default:
 binop_dft:
@@ -327,6 +332,7 @@ extern U0 DumpRPN(CRPN*,I64 x=0);
 U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
   CRPN *rpn2,*a,*b,*rpn3;
   I64 width;
+  CHashClass *ic_class;
   Bool divide=FALSE;
   rpn->ic_line=cc->lex_include_stk->line_num;
   QueIns(rpn,&cc->coc.coc_head);
@@ -391,19 +397,26 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
         a=b->t.arg1_tree;
         RPNDel(rpn);
         PrsPush3(cc->ps,a); //Put back on the stack
+        if(b->ic_dim) {
+          a->ic_class=b->ic_class;
+          a->ic_dim=b->ic_dim;
+        } else {
+          a->ic_dim=NULL;
+          a->ic_class=AddrOfType(b->ic_class);
+        }
         RPNDel(b);
         return;
       }
       break;case IC_SUB:
       a=rpn->t.arg1_tree;
       b=rpn->t.arg2_tree;
-      if(a->ic_class->ptr_stars_cnt) {
+      if(IsPtrNode(a)) {
         width=RPNPtrWidth(a);
         rpn2=CAlloc(sizeof CRPN);
         rpn2->type=IC_IMM_I64;
         rpn2->imm_i64=width;
         rpn2->ic_class=cmp.internal_types[RT_I64];
-        if(b->ic_class->ptr_stars_cnt) {
+        if(IsPtrNode(b)) {
           divide=TRUE;
         } else {
           //Use a's class for rpn
@@ -437,7 +450,7 @@ mul:
         //Use a's class for rpn
         rpn->ic_class=a->ic_class;
         goto mul;
-      } else if(a->ic_class->ptr_stars_cnt) {
+      } else if(IsPtrNode(a)) {
         width=RPNPtrWidth(a);
         rpn2=CAlloc(sizeof CRPN);
         rpn2->type=IC_IMM_I64;
@@ -459,7 +472,7 @@ mul:
         //Use a's class for rpn
         rpn->ic_class=a->ic_class;
         goto mul;
-      } else if(a->ic_class->ptr_stars_cnt) {
+      } else if(IsPtrNode(a)) {
         width=RPNPtrWidth(a);
         rpn2=CAlloc(sizeof CRPN);
         rpn2->type=IC_IMM_I64;
@@ -488,7 +501,7 @@ mul2:
         rpn3->ic_line=rpn->ic_line;
         QueInsRev(rpn3,a);
         QueIns(rpn2,rpn3);
-      } else if(b->ic_class->ptr_stars_cnt) {
+      } else if(IsPtrNode(b)) {
         width=RPNPtrWidth(b);
         rpn2=CAlloc(sizeof CRPN);
         rpn2->type=IC_IMM_I64;
@@ -573,7 +586,20 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
       goto next;
     while(last_c->ptr_stars_cnt)
       last_c=DerefType(last_c);
-    if(lst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
+    if(lst->flags&MLF_LASTCLASS&&last_c) {
+      PutS("last_c\n");
+      PutS(last_c->str);
+      PutS("\n");
+      cm=COCMiscNew(cc,CMT_STR_CONST);
+      cm->str=StrNew(last_c->str);
+      cm->st_len=StrLen(last_c->str)+1;
+      RPNAddNew(
+          cc,
+          IC_STR_CONST,
+          cm,
+          last_c=cmp.internal_types[RT_U8]+1
+        );
+    } else if(lst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
       last_c=lst->member_class;
       if(lst->member_class->raw_type==RT_F64) {
         RPNAddNew(
@@ -592,19 +618,8 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
       }
     } else if(lst->flags&MLF_DOT_DOT_DOT) {
       //Do nothing ,argc/argv are implicit
-    } else if(lst->flags&MLF_LASTCLASS&&last_c) {
-      cm=COCMiscNew(cc,CMT_STR_CONST);
-      cm->str=StrNew(last_c->str);
-      cm->st_len=StrLen(last_c->str)+1;
-      RPNAddNew(
-          cc,
-          IC_STR_CONST,
-          cm,
-          last_c=cmp.internal_types[RT_U8]+1
-        );
     } else {
       DumpRPN(cc->coc.coc_head.next);
-      "PP:%s,%s,%d\n",fun->str,lst->str,start_idx;
       LexExcept(cc,"Missing dft value for argument at: ");
     }
 next:
@@ -624,11 +639,16 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
   return cur;
 }
 
+U0 DbgPrint(U8 *fmt,...) {
+  U8 *s=StrPrintJoin(NULL,fmt,argc,argv);
+  "%s",(s);
+  Free(s);
+}
 CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
   I64 idx=0;
   CHashClass *cls=rpn->ic_class;
   CRPN *next=rpn->next;
-  "%x%*c%s",rpn,indent+1,' ',intermediate_code_table[rpn->type].name;
+  DbgPrint("%x%*c%s",rpn,indent+1,' ',intermediate_code_table[rpn->type].name);
   switch(rpn->type) {
     break;case IC_IMM_I64:
     case IC_FRAME:
@@ -636,27 +656,27 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
     break;case IC_IMM_F64:
     ",%n,",rpn->imm_f64;
   }
-  "%x,",rpn->ic_dim;
+  DbgPrint("%x,",rpn->ic_dim);
   if(cls) {
-    "%d,",1+(cls->ptr_stars_cnt);
+    DbgPrint("%d,",1+(cls->ptr_stars_cnt));
     while(cls->ptr_stars_cnt)
       cls=DerefType(cls);
-    "%s",cls->str;
+    DbgPrint("%s",cls->str);
   }
   switch(intermediate_code_table[rpn->type].arg_cnt) {
     break;case IS_V_ARG:
-    "(%d)\n",rpn->length;
+    DbgPrint("(%d)\n",rpn->length);
     for(idx=0;idx!=rpn->length;idx++)
       next=DumpRPN(next,indent+1);
     break;case IS_2_ARG: 
-    ",%x,%x\n",rpn->t.arg1_tree,rpn->t.arg2_tree;
+    DbgPrint(",%x,%x\n",rpn->t.arg1_tree,rpn->t.arg2_tree);
     next=DumpRPN(next,indent+1);
     next=DumpRPN(next,indent+1);
     break;case IS_1_ARG:
-    ",%x\n",rpn->t.arg1_tree;
+    DbgPrint(",%x\n",rpn->t.arg1_tree);
     next=DumpRPN(next,indent+1);
     break;case IS_0_ARG:
-    "\n";
+    DbgPrint("\n");
   }
   return next;
 }
@@ -685,7 +705,6 @@ Bool PrsMembers(CCmpCtrl *cc) {
       if(added->ic_dim) {
         added->ic_dim=NULL;
         cls=added->ic_class;
-        added->ic_class=AddrOfType(added->ic_class);
       }
       Lex(cc);
       mlst=MemberFind(cc->cur_str,cls);
@@ -1005,7 +1024,19 @@ typecast:
         for(idx=0;idx!=ic_fun->arg_cnt;idx++) {
           if(mlst->flags&MLF_DOT_DOT_DOT) goto vargs;
           if(cc->token==',') {
-            if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
+            if(mlst->flags&MLF_LASTCLASS) {
+              while(last_c->ptr_stars_cnt)
+                last_c=DerefType(last_c);
+              misc=COCMiscNew(cc,CMT_STR_CONST);
+              misc->str=StrNew(last_c->str);
+              misc->st_len=StrLen(last_c->str)+1;
+              RPNAddNew(
+                  cc,
+                  IC_STR_CONST,
+                  misc,
+                  last_c=cmp.internal_types[RT_U8]+1
+                );
+            } else if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
               last_c=mlst->member_class;
               if(mlst->member_class->raw_type==RT_F64) {
                 RPNAddNew(
@@ -1024,18 +1055,6 @@ typecast:
                 );
                 arity++;
               }
-            } else if(mlst->flags&MLF_LASTCLASS) {
-              while(last_c->ptr_stars_cnt)
-                last_c=DerefType(last_c);
-              misc=COCMiscNew(cc,CMT_STR_CONST);
-              misc->str=StrNew(last_c->str);
-              misc->st_len=StrLen(last_c->str)+1;
-              RPNAddNew(
-                  cc,
-                  IC_STR_CONST,
-                  misc,
-                  last_c=cmp.internal_types[RT_U8]+1
-                );
             } else
               LexExcept(cc,"Missing dft argument at:");
             Lex(cc);

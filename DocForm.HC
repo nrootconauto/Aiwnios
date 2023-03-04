@@ -211,6 +211,7 @@ public Bool DocForm(U8 *_d,U8 *class_name=lastclass,
 {//User input. Supply a class name that has format definitions.
 //See $LK,"::/Demo/DolDoc/Form.HC"$ and $LK,"::/Demo/LastClass.HC"$.
   CMemberLst *ml;
+  PrintI("name",class_name);
   CDocEntry *doc_e;
   U8 *format;
   CHashClass *tmpc,*tmpc2;

@@ -16,20 +16,22 @@ U0 BFieldOrU32(U8 *data,I64 bit,U64 t) {
 
 U32 BFieldExtU32(U8 *data,I64 bit,U32 width) {
   I64 idx=bit/8,obit=bit;
-  U32 t=0;
+  U64 t=0;
   bit&=7;
   if(!bit) {
-    return *((data+idx)(U32*));
+    t=*((data+idx)(U32*));
+    goto fin;
   }
-  t|=data[idx]>>(bit&7);
-  bit=8-(bit&7);
+  t|=data[idx]>>bit;
+  bit=8-bit;
   t|=data[idx+1]<<bit;
   bit+=8;
   t|=data[idx+2]<<bit;
   bit+=8;
   t|=data[idx+3]<<bit;
   bit+=8;
-  t|=(data[idx+4]&(1<<(obit&7)-1))<<bit;
+  t|=data[idx+4]<<bit;
+fin:
   t&=1<<width-1; //Mask to width
   return t;
 }
@@ -89,7 +91,7 @@ U0 ArcCompressBuf(CArcCtrl *c)
   if (c->saved_basecode==U32_MAX)
     basecode=*src_ptr++;
   else
-    basecode=c->saved_basecode;
+    basecode=c->saved_basecode;    
 
   while (src_ptr<src_limit && c->dst_pos+c->cur_bits_in_use<=c->dst_size) {
     ArcEntryGet(c);
@@ -113,8 +115,7 @@ ac_start:
     tmp->ch=ch;
     tmp1=&c->hash[basecode];
     tmp->next=tmp1->next;
-    tmp1->next=tmp;
-
+    tmp1->next=tmp;	  
     basecode=ch;
   }
 ac_done:

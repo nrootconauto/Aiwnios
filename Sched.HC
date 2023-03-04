@@ -98,7 +98,6 @@ U0 Yield() {
       goto restore;
     }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
-      PrintI("SYS_FOCUS",sys_focus_task);
       if(!sys_focus_task) {
         TaskContextRestore(task);
       }

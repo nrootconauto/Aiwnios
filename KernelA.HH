@@ -1,4 +1,3 @@
-#define lastclass "lastclass"
 // Main TempleOS header
 
 extern class CAOT;
@@ -1205,22 +1204,24 @@ class CExternUsage
 //TODO RESTORE meta data
 class CEdFindText
 {
-  U8	find_text[STR_LEN],
-	replace_text[STR_LEN];
-  Bool	replace,
-	scan_fwd,
-	scan_sel_text,
-	match_case,
-	whole_labels,
-	local_var,
+  U8	find_text[STR_LEN] format "\dDA-P,"
+	"A=\"Find        :%s\"\d\n",
+	replace_text[STR_LEN] format "\dDA-P,"
+	"A=\"Replace     :%s\"\d\n";
+  Bool	replace			format "\dCB,\"Replace\"\d\n",
+	scan_fwd		format "\dCB,\"Fwd\"\d\n",
+	scan_sel_text		format "\dCB,\"Selection\"\d\n",
+	match_case		format "\dCB,\"Match Case\"\d\n",
+	whole_labels		format "\dCB,\"Whole Labels\"\d\n",
+	local_var		format "\dCB,\"Rename Local Var\"\d\n",
 	pmt,pad;
-  I64	filter_lines;
+  I64	filter_lines		format "\dDA,A=\"Filter Lines:%d\"\d\n";
 };
 
 class CEdFileName
 {
   CDirContext *dirc;
-  U8	name[256];
+  U8	name[256] format "\dDA-P,LEN=255,A=\"FileName:%s\"\d";
 };
 //$LK,"Ed",A="MN:Ed"$()
 #define EDF_BAIL		0x100
@@ -2952,21 +2953,22 @@ class CMemRange
 	right_down_sent;//Private
 };
 
-/*public */ class CGridGlbls
+
+public class CGridGlbls
 {
-  Bool	snap,
-	show,
-	coord;
+  Bool	snap	format "\dCB,\"Snap Grid\"\d\n",
+	show	format "\dCB,\"Show Grid\"\d\n",
+	coord	format "\dCB,\"Show Coordinates\"\d\n";
   U8	pad[5];
-  F64	x,
-	y,
-	z,
-	x_offset,
-	y_offset,
-	z_offset,
-	x_speed,
-	y_speed,
-	z_speed;
+  F64	x	format "\dDA-TRM,A=\"X Spacing:%6.3f\"\d\n",
+	y	format "\dDA-TRM,A=\"Y Spacing:%6.3f\"\d\n",
+	z	format "\dDA-TRM,A=\"Z Spacing:%6.3f\"\d\n",
+	x_offset format "\dDA-TRM,A=\"X Offset :%6.3f\"\d\n",
+	y_offset format "\dDA-TRM,A=\"Y Offset :%6.3f\"\d\n",
+	z_offset format "\dDA-TRM,A=\"Z Offset :%6.3f\"\d\n",
+	x_speed	format "\dDA-TRM,A=\"X Speed  :%6.3f\"\d\n",
+	y_speed	format "\dDA-TRM,A=\"Y Speed  :%6.3f\"\d\n",
+	z_speed	format "\dDA-TRM,A=\"Z Speed  :%6.3f\"\d\n";
 };
 
 #define CTRLT_GENERIC		0
