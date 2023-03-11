@@ -749,7 +749,9 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 }
 
 U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
-//TODO fill more
+  CRPN *rpn=cc->coc.coc_head.next;
+  if(rpn->type==IC_RET&&_type)
+    *_type=AssignRawTypeToNode(rpn->next)->raw_type;
   U8 *mc=AiwniosCompile(cc,_code_size,_dbg);
   return mc;
 }

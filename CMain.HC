@@ -2,17 +2,77 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
 {//Compile one cc stmt to bin code.
   I64 size,i,j,k,*res=INVALID_PTR;
   CCodeCtrl *tmpcbh;
-  if (_type) *_type=RT_I64;
+  CRPN *rpn;
   LBtr(&cc->flags,CCf_PASS_TRACE_PRESENT);
   if (cc->aot_depth==2)
     COCPush(cc);
   COCInit(cc);
   if (!PrsStmt(cc,,,cmp_flags)) {
     if (cc->coc.coc_head.next!=&cc->coc.coc_head) {
-      //ICAdd(cc,IC_RETURN_VAL2,0,0);
-      //ICAdd(cc,IC_RET,0,0);
-      RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE); //TODO RESTORE
-      RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
+      rpn=cc->coc.coc_head.next;
+      switch(rpn->type) {
+        case IC_TO_I64:
+        case IC_TO_F64:
+        case IC_HOLYC_TYPECAST:
+        case IC_ABS_ADDR:
+        case IC_ADDR_IMPORT:
+        case IC_STR_CONST:
+        case IC_IMM_I64:
+        case IC_IMM_F64:
+        case IC_DEREF:
+        case IC_UNARY_MINUS:
+        case IC_NOT:
+        case IC_COM:
+        case IC_SHL:
+        case IC__MM:
+        case IC__PP:
+        case IC_MM_:
+        case IC_PP_:
+        case IC_SHR:
+        case IC_SHL_CONST:
+        case IC_SHR_CONST:
+        case IC_POWER:
+        case IC_DIV:
+        case IC_MUL:
+        case IC_ADD:
+        case IC_SUB:
+        case IC_XOR:
+        case IC_OR:
+        case IC_AND:
+        case IC_MOD:
+        case IC_EQU_EQU:
+        case IC_LESS:
+        case IC_NOT_EQU:
+        case IC_GREATER_EQU:
+        case IC_GREATER:
+        case IC_LESS_EQU:
+        case IC_AND_AND:
+        case IC_OR_OR:
+        case IC_XOR_XOR:
+        case IC_ASSIGN:
+        case IC_ASSIGN_MM:
+        case IC_ASSIGN_PP:
+        case IC_SHL_EQU:
+        case IC_SHR_EQU:
+        case IC_MUL_EQU:
+        case IC_DIV_EQU:
+        case IC_MOD_EQU:
+        case IC_AND_EQU:
+        case IC_OR_EQU:
+        case IC_ADD_EQU:
+        case IC_XOR_EQU:
+        case IC_SUB_EQU:
+        case IC_CALL:
+        case IC_CALL_INDIRECT:
+        case IC_CALL_INDIRECT2:
+        case IC_CALL_IMPORT:
+        case IC_CALL_EXTERN:
+        case IC_COMMA:
+        RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(rpn),FALSE);
+        break;defualt:
+        RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
+        RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
+      }
       if(cc->flags&CCF_AOT_COMPILE)
         //ARM likes 4byte align for instrcutions
         while(cc->aotc->rip%4)
