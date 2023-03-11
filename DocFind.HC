@@ -361,9 +361,7 @@ sf_done:
     DocUnlock(doc);
 }
 
-#define RSAC_REPLACE	0
-#define RSAC_SKIP	1
-#define RSAC_ALL	2
+
 
 I64 PopUpReplaceSkipAllCancel(U8 *header=NULL,U8 *footer=NULL)
 {
@@ -570,10 +568,7 @@ Bool sel=TRUE,Bool match_case=TRUE,Bool whole_labels=FALSE)
   return res;
 }
 
-class CEdLineGoTo
-{
-  I64 line format "$$DA,A=\"Go to Line:%d\"$$";
-};
+
 
 U0 EdGoToLine(CDoc *doc)
 {//Prompt with form and go to line num.

@@ -51,19 +51,7 @@ public I64 PopUpColorLighting(U8 *header=NULL)
   return i;
 }
 
-class CTransformForm
-{
-  F64 x_scale	format "$$DA-TRM,A=\"X Scale :%12.6f\"$$\n";
-  F64 y_scale	format "$$DA-TRM,A=\"Y Scale :%12.6f\"$$\n";
-  F64 z_scale	format "$$DA-TRM,A=\"Z Scale :%12.6f\"$$\n";
-  F64 é_z	format "\nAngles are in degrees\n"
-		       "$$DA-TRM,A=\"Z-Axis  :%12.6f\"$$\n";
-  F64 é_y	format "$$DA-TRM,A=\"Y-Axis  :%12.6f\"$$\n";
-  F64 é_x	format "$$DA-TRM,A=\"X-Axis  :%12.6f\"$$\n";
-  F64 x_offset	format "\n$$DA-TRM,A=\"X Offset:%12.6f\"$$\n";
-  F64 y_offset	format "$$DA-TRM,A=\"Y Offset:%12.6f\"$$\n";
-  F64 z_offset	format "$$DA-TRM,A=\"Z Offset:%12.6f\"$$\n";
-};
+
 
 #help_index "Graphics/Input;Graphics/Math/3D Transformation"
 public Bool PopUpTransform(I64 *r)
@@ -72,9 +60,9 @@ public Bool PopUpTransform(I64 *r)
   tf->x_scale=1.0;
   tf->y_scale=1.0;
   tf->z_scale=1.0;
-  tf->é_x=0.0;
-  tf->é_y=0.0;
-  tf->é_z=0.0;
+  tf->a_x=0.0;
+  tf->a_y=0.0;
+  tf->a_z=0.0;
   tf->x_offset=0.0;
   tf->y_offset=0.0;
   tf->z_offset=0.0;
@@ -85,9 +73,9 @@ public Bool PopUpTransform(I64 *r)
     r[10]=tf->z_scale*GR_SCALE;
     r[15]=GR_SCALE;
 
-    Mat4x4RotZ(r,tf->é_z*pi/180.0);
-    Mat4x4RotY(r,tf->é_y*pi/180.0);
-    Mat4x4RotX(r,tf->é_x*pi/180.0);
+    Mat4x4RotZ(r,tf->a_z*pi/180.0);
+    Mat4x4RotY(r,tf->a_y*pi/180.0);
+    Mat4x4RotX(r,tf->a_x*pi/180.0);
 
     r[3] =tf->x_offset*GR_SCALE;
     r[7] =tf->y_offset*GR_SCALE;

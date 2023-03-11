@@ -8,5 +8,4 @@ I64i Main() {
   return 123+Poogle;
 }
 */
-#define NO_BOOT 1
 #include "FULL_PACKAGE.HC";;

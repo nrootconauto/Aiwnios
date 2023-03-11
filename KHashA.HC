@@ -53,7 +53,7 @@ CHash **HashBucketFind(U8 *str,CHashTable *table)
   I64 idx=HashStr(str)&table->mask;
   return &table->body[idx];
 }
-CHash **HashAdd(CHash *h,CHashTable *table)
+U0 HashAdd(CHash *h,CHashTable *table)
 {
   //TODO lock
   I64 idx=HashStr(h->str)&table->mask;

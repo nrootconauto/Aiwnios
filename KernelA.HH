@@ -3953,6 +3953,7 @@ extern F64 Sqrt(F64);
 extern U8 *FileRead(U8 *,I64 *,I64 *attr=NULL);
 extern U0 FileWrite(U8 *filename,U8 *fbuf,I64 size,CDate cdt=0,I64 attr=0);
 
+extern I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0);
 #define mp_cnt 1 //TODO RESTORE
 
 //Forward declarations
@@ -4125,3 +4126,552 @@ extern U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...);
 
 extern U0 throw(U64,Bool no_log=FALSE);
 extern U0 GetOutOfDollar();
+public extern CDoc *DocPut(CTask *task=NULL);
+public extern CDoc *DocDisplay(CTask *task=NULL);
+public extern CDoc *DocBorder(CTask *task=NULL);
+public extern CDoc *DocDblBufStart(CTask *task=NULL);
+public extern Bool DocDblBufEnd(CTask *task=NULL);
+public extern Bool DocDblBufSwap(CTask *task=NULL);
+public extern Bool View();
+extern U8 *EdOverStrikeCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+extern U8 *EdAutoSaveCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+extern U8 *EdFilterCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+extern U8 *EdDollarCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+extern U8 *EdMoreCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+extern U8 *EdDollarTypeCB(CDoc *,CDocEntry *doc_e,CTask *mem_task);
+public extern Bool DocEd(CDoc *doc,I64 dof_flags=0);
+public extern Bool Ed(U8 *link_st,I64 edf_dof_flags=0);
+public extern Bool Plain(U8 *filename,I64 edf_dof_flags=0);
+public extern I64 PopUpEd(U8 *filename,CTask *parent=NULL,CTask **_pu_task=NULL);
+public extern U0 DocLoad(CDoc *doc,U8 *src2,I64 size);
+public extern CDoc *DocRead(U8 *name=NULL,I64 flags=0);
+public extern U8 *DocSave(CDoc *doc,I64 *_size=NULL);
+public extern Bool DocWrite(CDoc *doc,Bool prompt=FALSE);
+public extern U0 DocInsDoc(CDoc *doc=NULL,CDoc *doc2);
+public extern U0 StreamDoc(CDoc *doc);
+extern Bool DocCaptureUndo(CDoc *doc,Bool force=FALSE);
+extern U0 DocUndoRestore(CDoc *doc);
+public extern Bool DocType(CDoc *doc=NULL,U8 *filename,I64 trailing_new_lines=1);
+public extern Bool Type(U8 *filename,I64 trailing_new_lines=1);
+public extern U8 *DocLineRead(U8 *filename,I64 line,CTask *mem_task=NULL)
+public extern U8 *DocLineWrite(U8 *filename,I64 line,U8 *st);
+public extern Bool DocGoToLine(CDoc *doc,I64 line_num);
+public extern Bool DocFind(CDoc *haystack_doc,I64 start_line_num=I64_MIN,
+U8 *needle,I64 match=1);
+public extern Bool DocAnchorFind(CDoc *haystack_doc,U8 *needle_str);
+public extern U0 EdFindNext(CDoc *doc);
+public extern U0 EdSelAll(CDoc *doc,Bool sel);
+public extern Bool EdFindPaired(CDoc *doc,U8 plus,U8 minus,
+Bool fwd,Bool abort_on_dbl_colon=FALSE);
+public extern Bool EdGoToFun(CDoc *doc,Bool fwd,Bool abort_on_dbl_colon);
+public extern U0 EdSelFun(CDoc *doc,Bool abort_on_dbl_colon=FALSE);
+#define RSAC_REPLACE	0
+#define RSAC_SKIP	1
+#define RSAC_ALL	2
+extern I64 PopUpReplaceSkipAllCancel(U8 *header=NULL,U8 *footer=NULL);
+extern I64 EdFindReplace(CDoc *doc);
+public extern I64 EdReplace(CDoc *doc,U8 *find,U8 *replace,
+  Bool sel=TRUE,Bool match_case=TRUE,Bool whole_labels=FALSE);
+class CEdLineGoTo
+{
+  I64 line format "$$DA,A=\"Go to Line:%d\"$$";
+};
+extern U0 EdGoToLine(CDoc *doc);
+public extern Bool DocForm(U8 *_d,U8 *class_name=lastclass,
+    I64 dof_flags=0,U8 *header=NULL,U8 *footer=NULL);
+public extern I64 DocMenu(CDoc *m,I64 dof_flags=0);
+public extern I64 PopUpMenu(CDoc *doc,I64 dof_flags=0);
+public extern Bool PopUpForm(U8 *_d,U8 *class_name=lastclass,
+	I64 dof_flags=DOF_SIZE_MIN,U8 *header=NULL,U8 *footer=NULL);
+extern U0 EdUndoFilter(CDoc *doc);
+public extern I64 DocGetKey(I64 *_sc=NULL);
+public extern U8 *DocScanLine(CDoc *doc,CDocEntry *doc_e,
+	I64 *cur_col=NULL,CDocEntry **_do_e_end=NULL);
+extern U8 *DocGetStr2(I64 flags=0);
+public extern I64 GetI64(U8 *msg=NULL,I64 dft=0,I64 lo=I64_MIN,I64 hi=I64_MAX);
+public extern F64 GetF64(U8 *msg=NULL,F64 dft=0,F64 lo=F64_MIN,F64 hi=F64_MAX);
+public extern CDate GetDate(U8 *msg=NULL,CDate dft=I64_MIN,
+	CDate lo=I64_MIN,CDate hi=I64_MAX);
+public extern I64 PopUpColor(U8 *header=NULL,
+	Bool allow_transparent=TRUE,Bool allow_dft=TRUE);
+public extern I64 PopUpColorLighting(U8 *header=NULL);
+class CTransformForm
+{
+  F64 x_scale	format "$$DA-TRM,A=\"X Scale :%12.6f\"$$\n";
+  F64 y_scale	format "$$DA-TRM,A=\"Y Scale :%12.6f\"$$\n";
+  F64 z_scale	format "$$DA-TRM,A=\"Z Scale :%12.6f\"$$\n";
+  F64 a_z	format "\nAngles are in degrees\n"
+		       "$$DA-TRM,A=\"Z-Axis  :%12.6f\"$$\n";
+  F64 a_y	format "$$DA-TRM,A=\"Y-Axis  :%12.6f\"$$\n";
+  F64 a_x	format "$$DA-TRM,A=\"X-Axis  :%12.6f\"$$\n";
+  F64 x_offset	format "\n$$DA-TRM,A=\"X Offset:%12.6f\"$$\n";
+  F64 y_offset	format "$$DA-TRM,A=\"Y Offset:%12.6f\"$$\n";
+  F64 z_offset	format "$$DA-TRM,A=\"Z Offset:%12.6f\"$$\n";
+};
+class CRenum
+{
+  CRenum *next,*last;
+  U8 label[sizeof(CEdFindText.find_text)];
+};
+public extern Bool PopUpTransform(I64 *r);
+extern I64 DitherColor2(U8 *header=NULL);
+public extern I64 PopUpColorDither(U8 *header=NULL);
+extern U32 *DocHighlight(CDocEntry *doc_e,U8 *src,I64 len,I64 _tmp_u32_attr);
+extern U0 DocInit();
+#define LK_FILE 	0
+#define LK_FILE_ANCHOR	1
+#define LK_FILE_FIND	2
+#define LK_FILE_LINE	3
+#define LK_MAN_PAGE	4
+#define LK_PLAIN	5
+#define LK_PLAIN_FIND	6
+#define LK_PLAIN_LINE	7
+#define LK_BIBLE_FIND	8
+#define LK_DEF		9
+#define LK_HELP_INDEX	10
+#define LK_ADDR		11
+#define LK_DOC		12 //See $LK,"SpriteEdText",A="MN:SpriteEdText"$()
+#define LK_DOC_ANCHOR	13
+#define LK_DOC_FIND	14
+#define LK_DOC_LINE	15
+#define LK_PLACE_ANCHOR	16
+public extern U8 *DocEntryLink(CDoc *doc,CDocEntry *doc_e);
+extern Bool DocFileEd(I64 _type,U8 *filename,
+	U8 *needle_str,I64 *_num,I64 edf_dof_flags);
+#define DFT_ADDR_LINK_BIN_SIZE	64
+
+public extern I64 EdLinkCvt(U8 *link_st,U8 **_filename=NULL,U8 **_needle_str=NULL,
+	I64 *_num=NULL,I64 edf_dof_flags=0);
+public extern Bool DocLinkChk(CDoc *doc,U8 *link_st);
+U0 SysMacroStripKey(CJob *macro_head,I64 arg1,I64 arg2);
+#define MT_NULL	0
+#define MT_MSG	1
+#define MT_CHAR	2
+
+class CMacroTmp
+{
+  CMacroTmp *next,*last;
+  I64 type;
+  U8 buf[STR_LEN];
+};
+
+extern CMacroTmp *Cmd2MT(CJob *tmpc);
+extern U8 *SysMacro2Str(CJob *macro_head);
+extern U0 PlaySysMacro(I64 n=1);
+extern U0 EdInsCapturedMacro();
+#define SM_RECORD	0
+#define SM_INS		1
+#define SM_PLAY		2
+#define SM_REPEAT_N	3
+#define SM_STOP		4
+extern I64 PopUpMacroMenu();
+extern U0 MacroTask(I64);
+extern U0 EdMacroUtil();
+public extern Bool DocLock(CDoc *doc);
+public extern Bool DocUnlock(CDoc *doc);
+extern Bool IsEditableText(CDocEntry *doc_e);
+extern CDocEntry *DocEntryNewBase(CDoc *doc,I64 type,I64 de_flags=0,
+	I64 x=0,I64 y=0,I64 page_line_num=0);
+extern CDocEntry *DocEntryNewTag(CDoc *doc,CDocEntry *doc_ce,U8 *tag);
+public extern U0 DocEntryDel(CDoc *doc,CDocEntry *doc_e);
+public extern I64 DocEntrySize(CDoc *,CDocEntry *doc_e);
+extern U0 DocUndoDel(CDoc *,CDocUndo *u);
+extern U0 DocUndoCntSet(CDoc *doc);
+public extern CDocEntry *DocEntryCopy(CDoc *doc,CDocEntry *doc_e);
+extern U0 DocRemSoftNewLines(CDoc *doc=NULL,CDocEntry *doc_e=NULL);
+public extern U0 DocInsEntry(CDoc *doc,CDocEntry *doc_e);
+public extern U0 DocRst(CDoc *doc,Bool is_old);
+public extern U0 DocDel(CDoc *doc);
+public extern I64 DocSize(CDoc *doc);
+public extern CDoc *DocNew(U8 *filename=NULL,CTask *task=NULL);
+extern I64 PrsDocFlagSingle(CCmpCtrl *cc,I64 *_de_flags,U32 *_type,Bool turn_on);
+extern I64 PrsDocFlags(CCmpCtrl *cc,I64 *_de_flags,U32 *_type);
+extern U8 *Doc2PlainText(CDoc *doc,CDocEntry *doc_e);
+extern CDocEntry *PrsDollarCmd(CDoc *doc,U8 *st);
+extern U0 DocEntryToggle(CDoc *doc);
+extern U0 DocFlagsToggle(CDoc *doc,I64 tog_flags);
+public extern CTask *PopUpViewDoc(CDoc *doc,I64 dof_flags=0);
+public extern CTask *PopUpViewPrint(U8 *fmt,...);
+public extern U8 *PopUpPickFile(U8 *dir=NULL);
+public extern U8 *PopUpPickDir(U8 *dir=NULL);
+public extern U8 *FileNameForm(U8 *dft=NULL,I64 dof_flags=0,CTask *mem_task=NULL);
+public extern U8 *PopUpFileName(U8 *dft=NULL,I64 dof_flags=0);
+extern Bool PopUpCd();
+public extern I64 PopUpPickLst(U8 *lst);
+public extern U8 *PopUpPickDefineSub(U8 *dname);
+public extern I64 PopUp1(U8 *b1,I64 n1,U8 *header=NULL,U8 *footer=NULL);
+public extern I64 PopUp2(U8 *b1,I64 n1,U8 *b2,I64 n2,U8 *header=NULL,U8 *footer=NULL);
+public extern Bool PopUpOk(U8 *header=NULL,U8 *footer=NULL);
+public extern Bool PopUpNoYes(U8 *header=NULL,U8 *footer=NULL);
+public extern Bool PopUpCancelOk(U8 *header=NULL,U8 *footer=NULL);
+extern U8 *PopUpGetStr2(U8 *header,CTask *mem_task);
+public extern U8 *PopUpGetStr(U8 *header=NULL);
+public extern I64 PopUpGetI64(U8 *msg,I64 dft,I64 lo=I64_MIN,I64 hi=I64_MAX);
+public extern F64 PopUpGetF64(U8 *msg,F64 dft,F64 lo=F64_MIN,F64 hi=F64_MAX);
+public extern I64 PopUpRangeI64(I64 lo,I64 hi,I64 step=1,
+	U8 *header=NULL,U8 *footer=NULL);
+public extern F64 PopUpRangeF64(F64 lo,F64 hi,F64 step,
+    U8 *fmt="%9.4f",U8 *header=NULL,U8 *footer=NULL);
+public extern F64 PopUpRangeF64Exp(F64 lo,F64 hi,F64 factor,
+    U8 *fmt="%9.4f",U8 *header=NULL,U8 *footer=NULL);
+public extern F64 PopUpRangeF64Log(F64 lo,F64 hi,I64 steps,
+    U8 *fmt="%9.4f",U8 *header=NULL,U8 *footer=NULL);
+public extern I64 AdamFile(U8 *filename,Bool warn_ext=TRUE);
+public extern I64 PopUpFile(U8 *filename,Bool warn_ext=TRUE,
+	CTask *parent=NULL,CTask **_pu_task=NULL);
+public extern I64 PopUpRunFile(U8 *filename,I64 ccf_flags=0,...);
+public extern U0 DocPutKey(CDoc *doc,I64 ch=0,I64 sc=0);
+extern Bool KDDocPutKey(I64 ch,I64 scan_code);
+extern CDocEntry *DocPutS(CDoc *doc,U8 *st);
+public extern CDocEntry *DocPrint(CDoc *doc=NULL,U8 *fmt,...);
+public extern U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...);
+extern Bool KDDocPutS(U8 *st);
+public extern U0 DocPrintAtomic(CDoc *doc=NULL,U8 *fmt,...);
+extern U0 DocDump(CDoc *doc,I64 uS_delay=0);
+public extern CDocEntry *DocPutLine(CDoc *doc=NULL,CDocEntry *doc_e);
+public extern U0 DocDm(U8 *buf,I64 cnt=0x80);
+public extern U0 DocD(U8 *buf,I64 cnt=0x80);
+extern I64 DocWordWrapDel(CDoc *doc,CDocEntry *doc_e,
+	Bool full_refresh,Bool same_win,I64 left_margin,I64 right_margin,
+	CDocEntry **_best_doc_e,I64 *_best_col);
+extern U0 DocRecalcXY(CDoc *doc,CDocEntry *doc_e,
+	I64 k,I64 left,I64 width,I64 height,I64 left_margin,I64 right_margin,
+	I64 x0,I64 y0,I64 *_x,I64 *_y);
+extern CDocEntry *DocSplitTag(CDoc *doc,CDocEntry *doc_e,I64 i,I64 x,I64 y,I64 type_u8);
+extern CDocEntry *DocWordWrapAdd(CDoc *doc,CDocEntry *doc_e,
+	I64 *_k,I64 left,I64 right_margin,I64 x,I64 y);
+extern I64 DocTmpAttr(CDoc *doc,CDocEntry *doc_e,I64 cur_u8_attr);
+public extern Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL);
+extern I64 DocCharDist(CDoc *doc,I64 x,I64 y);
+extern U0 DocDelToNum(CDoc *doc,I64 num);
+extern U0 DocDelToEntry(CDoc *doc,CDocEntry *clear_entry,Bool clear_holds);
+extern U0 DocBorderLstDraw(CDoc *doc);
+public extern U0 DocTop(CDoc *doc=NULL);
+public extern U0 DocCenter(CDoc *doc=NULL,I64 recalc_flags=RECALCt_NORMAL);
+public extern U0 DocBottom(CDoc *doc=NULL);
+public extern U0 DocClear(CDoc *doc=NULL,Bool clear_holds=FALSE);
+public extern Bool DocCursor(Bool show=OFF,CDoc *doc=NULL);
+public extern Bool DocHighlightCursor(Bool show=OFF,CDoc *doc=NULL);
+public extern Bool DocScroll(Bool val=OFF,CDoc *doc=NULL);
+public extern U0 DocCollapse(Bool collapse=TRUE,CDoc *doc=NULL);
+public extern I64 DocMax(I64 i=I64_MAX);
+extern U0 DocUpdateTaskDocs(CTask *task);
+public extern I64 DocEntryRun(CDoc *doc,CDocEntry *doc_e,
+	Bool exited,I64 *_has_action=NULL);
+public extern CDoc *DocBorderNew(CDoc *pdoc);
+public extern U0 DocTermNew();
+#define RIGHT_INCLUDE	0
+#define RIGHT_AINCLUDE	1
+#define RIGHT_COPY	2
+#define RIGHT_MOVE	3
+#define RIGHT_DELETE	4
+#define RIGHT_TYPE	5
+#define RIGHT_ED	6
+#define RIGHT_MOUNT	7
+#define RIGHT_PLAIN	8
+#define RIGHT_INFILE	9
+
+extern I64 PopUpTermRight(U8 *header);
+extern I64 EdLeftClickLink(CDoc *doc,CDocEntry *doc_e);
+extern I64 TermRightClickLink(CDoc *doc,CDocEntry *doc_e);
+extern I64 PopUpLinkType(Bool include_anchor);
+
+
+class CEdFileLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512]	format "$$DA-P,A=\"File          :%s\"$$\n";
+  I64	book;
+  U8	aux[512];
+  I64	num;
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdFileAnchorLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512]	format "$$DA-P,A=\"File          :%s\"$$\n";
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Anchor Label  :%s\"$$\n";
+  I64	num;
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdFileFindLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512]	format "$$DA-P,A=\"File          :%s\"$$\n";
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Str        :%s\"$$\n";
+  I64	num		format "$$DA-TRM,A=\"Occurrence Num:%04d\"$$\n";
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdFileLineLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512]	format "$$DA-P,A=\"File          :%s\"$$\n";
+  I64	book;
+  U8	aux[512];
+  I64	num		format "$$DA-TRM,A=\"Line Num      :%04d\"$$\n";
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdManPageLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512];
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Label         :%s\"$$\n";
+  I64	num;
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdAddrLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512];
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Addr Exp   :%s\"$$\n";
+  I64	num		format "$$DA-TRM,A=\"Bin Size      :%04d\"$$\n";
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdPlaceAnchor
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512];
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Anchor Label  :%s\"$$\n";
+  I64	num;
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up,
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide		format "$$CB,\"Hide\"$$\n";
+};
+
+class CEdBibleLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512];
+  I64	book		format "$$LS,D=\"ST_BIBLE_BOOKS\"$$\n";
+  U8	aux[512]	format "$$DA-P,A=\"Chapter Verse :%s\"$$\n";
+  I64	num;
+
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdDefLink
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512];
+  I64	book;
+  U8	aux[512]	format "$$DA-P,A=\"Word          :%s\"$$\n";
+  I64	num		format "$$DA-TRM,A=\"Def Num       :%4d\"$$\n";
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdProject
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n",
+	file[512]	format "$$DA-P,A=\"File          :%s\"$$\n";
+  I64	book;
+  U8	aux[512];
+  I64	num;
+  U8	html_link[512]	format "$$DA-P,A=\"Html Link     :%s\"$$\n";
+  Bool	pop_up		format "$$CB,\"PopUp\"$$\n",
+	quote		format "$$CB,\"Quote\"$$\n",
+	hide;
+};
+
+class CEdPageSetting1
+{
+  U8	val[512]	format "$$DA-P,A=\"Setting Val:%s\"$$\n";
+  Bool	winrel;
+};
+
+class CEdPageSetting2
+{
+  U8	val[512]	format "$$DA-P,A=\"Setting Val:%s\"$$\n";
+  Bool	winrel		format "$$CB,\"Win Relative\"$$\n";
+};
+
+extern Bool GetLink(I64 type,U8 **_tag,U8 **_link,Bool *_pop_up,
+	Bool *_quote,U8 **_html_link);
+extern U0 EdInsLink();
+extern U0 EdInsPageSetting();
+extern I64 PopUpWidgetType();
+
+class CEdMacroMenu
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text                  :%s\"$$\n",
+	left_macro[512]	format "$$DA-P,A=\"Left Click Macro          :%s\"$$\n",
+	left_exp[512]	format "$$DA-P,A=\"Left Click Expression     :%s\"$$\n";
+  Bool	popup		format "$$CB,\"PopUp\"$$\n",
+	left_is_in_str	format "$$CB,\"Left is InStr\"$$\n",
+	left_x		format "$$CB,\"Left X \"$$\n",
+	center_x	format "$$CB,\"Center X \"$$\n",
+	right_x		format "$$CB,\"Right X \"$$\n",
+	margin_rel	format "$$CB,\"Margin Rel X\"$$\n",
+	blink		format "$$CB,\"Blink\"$$\n",
+	invert		format "$$CB,\"Invert\"$$\n",
+	underline	format "$$CB,\"Underline\"$$\n",
+	escape		format "$$CB,\"Escape\"$$\n";
+  U8	scroll_x[512]	format "$$DA-P,A=\"Scroll X Length Expression:%s\"$$\n",
+	shift_x[512]	format "$$DA-P,A=\"X Offset Expression       :%s\"$$\n",
+	shift_y[512]	format "$$DA-P,A=\"Y Offset Expression       :%s\"$$\n";
+};
+
+extern U0 EdInsMacroMenu(Bool is_macro);
+
+class CEdBttn
+{
+  U8	tag[512]   format "$$DA-P,A=\"Tag Text      :%s\"$$\n";
+  Bool	popup	   format "$$CB,\"PopUp\"$$\n",
+	left_x	   format "$$CB,\"Left X \"$$\n",
+	center_x   format "$$CB,\"Center X \"$$\n",
+	right_x	   format "$$CB,\"Right X \"$$\n",
+	margin_rel format "$$CB,\"Margin Rel X\"$$\n",
+	escape	   format "$$CB,\"Escape\"$$\n";
+  U8	left_macro[512]	format "$$DA-P,A=\"Left Click Macro:%s\"$$\n";
+  Bool	left_is_in_str	format "$$CB,\"Left is InStr\"$$\n";
+  U8	left_exp[512]	format "$$DA-P,A=\"Left Click Expression:%s\"$$\n";
+  Bool	quote		format "$$CB,\"Quote\"$$\n";
+};
+
+extern U0 EdInsBttn();
+
+class CEdCursorMovement
+{
+  U8	left_exp[512]	 format "$$DA-P,A=\"X Expression (LE):%s\"$$\n",
+	right_exp[512]	 format "$$DA-P,A=\"Y Expression (RE):%s\"$$\n";
+  Bool	left_x	 format "$$CB,\"Left   X \"$$\n",
+	center_x format "$$CB,\"Center X \"$$\n",
+	right_x  format "$$CB,\"Right  X \"$$\n",
+	margin_rel format "$$CB,\"Margin Rel X\"$$\n",
+	top_y	 format "$$CB,\"Top    Y \"$$\n",
+	center_y format "$$CB,\"Center Y \"$$\n",
+	bottom_y format "$$CB,\"Bottom Y \"$$\n",
+	page_rel format "$$CB,\"Page Rel Y\"$$\n",
+	quote	 format "$$CB,\"Quote\"$$\n";
+};
+
+extern U0 EdInsCursorMovement();
+
+class CEdDataNum
+{
+  U8	fmt_str[512]	format "$$DA-P,A=\"Format Str:%s\"$$\n";
+  I64	len;
+  Bool	term		format "$$CB,\"Form Field Terminator\"$$\n",
+	remalloc,
+	refresh		format "$$CB,\"Refresh Data\"$$\n",
+	update		format "$$CB,\"Update Data\"$$\n";
+};
+
+class CEdDataStr
+{
+  U8	fmt_str[512]	format "$$DA-P,A=\"Format Str:%s\"$$\n";
+  I64	len		format "$$DA,A=\"Length:%d\"$$\n";
+  Bool	term		format "$$CB,\"Zero Terminator\"$$\n",
+	remalloc	format "$$CB,\"Remalloc for Unlimited Length\"$$\n",
+	refresh		format "$$CB,\"Refresh Data\"$$\n",
+	update		format "$$CB,\"Update Data\"$$\n";
+};
+
+extern U0 EdInsData();
+
+class CEdCheckBox
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n";
+  Bool	refresh		format "$$CB,\"Refresh Data\"$$\n";
+  I64	type		format "$$LS,D=\"ST_INT_SIZE_TYPES\"$$\n";
+};
+
+extern U0 EdInsCheckBox();
+class CEdLst
+{
+  U8	tag[512]	format "$$DA-P,A=\"Dft Sel    :%s\"$$\n",
+	define_str[512]	format "$$DA-P,A=\"Define Str    :%s\"$$\n";
+  Bool	refresh		format "$$CB,\"Refresh Data\"$$\n";
+  I64	type		format "$$LS,D=\"ST_INT_SIZE_TYPES\"$$\n";
+};
+extern U0 EdInsLst();
+class CEdHexEd
+{
+  I64	cnt	format "$$DA,A=\"Count:%d\"$$\n",
+	cols	format "$$DA,A=\"Columns:%d\"$$\n";
+  Bool	zero	format "$$CB,\"Zero Based\"$$\n",
+	refresh	format "$$CB,\"Refresh Data\"$$\n";
+};
+extern U0 EdInsHexEd();
+class CEdBin
+{
+  U8	tag[512]		format "$$DA-P,A=\"Tag Text      :%s\"$$\n";
+  I64	bin_num			format "$$DA,A=\"Bin Num:%d\"$$\n";
+  U8	bin_ptr_link_file[512]	format "$$DA-P,A=\"File:%s\"$$\n";
+  I64	bin_ptr_link_bin_num	format "$$DA,A=\"File Bin Num:%d\"$$\n";
+  U8	bin_ptr_link_tag[512]	format "$$DA-P,A=\"File Bin Tag:%s\"$$\n";
+};
+
+extern U0 EdInsBin(I64 bin_num,I64 type);
+class CEdTree
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text      :%s\"$$\n";
+  I64	indent		format "$$DA,A=\"Indention:%d\"$$\n";
+  Bool	collapsed	format "$$CB,\"Collapsed\"$$\n";
+};
+extern U0 EdInsTree();
+extern U0 EdInsWidgetWiz();
+#define EST_SPRITE		0
+#define EST_SPRITE_PTR		1
+#define EST_DUP_SPRITE		2
+#define EST_SPRITE_SIZE		3
+#define EST_SPRITE_MACRO	4
+#define EST_SPRITE_MENU		5
+#define EST_SPRITE_LINK		6
+
+extern I64 PopUpSpriteType();
+class CEdMacroSprite
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text       :%s\"$$\n",
+	exp[512]	format "$$DA-P,A=\"Macro          :%s\"$$\n";
+  Bool	escape		format "$$CB,\"Escape\"$$\n",
+	popup		format "$$CB,\"PopUp\"$$\n",
+	is_in_str		format "$$CB,\"InStr\"$$\n";
+};
+
+class CEdMenuSprite
+{
+  U8	tag[512]	format "$$DA-P,A=\"Tag Text       :%s\"$$\n",
+	exp[512]	format "$$DA-P,A=\"Expression     :%s\"$$\n";
+  Bool	escape		format "$$CB,\"Escape\"$$\n",
+	popup,
+	is_in_str;
+};
+
+extern U8 *EdSpriteLink(Bool *_pop_up,U8 **_html_link);
+extern U8 *EdSprite(I64 bin_num);

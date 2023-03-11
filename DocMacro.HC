@@ -22,16 +22,6 @@ U0 SysMacroStripKey(CJob *macro_head,I64 arg1,I64 arg2)
   }
 }
 
-#define MT_NULL	0
-#define MT_MSG	1
-#define MT_CHAR	2
-
-class CMacroTmp
-{
-  CMacroTmp *next,*last;
-  I64 type;
-  U8 buf[STR_LEN];
-};
 
 CMacroTmp *Cmd2MT(CJob *tmpc)
 {
@@ -128,12 +118,6 @@ U0 EdInsCapturedMacro()
     Free(st);
   }
 }
-
-#define SM_RECORD	0
-#define SM_INS		1
-#define SM_PLAY		2
-#define SM_REPEAT_N	3
-#define SM_STOP		4
 
 I64 PopUpMacroMenu()
 {

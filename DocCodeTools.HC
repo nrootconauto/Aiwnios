@@ -326,11 +326,6 @@ ls_done:
     DocUnlock(doc);
 }
 
-class CRenum
-{
-  CRenum *next,*last;
-  U8 label[sizeof(CEdFindText.find_text)];
-};
 
 I64 EdRAGetU8(CDoc *doc)
 {

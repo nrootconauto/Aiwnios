@@ -817,7 +817,7 @@ U0 PrsNoWarn(CCmpCtrl *cc)
   }
 }
 
-I64 PrsPutStr(CCmpCtrl *cc)
+U0 PrsPutStr(CCmpCtrl *cc)
 {
   I64 argc_cnt;
   CRPN *argc;

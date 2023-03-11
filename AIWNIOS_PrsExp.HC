@@ -681,7 +681,7 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
   return next;
 }
 
-Bool PrsMembers(CCmpCtrl *cc) {
+U0 PrsMembers(CCmpCtrl *cc) {
   CRPN *head=cc->coc.coc_head.next,*added,*new;
   CHashClass *cls=head->ic_class;
   CArrayDim *ic_dim=head->ic_dim;

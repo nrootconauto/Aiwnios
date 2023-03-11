@@ -71,7 +71,7 @@ U0 LexWarn(CCmpCtrl *cc,U8 *str=NULL)
       "%s\n",cc->htc.fun->src_link;
     else {
       "$$LK,\"%s\"$$\n",cc->htc.fun->src_link;
-      AdamErr("%s\n",cc->htc.fun->src_link);
+      //AdamErr("%s\n",cc->htc.fun->src_link); TODO RESTORE
     }
   } else
     LexPutPos(cc);

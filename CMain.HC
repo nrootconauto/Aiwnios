@@ -384,6 +384,7 @@ I64 ExeFile(U8 *name,I64 ccf_flags=0)
 I64 RunFile(U8 *name,I64 ccf_flags=0,...)
 {//$LK,"ExeFile",A="MN:ExeFile"$() with args using $LK,"LastFun",A="MN:LastFun"$().
   ExeFile(name,ccf_flags);
+  return 0;
   //return LastFun(argc,argv); TODO RESTORE
 }
 
@@ -426,6 +427,7 @@ I64 ExeFile2(U8 *name,I64 ccf_flags=0)
 I64 RunFile2(U8 *name,I64 ccf_flags=0,...)
 {//$LK,"ExeFile2",A="MN:ExeFile2"$() with args using $LK,"LastFun",A="MN:LastFun"$(). throws exceptions.
   ExeFile2(name,ccf_flags);
+  return 0;
   // TODO RESTORE
   //return LastFun(argc,argv);
 }
