@@ -176,6 +176,7 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
   } else {
     if (map_name)
       __AiwniosWriteDbgInfo(cc->htc.glbl_hash_table,map_name);
+    FillInShortCalls(cc);
     HashTableDel(cc->htc.local_hash_table);
     HashTableDel(cc->htc.glbl_hash_table);
 
@@ -508,4 +509,24 @@ I64 StreamExePrint(U8 *fmt,...)
   }
   Free(buf);
   return res;
+}
+
+//Added by nroot
+U0 FillInShortCalls(CCmpCtrl *cc) {
+  CAOTImportExport *tmpaotie,*tmpaotie1;
+  CHashFun *fun;
+  I64 i;
+  for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
+    tmpaotie1=tmpaotie->next;
+    if(tmpaotie->short_jmp) {
+      fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,HTT_FUN);
+      if(fun&&(fun->type&HTF_RESOLVE)) {
+        i=((fun->exe_addr-tmpaotie->rip)>>2)&(1<<26-1);
+        AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+        QueRem(tmpaotie);
+        Free(tmpaotie->str);
+        Free(tmpaotie);
+      }
+    }
+  }
 }

@@ -590,7 +590,6 @@ idx:
 	res->reg = rpn->res.reg;
 	return code_off;
 }
-
 //See __IC_CALL
 static int64_t __ICFCall(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	int64_t code_off)
@@ -676,7 +675,11 @@ aloop:
 	next:;
 	}
 	rpn2 = ICArgN(rpn, rpn->length);
-	//8 will be mutated anyways
+  if(rpn2->type==IC_SHORT_ADDR) {
+    rpn2->code_misc->addr=code_off+bin;
+    AIWNIOS_ADD_CODE(ARM_bl(0));
+    goto after_call;
+  }
 	if (rpn2->type == IC_GLOBAL) {
 		if (rpn2->global_var->base.type & HTT_FUN) {
 			fptr = ((CHashFun*)rpn2->global_var)->fun_ptr;
@@ -700,6 +703,7 @@ aloop:
 		code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, 8, bin, code_off);
 		AIWNIOS_ADD_CODE(ARM_blr(rpn2->res.reg));
 	}
+after_call:
 	if (stki || vargs_sz)
 		AIWNIOS_ADD_CODE(ARM_addImmX(ARM_REG_SP, ARM_REG_SP, stki * 8 + vargs_sz));
   if(rpn->raw_type!=RT_U0) {
@@ -2062,7 +2066,12 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
   }
 	switch (rpn->type) {
     break;
+  case IC_SHORT_ADDR:
+    //This is used for function calls only!!!
+    abort();
+    break;
   case IC_RELOC:
+reloc:
     if(rpn->res.mode==MD_REG)
       into_reg=rpn->res.reg;
     else
@@ -3158,10 +3167,12 @@ gti_enter:
 		PopTmp(cctrl, next);
 		if (cctrl->cur_fun)
 			tmp.raw_type = cctrl->cur_fun->return_class->raw_type;
-		else {
+		else if(rpn->ic_class) {
 			//No return type so just return what we have
+			tmp.raw_type = rpn->ic_class->raw_type;
+		} else
+      //No return type so just return what we have
 			tmp.raw_type = next->raw_type;
-		}
 		tmp.reg = 0; // 0 is return register
 		tmp.mode = MD_REG;
 		code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);
@@ -3337,7 +3348,11 @@ char* OptPassFinal(CCmpCtrl* cctrl,int64_t *res_sz,char **dbg_info)
 				break;
 			case CMT_LABEL:
 				break;
-			case CMT_RELOC_U64:
+      case CMT_SHORT_ADDR:
+      if(run==3&&misc->patch_addr) {
+          *misc->patch_addr=misc->addr;
+      } 
+			break;case CMT_RELOC_U64:
 				if (code_off % 8)
 					code_off += 8 - code_off % 8;
 				misc->addr = bin + code_off;

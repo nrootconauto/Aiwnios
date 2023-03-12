@@ -382,8 +382,6 @@ public CDoc *DocNew(U8 *filename=NULL,CTask *task=NULL)
   doc->win_task=task;
   doc->mem_task=task;
   DocRst(doc,FALSE);
-  PrintI("&doc->x",&doc->x);
-  PrintF("pi2",pi);
   doc->doc_signature=DOC_SIGNATURE_VAL;
   return doc;
 }

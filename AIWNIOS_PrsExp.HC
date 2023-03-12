@@ -1,6 +1,6 @@
 #define PRS_STK_SZ 128
 class CRPN:CQue {
-  I64 type,ic_line;
+  I64 type,ic_line,ic_flags;
   CHashClass *ic_class;
   CHashFun *ic_fun;
   CArrayDim *ic_dim;  
@@ -1359,12 +1359,12 @@ U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL)
   COCPush(cc);
   COCInit(cc);
   if (PrsExpression(cc,NULL,PEF_NO_COMMA)) {
-    RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
+    RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(cc->coc.coc_head.next),FALSE);
     old_fun=cc->htc.fun; //Changed by nroot
     cc->htc.fun=NULL;
     res=AiwniosCompile(cc);
     cc->htc.fun=old_fun;
-    if(_type) *_type=RT_I64; 
+    if(_type) *_type=AssignRawTypeToNode(cc->coc.coc_head.next)->raw_type; 
   } else
     res=NULL;
   COCPop(cc);
@@ -1420,3 +1420,28 @@ I64 LexExpression(CCmpCtrl *cc)
   return res;
 }
 
+CRPN *RPNNext(CRPN *rpn) {
+  I64 i,to;
+  switch(intermediate_code_table[rpn->type].arg_cnt) {
+    break;case IS_0_ARG:
+      return rpn->next;
+    break;case IS_1_ARG:
+      return RPNNext(rpn->next);
+    break;case IS_2_ARG:
+      return RPNNext(RPNNext(rpn->next));
+    break;case IS_V_ARG:
+    to=rpn->length;
+    rpn=rpn->next;
+    for(i=0;i!=to;i++)
+      rpn=RPNNext(rpn);
+    return rpn;
+  }
+}
+CRPN *RPNArgN(CRPN *rpn,I64 arg) {
+  I64 i;
+  rpn=rpn->next;
+  for(i=0;i!=arg;i++) {
+    rpn=RPNNext(rpn);
+  }
+  return rpn;
+}

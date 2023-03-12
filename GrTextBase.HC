@@ -3,7 +3,6 @@
 
 Bool TextChar(CTask *task,Bool allow_border=FALSE,I64 x,I64 y,I64 d) {
   I64 sx=task->scroll_x>>3+x,sy=task->scroll_y>>3+y;
-  "sx,sy,%d,%d\n",sx,sy;
   if(allow_border)
     goto __10;
   if(sx<0)

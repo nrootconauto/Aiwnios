@@ -228,7 +228,7 @@ U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
 	&tmpm->static_data,Bt(&cc->flags,CCf_AOT_COMPILE),pass);
   if (cc->flags&CCF_AOT_COMPILE && pass==2) {
     if (cc->coc.coc_head.next!=&cc->coc.coc_head) {
-      RPNAddNew(cc,IC_RET,,,FALSE);
+      RPNAddNew(cc,IC_RET,,AssignRawTypeToNode(cc->coc.coc_head.next),FALSE);
       //ARM likes 4byte align for instrcutions
       while(cc->aotc->rip%4)
         AOTStoreCodeU8(cc,0);

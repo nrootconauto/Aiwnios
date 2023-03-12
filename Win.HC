@@ -326,8 +326,10 @@ public I64 WinToTop(CTask *task=NULL,Bool update_z_buf=TRUE)
       task1=task1->next_sibling_task;
     }
     if (task->popup_task &&
-	  task->popup_task->parent_task==task)
+	  task->popup_task->parent_task==task) {
+    PrintI("woof",task);
       res+=WinToTop(task->popup_task,FALSE);
+    }
   }
   if(bl) BreakUnlock;
   res+=WinOnTopWindows;

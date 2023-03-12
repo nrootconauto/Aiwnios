@@ -39,3 +39,5 @@ extern I64 PrsUnaryTerm(
 	I64 *max_prec,I64 *unary_pre_prec,I64 *paren_prec);
 extern U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
 	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass);
+extern U0 FillInShortCalls(CCmpCtrl *cc);
+extern CHashClass *AssignRawTypeToNode(CRPN *r);

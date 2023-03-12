@@ -1576,7 +1576,7 @@ class CWinMgrTimingGlbls
 #define ICF_RES_NOT_USED		0x000000200
 #define ICF_CODE_FINAL			0x000000400
 #define ICF_BY_VAL			0x000000800 //By value, not ref.
-#define ICF_SHORT_JMP			0x000001000
+#define ICF_SHORT_JMP			0x000001000 //Also used by nroot for short addresses(for global variables and such)
 #define ICF_PUSH_RES			0x000002000
 #define ICF_PASS_TRACE			0x000004000
 #define ICF_RES_WAS_STK			0x000008000
@@ -1682,6 +1682,7 @@ class CPrsStk
 #define CMF_U8_JMP_TABLE	0x08
 #define CMF_I16_JMP_TABLE	0x10
 #define CMF_U16_JMP_TABLE	0x20
+#define CMF_SHORT_ADDR	0x40
 
 #define CM_CONSTS_NUM		16
 
@@ -1948,7 +1949,8 @@ class CAOTImportExport
   CAOT	*aot;
   U8	*str,
 	*src_link,
-	type,pad[7];
+	type,pad[6],
+  short_jmp; //short_jmp added by nroot,see IC_SHORT_JMP in the C part of aiwnios
 };
 
 #define AAT_ADD_U8		0
@@ -4299,7 +4301,7 @@ public extern U8 *PopUpFileName(U8 *dft=NULL,I64 dof_flags=0);
 extern Bool PopUpCd();
 public extern I64 PopUpPickLst(U8 *lst);
 public extern U8 *PopUpPickDefineSub(U8 *dname);
-public extern I64 PopUp1(U8 *b1,I64 n1,U8 *header=NULL,U8 *footer=NULL);
+public extern I64 PopUp1(U8 *b1,I64 n1,U8 *header=NULL,U8 *footer=NULL);
 public extern I64 PopUp2(U8 *b1,I64 n1,U8 *b2,I64 n2,U8 *header=NULL,U8 *footer=NULL);
 public extern Bool PopUpOk(U8 *header=NULL,U8 *footer=NULL);
 public extern Bool PopUpNoYes(U8 *header=NULL,U8 *footer=NULL);
@@ -4675,3 +4677,5 @@ class CEdMenuSprite
 
 extern U8 *EdSpriteLink(Bool *_pop_up,U8 **_html_link);
 extern U8 *EdSprite(I64 bin_num);
+public extern U0 WinZBufUpdate();
+extern U0 InputFilterTask();

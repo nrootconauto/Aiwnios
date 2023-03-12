@@ -144,6 +144,8 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
 {
   CMemberLst *tmpm;
   CCodeMisc *saved_leave_label;
+  CAOTImportExport *tmpaotie,*tmpaotie1;
+  CHashFun *fun;
   I64 i,j,size,*r;
   Bool old_trace;
 
@@ -184,7 +186,8 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
 	AOTStoreCodeU64(cc,r[i]);
       Free(r);
     }
-    //Dont fill in relocations
+    //Dont fill in relocations,but fill in short calls
+    FillInShortCalls(cc); //Added by nroot
   } else {
     old_trace=LBtr(&cc->opts,OPTf_TRACE);
     cc->htc.fun->exe_addr=COCCompile(
@@ -1204,12 +1207,12 @@ sm_import:
           if(cc->htc.fun->return_class->raw_type==RT_F64) {
             //No need to do anything
           } else {
-            RPNAddNew(cc,IC_TO_F64,,cc->htc.fun->return_class,FALSE);
+            RPNAddNew(cc,IC_TO_I64,,cc->htc.fun->return_class,FALSE);
           }
         } else {
           //Here is not F64
           if(cc->htc.fun->return_class->raw_type==RT_F64) {
-            RPNAddNew(cc,IC_TO_I64,,cc->htc.fun->return_class,FALSE);
+            RPNAddNew(cc,IC_TO_F64,,cc->htc.fun->return_class,FALSE);
           } else {
             //No need to do anything
           }

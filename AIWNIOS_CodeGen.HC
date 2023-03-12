@@ -82,6 +82,8 @@ import U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrs,CHeapCt
 import U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 l,CHeapCtrl *ctrl);
 import U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 sz,CHeapCtrl *ctrl);
 import U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
+import U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**,CHeapCtrl*);
+import U0 __HC_CmpCtrlSetRip(U8*,I64);
 #else
 extern U8 * __HC_ICAdd_ToF64(U8 *,CHeapCtrl*);
 extern U8 * __HC_ICAdd_ToI64(U8 *,CHeapCtrl*);
@@ -161,6 +163,8 @@ extern U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrs,CHeapCt
 extern U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 l,CHeapCtrl *ctrl);
 extern U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 sz,CHeapCtrl *ctrl);
 extern U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
+extern U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**,CHeapCtrl*);
+extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 #endif
 //
 // See arm_backend.c
@@ -171,10 +175,33 @@ extern U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 
 //
+// Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
+//
+U0 AiwniosMakeShortJmps(CCmpCtrl *cc) {
+  CRPN *head=&cc->coc.coc_head,*cur,*next;
+  CCodeMisc *misc;
+  for(cur=head->next;cur!=head;cur=cur->next) {
+    if(cur->type==IC_CALL_INDIRECT) {
+      if((next=RPNArgN(cur,cur->length-1))->type==IC_ADDR_IMPORT) {
+        misc=next->ic_data;
+        if((misc->h->type&HTT_FUN)&&!(misc->h->type&HTF_IMPORT)) {
+          next->misc=COCMiscNew(cc,CMT_HASH_ENTRY);
+          next->misc->str=StrNew(misc->h->str);
+          next->misc->flags|=CMF_SHORT_ADDR;
+          next->misc->h=misc->h;
+          next->ic_data=next->misc;
+          next->ic_flags|=ICF_SHORT_JMP;
+        }
+      }
+    }
+  }
+}
+//
 // Turns my CRPN from the parser into the IC for the C side
 //
-
 U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
+  if(cc->flags&CCF_AOT_COMPILE)
+    AiwniosMakeShortJmps(cc);
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
   CMemberLst *mlst;
@@ -264,26 +291,12 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
       if(mlst->reg==REG_NONE) {
-      if(!StrCmp(cc->htc.fun->str,"DocPrintPartial")) {
-        "%s,foff:%x,mo:%x\n",mlst->str,foff,mlst->offset;
-      }
         foff_lookup[idx].i32[1]=foff;
         foff_lookup[idx].i32[0]=mlst->offset;
         mlst->offset=foff;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
         if(foff&7)
           foff+=8-(foff&7); //Align to 8
-      }
-    }
-    
-    if(!StrCmp(cc->htc.fun->str,"DocPrintPartial")) {
-      for(idx=0;idx!=member_cnt;idx++) {
-        mlst=mv[idx].m;
-        if(mlst->reg==REG_NONE) {
-          "%s(FOFF:%x)\n",mlst->str,mlst->offset;
-        } else {
-          "%s(REG:%d)\n",mlst->str,mlst->reg;
-        }
       }
     }
     
@@ -509,6 +522,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //_/_| _|_|       |_|_ |_ \_
     //
     h=cur->ic_data(CCodeMisc*)->h;
+    if(cur->ic_flags&ICF_SHORT_JMP) {
+      new=__HC_ICAdd_ShortAddr(acc,cc2,h->str,&cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+      break;
+    }
     if(h->type&HTT_GLBL_VAR) {
       if((h(CHashGlblVar*)->flags&GVF_EXTERN)||cc->flags&CCF_AOT_COMPILE) {
         new=__HC_ICAdd_Reloc(
@@ -677,7 +694,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       Fs->data_heap);
     /*TODO 
     IC_CALL
-    
     IC_CALL_INDIRECT2
     IC_CALL_IMPORT
     IC_CALL_EXTERN
@@ -719,6 +735,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           tmpaie->type=IET_IMM_I64;
           tmpaie->str=StrNew(misc->h->str);
           tmpaie->rip=cc->aotc->rip+misc->addr(U8*)-machine_code;
+          //All non-imported functions are short calls
+          if(misc->flags&CMF_SHORT_ADDR) {
+            tmpaie->short_jmp=TRUE;
+          }
           QueIns(tmpaie,cc->aot->last_ie);
         }
       } else {

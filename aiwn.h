@@ -367,6 +367,7 @@ typedef struct CCodeMisc {
 #define CMT_INT_CONST 5 // ARM has constraints on literals
 #define CMT_RELOC_U64 6
 #define CMT_STATIC_DATA 7 //integer is the offset(in the statics data) str/str_len is the data
+#define CMT_SHORT_ADDR 8
 #define CMF_DEFINED 1 // Used with Labels to tell if already defined
 	int32_t type, flags;
 	// These are used for jump tables
@@ -498,6 +499,7 @@ enum {
   __IC_STATICS_SIZE, //Used from the HolyC part to allocate a chunk of static stuff
   __IC_STATIC_REF, //Offset from static area,see __IC_STATICS_SIZE 
   __IC_SET_STATIC_DATA, //CMT_STATIC_DATA will have the silly sauce
+  IC_SHORT_ADDR, //Like a IC_RELOC,but the jump is an AARCH64 short jump
 };
 typedef struct CICArg {
 	// Feel free to define more in backend
@@ -899,6 +901,7 @@ CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs,CHeapCtrl *data);
 CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len,CHeapCtrl *data);
 char* Load(char* filename);
+CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *,CCodeCtrl* cc,char *name,char **ptr,CHeapCtrl*);
 //TODO remove
 char *FileRead(char *fn,int64_t *sz);
 void FileWrite(char *fn,char *data,int64_t sz);

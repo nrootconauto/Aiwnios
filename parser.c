@@ -203,6 +203,7 @@ CRPN* ICFwd(CRPN* rpn)
   case __IC_STATIC_REF:
     return rpn->base.next;
     break;
+  case IC_SHORT_ADDR:
   case IC_RELOC:
     return rpn->base.next;
 		break;
@@ -551,7 +552,10 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
     DumpRPNType(rpn);
     printf("\n");
     goto ret;
-  case IC_RELOC:
+  case IC_SHORT_ADDR:
+    printf("SHORT_ADDR:%s\n", rpn->code_misc->str);
+    return ICFwd(rpn);
+	case IC_RELOC:
     printf("RELOC:%s\n", rpn->code_misc->str);
     return ICFwd(rpn);
 	case __IC_VARGS:
@@ -2745,6 +2749,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 		return rpn->raw_type;
 	switch (rpn->type) {
     break;
+  case IC_SHORT_ADDR:
   case IC_RELOC:
     rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
     rpn->ic_class++;
@@ -3996,6 +4001,18 @@ static CHashClass* rt2cls(int64_t rt, int64_t ptr_cnt)
 	}
 	return ic_class + ptr_cnt;
 }
+CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc,CCodeCtrl* cc,char *name,char **ptr,CHeapCtrl *hc) {
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	rpn->type = IC_SHORT_ADDR;
+	rpn->code_misc=CodeMiscNew(acc,CMT_SHORT_ADDR);
+  rpn->code_misc->str=A_STRDUP(name,NULL);
+  rpn->code_misc->patch_addr=ptr;
+  rpn->ic_class=HashFind("U8i",Fs->hash_table,HTT_CLASS,1);
+  rpn->ic_class++;
+  rpn->raw_type=RT_PTR;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
+}
 CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc) {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
 	rpn->type = IC_DEREF;
@@ -4020,7 +4037,7 @@ CRPN* __HC_ICAdd_FReg(CCodeCtrl* cc, int64_t r, CHeapCtrl* hc)
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
 	rpn->type = IC_FREG;
 	rpn->integer = r;
-	rpn->ic_class = rt2cls(RT_F64, 0);
+	rpn->ic_class = HashFind("F64",Fs->hash_table,HTT_CLASS,1);
 	rpn->raw_type = RT_F64;
 	QueIns(rpn, cc->ir_code);
 	return rpn;

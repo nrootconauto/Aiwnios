@@ -92,7 +92,7 @@ CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
   if (Bt(&flags,JOBf_HIGHEST_PRIORITY) || task==srv) {
     if (task!=srv)
       TaskWait(srv);
-    //task=Spawn(&InputFilterTask,NULL,"Input Filter",,srv); TODO RESTORE
+    task=Spawn(&InputFilterTask,NULL,"Input Filter",,srv);
     bl=BreakLock;
     task->next_input_filter_task=srv->next_input_filter_task;
     task->last_input_filter_task=srv;
@@ -311,9 +311,10 @@ I64 JobRunOne(I64 run_flags,CJobCtrl *ctrl)
       //SetRFlags(run_flags); TODO RESTORE
       LBtr(&(Fs->task_flags),TASKf_IDLE);
       try
-	      tmpc->res=0;//ExePrint("%s",tmpc->aux_str); TODO RESTORE
+	      tmpc->res=ExePrint("%s",tmpc->aux_str);
       catch
 	Fs->catch_except=TRUE;
+      PrintI("wm",Bt(&flags,JOBf_WAKE_MASTER));
       //SetRFlags(old_flags); TODO RESTORE
       break;
     default:
@@ -333,8 +334,9 @@ I64 JobRunOne(I64 run_flags,CJobCtrl *ctrl)
       if (Bt(&flags,JOBf_FOCUS_MASTER) &&
 	    !Bt(&master->win_inhibit,WIf_SELF_FOCUS))
 	sys_focus_task=master;
-      if (Bt(&flags,JOBf_WAKE_MASTER))
+      if (Bt(&flags,JOBf_WAKE_MASTER)) {
 	Suspend(master,FALSE);
+  }
     }
     if (Bt(&flags,JOBf_FREE_ON_COMPLETE))
       JobDel(tmpc);
@@ -382,7 +384,7 @@ I64 PopUp(U8 *buf,CTask *parent=NULL,CTask **_pu_task=NULL)
 {//Execute code in $LK,"PopUp",A="MN:PopUp"$ task.
   I64 res;
   CJob *tmpc;
-  CTask *task=NULL;//Spawn(&SrvCmdLine,NULL,"Servant",,parent); TODO RESTORE
+  CTask *task=Spawn(&SrvCmdLine,NULL,"Servant",,parent);
   if (!parent) {
     TaskExe(task,parent,buf,1<<JOBf_EXIT_ON_COMPLETE|1<<JOBf_FREE_ON_COMPLETE);
     if (_pu_task) *_pu_task=task;
@@ -391,9 +393,11 @@ I64 PopUp(U8 *buf,CTask *parent=NULL,CTask **_pu_task=NULL)
     Fs->popup_task=task;
     tmpc=TaskExe(task,parent,buf,1<<JOBf_WAKE_MASTER|1<<JOBf_FOCUS_MASTER);
     if (_pu_task) *_pu_task=task;
+    PrintI("poodle2",0);
     JobResScan(tmpc,&res);
     Fs->popup_task=NULL;
     Kill(task);
+    PrintI("poodle",1);
     if (_pu_task) *_pu_task=NULL;
     return res;
   }
@@ -470,7 +474,7 @@ U0 InStr(U8 *fmt,...)
 {//Send InFile code to self.
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
   if (Bt(&(Fs->task_flags),TASKf_INPUT_FILTER_TASK))
-    ;//ExePrint("%s",buf); TODO RESTORE
+    ExePrint("%s",buf);
   else
     TaskText(Fs,NULL,buf,1<<JOBf_HIGHEST_PRIORITY);
   Free(buf);

@@ -83,7 +83,6 @@ U0 Yield() {
   }  
   if(SYS_CTRL_ALT_FLAGS
     &(1<<CTRL_ALT_DEL|1<<CTRL_ALT_TAB|1<<CTRL_ALT_X|1<<CTRL_ALT_C)) {
-    "CTRL_PASS,%d\n",SYS_CTRL_ALT_FLAGS;  
     if(Gs->num)
       TaskContextRestore(task);
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_TAB)) {
@@ -118,16 +117,17 @@ U0 Yield() {
     }
   }
 not_seth:
-  if(Bt(&task->task_flags,TASKf_KILL_TASK)) {
-    task=TaskEnd();
-    goto restore;
-  }
 next:
   task=task->next_task;
   if(task==Gs->seth_task)
     goto restore;
   if(task->wake_jiffy>__GetTicks) {
     goto next;
+  }
+  if(Bt(&task->task_flags,TASKf_KILL_TASK)) {
+    SetFs(task);
+    task=TaskEnd();
+    goto restore;
   }
   if(!(task->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED))) {
     goto restore;

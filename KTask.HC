@@ -64,6 +64,7 @@ Bool Kill(CTask *task,Bool wait=TRUE,Bool just_break=FALSE)
 	  if (task==cpu_structs[i].seth_task)
 	    return FALSE;
 	LBts(&task->task_flags,TASKf_KILL_TASK);
+  PrintI("ktask",task);
 	if (wait) {
 	  do Yield;
 	  while (TaskValidate(task) && Bt(&task->task_flags,TASKf_KILL_TASK));
@@ -316,7 +317,14 @@ U0 UserTaskCont()
 U0 SrvCmdLine(I64 dummy=0)
 {
   Fs->win_inhibit=WIG_USER_TASK_DFT;
+  //TODO remove
+  DocTermNew;
+  //Type("::/Doc/Start.DD");
+  LBts(&(Fs->display_flags),DISPLAYf_SHOW);
+  WinToTop;
+  WinZBufUpdate;
   //CallExtStr("SrvStartUp"); TODO RESTORE
+  PrintI("poodles",0);
   SrvTaskCont;
 }
 
@@ -351,10 +359,12 @@ U0 TaskDel(CTask *task)
 I64 TaskEnd()
 {//Called with irq's off.
   CTask *task=Fs,*tmpt,*tmpt1;
+  PrintI("p1",0);
   if (task==sys_task_being_scrn_updated) {
     LBts(&task->task_flags,TASKf_KILL_TASK);
     return task->next_task;
   }
+  PrintI("p1",1);
   if (task->task_end_cb) {
     task->wake_jiffy=0;
     LBtr(&task->task_flags,TASKf_KILL_TASK);
@@ -364,6 +374,7 @@ I64 TaskEnd()
     task->task_end_cb=NULL;
     return task;
   }
+  PrintI("p1",2);
   if (task->parent_task && task->parent_task->popup_task==task) {
     task->parent_task->popup_task=NULL;
     Kill(task->parent_task,FALSE);
@@ -398,7 +409,6 @@ I64 TaskEnd()
 
   //QueRem
   task->task_signature(I64)=0;
-  PrintF("SIG_INV",5.030);
 
   tmpt =task->next_input_filter_task;
   tmpt1=task->last_input_filter_task;
@@ -419,6 +429,7 @@ I64 TaskEnd()
   task->wake_jiffy=__GetTicks+DYING_JIFFIES;
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     ; //TODO ATOMIC LOCK
+  PrintI("p1",3);
   QueIns(task,Gs->last_dying);
   LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
 
@@ -433,7 +444,9 @@ U0 TaskKillDying()
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
       ; //TODO atomic lock
     task=Gs->next_dying;
+    PrintI("QR:",Gs->kill_jiffy);
     while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicks) {
+      PrintI("TKD:",__GetTicks);
       task1=task->next;
       QueRem(task);
       TaskDel(task);
@@ -442,4 +455,5 @@ U0 TaskKillDying()
     LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
     Gs->kill_jiffy=__GetTicks+DYING_JIFFIES;
   }
+  
 }

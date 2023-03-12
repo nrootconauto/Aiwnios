@@ -483,6 +483,7 @@ void BootAiwnios()
     PrsBindCSymbol("__HC_ICAdd_SetStaticsSize",__HC_ICAdd_SetStaticsSize);
     PrsBindCSymbol("__HC_ICAdd_ToI64",__HC_ICAdd_ToI64);
     PrsBindCSymbol("__HC_ICAdd_ToF64",__HC_ICAdd_ToF64);
+    PrsBindCSymbol("__HC_ICAdd_ShortAddr",__HC_ICAdd_ShortAddr);
     PrsBindCSymbol("Caller",Caller);
     PrsBindCSymbol("VFsSetPwd",VFsSetPwd);
     PrsBindCSymbol("VFsExists",VFsFileExists);
