@@ -4,62 +4,63 @@
 //  your backend again when you port to another arch
 //
 #ifdef IMPORT_AIWNIOS_SYMS
-import U8 *__HC_ICAdd_ToF64(U8 *,CHeapCtrl*);
-import U8 *__HC_ICAdd_ToI64(U8 *,CHeapCtrl*);
+import U8 *__HC_CmpCtrlDel(U8 *);
+import U8 *__HC_ICAdd_ToF64(U8 *);
+import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
-import U8 *__HC_ICAdd_Typecast(U8 *,I64,I64,CHeapCtrl*);
-import U8 *__HC_ICAdd_SubCall(U8 *,U8 *,CHeapCtrl*);
-import U8 *__HC_ICAdd_SubProlog(U8 *,CHeapCtrl*);
-import U8 *__HC_ICAdd_SubRet(U8 *,CHeapCtrl*);
-import U8 *__HC_ICAdd_BoundedSwitch(U8*,U8*,U8*,CHeapCtrl*);
-import U8 *__HC_ICAdd_UnboundedSwitch(U8 *,U8 *,CHeapCtrl *);
-import U8 *__HC_ICAdd_PreInc(U8 *,I64,CHeapCtrl *);
-import U8 *__HC_ICAdd_Call(U8*,I64,I64 rt,I64 ptrs,CHeapCtrl *);
-import U8 *__HC_ICAdd_F64(U8*,F64,CHeapCtrl *);
-import U8 *__HC_ICAdd_I64(U8*,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_PreDec(U8*,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_PostDec(U8*,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_PostInc(U8*,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_Pow(U8 *,CHeapCtrl*);
-import U8 * __HC_ICAdd_Eq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Div(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Sub(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Mul(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Add(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs,CHeapCtrl *);
-import U8 * __HC_ICAdd_Comma(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Addr(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Xor(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Mod(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Or(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Lt(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Gt(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Le(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Ge(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_LNot(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_BNot(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_AndAnd(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_And(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_OrOr(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_XorXor(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Ne(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_EqEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Lsh(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_Rsh(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_AddEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_SubEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_MulEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_DivEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_LshEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_RshEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_AndEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_OrEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_XorEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_ModEq(U8*,CHeapCtrl *);
-import U8 * __HC_ICAdd_FReg(U8*,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_Vargs(U8 *,I64,CHeapCtrl *);
-import U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs,CHeapCtrl *);
-import U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs,CHeapCtrl *);
+import U8 *__HC_ICAdd_Typecast(U8 *,I64,I64);
+import U8 *__HC_ICAdd_SubCall(U8 *,U8 *);
+import U8 *__HC_ICAdd_SubProlog(U8 *);
+import U8 *__HC_ICAdd_SubRet(U8 *);
+import U8 *__HC_ICAdd_BoundedSwitch(U8*,U8*,U8*);
+import U8 *__HC_ICAdd_UnboundedSwitch(U8 *,U8 *);
+import U8 *__HC_ICAdd_PreInc(U8 *,I64);
+import U8 *__HC_ICAdd_Call(U8*,I64,I64 rt,I64 ptrs);
+import U8 *__HC_ICAdd_F64(U8*,F64);
+import U8 *__HC_ICAdd_I64(U8*,I64);
+import U8 * __HC_ICAdd_PreDec(U8*,I64);
+import U8 * __HC_ICAdd_PostDec(U8*,I64);
+import U8 * __HC_ICAdd_PostInc(U8*,I64);
+import U8 * __HC_ICAdd_Pow(U8 *);
+import U8 * __HC_ICAdd_Eq(U8*);
+import U8 * __HC_ICAdd_Div(U8*);
+import U8 * __HC_ICAdd_Sub(U8*);
+import U8 * __HC_ICAdd_Mul(U8*);
+import U8 * __HC_ICAdd_Add(U8*);
+import U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs);
+import U8 * __HC_ICAdd_Comma(U8*);
+import U8 * __HC_ICAdd_Addr(U8*);
+import U8 * __HC_ICAdd_Xor(U8*);
+import U8 * __HC_ICAdd_Mod(U8*);
+import U8 * __HC_ICAdd_Or(U8*);
+import U8 * __HC_ICAdd_Lt(U8*);
+import U8 * __HC_ICAdd_Gt(U8*);
+import U8 * __HC_ICAdd_Le(U8*);
+import U8 * __HC_ICAdd_Ge(U8*);
+import U8 * __HC_ICAdd_LNot(U8*);
+import U8 * __HC_ICAdd_BNot(U8*);
+import U8 * __HC_ICAdd_AndAnd(U8*);
+import U8 * __HC_ICAdd_And(U8*);
+import U8 * __HC_ICAdd_OrOr(U8*);
+import U8 * __HC_ICAdd_XorXor(U8*);
+import U8 * __HC_ICAdd_Ne(U8*);
+import U8 * __HC_ICAdd_EqEq(U8*);
+import U8 * __HC_ICAdd_Lsh(U8*);
+import U8 * __HC_ICAdd_Rsh(U8*);
+import U8 * __HC_ICAdd_AddEq(U8*);
+import U8 * __HC_ICAdd_SubEq(U8*);
+import U8 * __HC_ICAdd_MulEq(U8*);
+import U8 * __HC_ICAdd_DivEq(U8*);
+import U8 * __HC_ICAdd_LshEq(U8*);
+import U8 * __HC_ICAdd_RshEq(U8*);
+import U8 * __HC_ICAdd_AndEq(U8*);
+import U8 * __HC_ICAdd_OrEq(U8*);
+import U8 * __HC_ICAdd_XorEq(U8*);
+import U8 * __HC_ICAdd_ModEq(U8*);
+import U8 * __HC_ICAdd_FReg(U8*,I64);
+import U8 * __HC_ICAdd_Vargs(U8 *,I64);
+import U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
+import U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 import U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 import U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
 import U8 *__HC_CodeMiscLabelNew(U8*);
@@ -70,77 +71,77 @@ import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
 import U8 *__HC_CodeMiscLabelNew(U8 *);
 import U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 import U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
-import U8 *__HC_ICAdd_Label(U8*,U8*,CHeapCtrl*);
-import U8 *__HC_ICAdd_Goto(U8*,U8*,CHeapCtrl*);
-import U8 *__HC_ICAdd_GotoIf(U8*,U8*,CHeapCtrl*)
-import U8 *__HC_ICAdd_Str(U8*,U8*,CHeapCtrl*); //Takes a AIWNIOS code misc
-import U8 *__HC_ICAdd_Neg(U8*,CHeapCtrl*);
-import U8 *__HC_ICAdd_Ret(U8*,CHeapCtrl*);
-import U8 *__HC_ICAdd_Arg(U8*,I64,CHeapCtrl *);
-import U8 *__HC_ICAdd_SetFrameSize(U8*,I64,CHeapCtrl *);
-import U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
-import U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 l,CHeapCtrl *ctrl);
-import U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 sz,CHeapCtrl *ctrl);
-import U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
-import U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**,CHeapCtrl*);
+import U8 *__HC_ICAdd_Label(U8*,U8*);
+import U8 *__HC_ICAdd_Goto(U8*,U8*);
+import U8 *__HC_ICAdd_GotoIf(U8*,U8*)
+import U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
+import U8 *__HC_ICAdd_Neg(U8*);
+import U8 *__HC_ICAdd_Ret(U8*);
+import U8 *__HC_ICAdd_Arg(U8*,I64);
+import U8 *__HC_ICAdd_SetFrameSize(U8*,I64);
+import U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrsctrl);
+import U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 lctrl);
+import U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 szctrl);
+import U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrsctrl);
+import U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**);
 import U0 __HC_CmpCtrlSetRip(U8*,I64);
 #else
-extern U8 * __HC_ICAdd_ToF64(U8 *,CHeapCtrl*);
-extern U8 * __HC_ICAdd_ToI64(U8 *,CHeapCtrl*);
+extern U8 * __HC_ICAdd_ToF64(U8 *);
+extern U8 * __HC_ICAdd_ToI64(U8 *);
 extern U0 __HC_ICSetLine(U8*,I64);
-extern U8 * __HC_ICAdd_Typecast(U8 *,I64,I64,CHeapCtrl*);
-extern U8 * __HC_ICAdd_SubCall(U8 *,U8 *,CHeapCtrl*);
-extern U8 * __HC_ICAdd_SubProlog(U8 *,CHeapCtrl*);
-extern U8 * __HC_ICAdd_SubRet(U8 *,CHeapCtrl*);
-extern U8 * __HC_ICAdd_BoundedSwitch(U8*,U8*,U8*,CHeapCtrl*);
-extern U8 * __HC_ICAdd_UnboundedSwitch(U8 *,U8 *,CHeapCtrl *);
-extern U8 * __HC_ICAdd_PreInc(U8 *,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Call(U8*,I64,I64 rt,I64 ptrs,CHeapCtrl *);
-extern U8 * __HC_ICAdd_F64(U8*,F64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_I64(U8*,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_PreDec(U8*,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_PostDec(U8*,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_PostInc(U8*,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Pow(U8 *,CHeapCtrl*);
-extern U8 * __HC_ICAdd_Eq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Div(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Sub(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Mul(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Add(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Comma(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Addr(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Xor(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Mod(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Or(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Lt(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Gt(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Le(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Ge(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_LNot(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_BNot(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_AndAnd(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_And(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_OrOr(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_XorXor(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Ne(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_EqEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Lsh(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Rsh(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_AddEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_SubEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_MulEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_DivEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_LshEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_RshEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_AndEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_OrEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_XorEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_ModEq(U8*,CHeapCtrl *);
-extern U8 * __HC_ICAdd_FReg(U8*,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Vargs(U8 *,I64,CHeapCtrl *);
-extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs,CHeapCtrl *);
-extern U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs,CHeapCtrl *);
+extern U8 * __HC_ICAdd_Typecast(U8 *,I64,I64);
+extern U8 * __HC_ICAdd_SubCall(U8 *,U8 *);
+extern U8 * __HC_ICAdd_SubProlog(U8 *);
+extern U8 * __HC_ICAdd_SubRet(U8 *);
+extern U8 * __HC_ICAdd_BoundedSwitch(U8*,U8*,U8*);
+extern U8 * __HC_ICAdd_UnboundedSwitch(U8 *,U8 *);
+extern U8 * __HC_ICAdd_PreInc(U8 *,I64);
+extern U8 * __HC_ICAdd_Call(U8*,I64,I64 rt,I64 ptrs);
+extern U8 * __HC_ICAdd_F64(U8*,F64);
+extern U8 * __HC_ICAdd_I64(U8*,I64);
+extern U8 * __HC_ICAdd_PreDec(U8*,I64);
+extern U8 * __HC_ICAdd_PostDec(U8*,I64);
+extern U8 * __HC_ICAdd_PostInc(U8*,I64);
+extern U8 * __HC_ICAdd_Pow(U8 *);
+extern U8 * __HC_ICAdd_Eq(U8*);
+extern U8 * __HC_ICAdd_Div(U8*);
+extern U8 * __HC_ICAdd_Sub(U8*);
+extern U8 * __HC_ICAdd_Mul(U8*);
+extern U8 * __HC_ICAdd_Add(U8*);
+extern U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs);
+extern U8 * __HC_ICAdd_Comma(U8*);
+extern U8 * __HC_ICAdd_Addr(U8*);
+extern U8 * __HC_ICAdd_Xor(U8*);
+extern U8 * __HC_ICAdd_Mod(U8*);
+extern U8 * __HC_ICAdd_Or(U8*);
+extern U8 * __HC_ICAdd_Lt(U8*);
+extern U8 * __HC_ICAdd_Gt(U8*);
+extern U8 * __HC_ICAdd_Le(U8*);
+extern U8 * __HC_ICAdd_Ge(U8*);
+extern U8 * __HC_ICAdd_LNot(U8*);
+extern U8 * __HC_ICAdd_BNot(U8*);
+extern U8 * __HC_ICAdd_AndAnd(U8*);
+extern U8 * __HC_ICAdd_And(U8*);
+extern U8 * __HC_ICAdd_OrOr(U8*);
+extern U8 * __HC_ICAdd_XorXor(U8*);
+extern U8 * __HC_ICAdd_Ne(U8*);
+extern U8 * __HC_ICAdd_EqEq(U8*);
+extern U8 * __HC_ICAdd_Lsh(U8*);
+extern U8 * __HC_ICAdd_Rsh(U8*);
+extern U8 * __HC_ICAdd_AddEq(U8*);
+extern U8 * __HC_ICAdd_SubEq(U8*);
+extern U8 * __HC_ICAdd_MulEq(U8*);
+extern U8 * __HC_ICAdd_DivEq(U8*);
+extern U8 * __HC_ICAdd_LshEq(U8*);
+extern U8 * __HC_ICAdd_RshEq(U8*);
+extern U8 * __HC_ICAdd_AndEq(U8*);
+extern U8 * __HC_ICAdd_OrEq(U8*);
+extern U8 * __HC_ICAdd_XorEq(U8*);
+extern U8 * __HC_ICAdd_ModEq(U8*);
+extern U8 * __HC_ICAdd_FReg(U8*,I64);
+extern U8 * __HC_ICAdd_Vargs(U8 *,I64);
+extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
+extern U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 extern U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 extern U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
 extern U8 *__HC_CodeMiscLabelNew(U8*);
@@ -151,19 +152,19 @@ extern U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
 extern U8 *__HC_CodeMiscLabelNew(U8 *);
 extern U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 extern U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
-extern U8 *__HC_ICAdd_Label(U8*,U8*,CHeapCtrl*);
-extern U8 *__HC_ICAdd_Goto(U8*,U8*,CHeapCtrl*);
-extern U8 *__HC_ICAdd_GotoIf(U8*,U8*,CHeapCtrl*)
-extern U8 *__HC_ICAdd_Str(U8*,U8*,CHeapCtrl*); //Takes a AIWNIOS code misc
-extern U8 *__HC_ICAdd_Neg(U8*,CHeapCtrl*);
-extern U8 *__HC_ICAdd_Ret(U8*,CHeapCtrl*);
-extern U8 *__HC_ICAdd_Arg(U8*,I64,CHeapCtrl *);
-extern U8 *__HC_ICAdd_SetFrameSize(U8*,I64,CHeapCtrl *);
-extern U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
-extern U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 l,CHeapCtrl *ctrl);
-extern U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 sz,CHeapCtrl *ctrl);
-extern U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrs,CHeapCtrl *ctrl);
-extern U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**,CHeapCtrl*);
+extern U8 *__HC_ICAdd_Label(U8*,U8*);
+extern U8 *__HC_ICAdd_Goto(U8*,U8*);
+extern U8 *__HC_ICAdd_GotoIf(U8*,U8*)
+extern U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
+extern U8 *__HC_ICAdd_Neg(U8*);
+extern U8 *__HC_ICAdd_Ret(U8*);
+extern U8 *__HC_ICAdd_Arg(U8*,I64);
+extern U8 *__HC_ICAdd_SetFrameSize(U8*,I64);
+extern U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrsctrl);
+extern U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 lctrl);
+extern U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 szctrl);
+extern U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrsctrl);
+extern U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**);
 extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 #endif
 //
@@ -319,20 +320,20 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   // Step 1.5,Assign the variables from the arguments
   //
   if(cc->htc.fun) {
-    __HC_ICAdd_SetFrameSize(cc2,cc->htc.fun->size+16,Fs->data_heap);
+    __HC_ICAdd_SetFrameSize(cc2,cc->htc.fun->size+16);
     mlst=cc->htc.fun->member_lst_and_root;
     argc=cc->htc.fun->arg_cnt;
     if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT))
       argc+=2;
     for(idx=0;idx!=argc;idx++) {
       if(mlst->reg==REG_NONE)
-        __HC_ICAdd_Frame(cc2,mlst->offset,mlst->member_class->raw_type,0,Fs->data_heap);
+        __HC_ICAdd_Frame(cc2,mlst->offset,mlst->member_class->raw_type,0);
       else if(mlst->member_class->raw_type!=RT_F64) {
-        __HC_ICAdd_IReg(cc2,mlst->reg,mlst->member_class->raw_type,0,Fs->data_heap);
+        __HC_ICAdd_IReg(cc2,mlst->reg,mlst->member_class->raw_type,0);
       } else {
-        __HC_ICAdd_FReg(cc2,mlst->reg,Fs->data_heap);      
+        __HC_ICAdd_FReg(cc2,mlst->reg);      
       }
-      __HC_ICAdd_Arg(cc2,idx,Fs->data_heap);
+      __HC_ICAdd_Arg(cc2,idx);
       mlst=mlst->next;
     }
     Free(mv);
@@ -340,7 +341,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //
     // Add MANDITORY room for FP/LR pair
     //
-    __HC_ICAdd_SetFrameSize(cc2,16,Fs->data_heap);
+    __HC_ICAdd_SetFrameSize(cc2,16);
   }
   //
   //
@@ -386,7 +387,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     mlst=cc->htc.fun->member_lst_and_root;
     for(idx=0;idx!=member_cnt;idx++) {
       if(mlst->flags&MLF_STATIC) {
-        __HC_ICAdd_StaticData(acc,cc2,foff,mlst->static_data,mlst->member_class->size*mlst->dim.total_cnt,Fs->data_heap);
+        __HC_ICAdd_StaticData(acc,cc2,foff,mlst->static_data,mlst->member_class->size*mlst->dim.total_cnt);
         foff_lookup[idx*2]=mlst->static_data;
         foff_lookup[idx*2+1]=foff;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;
@@ -408,7 +409,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           }
         }
       }
-      __HC_ICAdd_SetStaticsSize(cc2,foff,Fs->data_heap);
+      __HC_ICAdd_SetStaticsSize(cc2,foff);
     }
     Free(foff_lookup);
   }
@@ -429,44 +430,44 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_FRAME:
     if(cur->last(CRPN*)->type==IC_ADDR) {
       //Our HolyC part accounts for the pointers for us
-      new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_U8,0,Fs->data_heap);
+      new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_U8,0);
     } else if(cur->ic_class->ptr_stars_cnt)
       //All pointer arithmetic is pre-computed
-      new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_PTR,0,Fs->data_heap);
+      new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_PTR,0);
     else
-      new=__HC_ICAdd_Frame(cc2,cur->ic_data,cur->ic_class->raw_type,0,Fs->data_heap);
+      new=__HC_ICAdd_Frame(cc2,cur->ic_data,cur->ic_class->raw_type,0);
     break;case IC_BR_ZERO:
-    new=__HC_ICAdd_LNot(cc2,Fs->data_heap);
+    new=__HC_ICAdd_LNot(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_NOT_ZERO:
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     //break;case IC_BR_CARRY: ???
     //break;case IC_BR_NOT_CARRY: ???
     break;case IC_BR_EQU_EQU:
-    new=__HC_ICAdd_EqEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_EqEq(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_NOT_EQU:
-    new=__HC_ICAdd_Ne(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Ne(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_LESS:
-    new=__HC_ICAdd_Lt(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Lt(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_GREATER_EQU:
-    new=__HC_ICAdd_Ge(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Ge(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_GREATER:
-    new=__HC_ICAdd_Gt(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Gt(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_LESS_EQU:
-    new=__HC_ICAdd_Le(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Le(cc2);
     __HC_ICSetLine(new,cur->ic_line);
-    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     //break;case IC_BR_EQU_EQU2: ???
     //break;case IC_BR_NOT_EQU2:  ???
     //break;case IC_BR_LESS2 ???
@@ -486,18 +487,18 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_END_EXP:
     break;case IC_NOP2:
     break;case IC_LABEL:
-      new=__HC_ICAdd_Label(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+      new=__HC_ICAdd_Label(cc2,cur->ic_data(CCodeMisc*)->addr);
     //break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
     //break;case IC_CALL_END:
     //break;case IC_CALL_END2:
     //break;case IC_RETURN_VAL:
     //break;case IC_RETURN_VAL2:
     break;case IC_IMM_I64:
-    new=__HC_ICAdd_I64(cc2,cur->imm_i64,Fs->data_heap);
+    new=__HC_ICAdd_I64(cc2,cur->imm_i64);
     break;case IC_IMM_F64:
-    new=__HC_ICAdd_F64(cc2,cur->imm_f64,Fs->data_heap);
+    new=__HC_ICAdd_F64(cc2,cur->imm_f64);
     break;case IC_STR_CONST:
-    new=__HC_ICAdd_Str(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_Str(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_ABS_ADDR:
     misc=COCMiscNew(cc,CMT_LABEL);
     misc->str=MStrPrint("0x%x",cur->imm_i64);
@@ -507,8 +508,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           &misc->addr,
           misc->str,
           RT_U8,
-          1,
-          Fs->data_heap
+          1
         );
     break;case IC_ADDR_IMPORT:
     //
@@ -523,7 +523,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //
     h=cur->ic_data(CCodeMisc*)->h;
     if(cur->ic_flags&ICF_SHORT_JMP) {
-      new=__HC_ICAdd_ShortAddr(acc,cc2,h->str,&cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+      new=__HC_ICAdd_ShortAddr(acc,cc2,h->str,&cur->ic_data(CCodeMisc*)->addr);
       break;
     }
     if(h->type&HTT_GLBL_VAR) {
@@ -534,14 +534,12 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           &cur->ic_data(CCodeMisc*)->addr,
           h->str,
           RT_U8,
-          1,
-          Fs->data_heap
+          1
         );
       } else {
         new=__HC_ICAdd_I64(
           cc2,
-          h(CHashGlblVar*)->data_addr,
-          Fs->data_heap
+          h(CHashGlblVar*)->data_addr
         );
       }
     } else if(h->type&HTT_FUN) {
@@ -552,146 +550,143 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
             &cur ->ic_data(CCodeMisc*)->addr,
             h->str,
             RT_U8,
-            1,
-            Fs->data_heap
+            1
           );
       } else {
         new=__HC_ICAdd_I64(
           cc2,
-          h(CHashFun*)->exe_addr,
-          Fs->data_heap
+          h(CHashFun*)->exe_addr
         );
       }
     }
     break;case IC_REG:
     if(cur->ic_class->raw_type==RT_F64) {
-      new=__HC_ICAdd_FReg(cc2,cur->imm_i64,Fs->data_heap);
+      new=__HC_ICAdd_FReg(cc2,cur->imm_i64);
     } else {
-      new=__HC_ICAdd_IReg(cc2,cur->imm_i64,cur->ic_class->raw_type,0,Fs->data_heap);
+      new=__HC_ICAdd_IReg(cc2,cur->imm_i64,cur->ic_class->raw_type,0);
     }
     break;case IC_TO_I64:
-    new=__HC_ICAdd_ToI64(cc2,Fs->data_heap);
+    new=__HC_ICAdd_ToI64(cc2);
     break;case IC_TO_F64:
-    new=__HC_ICAdd_ToF64(cc2,Fs->data_heap);
+    new=__HC_ICAdd_ToF64(cc2);
     break;case IC_TO_BOOL: //TODO
     break;case IC_TOUPPER:  //TODO
     break;case IC_HOLYC_TYPECAST:
-    new=__HC_ICAdd_Typecast(cc2,cur->ic_class->raw_type,0,Fs->data_heap);
+    new=__HC_ICAdd_Typecast(cc2,cur->ic_class->raw_type,0);
     break;case IC_ADDR:
-    new=__HC_ICAdd_Addr(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Addr(cc2);
     break;case IC_COMMA:
-    new=__HC_ICAdd_Comma(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Comma(cc2);
     break;case IC_COM:
-    new=__HC_ICAdd_BNot(cc2,Fs->data_heap);
+    new=__HC_ICAdd_BNot(cc2);
     break;case IC_NOT:
-    new=__HC_ICAdd_LNot(cc2,Fs->data_heap);
+    new=__HC_ICAdd_LNot(cc2);
     break;case IC_UNARY_MINUS:
-    new=__HC_ICAdd_Neg(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Neg(cc2);
     break;case IC_DEREF:
     if(cur->ic_class->raw_type==RT_PTR)
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0,Fs->data_heap);
+      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     else
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0,Fs->data_heap);
+      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     //break;case IC_DEREF_PP //NOT USED BY AIWINIOS
     //break;case IC_DEREF_MM //DITTO
     break;case IC__PP:
-    new=__HC_ICAdd_PostInc(cc2,cur->ic_data,Fs->data_heap);
+    new=__HC_ICAdd_PostInc(cc2,cur->ic_data);
     break;case IC__MM:
-    new=__HC_ICAdd_PostDec(cc2,cur->ic_data,Fs->data_heap);
+    new=__HC_ICAdd_PostDec(cc2,cur->ic_data);
     break;case IC_PP_:
-    new=__HC_ICAdd_PreInc(cc2,cur->ic_data,Fs->data_heap);
+    new=__HC_ICAdd_PreInc(cc2,cur->ic_data);
     break;case IC_MM_:
-    new=__HC_ICAdd_PreDec(cc2,cur->ic_data,Fs->data_heap);
+    new=__HC_ICAdd_PreDec(cc2,cur->ic_data);
     break;case IC_SHL:
-    new=__HC_ICAdd_Lsh(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Lsh(cc2);
     break;case IC_SHR:
-    new=__HC_ICAdd_Rsh(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Rsh(cc2);
     //break;case IC_SHL_CONST: NOT USED BY AIWNIOS
     //break;case IC_SHR_CONST: NOT USED BY AIWNIOS
     break;case IC_POWER:
-    new=__HC_ICAdd_Pow(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Pow(cc2);
     break;case IC_MUL:
-    new=__HC_ICAdd_Mul(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Mul(cc2);
     break;case IC_DIV:
-    new=__HC_ICAdd_Div(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Div(cc2);
     break;case IC_MOD:
-    new=__HC_ICAdd_Mod(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Mod(cc2);
     break;case IC_AND:
-    new=__HC_ICAdd_And(cc2,Fs->data_heap);
+    new=__HC_ICAdd_And(cc2);
     break;case IC_OR:
-    new=__HC_ICAdd_Or(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Or(cc2);
     break;case IC_XOR:
-    new=__HC_ICAdd_Xor(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Xor(cc2);
     break;case IC_ADD:
-    new=__HC_ICAdd_Add(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Add(cc2);
     break;case IC_SUB:
-    new=__HC_ICAdd_Sub(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Sub(cc2);
     //break;case IC_ADD_CONST NOT USED BY AIWNIOS
     //break;case IC_SUB_CONST NOT USED BY AIWNIOS
     break;case IC_EQU_EQU:
-    new=__HC_ICAdd_EqEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_EqEq(cc2);
     break;case IC_NOT_EQU:
-    new=__HC_ICAdd_Ne(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Ne(cc2);
     break;case IC_LESS:
-    new=__HC_ICAdd_Lt(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Lt(cc2);
     break;case IC_GREATER_EQU:
-    new=__HC_ICAdd_Ge(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Ge(cc2);
     break;case IC_GREATER:
-    new=__HC_ICAdd_Gt(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Gt(cc2);
     break;case IC_LESS_EQU:
-    new=__HC_ICAdd_Le(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Le(cc2);
     //break;case IC_PUSH_CMP NOT USED BY AIWNIOS
     break;case IC_AND_AND:
-    new=__HC_ICAdd_AndAnd(cc2,Fs->data_heap);
+    new=__HC_ICAdd_AndAnd(cc2);
     break;case IC_OR_OR:
-    new=__HC_ICAdd_OrOr(cc2,Fs->data_heap);
+    new=__HC_ICAdd_OrOr(cc2);
     break;case IC_XOR_XOR:
-    new=__HC_ICAdd_XorXor(cc2,Fs->data_heap);
+    new=__HC_ICAdd_XorXor(cc2);
     break;case IC_ASSIGN:
-    new=__HC_ICAdd_Eq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Eq(cc2);
     //break;case IC_ASSIGN_PP //NOT USED BY AIWNIOS
     //break;case IC_ASSIGN_MM //DITTO
     break;case IC_SHL_EQU:
-    new=__HC_ICAdd_LshEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_LshEq(cc2);
     break;case IC_SHR_EQU:
-    new=__HC_ICAdd_RshEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_RshEq(cc2);
     break;case IC_MUL_EQU:
-    new=__HC_ICAdd_MulEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_MulEq(cc2);
     break;case IC_DIV_EQU:
-    new=__HC_ICAdd_DivEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_DivEq(cc2);
     break;case IC_MOD_EQU:
-    new=__HC_ICAdd_ModEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_ModEq(cc2);
     break;case IC_AND_EQU:
-    new=__HC_ICAdd_AndEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_AndEq(cc2);
     break;case IC_OR_EQU:
-    new=__HC_ICAdd_OrEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_OrEq(cc2);
     break;case IC_XOR_EQU:
-    new=__HC_ICAdd_XorEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_XorEq(cc2);
     break;case IC_ADD_EQU:
-    new=__HC_ICAdd_AddEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_AddEq(cc2);
     break;case IC_SUB_EQU:
-    new=__HC_ICAdd_SubEq(cc2,Fs->data_heap);
+    new=__HC_ICAdd_SubEq(cc2);
     break;case IC_JMP:
-    new=__HC_ICAdd_Goto(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_Goto(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_SUB_RET:
-    new=__HC_ICAdd_SubRet(cc2,Fs->data_heap);
+    new=__HC_ICAdd_SubRet(cc2);
     break;case IC_SUB_CALL:
-    new=__HC_ICAdd_SubCall(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    new=__HC_ICAdd_SubCall(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_SWITCH:
     misc=cur->ic_data(CCodeMisc*);
-    __HC_ICAdd_BoundedSwitch(cc2,misc->addr,misc->dft->addr,Fs->data_heap);
+    __HC_ICAdd_BoundedSwitch(cc2,misc->addr,misc->dft->addr);
     break;case IC_NOBOUND_SWITCH:
-    __HC_ICAdd_UnboundedSwitch(cc2,cur->ic_data(CCodeMisc*)->addr,Fs->data_heap);
+    __HC_ICAdd_UnboundedSwitch(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_RET:
     //TODO CHECK IF CUR FUN IS I64/F64
-    new=__HC_ICAdd_Ret(cc2,Fs->data_heap);
+    new=__HC_ICAdd_Ret(cc2);
     break;case IC_CALL_INDIRECT:
     new=__HC_ICAdd_Call(
       cc2,
       cur->length-1,
       cur->ic_class->raw_type,
-      0,
-      Fs->data_heap);
+      0);
     /*TODO 
     IC_CALL
     IC_CALL_INDIRECT2
@@ -699,9 +694,9 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     IC_CALL_EXTERN
     */
     break;case IC_VARGS:
-    new=__HC_ICAdd_Vargs(cc2,cur->ic_data,Fs->data_heap);
+    new=__HC_ICAdd_Vargs(cc2,cur->ic_data);
     break;case IC_STATIC:
-    new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cur->ic_class->raw_type,0,Fs->data_heap);
+    new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cur->ic_class->raw_type,0);
     }
     __HC_ICSetLine(new,cur->ic_line);
   }
@@ -765,6 +760,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       idx=misc->addr(U64*)[0]=Str2I64(misc->str);
     }
   }
+  __HC_CmpCtrlDel(acc);
   return machine_code;
 }
 

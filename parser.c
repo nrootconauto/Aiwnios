@@ -5,11 +5,12 @@
 #include <stdarg.h>
 CCodeCtrl* CodeCtrlPush(CCmpCtrl* ccmp)
 {
-	CCodeCtrl* cctrl = A_MALLOC(sizeof(CCodeCtrl), NULL);
+  CCodeCtrl* cctrl = A_MALLOC(sizeof(CCodeCtrl), ccmp->hc);
+	cctrl->hc=ccmp->hc;
 	cctrl->next = ccmp->code_ctrl;
-	cctrl->ir_code = A_MALLOC(sizeof(CRPN), NULL);
+	cctrl->ir_code = A_MALLOC(sizeof(CRPN), cctrl->hc);
   ((CRPN*)cctrl->ir_code)->type=IC_NOP;
-	cctrl->code_misc = A_MALLOC(sizeof(CQue), NULL);
+	cctrl->code_misc = A_MALLOC(sizeof(CQue), cctrl->hc);
 	QueInit(cctrl->ir_code);
 	QueInit(cctrl->code_misc);
 	ccmp->code_ctrl = cctrl;
@@ -104,7 +105,7 @@ void CodeCtrlDel(CCodeCtrl* ctrl)
 
 CCodeMisc* CodeMiscNew(CCmpCtrl* ccmp, int64_t type)
 {
-	CCodeMisc* misc = A_CALLOC(sizeof(CCodeMisc), NULL);
+	CCodeMisc* misc = A_CALLOC(sizeof(CCodeMisc), ccmp->hc);
 	misc->type = type;
 	QueIns(misc, ccmp->code_ctrl->code_misc->last);
 	return misc;
@@ -135,13 +136,17 @@ int64_t PrsDecl(CCmpCtrl* ccmp, CHashClass* base, CHashClass* add_to,
 int64_t PrsSwitch(CCmpCtrl* cctrl);
 CHashClass* PrsClass(CCmpCtrl* cctrl, int64_t flags);
 CMemberLst* MemberFind(char* needle, CHashClass* cls);
-// Does not free lexer
+CCmpCtrl* CmpCtrlDel(CCmpCtrl *d) {
+  HeapCtrlDel(d->hc);
+  A_FREE(d);
+}
 CCmpCtrl* CmpCtrlNew(CLexer* lex)
 {
 	int64_t idx, idx2;
 	CHashClass* cls;
 	CCmpCtrl* ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL);
 	ccmp->lex = lex;
+  ccmp->hc=HeapCtrlInit(NULL,Fs);
 	struct {
 		char* name;
 		int64_t rt;
@@ -3810,9 +3815,9 @@ void PrsTests()
 // Nroot here,im about to make bindings for the IR stuff
 //
 #define HC_IC_BINDING(name, op)                  \
-	CRPN* __##name(CCodeCtrl* cc, CHeapCtrl* hc) \
+	CRPN* __##name(CCodeCtrl* cc) \
 	{                                            \
-		CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);  \
+		CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);  \
 		rpn->type = op;                          \
 		QueIns(rpn, cc->ir_code);                \
 		return rpn;                              \
@@ -3845,49 +3850,49 @@ HC_IC_BINDING(HC_ICAdd_Neg, IC_NEG);
 HC_IC_BINDING(HC_ICAdd_And, IC_AND);
 HC_IC_BINDING(HC_ICAdd_Ret, IC_RET);
 
-CRPN* __HC_ICAdd_SetFrameSize(CCodeCtrl* cc, int64_t arg, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_SetFrameSize(CCodeCtrl* cc, int64_t arg)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = __IC_SET_FRAME_SIZE;
 	rpn->integer = arg;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_Arg(CCodeCtrl* cc, int64_t arg, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Arg(CCodeCtrl* cc, int64_t arg)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = __IC_ARG;
 	rpn->integer = arg;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_PostInc(CCodeCtrl* cc, int64_t amt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_PostInc(CCodeCtrl* cc, int64_t amt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_POST_INC;
 	rpn->integer = amt;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_PostDec(CCodeCtrl* cc, int64_t amt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_PostDec(CCodeCtrl* cc, int64_t amt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_POST_DEC;
 	rpn->integer = amt;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_PreInc(CCodeCtrl* cc, int64_t amt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_PreInc(CCodeCtrl* cc, int64_t amt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_PRE_INC;
 	rpn->integer = amt;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_PreDec(CCodeCtrl* cc, int64_t amt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_PreDec(CCodeCtrl* cc, int64_t amt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_PRE_DEC;
 	rpn->integer = amt;
 	QueIns(rpn, cc->ir_code);
@@ -3905,57 +3910,57 @@ HC_IC_BINDING(HC_ICAdd_XorEq, IC_XOR_EQ);
 HC_IC_BINDING(HC_ICAdd_ModEq, IC_MOD_EQ);
 HC_IC_BINDING(HC_ICAdd_ToI64, IC_TO_I64);
 HC_IC_BINDING(HC_ICAdd_ToF64, IC_TO_F64);
-CRPN* __HC_ICAdd_I64(CCodeCtrl* cc, int64_t integer, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_I64(CCodeCtrl* cc, int64_t integer)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_I64;
 	rpn->integer = integer;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_F64(CCodeCtrl* cc, double f, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_F64(CCodeCtrl* cc, double f)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_F64;
 	rpn->flt = f;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_Switch(CCodeCtrl* cc, CCodeMisc* misc,CCodeMisc* dft, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Switch(CCodeCtrl* cc, CCodeMisc* misc,CCodeMisc* dft)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_BOUNDED_SWITCH;
 	rpn->code_misc = misc;
   rpn->code_misc->dft_lab=dft;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_UnboundedSwitch(CCodeCtrl* cc, CCodeMisc* misc, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_UnboundedSwitch(CCodeCtrl* cc, CCodeMisc* misc)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_BOUNDED_SWITCH;
 	rpn->code_misc = misc;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_SubRet(CCodeCtrl* cc, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_SubRet(CCodeCtrl* cc)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SUB_RET;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_SubProlog(CCodeCtrl* cc, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_SubProlog(CCodeCtrl* cc)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SUB_PROLOG;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_SubCall(CCodeCtrl* cc, CCodeMisc* cm, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_SubCall(CCodeCtrl* cc, CCodeMisc* cm)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SUB_CALL;
 	rpn->code_misc = cm;
 	QueIns(rpn, cc->ir_code);
@@ -4001,11 +4006,11 @@ static CHashClass* rt2cls(int64_t rt, int64_t ptr_cnt)
 	}
 	return ic_class + ptr_cnt;
 }
-CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc,CCodeCtrl* cc,char *name,char **ptr,CHeapCtrl *hc) {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc,CCodeCtrl* cc,char *name,char **ptr) {
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SHORT_ADDR;
 	rpn->code_misc=CodeMiscNew(acc,CMT_SHORT_ADDR);
-  rpn->code_misc->str=A_STRDUP(name,NULL);
+  rpn->code_misc->str=A_STRDUP(name,acc->hc);
   rpn->code_misc->patch_addr=ptr;
   rpn->ic_class=HashFind("U8i",Fs->hash_table,HTT_CLASS,1);
   rpn->ic_class++;
@@ -4013,8 +4018,8 @@ CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc,CCodeCtrl* cc,char *name,char **ptr,CHe
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc) {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt) {
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_DEREF;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
   rpn->raw_type=rpn->ic_class->raw_type;
@@ -4022,9 +4027,9 @@ CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_Call(CCodeCtrl* cc, int64_t arity, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Call(CCodeCtrl* cc, int64_t arity, int64_t rt, int64_t ptr_cnt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = __IC_CALL;
 	rpn->length = arity;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
@@ -4032,9 +4037,9 @@ CRPN* __HC_ICAdd_Call(CCodeCtrl* cc, int64_t arity, int64_t rt, int64_t ptr_cnt,
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_FReg(CCodeCtrl* cc, int64_t r, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_FReg(CCodeCtrl* cc, int64_t r)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_FREG;
 	rpn->integer = r;
 	rpn->ic_class = HashFind("F64",Fs->hash_table,HTT_CLASS,1);
@@ -4042,9 +4047,9 @@ CRPN* __HC_ICAdd_FReg(CCodeCtrl* cc, int64_t r, CHeapCtrl* hc)
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_IReg(CCodeCtrl* cc, int64_t r, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_IReg(CCodeCtrl* cc, int64_t r, int64_t rt, int64_t ptr_cnt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_IREG;
 	rpn->integer = r;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
@@ -4055,9 +4060,9 @@ CRPN* __HC_ICAdd_IReg(CCodeCtrl* cc, int64_t r, int64_t rt, int64_t ptr_cnt, CHe
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_Frame(CCodeCtrl* cc, int64_t off, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Frame(CCodeCtrl* cc, int64_t off, int64_t rt, int64_t ptr_cnt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_BASE_PTR;
 	rpn->integer = off;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
@@ -4067,9 +4072,9 @@ CRPN* __HC_ICAdd_Frame(CCodeCtrl* cc, int64_t off, int64_t rt, int64_t ptr_cnt, 
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_Typecast(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Typecast(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_TYPECAST;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
 	if (ptr_cnt)
@@ -4117,49 +4122,49 @@ CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, int64_t l
 	return misc;
 }
 
-CRPN* __HC_ICAdd_Label(CCodeCtrl* cc, CCodeMisc* misc, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Label(CCodeCtrl* cc, CCodeMisc* misc)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_NOP;
 	//Label must consume something
 	QueIns(rpn, cc->ir_code);
-	rpn = A_CALLOC(sizeof(CRPN), hc);
+	rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_LABEL;
 	rpn->code_misc = misc;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_Goto(CCodeCtrl* cc, CCodeMisc* cm, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Goto(CCodeCtrl* cc, CCodeMisc* cm)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_GOTO;
 	rpn->code_misc = cm;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_GotoIf(CCodeCtrl* cc, CCodeMisc* cm, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_GotoIf(CCodeCtrl* cc, CCodeMisc* cm)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_GOTO_IF;
 	rpn->code_misc = cm;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_Vargs(CCodeCtrl* cc, int64_t arity, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Vargs(CCodeCtrl* cc, int64_t arity)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = __IC_VARGS;
 	rpn->length = arity;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-CRPN* __HC_ICAdd_Str(CCodeCtrl* cc, CCodeMisc* cm, CHeapCtrl* hc)
+CRPN* __HC_ICAdd_Str(CCodeCtrl* cc, CCodeMisc* cm)
 {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_STR;
 	rpn->code_misc = cm;
 	QueIns(rpn, cc->ir_code);
@@ -4176,7 +4181,7 @@ CCodeMisc* AddRelocMisc(CCmpCtrl* cctrl, char* name)
 		}
 	}
 	reloc = CodeMiscNew(cctrl, CMT_RELOC_U64);
-	reloc->str = A_STRDUP(name, NULL);
+	reloc->str = A_STRDUP(name, cctrl->hc);
 	return reloc;
 }
 void __HC_ICSetLine(CRPN *r,int64_t ln) {
@@ -4184,8 +4189,8 @@ void __HC_ICSetLine(CRPN *r,int64_t ln) {
 }
 
 
-CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym,int64_t rt,int64_t ptrs, CHeapCtrl* hc) {
-	CRPN* rpn = A_CALLOC(sizeof(CRPN), hc);
+CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym,int64_t rt,int64_t ptrs) {
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_RELOC;
   rpn->ic_class=rt2cls(rt,ptrs);
   rpn->code_misc=AddRelocMisc(cmpc,sym);
@@ -4194,28 +4199,28 @@ CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym
 	return rpn;
 }
 
-CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len,CHeapCtrl *data) {
+CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len) {
   CCodeMisc *misc=CodeMiscNew(cmp,CMT_STATIC_DATA);
   misc->integer=at;
   misc->str_len=len;
-  memcpy(misc->str=A_MALLOC(len,data),d,len);
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),data);
+  memcpy(misc->str=A_MALLOC(len,cmp->hc),d,len);
+  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
   rpn->type=__IC_SET_STATIC_DATA;
   rpn->code_misc=misc;
   QueIns(rpn,cc->ir_code);
   return rpn;
 }
 
-CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len,CHeapCtrl *data) {
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),data);
+CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len) {
+  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
   rpn->type=__IC_STATICS_SIZE;
   rpn->integer=len;
   QueIns(rpn,cc->ir_code);
   return rpn;
 }
 
-CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs,CHeapCtrl *data) {
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),data);
+CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs) {
+  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
   rpn->type=__IC_STATIC_REF;
   rpn->integer=off;
   rpn->ic_class=rt2cls(rt,ptrs);

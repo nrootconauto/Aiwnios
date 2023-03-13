@@ -251,7 +251,7 @@ static int64_t __ICMoveI64(CCmpCtrl* cctrl, int64_t reg, uint64_t imm, char* bin
 			goto found;
 		}
 	}
-	misc = A_CALLOC(sizeof(CCodeMisc), NULL);
+	misc = A_CALLOC(sizeof(CCodeMisc), cctrl->hc);
 	misc->type = CMT_INT_CONST;
 	misc->integer = imm;
 	QueIns(misc, cctrl->code_ctrl->code_misc->last);
@@ -276,7 +276,7 @@ static int64_t __ICMoveF64(CCmpCtrl* cctrl, int64_t reg, double imm, char* bin,
 				goto found;
 			}
 	}
-	misc = A_CALLOC(sizeof(CCodeMisc), NULL);
+	misc = A_CALLOC(sizeof(CCodeMisc), cctrl->hc);
 	misc->type = CMT_FLOAT_CONST;
 	misc->integer = *(int64_t*)&imm;
 	QueIns(misc, cctrl->code_ctrl->code_misc->last);
@@ -640,7 +640,7 @@ static int64_t __ICFCall(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	AssignRawTypeToNode(cctrl, rpn2);
 	to = rpn->length;
 	arg_dsts = A_MALLOC(to * sizeof(CICArg),
-		NULL);
+		cctrl->hc);
 	rpn2 = ICArgN(rpn, rpn->length);
 	PushTmp(cctrl, rpn2, NULL);
 	rpn2 = rpn->base.next;
@@ -2814,10 +2814,10 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 		if (!range) {
 			// This are reversed
-			range_args = A_MALLOC(sizeof(CRPN*) * (cnt + 1), NULL);
-			range = A_MALLOC(sizeof(CRPN*) * cnt, NULL);
-			range_fail_addrs = A_MALLOC(sizeof(CRPN*) * cnt, NULL);
-			range_cmp_types = A_MALLOC(sizeof(int64_t) * cnt, NULL);
+			range_args = A_MALLOC(sizeof(CRPN*) * (cnt + 1), cctrl->hc);
+			range = A_MALLOC(sizeof(CRPN*) * cnt, cctrl->hc);
+			range_fail_addrs = A_MALLOC(sizeof(CRPN*) * cnt, cctrl->hc);
+			range_cmp_types = A_MALLOC(sizeof(int64_t) * cnt, cctrl->hc);
 			goto get_range_items;
 		}
 		for (i = 0; i <= cnt; i++) {
@@ -3363,6 +3363,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 		cnt++;
 	}
 	if (dbg_info) {
+    //Dont allocate on cctrl->hc heap ctrl as we want to share our datqa
 		cctrl->code_ctrl->dbg_info = *dbg_info = A_CALLOC((max_ln - min_ln + 1) * sizeof(void*), NULL);
 		cctrl->code_ctrl->min_ln = min_ln;
 	}
@@ -3386,6 +3387,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 			code_off = 0;
 			bin = NULL;
 		} else if (run == 1) {
+      //Dont allocate on cctrl->hc heap ctrl as we want to share our data
 			bin = A_MALLOC(code_off, NULL);
 			code_off = 0;
 		} else {

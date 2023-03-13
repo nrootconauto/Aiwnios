@@ -357,6 +357,7 @@ typedef struct CCodeCtrl {
   int64_t min_ln;
   char **dbg_info;
   int64_t statics_offset;
+  CHeapCtrl *hc;
 } CCodeCtrl;
 typedef struct CCodeMisc {
 	CQue base;
@@ -402,6 +403,7 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data4;
   //Used for returns
   int64_t epilog_offset;
+  CHeapCtrl *hc;
 } CCmpCtrl;
 #define PRSF_CLASS 1
 #define PRSF_UNION 2
@@ -820,20 +822,20 @@ int64_t ARM_strRegRegShiftX(int64_t a,int64_t n,int64_t m);
 CCodeCtrl *CodeCtrlPush(CCmpCtrl* ccmp);
 void CodeCtrlDel(CCodeCtrl* ctrl);
 void CodeCtrlPop(CCmpCtrl* ccmp);
-CRPN *__HC_ICAdd_Typecast(CCodeCtrl *cc,int64_t rt,int64_t ptr_cnt,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc,CCodeMisc *cm,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_SubProlog(CCodeCtrl *cc,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_SubRet(CCodeCtrl *cc,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_UnboundedSwitch(CCodeCtrl *cc,CCodeMisc *misc,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_PreInc(CCodeCtrl *cc,int64_t amt,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Call(CCodeCtrl *cc,int64_t arity,int64_t rt,int64_t ptrs,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_F64(CCodeCtrl *cc,double f,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_I64(CCodeCtrl *cc,int64_t integer,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc,int64_t amt,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc,int64_t amt,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc,int64_t amt,CHeapCtrl *hc);
+CRPN *__HC_ICAdd_Typecast(CCodeCtrl *cc,int64_t rt,int64_t ptr_cnt);
+CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc,CCodeMisc *cm);
+CRPN *__HC_ICAdd_SubProlog(CCodeCtrl *cc);
+CRPN *__HC_ICAdd_SubRet(CCodeCtrl *cc);
+CRPN *__HC_ICAdd_UnboundedSwitch(CCodeCtrl *cc,CCodeMisc *misc);
+CRPN *__HC_ICAdd_PreInc(CCodeCtrl *cc,int64_t amt);
+CRPN *__HC_ICAdd_Call(CCodeCtrl *cc,int64_t arity,int64_t rt,int64_t ptrs);
+CRPN *__HC_ICAdd_F64(CCodeCtrl *cc,double f);
+CRPN *__HC_ICAdd_I64(CCodeCtrl *cc,int64_t integer);
+CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc,int64_t amt);
+CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc,int64_t amt);
+CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc,int64_t amt);
 #define HC_IC_BINDINGH(name) \
-  CRPN *__##name(CCodeCtrl *cc,CHeapCtrl *hc);
+  CRPN *__##name(CCodeCtrl *cc);
 HC_IC_BINDINGH(HC_ICAdd_Pow)
 HC_IC_BINDINGH(HC_ICAdd_Eq)
 HC_IC_BINDINGH(HC_ICAdd_Div)
@@ -875,9 +877,9 @@ HC_IC_BINDINGH(HC_ICAdd_Ret)
 HC_IC_BINDINGH(HC_ICAdd_Add)
 HC_IC_BINDINGH(HC_ICAdd_ToI64)
 HC_IC_BINDINGH(HC_ICAdd_ToF64)
-CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc,int64_t r,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc,int64_t r,int64_t rt,int64_t ptr_cnt,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc,int64_t off,int64_t rt,int64_t ptr_cnt,CHeapCtrl *hc);
+CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc,int64_t r);
+CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc,int64_t r,int64_t rt,int64_t ptr_cnt);
+CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc,int64_t off,int64_t rt,int64_t ptr_cnt);
 CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp,CCodeMisc *labels,int64_t lo,int64_t hi);
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp,char *str,int64_t sz);
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp);
@@ -885,23 +887,23 @@ CCmpCtrl *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
 char *__HC_Compile(CCmpCtrl *ccmp,int64_t *sz,char **dbg_info);
-CRPN *__HC_ICAdd_Goto(CCodeCtrl* cc,CCodeMisc *cm,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_GotoIf(CCodeCtrl* cc,CCodeMisc *cm,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Str(CCodeCtrl* cc,CCodeMisc *cm,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Label(CCodeCtrl *cc,CCodeMisc *misc,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc,int64_t arg,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc,int64_t arg,CHeapCtrl *hc);
-CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym,int64_t rt,int64_t ptrs, CHeapCtrl* hc);
+CRPN *__HC_ICAdd_Goto(CCodeCtrl* cc,CCodeMisc *cm);
+CRPN *__HC_ICAdd_GotoIf(CCodeCtrl* cc,CCodeMisc *cm);
+CRPN *__HC_ICAdd_Str(CCodeCtrl* cc,CCodeMisc *cm);
+CRPN *__HC_ICAdd_Label(CCodeCtrl *cc,CCodeMisc *misc);
+CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc,int64_t arg);
+CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc,int64_t arg);
+CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym,int64_t rt,int64_t ptrs);
 CCodeMisc* AddRelocMisc(CCmpCtrl* cctrl, char* name);
-CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt, CHeapCtrl* hc);
+CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt);
 void __HC_ICSetLine(CRPN *r,int64_t ln);
-CRPN *__HC_ICAdd_Switch(CCodeCtrl *cc,CCodeMisc *misc,CCodeMisc *dft,CHeapCtrl *hc);
-CRPN* __HC_ICAdd_Vargs(CCodeCtrl* cc, int64_t arity, CHeapCtrl* hc);
-CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len,CHeapCtrl *data);
-CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs,CHeapCtrl *data);
-CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len,CHeapCtrl *data);
+CRPN *__HC_ICAdd_Switch(CCodeCtrl *cc,CCodeMisc *misc,CCodeMisc *dft);
+CRPN* __HC_ICAdd_Vargs(CCodeCtrl* cc, int64_t arity);
+CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len);
+CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs);
+CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len);
 char* Load(char* filename);
-CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *,CCodeCtrl* cc,char *name,char **ptr,CHeapCtrl*);
+CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *,CCodeCtrl* cc,char *name,char **ptr);
 //TODO remove
 char *FileRead(char *fn,int64_t *sz);
 void FileWrite(char *fn,char *data,int64_t sz);
@@ -943,3 +945,4 @@ void ImportSymbolsToHolyC(void(*cb)(char *name,void *addr));
 int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i);
 int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i);
 int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i);
+CCmpCtrl* CmpCtrlDel(CCmpCtrl *d);

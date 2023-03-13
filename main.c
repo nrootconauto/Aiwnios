@@ -369,6 +369,7 @@ void BootAiwnios()
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
+    PrsBindCSymbol("__HC_CmpCtrlDel",CmpCtrlDel);
 		PrsBindCSymbol("Cos", &cos);
 		PrsBindCSymbol("Sin", &sin);
 		PrsBindCSymbol("Tan", &tan);

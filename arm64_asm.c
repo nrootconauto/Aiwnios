@@ -1017,7 +1017,7 @@ static int64_t GenNImmSImmR(int64_t imm) {
       zero_gap=__builtin_ctzl(imm>>consec)-consec;
     consec+=__builtin_clzl(~imm);
   } else if(zero_gap!=0) {
-    //add traling 0s to the gap amount
+    //add leading 0s to the gap amount
     zero_gap+=__builtin_clzl(imm);
   }
   //Our pattern size is zero_gap+consec

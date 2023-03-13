@@ -587,10 +587,8 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
     while(last_c->ptr_stars_cnt)
       last_c=DerefType(last_c);
     if(lst->flags&MLF_LASTCLASS&&last_c) {
-      PutS("last_c\n");
-      PutS(last_c->str);
-      PutS("\n");
       cm=COCMiscNew(cc,CMT_STR_CONST);
+      cc->flags|=CCF_HAS_MISC_DATA;
       cm->str=StrNew(last_c->str);
       cm->st_len=StrLen(last_c->str)+1;
       RPNAddNew(
@@ -1028,6 +1026,7 @@ typecast:
               while(last_c->ptr_stars_cnt)
                 last_c=DerefType(last_c);
               misc=COCMiscNew(cc,CMT_STR_CONST);
+              cc->flags|=CCF_HAS_MISC_DATA;
               misc->str=StrNew(last_c->str);
               misc->st_len=StrLen(last_c->str)+1;
               RPNAddNew(
@@ -1178,6 +1177,7 @@ found_end_square:
         flags&=~PEF_FUN_BEFORE;
       break;start:
         case TK_STR:
+        cc->flags|=CCF_HAS_MISC_DATA;
         misc=COCMiscNew(cc,CMT_STR_CONST);
         misc->str=LexExtStr(cc,&str_len);
         misc->st_len=str_len;

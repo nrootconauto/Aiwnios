@@ -59,12 +59,12 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 			if ((arg->member_class->raw_type == RT_F64) ^ //Check for difference
 				(AssignRawTypeToNode(cctrl, rpn2) == RT_F64)) {
 				if (arg->member_class->raw_type == RT_F64) {
-					ic = A_CALLOC(sizeof(CRPN), NULL);
+					ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 					ic->type = IC_TO_F64;
 					QueIns(ic, rpn2->base.last);
           AssignRawTypeToNode(cctrl,ic);
 				} else {
-					ic = A_CALLOC(sizeof(CRPN), NULL);
+					ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 					ic->type = IC_TO_I64;
           AssignRawTypeToNode(cctrl,ic);
 					QueIns(ic, rpn2->base.last);
@@ -74,7 +74,7 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 		arg = arg->next;
 	}
 	for (; cnt < cnt2; cnt++) {
-		ic = A_CALLOC(sizeof(CRPN), NULL);
+		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		rpn->length++;
 		if (arg->member_class->raw_type == RT_F64) {
 			ic->type = IC_F64;
@@ -93,12 +93,12 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 		last = rpn;
 		vargc = rpn->length - cnt2;
 		//Pass argv
-		ic = A_CALLOC(sizeof(CRPN), NULL);
+		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		ic->type = __IC_VARGS;
 		ic->length = vargc;
 		QueIns(ic, last);
 		//Pass argc
-		ic = A_CALLOC(sizeof(CRPN), NULL);
+		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		ic->type = IC_I64;
 		ic->integer = vargc;
 		AssignRawTypeToNode(cctrl, ic);
@@ -152,7 +152,7 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			cnt++;
 		}
 	}
-	list = A_CALLOC(sizeof(CRPN*) * cnt, NULL);
+	list = A_CALLOC(sizeof(CRPN*) * cnt, cctrl->hc);
 	cnt = 0;
 	for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code;
 		 rpn = rpn->base.next) {
@@ -185,10 +185,10 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			b = rpn->base.next;
 			a = ICFwd(b);
 			if (a->ic_class->ptr_star_cnt || a->ic_dim) {
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_MUL;
 				QueIns(new, b->base.last);
-				lit = A_CALLOC(sizeof(CRPN), NULL);
+				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				lit->type = IC_I64;
 				lit->integer = PtrWidthOfRPN(a);
 				QueIns(lit, new);
@@ -200,19 +200,19 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			b = rpn->base.next;
 			a = ICFwd(b);
 			if (a->ic_class->ptr_star_cnt || a->ic_dim) {
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_MUL;
 				QueIns(new, b->base.last);
-				lit = A_CALLOC(sizeof(CRPN), NULL);
+				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				lit->type = IC_I64;
 				lit->integer = PtrWidthOfRPN(a);
 				QueIns(lit, new);
 				AssignRawTypeToNode(cctrl, new);
 			} else if ((b->ic_class->ptr_star_cnt || b->ic_dim) && rpn->type != IC_ADD_EQ) {
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_MUL;
 				QueIns(new, a->base.last);
-				lit = A_CALLOC(sizeof(CRPN), NULL);
+				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				lit->type = IC_I64;
 				lit->integer = PtrWidthOfRPN(b);
 				QueIns(lit, new);
@@ -226,12 +226,12 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			if (!dim)
 				goto aderef;
 			if (dim->next) {
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_MUL;
 				new->raw_type = RT_I64i;
 				new->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
 				QueIns(new, rpn);
-				lit = A_CALLOC(sizeof(CRPN), NULL);
+				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				lit->type = IC_I64;
 				lit->raw_type = new->raw_type;
 				lit->ic_class = new->ic_class;
@@ -242,13 +242,13 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 				rpn->type = IC_ADD;
 			} else {
 			aderef:
-				new2 = A_CALLOC(sizeof(CRPN), NULL);
+				new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new2->type = IC_ADD;
 				QueIns(new2, rpn);
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_MUL;
 				QueIns(new, new2);
-				lit = A_CALLOC(sizeof(CRPN), NULL);
+				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				lit->type = IC_I64;
 				lit->integer = PtrWidthOfRPN(a);
 				QueIns(lit, new);
@@ -266,7 +266,7 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 				}
 			}
 			if (rpn->local_mem->dim.next) {
-				new = A_CALLOC(sizeof(CRPN), NULL);
+				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 				new->type = IC_ADDR_OF;
 				QueIns(new, rpn->base.last);
 				AssignRawTypeToNode(cctrl, new);
@@ -288,7 +288,7 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 					//
 					b = rpn->base.last;
 					if (b->type != IC_ADDR_OF) {
-						new = A_CALLOC(sizeof(CRPN), NULL);
+						new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 						new->type = IC_ADDR_OF;
 						QueIns(new, rpn->base.last);
 						AssignRawTypeToNode(cctrl, new);
@@ -313,15 +313,15 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 				total_off += a->local_mem->off;
 				ICFree(a);
 			}
-			new = A_CALLOC(sizeof(CRPN), NULL);
+			new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 			new->type = IC_ADDR_OF;
 			new->raw_type = RT_PTR;
 			QueIns(new, a->base.last);
-			new2 = A_CALLOC(sizeof(CRPN), NULL);
+			new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
 			new2->type = IC_ADD;
 			new2->raw_type = RT_PTR;
 			QueIns(new2, rpn);
-			new3 = A_CALLOC(sizeof(CRPN), NULL);
+			new3 = A_CALLOC(sizeof(CRPN), cctrl->hc);
 			new3->type = IC_I64;
 			new3->integer = total_off;
 			new3->raw_type = RT_I64i;
@@ -330,12 +330,12 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			rpn->raw_type = raw_type;
 			break;
 		case IC_ARROW:
-			new = A_CALLOC(sizeof(CRPN), NULL);
+			new = A_CALLOC(sizeof(CRPN), cctrl->hc);
 			new->type = IC_DEREF;
 			new->raw_type = rpn->raw_type;
 			new->ic_fun = rpn->ic_fun;
 			new->ic_dim = rpn->ic_dim;
-			new2 = A_CALLOC(sizeof(CRPN), NULL);
+			new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
 			new2->type = IC_I64;
 			new2->integer = rpn->local_mem->off;
 			new2->raw_type = RT_I64i;
@@ -1511,10 +1511,6 @@ char* Compile(CCmpCtrl* cctrl,int64_t *res_sz,char **dbg_info)
 {
 	CRPN* r;
 	int64_t old_flags = cctrl->flags;
-	//We free discard most temporary code,so if we have a string in it,
-	//  we should keep it on the heap
-	if (!cctrl->cur_fun)
-		cctrl->flags |= CCF_STRINGS_ON_HEAP;
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
 		 r = r->base.next)
 		AssignRawTypeToNode(cctrl, r);
