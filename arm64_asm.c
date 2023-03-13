@@ -987,3 +987,101 @@ int64_t ARM_ldrRegRegShiftF64(int64_t a,int64_t n,int64_t m) {
 int64_t ARM_strRegRegShiftF64(int64_t a,int64_t n,int64_t m) {
   return LdStSimdFpRegRegShift(0,a,n,m);
 }
+
+//
+// https://dinfuehr.github.io/blog/encoding-of-immediate-values-on-aarch64/
+//
+// I would rather eat a pineapple than explain this code
+//
+
+// Return's -1 on poo poo unencodable
+static int64_t GenNImmSImmR(int64_t imm) {
+  //TODO write this stuff in assemblt
+  if(imm==0||~imm==0)
+    return ARM_ERR_INV_OFF;
+  int64_t consec=0,idx,zero_gap=0,first_zeros,width,x;
+  uint64_t pattern;
+  #define ROT(x,n) ((x)>>n)|((x)<<(64-n)) 
+  //Find first 1
+  zero_gap=__builtin_ctzl(imm);
+  //Count consecitive bits for the pattern
+  consec=__builtin_ctzl((~imm)>>zero_gap);
+  //If leading is zero,check the number of ones at the end
+  if(zero_gap==0) {
+    //Zeros may be present at the other side of  the ones
+    //"[10000111]"
+    //   ^^^^
+    if((imm>>consec)==0)
+      zero_gap=64-consec;
+    else
+      zero_gap=__builtin_ctzl(imm>>consec)-consec;
+    consec+=__builtin_clzl(~imm);
+  } else if(zero_gap!=0) {
+    //add traling 0s to the gap amount
+    zero_gap+=__builtin_clzl(imm);
+  }
+  //Our pattern size is zero_gap+consec
+  width=zero_gap+consec;
+  switch(width) {
+    #define MAKE_PATT \
+      x=consec-1; \
+      pattern=0; \
+      for(idx=0;idx!=64/width;idx++) \
+        if(!idx) \
+          pattern|=(1l<<consec)-1l; \
+        else \
+          pattern|=((1l<<consec)-1l)<<(width*idx);
+        
+    
+    #define CHECK_PATT(n) \
+    for(idx=0;idx!=width;idx++) \
+      if(pattern==imm) \
+        return (n<<12)|(idx<<6)|x; \
+      else \
+        pattern=ROT(pattern,1);
+    break;case 2:
+    MAKE_PATT;
+    CHECK_PATT(0);
+    break;case 4:
+    MAKE_PATT;
+    CHECK_PATT(0);
+    break;case 8:
+    MAKE_PATT;
+    CHECK_PATT(0);
+    break;case 16:
+    MAKE_PATT;
+    CHECK_PATT(0);
+    break;case 32:
+    MAKE_PATT;
+    CHECK_PATT(0);
+    break;case 64:
+    MAKE_PATT;
+    CHECK_PATT(1);
+    break;default:;
+  }
+  return ARM_ERR_INV_OFF;
+}
+
+static int64_t LogicalImm(int64_t opc,int64_t d,int64_t s,int64_t i) {
+  int64_t poodle=GenNImmSImmR(i);
+  if(i==ARM_ERR_INV_OFF) return i;
+  return MASKn(opc,8,29)|MASKn(0x24,8,23)|MASKn(s,14,10)|MASKn(s,6,5)|MASKn(d,6,0);
+}
+
+static int64_t LogicalImmX(int64_t opc,int64_t d,int64_t s,int64_t i) {
+  int64_t poodle=GenNImmSImmR(i);
+  if(poodle==ARM_ERR_INV_OFF) return poodle;
+  return (1<<31)|MASKn(opc,8,29)|MASKn(0x24,8,23)|MASKn(poodle,14,10)|MASKn(s,6,5)|MASKn(d,6,0);
+}
+
+int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i) {
+  return LogicalImmX(0,d,s,i);
+}
+
+int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i) {
+  return LogicalImmX(1,d,s,i);
+}
+
+int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i) {
+  return LogicalImmX(2,d,s,i);
+}

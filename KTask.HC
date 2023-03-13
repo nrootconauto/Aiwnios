@@ -444,9 +444,7 @@ U0 TaskKillDying()
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
       ; //TODO atomic lock
     task=Gs->next_dying;
-    PrintI("QR:",Gs->kill_jiffy);
     while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicks) {
-      PrintI("TKD:",__GetTicks);
       task1=task->next;
       QueRem(task);
       TaskDel(task);
@@ -454,6 +452,5 @@ U0 TaskKillDying()
     }
     LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
     Gs->kill_jiffy=__GetTicks+DYING_JIFFIES;
-  }
-  
+  }  
 }

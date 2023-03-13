@@ -344,6 +344,18 @@ static void __Sleep(int64_t ms) {
 }
 void BootAiwnios()
 {
+  int32_t Poop[64];
+  uint64_t tmp; 
+  for(int64_t i=0;i!=63;i++) {
+    Poop[i]=ARM_andImmX(1,2,0b11l<<i);
+  }
+  #define ROT(x,n) ((x)>>n)|((x)<<(64-n))
+  for(int64_t i=0;i!=31;i++) {
+    tmp=0b111;
+    tmp|=tmp<<32;
+    Poop[i]=ARM_andImmX(1,2,ROT(tmp,i));
+  }
+  
 	//WIP
 	CLexer* lex = LexerNew("None", "1+1;;;//#include\"FULL_PACKAGE.HC\";");
 	CCmpCtrl* ccmp = CmpCtrlNew(lex);
