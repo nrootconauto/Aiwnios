@@ -1815,7 +1815,7 @@ static int64_t __FindPushedIRegs(CCmpCtrl* cctrl, char* to_push)
 	if (!cctrl->cur_fun) {
 		//Perhaps we are being called from HolyC and we aren't using a "cur_fun"
 		for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code; r = r->base.next) {
-			if (r->type == IC_IREG && r->type != RT_F64) {
+			if (r->type == IC_IREG && r->raw_type != RT_F64) {
 				if (!to_push[r->integer])
 					if (AIWNIOS_IREG_START <= r->integer)
 						if (AIWNIOS_IREG_CNT > r->integer - AIWNIOS_IREG_START) {
@@ -1845,7 +1845,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl* cctrl, char* to_push)
 	if (!cctrl->cur_fun) {
 		//Perhaps we are being called from HolyC and we aren't using a "cur_fun"
 		for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code; r = r->base.next) {
-			if (r->type == IC_FREG && r->type == RT_F64) {
+			if (r->type == IC_FREG && r->raw_type == RT_F64) {
 				if (!to_push[r->integer])
 					if (AIWNIOS_FREG_START <= r->integer)
 						if (AIWNIOS_FREG_CNT > r->integer - AIWNIOS_FREG_START) {
