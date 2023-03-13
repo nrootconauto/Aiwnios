@@ -2676,6 +2676,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	} else {                                                                 \
 		BACKEND_BINOP(bit_op, bit_op);                                       \
 	}
+    BACKUP_BINOP_IMM(ARM_andImmX,ARM_andRegX);
 		BACKEND_BIT_BINOP(ARM_andRegX, 0);
 		break;
 	case IC_ADDR_OF:
@@ -2762,12 +2763,14 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 		break;
 	case IC_XOR:
+		BACKUP_BINOP_IMM(ARM_eorImmX,ARM_eorRegX);
 		BACKEND_BIT_BINOP(ARM_eorRegX, 0);
 		break;
 	case IC_MOD:
 		code_off = __CompileMod(cctrl, rpn, bin, code_off);
 		break;
 	case IC_OR:
+    BACKUP_BINOP_IMM(ARM_orrImmX,ARM_orrRegX);
 		BACKEND_BIT_BINOP(ARM_orrRegX, 0);
 		break;
 	case IC_LT:

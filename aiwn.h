@@ -940,3 +940,6 @@ void SetKBCallback(void *fptr);
 void SetMSCallback(void *fptr);
 
 void ImportSymbolsToHolyC(void(*cb)(char *name,void *addr));
+int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i);
+int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i);
+int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i);
