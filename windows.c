@@ -24,6 +24,7 @@ static void _DrawWindowNew() {
   window=SDL_CreateWindow("AIWNIOS",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,640,480,SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   screen=SDL_CreateRGBSurface(0,640,480,8,0,0,0,0);
   SDL_SetWindowMinimumSize(window,640,480);
+  SDL_ShowCursor(SDL_DISABLE);
   SDL_SetSurfacePalette(screen,sdl_p=SDL_AllocPalette(256));
   renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
   SDL_UnlockMutex(screen_mutex);
@@ -98,12 +99,17 @@ static void _UpdateScreen(char *px,int64_t w,int64_t h,int64_t w_internal) {
 }
 
 void GrPaletteColorSet(int64_t i,uint64_t bgr48) {
+  int64_t repeat=256/16;
+  int64_t i2;
   int64_t b=(bgr48&0xffff)/(double)0xffff*0xff;
   int64_t g=((bgr48>>16)&0xffff)/(double)0xffff*0xff;
   int64_t r=((bgr48>>32)&0xffff)/(double)0xffff*0xff;
   palette[i]=r|(g<<8)|(b<<16);
   SDL_Color c={r,g,b,0xff};
-  SDL_SetPaletteColors(sdl_p,&c,i,1);
+  //I will repeat the color to simulate ignoring the upper 4 bits
+  for(i2=0;i2!=repeat;i2++) {
+    SDL_SetPaletteColors(sdl_p,&c,16*i2+i,1);
+  }
 }
 
 #define CH_CTRLA	0x01
@@ -492,10 +498,10 @@ static int SDLCALL MSCallback(void *d,SDL_Event *e) {
               x2=(x-view_port.x)*640./view_port.w;
             if(y<view_port.y)
               y2=0;
-            else if(x>=view_port.y+view_port.h)
+            else if(y>=view_port.y+view_port.h)
               y2=479;
             else
-              y2=(y-view_port.y)*640./view_port.h;
+              y2=(y-view_port.y)*480./view_port.h;
             (*ms_cb)(x2,y2,z,state);
         }
     return 0;

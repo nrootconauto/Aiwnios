@@ -153,7 +153,7 @@ gr_done:
   return res;
 }
 
-//#help_index "Graphics/Char;Char/Graphics"  TODO RESTORE
+#help_index "Graphics/Char;Char/Graphics" 
 public Bool GrTextBox3(CDC *dc=0,I64 x1,I64 y1,I64 z1,U8 *s,I64 border=2)
 {//3D. Transformation. DCF_SYMMETRY is silly.
   U8 *ptr;
