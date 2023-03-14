@@ -4765,3 +4765,5 @@ extern Bool FileFind(U8 *filename,CDirEntry *_de=NULL,I64 fuf_flags=FUF_Z_OR_NOT
 extern Bool DrvTypeSet(U8 drv_let,I64 type=FSt_REDSEA);
 extern U0 Fmt(I64 drv_let,Bool quick=TRUE,Bool confirm=TRUE,I64 type=FSt_FAT32);
 extern I64 StrICmp(U8 *a,U8 *b);
+extern U8 MountFile(U8 *filename);
+extern U0 Unmount(U8 drv_let=0);

@@ -925,7 +925,7 @@ int64_t VFsFClose(FILE *f);
 int64_t VFsTrunc(char *fn,int64_t sz);
 int64_t VFsFBlkRead(void *d,int64_t n, int64_t sz,FILE *f);
 int64_t VFsFBlkWrite(void *d,int64_t n, int64_t sz,FILE *f);
-int64_t VFsFSeek(FILE *f,int64_t off);
+int64_t VFsFSeek(int64_t off,FILE *f);
 FILE *VFsFOpenW(char *f);
 FILE *VFsFOpenR(char *f);
 void VFsSetPwd(char *pwd);

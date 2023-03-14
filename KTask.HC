@@ -134,8 +134,7 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->stk=MAlloc(stk_size,task);
   task->text_attr	=WHITE<<4+BLUE;
   task->border_src	=BDS_CONST;
-  //task->border_attr	=DrvTextAttrGet(':'); TODO RESTORE
-  task->border_attr=BLACK<<4|WHITE; //TODO REMOVE
+  task->border_attr	=DrvTextAttrGet(':');
   task->title_src	=TTS_CONST;
   task->win_left	=1;
   task->win_right	=text.cols-2;

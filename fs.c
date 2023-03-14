@@ -207,14 +207,12 @@ int64_t VFsFClose(FILE *f) {
 	return 0;
 }
 int64_t VFsFBlkRead(void *d,int64_t n, int64_t sz,FILE *f) {
-	fread(d,n,sz,f);
-	return 0;
+	return 0!=fread(d,n,sz,f);
 }
 int64_t VFsFBlkWrite(void *d,int64_t n, int64_t sz,FILE *f) {
-	fwrite(d,n,sz,f);
-	return 0;
+	return 0!=fwrite(d,n,sz,f);
 }
-int64_t VFsFSeek(FILE *f,int64_t off) {
+int64_t VFsFSeek(int64_t off,FILE *f) {
 	fseek(f,off,SEEK_SET);
 	return 0;
 }

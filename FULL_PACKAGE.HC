@@ -148,6 +148,7 @@ Cmp("TEST2.HC",,"HCRT2.BIN");
 #include "MakeDoc.HC"
 #include "Training.HC"
 #include "MakeAC.HC"
+#include "Mount.HC"
 U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   CHash *find=HashFind(name,Fs->hash_table,-1);
   if(find&&find->type&HTT_GLBL_VAR) {

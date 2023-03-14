@@ -63,6 +63,9 @@ public U8 *ACDDefsGet(U8 *st)
 	while (*in_ptr!=ACD_WORD_CHAR && in_ptr<buf+ACD_BLK_SIZE*2)
 	  in_ptr++;
 	if (*in_ptr++==ACD_WORD_CHAR) {
+  DbgPutS(in_ptr);
+  DbgPutS(st);
+  PrintI("!StrICmp(st,in_ptr)",!StrICmp(st,in_ptr));
 	  if (!StrICmp(st,in_ptr)) {
 	    in_ptr2=in_ptr;
 	    in_ptr--;

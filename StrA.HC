@@ -133,10 +133,10 @@ I64 StrNCmp(U8 *a,U8 *b,I64 cnt) {
 }
 
 I64 StrNICmp(U8 *a,U8 *b,I64 cnt) {
-  I64 i;
+  I64 i,A,B;
   for(i=0;i!=cnt;i++) {
-    if(ToUpper(a[i])!=ToUpper(b[i]))
-      return a[i]-b[i]; 
+    if((A=ToUpper(a[i]))!=(B=ToUpper(b[i])))
+      return A-B; 
   }
   return 0;
 }
