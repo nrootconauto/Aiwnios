@@ -1085,3 +1085,18 @@ int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i) {
 int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i) {
   return LogicalImmX(2,d,s,i);
 }
+
+static int64_t LdStRegPairImm(int64_t opc,int64_t L,int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  int64_t times=2;
+  if(off%times) return ARM_ERR_INV_OFF;
+  if(off>times*256) return ARM_ERR_INV_OFF;
+  if(off<times*-256) return ARM_ERR_INV_OFF;
+  return MASKn(opc, 32,30)|MASKn(0x5, 32,27)|MASKn(2,32, 23)|MASKn(L,32, 22)|MASKn(off/8,7, 15)|MASKn(r2,5, 10)|MASKn(ra,5, 5)|MASKn(r1,5, 0);
+}
+
+int64_t ARM_stpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  return LdStRegPairImm(2,0,r1,r2,ra,off);
+}
+int64_t ARM_ldpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  return LdStRegPairImm(2,1,r1,r2,ra,off);
+}

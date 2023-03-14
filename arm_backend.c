@@ -1870,11 +1870,13 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 {
 	char push_ireg[32];
 	char push_freg[32];
-	int64_t i, r, r2, ireg_arg_cnt, freg_arg_cnt, stk_arg_cnt, fsz;
+  char ilist[32];
+  char flist[32];
+	int64_t i,i2,i3, r, r2, ireg_arg_cnt, freg_arg_cnt, stk_arg_cnt, fsz,code,off;
 	CMemberLst* lst;
 	CICArg fun_arg, write_to;
 	CRPN *rpn, *arg;
-	/*
+	/* Old SP
    * saved regs
    * wiggle room
    * locals
@@ -1895,39 +1897,49 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	//ALIGN TO 8
 	if (fsz % 8)
 		fsz += 8 - fsz % 8;
-	int64_t to_push = __FindPushedIRegs(cctrl, push_ireg) * 8 + __FindPushedFRegs(cctrl, push_freg) * 8 + cctrl->backend_user_data0 + fsz, old_regs_start;
-	if (to_push % 16)
+	int64_t to_push = (i2=__FindPushedIRegs(cctrl, push_ireg)) * 8 + (i3=__FindPushedFRegs(cctrl, push_freg)) * 8 + cctrl->backend_user_data0 + fsz, old_regs_start;
+  if(i2%2) to_push+=8; //We push a dummy register in a pair if not aligned to 2
+  if(i3%2) to_push+=8; //Ditto
+  
+  if (to_push % 16)
 		to_push += 8;
 	cctrl->backend_user_data4 = fsz;
+	old_regs_start = fsz + cctrl->backend_user_data0;
+  
+  i2=0;
+	for (i = 0; i != 32; i++)
+		if (push_ireg[i])
+      ilist[i2++]=i;
+  if(i2%2)
+    ilist[i2++]=1; //Dont use 0 as it is a reutrn register
+  i3=0;
+	for (i = 0; i != 32; i++)
+		if (push_freg[i])
+      flist[i3++]=i;
+  if(i3%2)
+    flist[i3++]=1;  //Dont use 0 as it is a reutrn register
+    
+  //<==== OLD SP
+  //first saved reg pair<==-16
+  //next saved reg pair<===-32
+  // 	
+  off=16; 
+  for(i=0;i!=i2;i+=2) {
+      AIWNIOS_ADD_CODE(ARM_stpImmX(ilist[i],ilist[i+1],ARM_REG_SP,-off));
+      off+=16;
+  }
+	for(i=0;i!=i3;i+=2) {
+      AIWNIOS_ADD_CODE(ARM_stpImmX(flist[i],flist[i+1],ARM_REG_SP,-off));
+      off+=16;
+  }
 	if (ARM_ERR_INV_OFF != ARM_subImmX(ARM_REG_SP, ARM_REG_SP, to_push)) {
 		AIWNIOS_ADD_CODE(ARM_subImmX(ARM_REG_SP, ARM_REG_SP, to_push));
 	} else {
 		code_off = __ICMoveI64(cctrl, 8, to_push, bin, code_off);
 		AIWNIOS_ADD_CODE(ARM_subRegX(ARM_REG_SP, ARM_REG_SP, 8));
 	}
-	old_regs_start = fsz + cctrl->backend_user_data0;
-#define PROLOG_ADD_REG(i, rt)                                        \
-	{                                                                \
-		fun_arg.reg = i;                                             \
-		fun_arg.mode = MD_REG;                                       \
-		fun_arg.raw_type = rt;                                       \
-		write_to.reg = ARM_REG_SP;                                   \
-		write_to.off = old_regs_start + 8 * r2++;                    \
-		write_to.mode = MD_INDIR_REG;                                \
-		write_to.raw_type = rt;                                      \
-		code_off = ICMov(cctrl, &write_to, &fun_arg, bin, code_off); \
-	}
-	for (r2 = i = 0; i != 32; i++) {
-		if (push_ireg[i]) {
-			PROLOG_ADD_REG(i, RT_I64i);
-		}
-		if (push_freg[i]) {
-			PROLOG_ADD_REG(i, RT_F64);
-		}
-	}
-	AIWNIOS_ADD_CODE(ARM_strRegImmX(ARM_REG_FP, ARM_REG_SP, 0));
-	AIWNIOS_ADD_CODE(ARM_strRegImmX(ARM_REG_LR, ARM_REG_SP, 8));
-	AIWNIOS_ADD_CODE(ARM_movRegX(ARM_REG_FP, ARM_REG_SP));
+  AIWNIOS_ADD_CODE(ARM_stpImmX(ARM_REG_FP,ARM_REG_LR,ARM_REG_SP,0));
+  AIWNIOS_ADD_CODE(ARM_movRegX(ARM_REG_FP,ARM_REG_SP));
 	stk_arg_cnt = ireg_arg_cnt = freg_arg_cnt = 0;
 	if (cctrl->cur_fun) {
 		lst = cctrl->cur_fun->base.members_lst;
@@ -2006,16 +2018,16 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 //
 static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 {
-	char push_ireg[32];
-	char push_freg[32];
-	int64_t i, r, r2, fsz;
+	char push_ireg[32],ilist[32];
+	char push_freg[32],flist[32];
+	int64_t i, r, r2, fsz,i2,i3,off;
 	CICArg spill_loc, write_to;
 	CRPN* rpn;
-	/*
-   * old_FP,old_LR
+	/* <== OLD SP
    * saved regs
    * wiggle room
-   * locals<===FP=SP
+   * locals
+   * OLD FP,LR<===FP=SP
    */
 	if (cctrl->cur_fun)
 		fsz = cctrl->cur_fun->base.sz + 16; //+16 for LR/FP
@@ -2031,38 +2043,48 @@ static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	//ALIGN TO 8
 	if (fsz % 8)
 		fsz += 8 - fsz % 8;
-	int64_t to_push = __FindPushedIRegs(cctrl, push_ireg) * 8 + __FindPushedFRegs(cctrl, push_freg) * 8 + fsz + cctrl->backend_user_data0, old_regs_start; // old_FP,old_LR
-	if (to_push % 16)
+	int64_t to_push = (i2=__FindPushedIRegs(cctrl, push_ireg)) * 8 + (i3=__FindPushedFRegs(cctrl, push_freg)) * 8 + fsz + cctrl->backend_user_data0, old_regs_start; // old_FP,old_LR
+	if(i2%2) to_push+=8; //We push a dummy register in a pair if not aligned to 2
+  if(i3%2) to_push+=8; //Ditto
+  if (to_push % 16)
 		to_push += 8;
 	old_regs_start = fsz + cctrl->backend_user_data0;
-#define EPILOG_GET_REG(i, rt)                                          \
-	{                                                                  \
-		write_to.reg = i;                                              \
-		write_to.mode = MD_REG;                                        \
-		write_to.raw_type = rt;                                        \
-		spill_loc.reg = ARM_REG_SP;                                    \
-		spill_loc.off = old_regs_start + 8 * r2++;                     \
-		spill_loc.mode = MD_INDIR_REG;                                 \
-		spill_loc.raw_type = rt;                                       \
-		code_off = ICMov(cctrl, &write_to, &spill_loc, bin, code_off); \
-	}
+  i2=0;
+	for (i = 0; i != 32; i++)
+		if (push_ireg[i])
+      ilist[i2++]=i;
+  if(i2%2)
+    ilist[i2++]=1;  //Dont use 0 as it is a reutrn register
+  i3=0;
+	for (i = 0; i != 32; i++)
+		if (push_freg[i])
+      flist[i3++]=i;
+  if(i3%2)
+    flist[i3++]=1;  //Dont use 0 as it is a reutrn register
+  
+  AIWNIOS_ADD_CODE(ARM_ldpImmX(ARM_REG_FP,ARM_REG_LR,ARM_REG_SP,0));
 
-	for (r2 = i = 0; i != 32; i++) {
-		if (push_ireg[i]) {
-			EPILOG_GET_REG(i, RT_I64i);
-		}
-		if (push_freg[i]) {
-			EPILOG_GET_REG(i, RT_F64);
-		}
-	}
-	AIWNIOS_ADD_CODE(ARM_ldrRegImmX(ARM_REG_LR, ARM_REG_FP, 8));
-	AIWNIOS_ADD_CODE(ARM_ldrRegImmX(ARM_REG_FP, ARM_REG_FP, 0));
-	if (ARM_ERR_INV_OFF != ARM_addImmX(ARM_REG_SP, ARM_REG_SP, to_push)) {
+  if (ARM_ERR_INV_OFF != ARM_addImmX(ARM_REG_SP, ARM_REG_SP, to_push)) {
 		AIWNIOS_ADD_CODE(ARM_addImmX(ARM_REG_SP, ARM_REG_SP, to_push));
 	} else {
 		code_off = __ICMoveI64(cctrl, 8, to_push, bin, code_off);
 		AIWNIOS_ADD_CODE(ARM_addRegX(ARM_REG_SP, ARM_REG_SP, 8));
 	}
+
+  
+  off=16;
+  //<==== OLD SP
+  //first saved reg pair<==-16
+  //next saved reg pair<===-32
+  // 	
+	for(i=0;i!=i2;i+=2) {
+      AIWNIOS_ADD_CODE(ARM_ldpImmX(ilist[i],ilist[i+1],ARM_REG_SP,-off));
+      off+=16;
+  }
+	for(i=0;i!=i3;i+=2) {
+      AIWNIOS_ADD_CODE(ARM_ldpImmX(flist[i],flist[i+1],ARM_REG_SP,-off));
+      off+=16;
+  }
 	AIWNIOS_ADD_CODE(ARM_ret());
 	return code_off;
 }

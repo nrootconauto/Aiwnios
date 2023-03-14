@@ -818,7 +818,8 @@ int64_t ARM_ldrRegRegShift(int64_t a,int64_t n,int64_t m);
 int64_t ARM_strRegRegShift(int64_t a,int64_t n,int64_t m);
 int64_t ARM_ldrRegRegShiftX(int64_t a,int64_t n,int64_t m);
 int64_t ARM_strRegRegShiftX(int64_t a,int64_t n,int64_t m);
-
+int64_t ARM_ldpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off);
+int64_t ARM_stpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off);
 CCodeCtrl *CodeCtrlPush(CCmpCtrl* ccmp);
 void CodeCtrlDel(CCodeCtrl* ctrl);
 void CodeCtrlPop(CCmpCtrl* ccmp);
