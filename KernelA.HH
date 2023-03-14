@@ -1472,9 +1472,9 @@ class CWinMgrTimingGlbls
   CHashAC *fillin_matches[AC_FILLINS_NUM+1];
 };
 
-#define ACD_WORD_FILENAME	"/Adam/AutoComplete/ACWords.DATA.Z"
-#define ACD_DEF_FILENAME	"/Adam/AutoComplete/ACDefs.DATA"
-#define ACD_DEF_FILENAME_Z	"/Adam/AutoComplete/ACDefs.DATA.Z"
+#define ACD_WORD_FILENAME	"/ACWords.DATA"
+#define ACD_DEF_FILENAME	"/ACDefs.DATA"
+#define ACD_DEF_FILENAME_Z	"/ACDefs.DATA"
 
 #define ACD_H1			0
 #define ACD_H1_END		1
@@ -4764,3 +4764,4 @@ extern CDirEntry *FilesFind(U8 *files_find_mask,I64 fuf_flags=0);
 extern Bool FileFind(U8 *filename,CDirEntry *_de=NULL,I64 fuf_flags=FUF_Z_OR_NOT_Z);
 extern Bool DrvTypeSet(U8 drv_let,I64 type=FSt_REDSEA);
 extern U0 Fmt(I64 drv_let,Bool quick=TRUE,Bool confirm=TRUE,I64 type=FSt_FAT32);
+extern I64 StrICmp(U8 *a,U8 *b);

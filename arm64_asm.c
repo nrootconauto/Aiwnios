@@ -245,6 +245,7 @@ static int64_t BitfieldX(int64_t op, int64_t d, int64_t n, uint64_t immr,
 static int64_t AddSubImmX(int64_t op, int64_t s, int64_t d, int64_t n,
 	int64_t imm, int64_t sh)
 {
+  if(imm<0) return ARM_ERR_INV_OFF;
 	ARM_FORCE_ALIGN(imm, 12, 0);
 	int32_t imm12 = MASKn(imm, 12, 10);
 	int32_t shift = MASKn(sh, 1, 22);
@@ -1099,4 +1100,19 @@ int64_t ARM_stpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
 }
 int64_t ARM_ldpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
   return LdStRegPairImm(2,1,r1,r2,ra,off);
+}
+
+static int64_t LdStSimdFpPairImm(int64_t opc,int64_t L,int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  int64_t times=2;
+  if(off%times) return ARM_ERR_INV_OFF;
+  if(off>times*256) return ARM_ERR_INV_OFF;
+  if(off<times*-256) return ARM_ERR_INV_OFF;
+  return MASKn(opc, 32,30)|MASKn(0x5, 32,27)|(1<<26)|MASKn(2,32, 23)|MASKn(L,32, 22)|MASKn(off/8,7, 15)|MASKn(r2,5, 10)|MASKn(ra,5, 5)|MASKn(r1,5, 0);
+}
+
+int64_t ARM_stpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  return LdStSimdFpPairImm(2,0,r1,r2,ra,off);
+}
+int64_t ARM_ldpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
+  return LdStSimdFpPairImm(2,1,r1,r2,ra,off);
 }

@@ -870,7 +870,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		if (indir_off < 0) {
 			indir_off2 = indir_off;
 			indir_off = 0;
-			AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, indir_off2));
+			AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, -indir_off2));
 		}
 		switch (dst->raw_type) {
 			break;
@@ -931,8 +931,11 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		default:
 			abort();
 		}
-		if (indir_off2)
-			AIWNIOS_ADD_CODE(ARM_addImmX(use_reg2, use_reg2, indir_off2));
+    if (indir_off2<0) {
+				AIWNIOS_ADD_CODE(ARM_addImmX(use_reg2, use_reg2, -indir_off2));
+      } else if(indir_off2>0) {
+      	AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, indir_off2));
+      }
 		break;
 	case MD_FRAME:
 		use_reg2 = ARM_REG_FP;
@@ -1062,7 +1065,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			if (indir_off < 0) {
 				indir_off2 = indir_off;
 				indir_off = 0;
-				AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, indir_off2));
+				AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, -indir_off2));
 			}
 			switch (src->raw_type) {
 				break;
@@ -1159,8 +1162,11 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			default:
 				abort();
 			}
-			if (indir_off2)
-				AIWNIOS_ADD_CODE(ARM_addImmX(use_reg2, use_reg2, indir_off2));
+			if (indir_off2<0) {
+				AIWNIOS_ADD_CODE(ARM_addImmX(use_reg2, use_reg2, -indir_off2));
+      } else if(indir_off2>0) {
+      	AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, indir_off2));
+      }
 		} else if (src->mode == MD_INDIR_REG) {
 			use_reg2 = src->reg;
 			indir_off = src->off;
@@ -1929,7 +1935,7 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
       off+=16;
   }
 	for(i=0;i!=i3;i+=2) {
-      AIWNIOS_ADD_CODE(ARM_stpImmX(flist[i],flist[i+1],ARM_REG_SP,-off));
+      AIWNIOS_ADD_CODE(ARM_stpImmF64(flist[i],flist[i+1],ARM_REG_SP,-off));
       off+=16;
   }
 	if (ARM_ERR_INV_OFF != ARM_subImmX(ARM_REG_SP, ARM_REG_SP, to_push)) {
@@ -2082,7 +2088,7 @@ static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
       off+=16;
   }
 	for(i=0;i!=i3;i+=2) {
-      AIWNIOS_ADD_CODE(ARM_ldpImmX(flist[i],flist[i+1],ARM_REG_SP,-off));
+      AIWNIOS_ADD_CODE(ARM_ldpImmF64(flist[i],flist[i+1],ARM_REG_SP,-off));
       off+=16;
   }
 	AIWNIOS_ADD_CODE(ARM_ret());
@@ -2523,7 +2529,8 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 #define BACKUP_BINOP_IMM(i_imm_op, i_op)                                           \
 	next = ICArgN(rpn, 1);                                                         \
 	next2 = ICArgN(rpn, 0);                                                        \
-	if (rpn->raw_type != RT_F64 && IsConst(next2) && next2->type != IC_F64) {      \
+	if (rpn->raw_type != RT_F64 && IsConst(next2) && next2->type != IC_F64&& \
+    next2->integer>=0) {      \
 		PushTmp(cctrl, next, &rpn->res);                                           \
 		code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
 		code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 1, bin, code_off);  \

@@ -146,6 +146,8 @@ Cmp("TEST2.HC",,"HCRT2.BIN");
 #include "WinMgr.HC"
 #include "GodExt.HC"
 #include "MakeDoc.HC"
+#include "Training.HC"
+#include "MakeAC.HC"
 U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   CHash *find=HashFind(name,Fs->hash_table,-1);
   if(find&&find->type&HTT_GLBL_VAR) {
@@ -191,6 +193,7 @@ U0 UserStartUp()
   //CPURep;
 }
 Spawn(&Poodacle,,"Poodacle");
+ACInit("T:/Kernel*.HH*");
 CoreAPSethTask;
 #endif
 ;

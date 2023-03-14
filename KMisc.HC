@@ -1,3 +1,9 @@
+Bool LBEqu(U8 *ptr,I64 bit,Bool b) {
+  if(b)
+    return LBts(ptr,bit);
+  return LBtr(ptr,bit);
+}
+
 U16 EndianU16(U16 d)
 {//Swap big<-->little endian.
   I64 res=0;
@@ -143,14 +149,12 @@ Bool IsMute()
 
 Bool Silent(Bool val=ON)
 {//Turn-off StdOut console text. (Not sound.)
-  return 0; //TODO RESTORE
-  //return LBEqu(&(Fs->display_flags),DISPLAYf_SILENT,val);
+  return LBEqu(&(Fs->display_flags),DISPLAYf_SILENT,val);
 }
 
 Bool IsSilent()
 {//Return StdOut turned-off?
-  //return Bt(&(Fs->display_flags),DISPLAYf_SILENT);
-  return 0; //TODO RESTORE
+  return Bt(&(Fs->display_flags),DISPLAYf_SILENT);
 }
 
 Bool SysDbg(Bool val)
@@ -205,8 +209,3 @@ U0 ProgressBarsRst(U8 *path=NULL)
   MemSet(sys_progresses,0,4*sizeof(CProgress));
 }
 
-Bool LBEqu(U8 *ptr,I64 bit,Bool b) {
-  if(b)
-    return LBts(ptr,bit);
-  return LBtr(ptr,bit);
-}

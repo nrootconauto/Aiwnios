@@ -115,9 +115,10 @@ U0 StrCpy(U8 *a,U8 *b) {
   *a=0; 
 }
 I64 StrICmp(U8 *a,U8 *b) {
+  I64 A,B;
   while(*a) {
-    if(ToUpper(*a++)!=ToUpper(*b++))
-      return a[-1]-b[-1];
+    if((A=ToUpper(*a++))!=(B=ToUpper(*b++)))
+      return A-B;
   }
   return 0;
 }
