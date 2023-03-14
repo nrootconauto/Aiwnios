@@ -15,7 +15,7 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
     LBts(&sys_semas[SEMA_JUST_PUMP_MSGS],0);
   while (Bt(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0)) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicks;
+      sys_winmgr_task->wake_jiffy=__GetTicksHP;
     Yield;
   }
   if (cnt>1 && old_doc)
@@ -23,7 +23,7 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
   update_cnt=winmgr.updates+cnt;
   while (winmgr.updates<update_cnt) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicks;
+      sys_winmgr_task->wake_jiffy=__GetTicksHP;
     Sleep(1);
   }
   if (old_doc)

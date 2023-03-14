@@ -253,11 +253,13 @@ I64 ExeCmdLine(CCmpCtrl *cc)
     if (machine_code!=INVALID_PTR) {
       if (!(cc->flags&CCF_JUST_LOAD)) {
 	t0=tS;
+  PrintF("t1",t0);
   imachine=machine_code;
 	res=(*imachine)();
 	Fs->answer=res;
 	Fs->answer_type=type;
-	Fs->answer_time=tS-t0;
+	PrintF("t1",t0);
+  Fs->answer_time=tS-t0;
 	Fs->new_answer=TRUE;
 	cc->pmt_line=0;
       }
@@ -426,7 +428,7 @@ I64 TaskEnd()
   LBtr(&task->srv_ctrl.flags,JOBCf_LOCKED);
   LBtr(&task->task_flags,TASKf_TASK_LOCK);
 
-  task->wake_jiffy=__GetTicks+DYING_JIFFIES;
+  task->wake_jiffy=__GetTicksHP+DYING_JIFFIES;
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     ; //TODO ATOMIC LOCK
   PrintI("p1",3);
@@ -444,7 +446,7 @@ U0 TaskKillDying()
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
       ; //TODO atomic lock
     task=Gs->next_dying;
-    while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicks) {
+    while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicksHP) {
       task1=task->next;
       QueRem(task);
       TaskDel(task);

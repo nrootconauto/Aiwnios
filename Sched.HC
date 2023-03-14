@@ -121,7 +121,7 @@ next:
   task=task->next_task;
   if(task==Gs->seth_task)
     goto restore;
-  if(task->wake_jiffy>__GetTicks) {
+  if(task->wake_jiffy>__GetTicksHP) {
     goto next;
   }
   if(Bt(&task->task_flags,TASKf_KILL_TASK)) {

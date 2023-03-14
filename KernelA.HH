@@ -3800,6 +3800,8 @@ class CProgress
 //From AIWNIOS
 import U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 import U0 __Sleep(I64);
+import U0 __SleepHP(I64);
+import I64 __GetTicksHP();
 import I64 LBtc(U8*,I64);
 import F64 Ln(F64);
 import F64 Arg(F64,F64); //ATAN2
@@ -3877,6 +3879,8 @@ import U0 SetKBCallback(U8 *fptr);
 import U0 SetMSCallback(U8 *fptr);
 #else
 #define public 
+extern U0 __SleepHP(I64);
+extern I64 __GetTicksHP();
 extern U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 extern U0 SetKBCallback(U8 *fptr);
 extern U0 SetMSCallback(U8 *fptr);

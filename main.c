@@ -312,16 +312,38 @@ static void SetHolyFs(void* fs)
 {
 	HolyFs = fs;
 }
+static int64_t __GetTicksHP() {
+  struct timespec ts;
+  static int64_t initial=0;
+  int64_t theTick = 0U;
+  if(!initial) {
+    clock_gettime(CLOCK_REALTIME,&ts);
+    theTick  = ts.tv_nsec / 1000;
+    theTick += ts.tv_sec*1000000U;
+    initial=theTick;
+    return 0;
+  }
+  clock_gettime(CLOCK_REALTIME,&ts);
+  theTick  = ts.tv_nsec / 1000;
+  theTick += ts.tv_sec*1000000U;
+  return theTick-initial;
+}
+static int64_t __GetTicks() {
+  return __GetTicksHP()/1000;
+} 
+static void __SleepHP(int64_t us) {
+  usleep(us);
+}
 static void* GetHolyFs()
 {
+  if(!HolyFs) {
+    HolyFs=calloc(sizeof(CTask),1);
+    TaskInit(HolyFs,NULL,0);
+  }
 	return HolyFs;
 }
 static int64_t MemCmp(char *a ,char *b,int64_t s) {
   return memcmp(a,b,s);
-}
-static int64_t __GetTicks()
-{
-	return SDL_GetTicks();
 }
 static int64_t IsValidPtr(int64_t ptr)
 {
@@ -383,7 +405,9 @@ void BootAiwnios()
 		PrsBindCSymbol("__CAlloc", &__AIWNIOS_CAlloc);
 		PrsBindCSymbol("Free", &__AIWNIOS_Free);
 		PrsBindCSymbol("MSize", &MSize);
-		PrsBindCSymbol("__StrNew", &__AIWNIOS_StrDup);
+		PrsBindCSymbol("__SleepHP", &__SleepHP);
+		PrsBindCSymbol("__GetTicksHP", &__GetTicksHP);
+    PrsBindCSymbol("__StrNew", &__AIWNIOS_StrDup);
 		PrsBindCSymbol("MemCpy", &memcpy);
 		PrsBindCSymbol("MemSet", &memset);
 		PrsBindCSymbol("MemSetU16", &MemSetU16);

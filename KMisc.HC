@@ -52,7 +52,7 @@ Bool Blink(F64 Hz=2.5)
 U0 SleepUntil(I64 wake_jiffy)
 {//Not for power-saving.  It is to make a program pause without hogging the CPU.
   Bool old_idle=LBts(&(Fs->task_flags),TASKf_IDLE);
-  Fs->wake_jiffy=wake_jiffy;
+  Fs->wake_jiffy=wake_jiffy*1000;
   Yield;
   if(old_idle)
     LBts(&(Fs->task_flags),TASKf_IDLE);
