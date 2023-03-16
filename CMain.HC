@@ -24,7 +24,7 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
         case IC_NOT:
         case IC_COM:
         case IC_SHL:
-        case IC__MM:
+        case IC__MM:
         case IC__PP:
         case IC_MM_:
         case IC_PP_:

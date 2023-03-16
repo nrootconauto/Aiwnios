@@ -44,7 +44,7 @@ I64 WinQueIPMsgs(Bool que)
     arg1=ms.pos.x-task_focus->pix_left-task_focus->scroll_x;
     arg2=ms.pos.y-task_focus->pix_top-task_focus->scroll_y;
     single_arg1=single_ms.x-task_focus->pix_left-task_focus->scroll_x;
-    single_arg2=single_ms.y-task_focus->pix_top-task_focus->scroll_y;
+    single_arg2=single_ms.y-task_focus->pix_top-task_focus->scroll_y;
     if (old_ms.presnap.x!=ms.presnap.x || old_ms.presnap.y!=ms.presnap.y) {
       if (que)
 	TaskMsg(task_focus,0,
@@ -162,7 +162,7 @@ I64 WinQueIPMsgs(Bool que)
 	  if (que)
 	    TaskMsg(task_focus,0,
 		  MSG_MS_R_DOWN,arg1,arg2,0);
-	  msg_code=MSG_MS_R_DOWN;
+    msg_code=MSG_MS_R_DOWN;
 	} else if (!ms.rb && ms_last.rb) {
 	  if (que)
 	    TaskMsg(task_focus,0,
@@ -311,7 +311,7 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
     //TODO RESTORE???
     //if (ms_hard.install_attempts) //Don't call before boot mouse install attempt
     //  KbdMsHndlr(FALSE,TRUE);
-    SleepUntil(__GetTicks+33);
+    SleepUntil(timeout_val);
   }
   return msg_code;
 }
@@ -720,8 +720,9 @@ wmt_start:
 			  doc_e->de_flags&=~DOCEF_SOLID_BORDER;
 			if (doc_e->de_flags & (DOCEF_TREE|DOCEF_LST|
 			      DOCEF_LINK|DOCEF_CHECK_COLLAPSABLE|
-			      DOCEF_LEFT_CB|DOCEF_LEFT_MACRO|DOCEF_LEFT_EXP))
-			  TaskMsg(task,0,MSG_KEY_DOWN,CH_SPACE,0,0);
+			      DOCEF_LEFT_CB|DOCEF_LEFT_MACRO|DOCEF_LEFT_EXP)) {
+        TaskMsg(task,0,MSG_KEY_DOWN,CH_SPACE,0,0);
+        }
 		      }
 		    }
 		    DocUnlock(doc);

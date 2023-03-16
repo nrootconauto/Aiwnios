@@ -10,7 +10,7 @@ U0 CoreAPSethTask()
       TaskKillDying;
       while (LBts(&ctrl->flags,JOBCf_LOCKED))
         ; //TODO atomic lock
-    } while (ctrl->next_waiting!=ctrl && JobRunOne(0,ctrl)); //TODO RESTORE
+    } while (ctrl->next_waiting!=ctrl && JobRunOne(0,ctrl));
     if(bl)
       BreakUnlock;
     LBts(&(Fs->task_flags),TASKf_AWAITING_MSG);

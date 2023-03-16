@@ -639,7 +639,7 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
 
 U0 DbgPrint(U8 *fmt,...) {
   U8 *s=StrPrintJoin(NULL,fmt,argc,argv);
-  "%s",(s);
+  DbgPutS(s);
   Free(s);
 }
 CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
@@ -681,6 +681,8 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
 
 U0 PrsMembers(CCmpCtrl *cc) {
   CRPN *head=cc->coc.coc_head.next,*added,*new;
+  if(head==&cc->coc.coc_head.next)
+    LexExcept(cc,"Expected to get the member of something!");
   CHashClass *cls=head->ic_class;
   CArrayDim *ic_dim=head->ic_dim;
   CMemberLst *mlst;
@@ -1247,12 +1249,21 @@ found_end_square:
               goto fin_ident;
             }
           } else if(cc->hash_entry->type&HTT_GLBL_VAR) {
-            rpn=RPNAddNew(
-              cc,
-              IC_ADDR_IMPORT,
-              CodeMiscHashNew(cc,cc->hash_entry),
-              cc->hash_entry(CHashGlblVar*)->var_class,
-            );
+            if(cc->hash_entry(CHashGlblVar*)->data_addr&&!(cc->flags&CCF_AOT_COMPILE)) {
+              rpn=RPNAddNew(
+                cc,
+                IC_IMM_I64,
+                cc->hash_entry(CHashGlblVar*)->data_addr,
+                cmp.internal_types[RT_I64],
+              );
+            } else {
+              rpn=RPNAddNew(
+                cc,
+                IC_ADDR_IMPORT,
+                CodeMiscHashNew(cc,cc->hash_entry),
+                cc->hash_entry(CHashGlblVar*)->var_class,
+              );
+            }
             rpn=RPNAddNew(
               cc,
               IC_DEREF,

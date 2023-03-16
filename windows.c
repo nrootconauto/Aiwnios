@@ -465,7 +465,7 @@ void SetKBCallback(void *fptr) {
 static void(*ms_cb)(int64_t,int64_t,int64_t,int64_t);
 static int SDLCALL MSCallback(void *d,SDL_Event *e) {
     static int64_t x,y;
-    static int state;
+    static int state=0;
     static int z;
     int x2,y2;
     if(ms_cb)

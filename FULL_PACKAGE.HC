@@ -8,6 +8,7 @@ CCPU cpu_structs[64];
 U8 *StrNew(U8 *str,CTask *task=NULL) {
   if(!task)
     task=Fs;
+  if(!str) str="";
   return __StrNew(str,task->data_heap);
 }
 U8 *MAlloc(I64 cnt,CTask *task=NULL) {
@@ -149,21 +150,37 @@ Cmp("TEST2.HC",,"HCRT2.BIN");
 #include "Training.HC"
 #include "MakeAC.HC"
 #include "Mount.HC"
+#ifdef GEN_HEADERS
+CDoc *unfound=DocNew("unfound.HC");
+#endif
 U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   CHash *find=HashFind(name,Fs->hash_table,-1);
+  I64 cnt=1;
   if(find&&find->type&HTT_GLBL_VAR) {
     find(CHashGlblVar*)->data_addr=addr;
   } else if(find&&find->type&HTT_FUN&&!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
     find(CHashFun*)->exe_addr=addr;
     LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
+  } 
+  #ifdef GEN_HEADERS
+  else if(0) {
+    DocPrint(unfound,"%s\n",name);
   }
+  #endif
 }
 U0 InitSymbols() {
   ExeFile("KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
+  #ifdef GEN_HEADERS
+  DocWrite(unfound);
+  DocDel(unfound);
+  #endif
 }
 InitSymbols;
 DrawWindowNew;
+#ifdef GEN_HEADERS
+#include "GenHeader.HC";;
+#endif
 Gs->seth_task=adam_task;
 sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 Poodacle(I64) {
@@ -184,7 +201,6 @@ U0 Poodacle(I64) {
 U0 UserStartUp()
 {//Run each time a user a spawned
   DocTermNew;
-  DocPrintPartial(DocPut,"HEWLLO WORLD\n");
   //Type("::/Doc/Start.DD");
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   WinToTop;

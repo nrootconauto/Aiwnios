@@ -71,7 +71,7 @@ U0 HashDel(CHashSrcSym *tmph)
     if (tmph->type & (HTT_FUN | HTT_CLASS))
 //Assumes code not on heap, so doesn't Free.
     //$LK,"ClassMemberLstDel",A="MN:ClassMemberLstDel"$() is an import to the Kernel module
-      ;//ClassMemberLstDel(tmph); TODO RESTORE
+      ClassMemberLstDel(tmph);
     else if (tmph->type&HTT_DEFINE_STR)
       Free(tmph(CHashDefineStr *)->data);
     else if (tmph->type & HTT_GLBL_VAR) {

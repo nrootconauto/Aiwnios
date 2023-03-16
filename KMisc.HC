@@ -46,7 +46,7 @@ I64 BCnt(I64 d)
 
 F64 tS()
 {//Time since boot in seconds as a float.
-  return __GetTicks/1000.;
+  return __GetTicksHP/1000000.;
 }
 
 Bool Blink(F64 Hz=2.5)

@@ -473,6 +473,7 @@ U0 XTalkWait(CTask *task,U8 *fmt,...)
 U0 InStr(U8 *fmt,...)
 {//Send InFile code to self.
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
+  DbgPutS(buf);
   if (Bt(&(Fs->task_flags),TASKf_INPUT_FILTER_TASK))
     ExePrint("%s",buf);
   else

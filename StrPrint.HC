@@ -225,7 +225,7 @@ to avoid this.
 	aux_fmt_num,comma_cnt,comma_fmt_cnt,cur_arg=0;
   U64 m;
   F64 d,d1;
-  //CDoc *doc; TODO RESTORE
+  CDoc *doc;
   U8 *ptr,**_buf,*buf,**_dst,tmp_buf[TMP_BUF_LEN],tmp_buf2[TMP_BUF_LEN*2];
   if (!fmt)
     throw('StrPrint');
@@ -331,13 +331,11 @@ to avoid this.
 	    if (cur_arg>=argc)
 	      throw('StrPrint');
 	    if (flags&PRTF_DOLLAR) {
-      /* TODO RESTORE
 	      doc=argv[cur_arg++];
 	      old_flags=doc->flags;
 	      doc->flags|=DOCF_NO_CURSOR;
 	      ptr=DocSave(doc);
 	      doc->flags=old_flags;
-        */
 	    } else
         ptr=FileRead(argv[cur_arg++],NULL);
 	    break;

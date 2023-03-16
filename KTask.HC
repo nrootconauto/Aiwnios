@@ -360,22 +360,22 @@ U0 TaskDel(CTask *task)
 I64 TaskEnd()
 {//Called with irq's off.
   CTask *task=Fs,*tmpt,*tmpt1;
-  PrintI("p1",0);
+  U0 (*cb)();
   if (task==sys_task_being_scrn_updated) {
     LBts(&task->task_flags,TASKf_KILL_TASK);
     return task->next_task;
   }
-  PrintI("p1",1);
   if (task->task_end_cb) {
     task->wake_jiffy=0;
     LBtr(&task->task_flags,TASKf_KILL_TASK);
     TaskRstAwaitingMsg(task);
     Suspend(task,FALSE);
-    task->context_save_area[12]=task->task_end_cb;
+    cb=task->task_end_cb;
     task->task_end_cb=NULL;
+    (*cb)();
+    Exit;
     return task;
   }
-  PrintI("p1",2);
   if (task->parent_task && task->parent_task->popup_task==task) {
     task->parent_task->popup_task=NULL;
     Kill(task->parent_task,FALSE);

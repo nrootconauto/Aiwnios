@@ -335,6 +335,8 @@ public U8 *DocLineRead(U8 *filename,I64 line,CTask *mem_task=NULL)
   CDoc *doc=DocRead(filename,DOCF_PLAIN_TEXT_TABS|DOCF_NO_CURSOR);
   if (DocGoToLine(doc,line) && doc->cur_entry->type_u8==DOCT_TEXT)
     res=StrNew(doc->cur_entry->tag,mem_task);
+  else if(DocGoToLine(doc,line) && doc->cur_entry->type_u8==DOCT_NEW_LINE)
+    res=StrNew("\n",mem_task);
   DocDel(doc);
   return res;
 }

@@ -186,7 +186,7 @@ today.
 	ds.year+=2000;
     } else {
       ds.day_of_mon=Str2I64(ptr,,&ptr);
-      Date2Struct(&ds_now, /*Now TODO RESTORE*/ +local_time_offset);
+      Date2Struct(&ds_now, Now +local_time_offset);
       ds.year=ds_now.year;
     }
     res=Struct2Date(&ds);

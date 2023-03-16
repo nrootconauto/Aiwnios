@@ -12,7 +12,7 @@ Bool BreakLock(CTask *task=NULL)
 U0 Break()
 {//Send <CTRL-ALT-c>.
   if (Bt(&(Fs->task_flags),TASKf_BREAK_TO_SHIFT_ESC))
-    ;//Msg(MSG_KEY_DOWN,CH_SHIFT_ESC,0x20100000201); TODO RESTORE
+    Msg(MSG_KEY_DOWN,CH_SHIFT_ESC,0x20100000201);
   else {
     Fs->wake_jiffy=0;
     TaskRstAwaitingMsg;
@@ -83,11 +83,14 @@ U0 Yield() {
   }  
   if(SYS_CTRL_ALT_FLAGS
     &(1<<CTRL_ALT_DEL|1<<CTRL_ALT_TAB|1<<CTRL_ALT_X|1<<CTRL_ALT_C)) {
-    if(Gs->num)
-      TaskContextRestore(task);
+    if(Gs->num) {
+      goto restore;
+    }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_TAB)) {
-      if(sys_focus_task)
-        TaskContextRestore(task);
+      if(sys_focus_task) {
+        TaskFocusNext;
+        goto restore;
+      }
     }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)&&sys_focus_task) {
       LBts(&sys_focus_task->task_flags,TASKf_KILL_TASK)
@@ -98,22 +101,22 @@ U0 Yield() {
     }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_C)) {
       if(!sys_focus_task) {
-        TaskContextRestore(task);
+        goto restore;
       }
       task=sys_focus_task;
       if(Bt(&task->win_inhibit,WIf_SELF_FOCUS)) {
-        TaskContextRestore(task);
+        goto restore;
       }
       if(Bt(&task->task_flags,TASKf_BREAK_LOCKED)) {
         LBts(&task->task_flags,TASKf_PENDING_BREAK);
-        TaskContextRestore(task);
+        goto restore;
       }
       task->context_save_area[12]=&Break; //12 is the return address from our context save
       if(Bt(&task->task_flags,TASKf_BREAK_TO_SHIFT_ESC)) {
-        TaskContextRestore(task);
+        goto restore;
       }
       TaskFocusNext();
-      TaskContextRestore(task);
+      goto restore;
     }
   }
 not_seth:

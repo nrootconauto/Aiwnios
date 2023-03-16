@@ -2232,7 +2232,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		PushTmp(cctrl, next, NULL);
 		code_off = __OptPassFinal(cctrl, next, bin, code_off);
 		if (next->raw_type == RT_F64) {
-			code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 1, bin, code_off);
+			code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 1, bin, code_off);
 			code_off = __ICMoveF64(cctrl, 0, 0, bin, code_off);
 			AIWNIOS_ADD_CODE(ARM_fcmp(next->res.reg, 0));
 			if (cctrl->code_ctrl->final_pass >= 2) {
@@ -2717,7 +2717,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				into_reg = rpn->res.reg;
 			else
 				into_reg = 0;
-			AIWNIOS_ADD_CODE(ARM_adrX(into_reg, rpn->integer - code_off));
+			AIWNIOS_ADD_CODE(ARM_adrX(into_reg, (rpn->integer+cctrl->code_ctrl->statics_offset) - code_off));
 			goto restore_reg;
 			break;
 		case IC_DEREF:
@@ -3005,6 +3005,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			//
 			BACKEND_BOOLIFY(0, a->res.reg, RT_F64);
 			a->res.reg = 0;
+      a->res.raw_type=RT_I64i;
 		}
 		code_off = ICMov(cctrl, &rpn->res, &a->res, bin, code_off);
 		if (cctrl->code_ctrl->final_pass > 2) {
@@ -3021,6 +3022,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		//
 		BACKEND_BOOLIFY(0, b->res.reg, b->raw_type);
 		b->res.reg = 0;
+    b->res.raw_type=RT_I64i;
 		code_off = ICMov(cctrl, &rpn->res, &b->res, bin, code_off);
 		if (cctrl->code_ctrl->final_pass >= 2) {
 			rpn->code_misc->addr = bin + code_off;
@@ -3040,6 +3042,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		//
 		BACKEND_BOOLIFY(0, a->res.reg, a->raw_type);
 		a->res.reg = 0;
+    a->res.raw_type=RT_I64i;
 		code_off = ICMov(cctrl, &rpn->res, &a->res, bin, code_off);
 		if (cctrl->code_ctrl->final_pass > 2) {
 			AIWNIOS_ADD_CODE(ARM_cbnzX(a->res.reg, (char*)rpn->code_misc->addr - (bin + code_off)));
@@ -3055,6 +3058,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		//
 		BACKEND_BOOLIFY(0, b->res.reg, b->raw_type);
 		b->res.reg = 0;
+    b->res.raw_type=RT_I64i;
 		code_off = ICMov(cctrl, &rpn->res, &b->res, bin, code_off);
 		if (cctrl->code_ctrl->final_pass >= 2) {
 			rpn->code_misc->addr = bin + code_off;
@@ -3367,7 +3371,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 //
 char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 {
-	int64_t code_off, run, idx, cnt = 0, cnt2;
+	int64_t code_off, run, idx, cnt = 0, cnt2,final_size;
 	int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
 	char* bin = NULL;
 	CCodeMisc* misc;
@@ -3516,13 +3520,18 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 				}
 			}
 		}
-		cctrl->code_ctrl->statics_offset = code_off;
-		if (code_off % 8) //Align to 8
-			code_off += 8 - code_off % 8;
-		code_off += statics_sz;
+    if(run<3) {
+      if (code_off % 8) //Align to 8
+        code_off += 8 - code_off % 8;
+      cctrl->code_ctrl->statics_offset = code_off;
+      if(statics_sz)
+        code_off += statics_sz+8;
+      if(run==2)
+        final_size=code_off;
+    } 
 	}
 	__builtin___clear_cache(bin, bin + MSize(bin));
 	if (res_sz)
-		*res_sz = code_off;
+		*res_sz = final_size;
 	return bin;
 }

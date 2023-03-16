@@ -403,12 +403,15 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           for(idx=0;idx!=member_cnt;idx++) {
             if(foff_lookup[idx*2]==cur->ic_data) {
               cur->ic_data=foff_lookup[idx*2+1];
+              DbgPrint("\n%s,%d\n",mlst->str,cur->ic_data);
               break;
             }
             mlst=mlst->next;
           }
         }
       }
+      if(foff)
+        "\n%s,%d\n",cc->htc.fun->str,foff;
       __HC_ICAdd_SetStaticsSize(cc2,foff);
     }
     Free(foff_lookup);
@@ -696,7 +699,11 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_VARGS:
     new=__HC_ICAdd_Vargs(cc2,cur->ic_data);
     break;case IC_STATIC:
-    new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cur->ic_class->raw_type,0);
+    //HolyC side accounts for the ptr arithmetic for us
+    if(cur->last(CRPN*)->type==IC_ADDR)
+      new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,RT_U8,0);
+    else
+      new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cur->ic_class->raw_type,0);
     }
     __HC_ICSetLine(new,cur->ic_line);
   }

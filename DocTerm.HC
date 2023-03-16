@@ -81,6 +81,7 @@ I64 EdLeftClickLink(CDoc *doc,CDocEntry *doc_e)
 {//Called with doc locked, exit unlocked
   Bool res;
   U8 *st;
+  PrintI("EdLeftClickLink",doc);
   if (st=DocEntryLink(doc,doc_e)) {
     DocUnlock(doc);
     if (doc_e->de_flags & DOCEF_POPUP)
@@ -167,7 +168,7 @@ I64 TermRightClickLink(CDoc *doc,CDocEntry *doc_e)
 	    }
 	    "MountFile(\"%s\");\n$$PT$$$$FG$$$$BG$$",st;
 	    WinZBufUpdate;
-	    //MountFile(st); TODO RESTORE
+	    MountFile(st);
 	    res=TRUE;
 	    break;
 	  case RIGHT_PLAIN:

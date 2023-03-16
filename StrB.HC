@@ -89,7 +89,7 @@ Bool YorN()
   I64 ch;
   "(y or n)? ";
   while (TRUE) {
-    ch='N'; //ch=ToUpper(GetChar(,FALSE)); TODO RESTORE
+    ch=ToUpper(GetChar(,FALSE));
     if (ch=='Y') {
       "$$PT$$YES$$FG$$\n";
       return TRUE;
@@ -103,7 +103,7 @@ Bool YorN()
 I64 PressAKey()
 {//Print "Press a key" and wait for non-zero $LK,"ASCII",A="MN:CH_CTRLA"$ key.
   "$$BK,1$$PRESS A KEY$$BK,0$$\n";
-  return 0; //GetChar(,FALSE); TODO RESTORE
+  return GetChar(,FALSE);
 }
 
 Bool AreYouSure()

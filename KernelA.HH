@@ -4767,3 +4767,69 @@ extern U0 Fmt(I64 drv_let,Bool quick=TRUE,Bool confirm=TRUE,I64 type=FSt_FAT32);
 extern I64 StrICmp(U8 *a,U8 *b);
 extern U8 MountFile(U8 *filename);
 extern U0 Unmount(U8 drv_let=0);
+extern U0 In(U8 *fmt,...);
+extern I64 ExePrint(U8 *fmt,...);
+extern U0 PutChars(U64 c);
+extern U0 Print(U8 *fmt,...);
+extern I64 KMCompare(U8 *e1,U8 *e2);
+extern U0 DocMenuEndTaskCB();
+extern class CSprite;
+extern U0 SpriteSideBarTask2(CTask *grand_parent);
+extern CFifoI64 *FifoI64New(I64 size,CTask *mem_task=NULL);
+extern U0 TaskFocusNext();
+extern CSprite *SMLine(CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,CColorROPU32 color);
+extern U0 GrUpdateTaskODEs(CTask *task);
+extern Bool Gr2Bezier3(CDC *dc=0,CD3I32 *ctrl);
+extern Bool GrTextBox3(CDC *dc=0,I64 x1,I64 y1,I64 z1,U8 *s,I64 border=2);
+extern CSprite *SMPolyLineFamily(I64 eletype,CDC *dc,I64 x,I64 y,I64 arg1,I64 arg2,
+	CColorROPU32 color);
+extern Bool BreakUnlock(CTask *task=NULL);
+extern U0 SPutChar(U8 **_dst,U8 ch,U8 **_buf);
+extern U32 RandU32();
+extern U0 CtrlAltCBSet(U8 ch,U0 (*fp_hndlr)(I64 sc),
+	U8 *no_shift_desc=NULL,U8 *shift_desc=NULL,Bool in_irq=FALSE);
+extern U0 EdLineDown(CDoc *doc,I64 sc=I64_MIN);
+extern CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
+  I64 *error_cnt=NULL, I64 *warning_cnt=NULL,U8 mapfile_drv_let=0);
+extern I64 PressAKey();
+extern U8 *DocLineRead(U8 *filename,I64 line,CTask *mem_task=NULL);
+extern U8 *DocLineWrite(U8 *filename,I64 line,U8 *st);
+
+class CRILex
+{
+  CCmpCtrl *cc1,*cc2;
+  CQueVectU8 *indent;
+  I64 depth,exp_depth,one_shot;
+  Bool was_new_line,is_not_cont;
+};
+
+class CDualBuf
+{
+  U8 *buf0,*buf1;
+  I64 in_buf,out_buf,cnt;
+  U8 *filename;
+  CBlkDev *dvd_bd;
+};
+
+extern class CMeshTri;
+extern class CQueMeshTri;
+extern class COptMemberVar;
+extern class CEdSprite;
+extern class CMeshEdVertex;
+extern class CMeshFrame;
+extern class CMeshEdTri;
+
+#define CMPF_ASM_BLK		1
+#define CMPF_ONE_ASM_INS	2
+#define CMPF_LEX_FIRST		4
+#define CMPF_PRS_SEMICOLON	8
+#define PEF_END_EXPR 0x1 //Same as TRUE
+#define PEF_PAREN 0x2
+#define PEF_ARRAY 0x4
+#define PEF_ADDR_OF 0x8
+#define PEF_FUN_BEFORE 0x10
+#define PEF_NO_COMMA 0x20
+
+extern CMsStateGlbls	ms,ms_last,old_ms;
+
+#include "Headers.HH"
