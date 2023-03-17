@@ -347,7 +347,7 @@ I64 KbdMsEvtTime()
   if (ms_hard.timestamp>kbd.timestamp)
     return ms_hard.timestamp;
   else
-    return kbd.new_key_timestamp;
+    return kbd.timestamp;
 }
 
 I64 kb_mtx=0;

@@ -138,7 +138,6 @@ InitCPUs;
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
-Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef COMPONET_GR
 #include "ADskA.HC"
 #include "MakeGr.HC"
@@ -150,8 +149,10 @@ Cmp("TEST2.HC",,"HCRT2.BIN");
 #include "Training.HC"
 #include "MakeAC.HC"
 #include "Mount.HC"
+#include "MakeGod.HC"
+Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
-CDoc *unfound=DocNew("unfound.HC");
+CDoc *unfound=DocNew("unfound.DD");
 #endif
 U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   CHash *find=HashFind(name,Fs->hash_table,-1);
@@ -163,7 +164,7 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
     LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
   } 
   #ifdef GEN_HEADERS
-  else if(0) {
+  else if(1) {
     DocPrint(unfound,"%s\n",name);
   }
   #endif
@@ -183,6 +184,17 @@ DrawWindowNew;
 #endif
 Gs->seth_task=adam_task;
 sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
+U0 UserStartUp()
+{//Run each time a user a spawned
+  DocTermNew;
+  //Type("::/Doc/Start.DD");
+  LBts(&(Fs->display_flags),DISPLAYf_SHOW);
+  WinToTop;
+  WinZBufUpdate;
+  //Dir;
+  //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
+  //CPURep;
+}
 U0 Poodacle(I64) {
   CTask *t; 
   I64 x=0,y=0;
@@ -198,18 +210,7 @@ U0 Poodacle(I64) {
     Refresh;
   }
 }
-U0 UserStartUp()
-{//Run each time a user a spawned
-  DocTermNew;
-  //Type("::/Doc/Start.DD");
-  LBts(&(Fs->display_flags),DISPLAYf_SHOW);
-  WinToTop;
-  WinZBufUpdate;
-  //Dir;
-  //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
-  //CPURep;
-}
-Spawn(&Poodacle,,"Poodacle");
+Spawn(&Poodacle);
 ACInit("T:/Kernel*.HH*");
 CoreAPSethTask;
 #endif

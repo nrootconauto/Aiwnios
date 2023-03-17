@@ -330,7 +330,7 @@ public U0 DocPutKey(CDoc *doc,I64 ch=0,I64 sc=0)
 		      else
 			KeyDescSet("Cmd /God Song");
 		    } else {
-//$LK,"::/Adam/God/HSNotes.DD"$
+//$LK,"::/HSNotes.DD"$
 		      if (sc&SCF_SHIFT) {
 			DocUnlock(doc);
 			GodDoodle;
@@ -346,7 +346,7 @@ public U0 DocPutKey(CDoc *doc,I64 ch=0,I64 sc=0)
 		      else
 			KeyDescSet("Cmd /God Word");
 		    } else {
-//$LK,"::/Adam/God/HSNotes.DD"$
+//$LK,"::/HSNotes.DD"$
 		      FifoU8Flush(god.fifo);
 		      GodBitsIns(GOD_GOOD_BITS,KbdMsEvtTime>>GOD_BAD_BITS);
 		      if (sc&SCF_SHIFT)

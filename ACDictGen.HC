@@ -256,6 +256,5 @@ next_word:
   Free(sorted_word_start);
 }
 
-Cd(__DIR__);
 ACDPreprocess("DICTIONARY.DD","DICTIONARY2.DD");
 ACDGen("DICTIONARY2.DD");

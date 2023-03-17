@@ -45,7 +45,7 @@ CCmpCtrl *CmpCtrlNew(U8 *buf=NULL,I64 flags=0,U8 *filename=NULL)
   tmpf=LexFilePush(cc);
   QueInit(&cc->next_stream_blk);
   if (filename)
-    tmpf->full_name=StrNew(filename); //TODO RESTORE FileNameAbs
+    tmpf->full_name=FileNameAbs(filename); 
   else
     tmpf->full_name=StrNew(blkdev.tmp_filename);
   if (flags & CCF_PMT)
@@ -702,12 +702,10 @@ lex_float_start:
 	    fbuf=ExtDft(cc->cur_str,"HC.Z");
 	    buf2=FileNameAbs(fbuf);
 	    Free(fbuf);
-	    /*if (Bt(&sys_run_level,RLf_DOC)) TODO RESTORE
+	    if (1) 
 	      LexAttachDoc(cc,,,buf2);
-	    else
-	      ; TODO RESTORE
-	    */
-      LexIncludeStr(cc,buf2,FileRead(buf2,NULL),TRUE); //TODO PUT BACK UP
+      else
+        LexIncludeStr(cc,buf2,FileRead(buf2,NULL),TRUE); //TODO
       Free(buf2);
 	    break;
 	  case KW_DEFINE:

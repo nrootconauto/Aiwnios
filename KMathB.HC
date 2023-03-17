@@ -79,7 +79,7 @@ I16 RandI16()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ; //res^=GetTSC; RESTORE
+      res^=__GetTicks;
   Fs->rand_seed=res;
   return res.i16[0];
 }
@@ -89,7 +89,7 @@ U16 RandU16()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ;//res^=GetTSC;RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return res.u16[0];
 }
@@ -99,7 +99,7 @@ I32 RandI32()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ;// res^=GetTSC;RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return res.i32[0];
 }
@@ -109,7 +109,7 @@ U32 RandU32()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ;//res^=GetTSC; RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return res.u32[0];
 }
@@ -119,7 +119,7 @@ I64 RandI64()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ;//res^=GetTSC; //RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return res;
 }
@@ -129,7 +129,7 @@ U64 RandU64()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ; //res^=GetTSC; RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return res;
 }
@@ -139,7 +139,7 @@ F64 Rand()
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
-    ; //res^=GetTSC; RESTORE
+    res^=__GetTicks;
   Fs->rand_seed=res;
   return (res&0x3FFFFFFFFFFFFFFF)/ToF64(0x4000000000000000);
 }
@@ -152,7 +152,7 @@ I64 Seed(I64 seed=0,CTask *task=NULL)
     return task->rand_seed=seed;
   } else {
     LBtr(&task->task_flags,TASKf_NONTIMER_RAND);
-    //return task->rand_seed^=GetTSC; TODO
+    return task->rand_seed^=__GetTicks;
   }
 }
 
