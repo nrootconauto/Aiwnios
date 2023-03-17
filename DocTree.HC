@@ -203,6 +203,7 @@ public I64 ExeDoc(CDoc *doc,I64 ccf_flags=0)
     res=ExeCmdLine(cc);
   } catch {
     if (Fs->except_ch=='Compiler' || Fs->except_ch=='Break') {
+      PutExcept; //Added by nroot
       Fs->catch_except=TRUE;
       okay=FALSE;
       res=0;

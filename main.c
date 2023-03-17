@@ -419,6 +419,7 @@ void BootAiwnios()
 		PrsBindCSymbol("Log10", &log10);
 		PrsBindCSymbol("Log2", &log2);
 		PrsBindCSymbol("Pow10", &Pow10);
+		PrsBindCSymbol("Pow", &pow);
 		PrsBindCSymbol("PrintI", &PrintI);
 		PrsBindCSymbol("PrintF", &PrintF);
 		PrsBindCSymbol("Round", &round);
@@ -546,6 +547,7 @@ void BootAiwnios()
     PrsBindCSymbol("DrawWindowNew",DrawWindowNew);
     PrsBindCSymbol("UpdateScreen",UpdateScreen);
     PrsBindCSymbol("SetKBCallback",SetKBCallback);
+    PrsBindCSymbol("SndFreq",SndFreq);
     PrsBindCSymbol("SetMSCallback",SetMSCallback);
 	}
 }
@@ -562,73 +564,5 @@ int main()
   int64_t z = 3;
 	int64_t idx;
 	LaunchSDL(&Boot,"HCRT2.BIN");
-  try {
-#ifdef AIWNIOS_TESTS
-		assert(!LBts(&z, 63));
-		assert(z == (3 | (1l << 63)));
-		assert(LBts(&z, 63));
-		assert(z == (3 | (1l << 63)));
-		assert(LBtr(&z, 63));
-		assert(z == 3);
-		assert(!Bt(&z, 63));
-		z = 4;
-		assert(Bt(&z, 2));
-		FuzzTest1();
-		FuzzTest2();
-		FuzzTest3();
-		CLexer* lex = LexerNew("None", "#include\"TEST0.HC\";");
-		CCmpCtrl* ccmp = CmpCtrlNew(lex);
-		CodeCtrlPush(ccmp);
-		Lex(lex);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsStmt(ccmp);
-		PrsBindCSymbol("PutS", &puts);
-		ccmp->cur_fun = HashFind("Foo", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop)() = ccmp->cur_fun->fun_ptr;
-		printf("Foo:%d\n", poop());
-		ccmp->cur_fun = HashFind("Swit", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop2)(int64_t) = ccmp->cur_fun->fun_ptr;
-		for (idx = 0; idx != 5; idx++)
-			printf("Swit(%d):%d\n", idx, poop2(idx));
-		ccmp->cur_fun = HashFind("Fib", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop3)(int64_t) = ccmp->cur_fun->fun_ptr;
-		printf("FIB(9)==%d\n", poop3(9));
-		ccmp->cur_fun = HashFind("SubSwit", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop4)(int64_t) = ccmp->cur_fun->fun_ptr;
-		for (idx = 0; idx != 8; idx++)
-			printf("SubSwit(%d):%d\n", idx, poop4(idx));
-		ccmp->cur_fun = HashFind("Bar", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop5)() = ccmp->cur_fun->fun_ptr;
-		poop5();
-		ccmp->cur_fun = HashFind("UnionTest", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop6)() = ccmp->cur_fun->fun_ptr;
-		poop6();
-		ccmp->cur_fun = HashFind("FlowTest", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop7)() = ccmp->cur_fun->fun_ptr;
-		poop7();
-#endif
-    BootAiwnios();
-#ifdef AIWNIOS_TESTS
-		ccmp->cur_fun = HashFind("Main", Fs->hash_table, HTT_FUN, 1);
-		int64_t (*poop8)() = ccmp->cur_fun->fun_ptr;
-		poop8();
-#endif
-	} catch ({
-		puts("POOP");
-	});
-  puts("HERE");
-  Load("HCRT2.BIN");
 	return EXIT_SUCCESS;
 }

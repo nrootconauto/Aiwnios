@@ -1111,8 +1111,8 @@ static int64_t LdStSimdFpPairImm(int64_t opc,int64_t L,int64_t r1,int64_t r2,int
 }
 
 int64_t ARM_stpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStSimdFpPairImm(2,0,r1,r2,ra,off);
+  return LdStSimdFpPairImm(1,0,r1,r2,ra,off);
 }
 int64_t ARM_ldpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStSimdFpPairImm(2,1,r1,r2,ra,off);
+  return LdStSimdFpPairImm(1,1,r1,r2,ra,off);
 }

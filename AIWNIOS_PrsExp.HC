@@ -1185,6 +1185,15 @@ found_end_square:
         misc->st_len=str_len;
         RPNAddNew(cc,IC_STR_CONST,misc);
         last_consumes_right=0;
+        break;case TK_INS_BIN:
+        cc->flags|=CCF_HAS_MISC_DATA;
+        misc=COCMiscNew(cc,CMT_STR_CONST);
+        misc->st_len=cc->cur_str_len;
+        misc->str=MAlloc(misc->st_len+1);
+        MemCpy(misc->str,cc->cur_str,cc->cur_str_len);
+        RPNAddNew(cc,IC_STR_CONST,misc);
+        last_consumes_right=0;
+        Lex(cc);
         break;case TK_CHAR_CONST:
         RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
         last_consumes_right=0;

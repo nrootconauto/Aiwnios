@@ -54,7 +54,7 @@ U0 LexPutPos(CCmpCtrl *cc)
   if (IsRaw)
     "%s,%d ",cc->lex_include_stk->full_name,cc->lex_include_stk->line_num;
   else {
-    ;//PutFileLink(cc->lex_include_stk->full_name,,cc->lex_include_stk->line_num); TODO RESTORE
+    PutFileLink(cc->lex_include_stk->full_name,,cc->lex_include_stk->line_num);
     "%s,%d\n",
 	  cc->lex_include_stk->full_name,cc->lex_include_stk->line_num;
     '' CH_SPACE;
@@ -97,7 +97,7 @@ U0 UndefinedExtern()
 
 U0 UnusedExternWarning(CCmpCtrl *cc,CHashClass *tmpc)
 {
-  PrintWarn("Unused extern '%s'\n",tmpc->str);
+  //PrintWarn("Unused extern '%s'\n",tmpc->str); Nroot doesnt like this
   cc->warning_cnt++;
 }
 

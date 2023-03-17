@@ -150,6 +150,7 @@ SetFs(Gs->seth_task);
 #include "MakeAC.HC"
 #include "Mount.HC"
 #include "MakeGod.HC"
+#include "ASnd.HC"
 Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
@@ -213,5 +214,4 @@ U0 Poodacle(I64) {
 Spawn(&Poodacle);
 ACInit("T:/Kernel*.HH*");
 CoreAPSethTask;
-#endif
-;
+#endif;

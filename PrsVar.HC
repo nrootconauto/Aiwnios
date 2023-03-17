@@ -71,6 +71,8 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	  RPNAddNew(cc,IC_IMM_I64,dst-*_base,tmpc+1,FALSE);
 	  RPNAddNew(cc,IC_ADD,0,cmp.internal_types[RT_I64],FALSE);
     RPNAddNew(cc,IC_DEREF,0,tmpc,FALSE);
+    if(cc->token==',') //DUMB FIX by nroot
+      Lex(cc);
 	  if (!PrsExpression(cc,NULL,PEF_NO_COMMA)) //Changed by nroot
 	    throw('Compiler');
 	  RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);

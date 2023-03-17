@@ -947,3 +947,5 @@ int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i);
 int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i);
 int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i);
 CCmpCtrl* CmpCtrlDel(CCmpCtrl *d);
+void SndFreq(int64_t f);
+void InitSound();

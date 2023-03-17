@@ -79,7 +79,7 @@ F64 Ona2Freq(I8 ona)
   if (!ona)
     return 0;
   else
-    return 440.0/32*2.0`(ona/12.0);
+    return 440.0/32*Pow(2.0,ona/12.0);
 }
 
 I8 Freq2Ona(F64 freq)
@@ -92,8 +92,7 @@ I8 Freq2Ona(F64 freq)
 
 U0 Snd(I8 ona=0)
 {//Play ona, a piano key num. 0 means rest.
-  I64 period;
-  //TOOD IMPLEMENT
+  SndFreq(Ona2Freq(ona));
 }
 
 Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="B:/Tmp/%X.GR")
