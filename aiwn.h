@@ -949,3 +949,4 @@ int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i);
 CCmpCtrl* CmpCtrlDel(CCmpCtrl *d);
 void SndFreq(int64_t f);
 void InitSound();
+int64_t IsValidPtr(char *chk);

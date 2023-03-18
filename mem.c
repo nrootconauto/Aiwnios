@@ -196,3 +196,47 @@ char* __AIWNIOS_StrDup(char* str, void* t)
 	memcpy(ret, str, cnt + 1);
 	return ret;
 }
+
+static int64_t Hex2I64(char *s,char **end) {
+  int64_t ret=0;
+  while(isxdigit(*s)) {
+    ret<<=4;
+    if(isdigit(*s))
+      ret+=*s-'0';
+    else
+      ret+=toupper(*s)-'A'+10;
+    s++;
+  }
+  if(end) *end=s;
+  return ret;
+}
+int64_t IsValidPtr(char *chk) {
+  int64_t ok=0,sz=0x1000;
+  char buffer[0x1000];
+  char *ptr=buffer;
+  char *start,*end;
+  FILE *f=fopen("/proc/self/maps","rb");
+  while(getline(&ptr,&sz,f)) {
+    start=Hex2I64(ptr,&ptr);
+    if(*ptr++!='-')
+      break;
+    end=Hex2I64(ptr,&ptr);
+    if(start<=chk) {
+      if(chk<end) {
+        if(*ptr++!=' ')
+          break;
+        while(*ptr++!=' ')
+          if(*ptr=='w') {
+            ok=1;
+            break;
+          }
+        break;
+      }
+    } else if(start>chk) //These appear to be sorted
+      break;
+    ptr=buffer;
+    sz=0x1000;
+  }
+  fclose(f);
+  return ok;
+}

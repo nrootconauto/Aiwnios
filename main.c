@@ -345,14 +345,6 @@ static void* GetHolyFs()
 static int64_t MemCmp(char *a ,char *b,int64_t s) {
   return memcmp(a,b,s);
 }
-static int64_t IsValidPtr(int64_t ptr)
-{
-	static int64_t ps;
-	if (!ps)
-		ps = sysconf(_SC_PAGESIZE);
-	ptr -= ps % ptr;
-	return EINVAL != msync((void*)ptr, ps, MS_ASYNC);
-}
 extern void AIWNIOS_setcontext(void*);
 extern void AIWNIOS_getcontext(void*);
 int64_t UnixNow() {
