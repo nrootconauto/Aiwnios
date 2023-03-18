@@ -48,7 +48,7 @@ Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
     
   }
   while(--len>=0) {
-    res|=TextChar(task,TRUE,x++,y,attr|*s++);
+    res|=TextChar(task,,x++,y,attr|*s++);
   }
   return res;
 }
@@ -60,7 +60,7 @@ Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
     x=0;
   }
   while(--len>=0) {
-    res|=TextChar(task,TRUE,x++,y,*attr_s++);
+    res|=TextChar(task,,x++,y,*attr_s++);
   }
   return res;
 }
@@ -71,7 +71,7 @@ Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
     x=0;
   }
   while(--len>=0) {
-    res|=TextChar(task,TRUE,x++,y,attr);
+    res|=TextChar(task,,x++,y,attr);
   }
   return res;
 }

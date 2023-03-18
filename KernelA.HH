@@ -4877,6 +4877,19 @@ class CMakeSongSettings
   I64  octave			format "$$DA-TRM,A=\"Octave:%d\"$$\n";
   I64  octave_state;
 };
+
+#define BTTN_BORDER	2
+
+#define BTF_DONT_FREE	1
+
+class CCtrlBttnState
+{
+  I64 state,num_states,flags;
+  U8 *state_texts;
+  CColorROPU32 *state_colors;
+};
+extern U0 (*fp_update_ctrls)(CTask *task);
+extern class CTemplateCS;
 extern class CSoundEffectFrame;
 extern CGodGlbls god;
 extern U8 *ACDDefGet(U8 *st,I64 def_num=1);
@@ -5844,4 +5857,26 @@ extern U0 MusicSettingsRst();
 extern U0 CurSongTask();
 extern U0 SoundEffectEndTaskCB();
 extern U0 SoundEffectTask(CSoundEffectFrame *ns);
-#include "Headers.HH";;
+extern U0 StreamPrint(U8 *fmt,...);
+extern U0 StreamDir();
+extern CD2I32 *LexD2I32(CCmpCtrl *cc,CD2I32 *p);
+extern CD3I32 *LexD3I32(CCmpCtrl *cc,CD3I32 *p);
+extern CTaskSettings *SettingsPush(CTask *task=NULL,I64 flags=0);
+extern U0 SettingsPop(CTask *task=NULL,I64 flags=0);
+extern U0 SettingsPop2(CTask *task,CTaskSettings *tmpse);
+extern U0 CtrlsUpdate(CTask *task);
+extern Bool CtrlInsideRect(CCtrl *c,I64 x,I64 y);
+extern U0 DrawWinScroll(CDC *dc,CCtrl *c);
+extern U0 WinDerivedScrollValsUpdate(CCtrl *c);
+extern U0 LeftClickHWinScroll(CCtrl *c,I64 x,I64,Bool down);
+extern U0 LeftClickVWinScroll(CCtrl *c,I64,I64 y,Bool down);
+extern U0 WheelChangeWinScroll(CCtrl *c,I64 delta);
+extern U0 DrawViewAnglesCtrl(CDC *dc,CCtrl *c);
+extern U0 UpdateDerivedViewAnglesCtrl(CCtrl *c);
+extern U0 LeftClickViewAngles(CCtrl *c,I64 x,I64 y,Bool);
+extern U0 DrawCtrlBttn(CDC *dc,CCtrl *c);
+extern U0 LeftClickCtrlBttn(CCtrl *c,I64,I64,Bool down);
+extern CCtrl *CtrlBttnNew(I64 x,I64 y,I64 width=-1,I64 height=-1,	I64 num_states=1,U8 *state_texts,	I32 *state_colors,CCtrlBttnState *_s=NULL);
+extern U0 CtrlBttnDel(CCtrl *c);
+extern CTemplateCS *CtrlSliderGet();
+#include "Headers.HH";

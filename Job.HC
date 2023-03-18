@@ -393,11 +393,9 @@ I64 PopUp(U8 *buf,CTask *parent=NULL,CTask **_pu_task=NULL)
     Fs->popup_task=task;
     tmpc=TaskExe(task,parent,buf,1<<JOBf_WAKE_MASTER|1<<JOBf_FOCUS_MASTER);
     if (_pu_task) *_pu_task=task;
-    PrintI("poodle2",0);
     JobResScan(tmpc,&res);
     Fs->popup_task=NULL;
     Kill(task);
-    PrintI("poodle",1);
     if (_pu_task) *_pu_task=NULL;
     return res;
   }

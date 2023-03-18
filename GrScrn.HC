@@ -39,9 +39,9 @@ U0 GrUpdateTaskWin(CTask *task)
 	DCDel(dc);
       }
       if (TaskValidate(task)) {
-	;//WinScrollNull(task,&saved_scroll); TODO RESTORE
-	;//DrawCtrls(task); TODO RESTORE
-	;//WinScrollRestore(task,&saved_scroll); TODO RESTORE
+	WinScrollNull(task,&saved_scroll);
+	DrawCtrls(task);
+	WinScrollRestore(task,&saved_scroll);
       }
     }
   } catch {
@@ -374,8 +374,8 @@ U0 GrUpdateScrn()
   else {
     GrUpdateTextBG;
     GrUpdateTextFG;
-    GrUpdateTasks;
     DCBlotColor8(gr.dc2,gr.dc);
+    GrUpdateTasks;
   }
 
   dc=DCAlias(gr.dc2,Fs);

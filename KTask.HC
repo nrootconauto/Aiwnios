@@ -252,12 +252,10 @@ I64 ExeCmdLine(CCmpCtrl *cc)
     if (machine_code!=INVALID_PTR) {
       if (!(cc->flags&CCF_JUST_LOAD)) {
 	t0=tS;
-  PrintF("t1",t0);
   imachine=machine_code;
 	res=(*imachine)();
 	Fs->answer=res;
 	Fs->answer_type=type;
-	PrintF("t1",t0);
   Fs->answer_time=tS-t0;
 	Fs->new_answer=TRUE;
 	cc->pmt_line=0;

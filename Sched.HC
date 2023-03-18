@@ -48,8 +48,7 @@ U0 TaskFocusNext()
   do {
     if (!Bt(&task->win_inhibit,WIf_SELF_FOCUS)) {
       sys_focus_task=task;
-      //RESTORE
-      //CallExtNum(EXT_WIN_TO_TOP,task,TRUE);
+      WinToTop(sys_focus_task);
       return;
     }
     task=task->next_task;

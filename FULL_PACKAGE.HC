@@ -151,6 +151,8 @@ SetFs(Gs->seth_task);
 #include "Mount.HC"
 #include "MakeGod.HC"
 #include "ASnd.HC"
+#include "TaskSettings.HC"
+#include "MakeCtrls.HC"
 Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");

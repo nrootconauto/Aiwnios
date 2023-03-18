@@ -11,6 +11,66 @@ Bool GetOption(I64 num)
   return Bt(&(Fs->last_cc->opts),num);
 }
 
+U0 StreamPrint(U8 *fmt,...)
+{//Injects text into the compile stream. Used in #exe{} blocks.
+  U8 *buf=StrPrintJoin(NULL,fmt,argc,argv),*st;
+  CCmpCtrl *cc=Fs->last_cc;
+  CStreamBlk *tmpe=cc->last_stream_blk;
+  if (tmpe!=&cc->next_stream_blk) {
+    st=MStrPrint("%s%s",tmpe->body,buf);
+    Free(tmpe->body);
+    tmpe->body=st;
+  } else
+    PrintErr("No exe{} blk\n");
+  Free(buf);
+}
+
+U0 StreamDir()
+{
+  U8 *dirname;
+  if (dirname=DirFile(Fs->last_cc->lex_include_stk->full_name)) {
+    StreamPrint("\"%s\"",dirname);
+    Free(dirname);
+  }
+}
+
+CD2I32 *LexD2I32(CCmpCtrl *cc,CD2I32 *p)
+{//Not HolyC. Sprite-like lex 2D point.
+  if (cc->token!='(')
+    LexExcept(cc,"Expecting '(' at ");
+  Lex(cc); //Skip (
+  p->x=LexExpressionI64(cc);
+  if (cc->token!=',')
+    LexExcept(cc,"Expecting ',' at ");
+  Lex(cc); //Skip ,
+  p->y=LexExpressionI64(cc);
+  if (cc->token!=')')
+    LexExcept(cc,"Expecting ')' at ");
+  Lex(cc); //Skip )
+  return p;
+}
+
+CD3I32 *LexD3I32(CCmpCtrl *cc,CD3I32 *p)
+{//Not HolyC. Sprite-like lex 3D point.
+  if (cc->token!='(')
+    LexExcept(cc,"Expecting '(' at ");
+  Lex(cc); //Skip (
+  p->x=LexExpressionI64(cc);
+  if (cc->token!=',')
+    LexExcept(cc,"Expecting ',' at ");
+  Lex(cc); //Skip ,
+  p->y=LexExpressionI64(cc);
+  if (cc->token!=',')
+    LexExcept(cc,"Expecting ',' at ");
+  Lex(cc); //Skip ,
+  p->z=LexExpressionI64(cc);
+  if (cc->token!=')')
+    LexExcept(cc,"Expecting ')' at ");
+  Lex(cc); //Skip )
+  return p;
+}
+
+
 U8 *CmdLinePmt()
 {
   I64 i;

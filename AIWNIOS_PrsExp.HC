@@ -1037,6 +1037,7 @@ typecast:
                   misc,
                   last_c=cmp.internal_types[RT_U8]+1
                 );
+              arity++;
             } else if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
               last_c=mlst->member_class;
               if(mlst->member_class->raw_type==RT_F64) {
@@ -1273,12 +1274,21 @@ found_end_square:
                 cc->hash_entry(CHashGlblVar*)->var_class,
               );
             }
-            rpn=RPNAddNew(
-              cc,
-              IC_DEREF,
-              0,
-              cc->hash_entry(CHashGlblVar*)->var_class,
-            );
+            if(cc->hash_entry(CHashGlblVar*)->fun_ptr) {
+              rpn=RPNAddNew(
+                cc,
+                IC_DEREF,
+                0,
+                cc->hash_entry(CHashGlblVar*)->fun_ptr,
+              );
+            } else {
+              rpn=RPNAddNew(
+                cc,
+                IC_DEREF,
+                0,
+                cc->hash_entry(CHashGlblVar*)->var_class,
+              );
+            }
             rpn->ic_dim=cc->hash_entry(CHashGlblVar*)->dim.next;
             Lex(cc);
           } else if(cc->hash_entry->type&HTT_KEYWORD) {

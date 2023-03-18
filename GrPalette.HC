@@ -5,15 +5,16 @@ public U8 gr_rainbow_10[10]={
 DefineLstLoad("ST_RAINBOW_10",
   "BLACK\0BROWN\0RED\0LTRED\0YELLOW\0GREEN\0BLUE\0PURPLE\0LTGRAY\0WHITE\0");
 
+CBGR48 gr_cur_palette[COLORS_NUM];
 public U0 GrPaletteColorSet(I64 color_num,CBGR48 bgr48)
 {
   __GrPaletteColorSet(color_num,bgr48);
+  gr_cur_palette[color_num]=bgr48;
 }
 
 public CBGR48 GrPaletteColorGet(I64 color_num)
 {//VGA has 6-bits for blue, for green, and for red.
-  //TODO POLYFILL
-   return 0;
+  return gr_cur_palette[color_num];
 }
 
 public CBGR48 gr_palette_std[COLORS_NUM]={

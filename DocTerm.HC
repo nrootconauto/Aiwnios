@@ -47,7 +47,7 @@ public U0 DocTermNew()
   Fs->put_doc=Fs->display_doc=pdoc;
   Fs->border_doc=DocBorderNew(pdoc);
   //Fs->cur_menu=MenuFile("::/Doc/EdPullDown.DD"); TODO RESTORE
-  //WinScrollsInit(Fs); TODO RESTORE
+  WinScrollsInit(Fs);
 }
 
 #help_index "DolDoc"
