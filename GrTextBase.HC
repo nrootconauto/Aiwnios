@@ -1,5 +1,5 @@
-//#help_index "TextBase Layer;Char/TextBase Layer" TODO RESTORE
-//#help_file "::/Doc/TextBase" TODO RESTORE
+#help_index "TextBase Layer;Char/TextBase Layer"
+#help_file "::/Doc/TextBase"
 
 Bool TextChar(CTask *task,Bool allow_border=FALSE,I64 x,I64 y,I64 d) {
   I64 sx=task->scroll_x>>3+x,sy=task->scroll_y>>3+y;

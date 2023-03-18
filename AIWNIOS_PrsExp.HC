@@ -654,12 +654,9 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
     break;case IC_IMM_F64:
     ",%n,",rpn->imm_f64;
   }
-  DbgPrint("%x,",rpn->ic_dim);
   if(cls) {
-    DbgPrint("%d,",1+(cls->ptr_stars_cnt));
     while(cls->ptr_stars_cnt)
       cls=DerefType(cls);
-    DbgPrint("%s",cls->str);
   }
   switch(intermediate_code_table[rpn->type].arg_cnt) {
     break;case IS_V_ARG:

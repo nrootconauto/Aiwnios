@@ -1,4 +1,4 @@
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 
 public class CGrGlbls
 {
@@ -45,6 +45,6 @@ public class CGrGlbls
 //See $LK,"RLf_VGA",A="FF:::/Kernel/KStart16.HC,RLf_VGA"$
 //See $LK,"SysGrInit",A="MN:SysGrInit"$()
 
-//#help_index "Char;TextBase Layer/Char" TODO RESTORE
+#help_index "Char;TextBase Layer/Char"
 #define TEXT_ROWS text.rows
 #define TEXT_COLS text.cols

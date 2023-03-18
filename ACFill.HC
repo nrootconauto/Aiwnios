@@ -1,4 +1,4 @@
-//#help_index "AutoComplete/Dictionary"
+#help_index "AutoComplete/Dictionary"
 public U8 *ACDDefGet(U8 *st,I64 def_num=1)
 {//MAlloc str holding single dict definition of word.
   CFile *f;
@@ -204,7 +204,7 @@ U0 ACDDef(I64 n,CTask *parent=NULL)
     ACDPopUpDef(acd.fillins[n],-1,parent);
 }
 
-//#help_index "AutoComplete"
+#help_index "AutoComplete"
 U0 ACFillIn(I64 n)
 {
   U8 *s;

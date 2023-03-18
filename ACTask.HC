@@ -1,4 +1,4 @@
-//#help_index "AutoComplete/Dictionary"
+#help_index "AutoComplete/Dictionary"
 U0 ACDDictWordsAdd(U8 *st)
 {
   I64 i;
@@ -16,7 +16,7 @@ U0 ACDDictWordsAdd(U8 *st)
   }
 }
 
-//#help_index "AutoComplete"
+#help_index "AutoComplete"
 U0 ACDocRst(I64 left,I64 top)
 {
   CDoc *doc=DocPut;

@@ -1,6 +1,5 @@
-//#help_index "Graphics/Math/3D Transformation" TODO RESTORE
-//#help_file "::/Doc/Transform" TODO RESTORE
-
+#help_index "Graphics/Math/3D Transformation"
+#help_file "::/Doc/Transform"
 #define	GR_SCALE	(1<<32)
 
 public U0 Mat4x4MulXYZ(I64 *r,I64 *_x,I64 *_y,I64 *_z)
@@ -53,7 +52,7 @@ public U0 DCMat4x4Set(CDC *dc=NULL,I64 *r)
   dc->r_norm=Sqrt(Mat4x4NormSqr65536(r))*65536; //scaled 32 bits
 }
 
-//#help_index "Graphics/Mesh" TODO 
+#help_index "Graphics/Mesh"
 public U0 DCLighting(CDC *dc,
 	CD3I32 *p1,CD3I32 *p2,CD3I32 *p3,CColorROPU32 color)
 {//This is the dft dc->lighting() callback.
@@ -118,7 +117,7 @@ public U0 DCLighting(CDC *dc,
   }
 }
 
-//#help_index "Graphics/Device Contexts" TODO
+#help_index "Graphics/Device Contexts"
 public U0 DCFill(CDC *dc=NULL,CColorROPU32 val=TRANSPARENT)
 {//Fill entire device context with color.
   if (!dc) dc=gr.dc;
@@ -371,9 +370,9 @@ public CDC *DCLoad(U8 *src,I64 *_size=NULL,CTask *task=NULL)
   return res;
 }
 
-//#help_index "Graphics/GR Files" TODO
-//#help_file "::/Doc/GRFiles"
-//#help_index "Graphics/Device Contexts;Graphics/GR Files"
+#help_index "Graphics/GR Files"
+#help_file "::/Doc/GRFiles"
+#help_index "Graphics/Device Contexts;Graphics/GR Files"
 
 #define GR_FILE_MAX	(offset(CDC.end)-offset(CDC.start)+\
 	COLORS_NUM*sizeof(CBGR48)+sizeof(CArcCtrl)+GR_WIDTH*GR_HEIGHT)
@@ -401,7 +400,7 @@ public CDC *GRRead(U8 *filename,CTask *task=NULL)
   return dc;
 }
 
-//#help_index "Graphics/Sprite;Graphics/GR Files;DolDoc/Output;StdOut/DolDoc" TODO
+#help_index "Graphics/Sprite;Graphics/GR Files;DolDoc/Output;StdOut/DolDoc"
 public U0 DocGR(CDoc *doc=NULL,U8 *filename)
 {//Put a GR file into a document as asprite.
   CDC *dc=GRRead(filename);
@@ -411,7 +410,7 @@ public U0 DocGR(CDoc *doc=NULL,U8 *filename)
   DCDel(dc);
 }
 
-//#help_index "Graphics/Device Contexts;Graphics/Scrn" TODO
+#help_index "Graphics/Device Contexts;Graphics/Scrn"
 public CDC *DCScrnCapture(Bool include_zoom=TRUE,CTask *task=NULL)
 {//Capture scrn to a device context.
   CDC *dc;

@@ -1,4 +1,4 @@
-//#help_index "Graphics/Scrn" TODO
+#help_index "Graphics/Scrn"
 
 U0 GrUpdateTaskODEs(CTask *task)
 {

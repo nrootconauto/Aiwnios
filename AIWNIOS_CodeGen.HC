@@ -779,304 +779,212 @@ U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
   return mc;
 }
 
-U0 PrsBindCSymbol(U8 *as,U8 *fptr) {
-  CHashFun *fun=HashFind(as,Fs->hash_table,HTT_FUN);
-  if(fun&&fun->flags&(1<<Cf_EXTERN)) {
-    fun->flags&=~(1<<Cf_EXTERN);
-    fun->exe_addr=fptr;
-  }
-}
-
-I64 poly_fill_fs=NULL;
-CTask *PolyFillFs() {
-  return poly_fill_fs;
-}
-U0 PolyFillSetFs(CTask *t) {
-  poly_fill_fs=t;
-}
-
-U0 PrsBindCSymbols() {
-  PrsBindCSymbol("HeapCtrlInit", &HeapCtrlInit);
-  PrsBindCSymbol("HeapCtrlDel", &HeapCtrlDel);
-  PrsBindCSymbol("__MAlloc", &__MAlloc);
-  PrsBindCSymbol("__CAlloc", &__CAlloc);
-  PrsBindCSymbol("Free", &Free);
-  PrsBindCSymbol("MSize", &MSize);
-  PrsBindCSymbol("__StrNew", &__StrNew);
-  PrsBindCSymbol("MemCpy", &MemCpy);
-  PrsBindCSymbol("MemSet", &MemSet);
-  PrsBindCSymbol("MemSetU16", &MemSetU16);
-  PrsBindCSymbol("MemSetU32", &MemSetU32);
-  PrsBindCSymbol("MemSetU64", &MemSetU64);
-  PrsBindCSymbol("StrLen", &StrLen);
-  PrsBindCSymbol("StrCmp", &StrCmp);
-  PrsBindCSymbol("ToUpper", &ToUpper);
-  PrsBindCSymbol("Log10", &Log10);
-  PrsBindCSymbol("Log2", &Log2);
-  PrsBindCSymbol("Pow10", &Pow10);
-  PrsBindCSymbol("PrintI", &PrintI);
-  PrsBindCSymbol("PrintF", &PrintF);
-  PrsBindCSymbol("Round", &Round);
-  PrsBindCSymbol("Floor", &Floor);
-  PrsBindCSymbol("Ceil", &Ceil);
-  PrsBindCSymbol("Bt", &Bt);
-  PrsBindCSymbol("LBts", &LBts);
-  PrsBindCSymbol("LBtr", &LBtr);
-  PrsBindCSymbol("Bsf", &Bsf);
-  PrsBindCSymbol("Bsr", &Bsr);
-  PrsBindCSymbol("PutS", &PutS);
-  PrsBindCSymbol("SetFs", &PolyFillSetFs);
-  PrsBindCSymbol("Fs", &PolyFillFs);
-  PrsBindCSymbol("__GetTicks", &__GetTicks);
-  PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_SetJmp);
-  PrsBindCSymbol("AIWNIOS_LongJmp", &AIWNIOS_LongJmp);
-  PrsBindCSymbol("IsValidPtr", &IsValidPtr);
-  PrsBindCSymbol("Caller",&Caller);
-    PrsBindCSymbol("VFsSetPwd",&VFsSetPwd);
-    PrsBindCSymbol("VFsExists",&VFsExists);
-    PrsBindCSymbol("VFsIsDir",&VFsIsDir);
-    PrsBindCSymbol("VFsFSize",&VFsFSize);
-    PrsBindCSymbol("VFsFRead",&VFsFRead);
-    PrsBindCSymbol("VFsFWrite",&VFsFWrite);
-    PrsBindCSymbol("VFsDel",&VFsDel);
-    PrsBindCSymbol("VFsDir",&VFsDir);
-    PrsBindCSymbol("VFsDirMk",&VFsDirMk);
-    PrsBindCSymbol("VFsFBlkRead",&VFsFBlkRead);
-    PrsBindCSymbol("VFsFBlkWrite",&VFsFBlkWrite);
-    PrsBindCSymbol("VFsFOpenW",&VFsFOpenW);
-    PrsBindCSymbol("VFsFOpenR",&VFsFOpenR);
-    PrsBindCSymbol("VFsFClose",&VFsFClose);
-    PrsBindCSymbol("VFsFSeek",&VFsFSeek);
-    PrsBindCSymbol("VFsSetDrv",&VFsSetDrv);
-    PrsBindCSymbol("FUnixTime",&FUnixTime);
-    PrsBindCSymbol("FSize",&FSize);
-    PrsBindCSymbol("VFsFTrunc",&VFsFTrunc);
-    PrsBindCSymbol("UnixNow",&UnixNow);
-}
-
-U0 Poopacle() {
-  I64 (*foo)(I64);
-  U8 *src;
-  I64 idx;
-  CHashFun *h;
-  CCmpCtrl *cmp=CmpCtrlNew(
-    src=FileRead("TEST1.HC",NULL),
-    CCF_DONT_FREE_BUF,
-    "TEST.HC"
-  );
-  QueIns(cmp,Fs->last_cc);
-  Lex(cmp);
-  while(cmp->token) {
-    PrsStmt(cmp);
-  }
-  QueRem(cmp);
-  foo=HashFind("Foo1",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo1(8) is %d\n",foo(8);
-  foo=HashFind("Foo2",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo2(8) is %d\n",foo(8);
-  foo=HashFind("Foo3",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo3(8) is %d\n",foo(8);
-  foo=HashFind("Foo4",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo4(8) is %d\n",foo(8);
-  foo=HashFind("Foo5",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo5(8) is %d\n",foo(8);
-  foo=HashFind("Foo6",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo6(8) is %d\n",foo(8);
-  foo=HashFind("Foo7",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo7(8) is %d\n",foo(8);
-  foo=HashFind("Foo8",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo8(8) is %d\n",foo(8);
-  h=HashFind("PutS",Fs->hash_table,HTT_FUN);
-  h->exe_addr=&PutS;  
-  HashFind("PutS",Fs->hash_table,HTT_FUN)(CHashFun *)->flags&=~(1<<Cf_EXTERN);
-  foo=HashFind("Foo9",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  SysSymImportsResolve("PutS",0);
-  "Foo9 is at %s\n",SrcEdLink(foo);
-  "Foo9(8) is %d\n",foo(8);
-  foo=HashFind("Foo10",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo10(8) is %d\n",foo(8);
-  foo=HashFind("Foo11",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  for(idx=0;idx!=8;idx++)
-    "Foo11(8) is %d\n",foo(8);
-  foo=HashFind("Foo12",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo12(8) is %d\n",foo(8);
-  foo=HashFind("Foo13",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo13(8) is %d\n",foo(8);
-  foo=HashFind("Foo14",Fs->hash_table,HTT_FUN)(CHashFun *)->exe_addr;
-  "Foo14(8) is %p\n",foo(8);
-  QueRem(cmp);
-  CmpCtrlDel(cmp);
-  cmp=CmpCtrlNew(
-    src=MStrPrint(
-      "#include \"HCRT_TOS.HC\";;\n"
-    ),
-    0,
-    "TEST.HC"
-  );
-  QueIns(cmp,Fs->last_cc);
-  Lex(cmp);
-  PutS(src);
-  while(cmp->token) {
-    COCPush(cmp);
-    COCInit(cmp);
-    PrsStmt(cmp);
-    foo=AiwniosCompile(cmp,NULL,NULL);
-    (*foo)(0);
-    Free(foo);
-    COCPop(cmp);
-    //TODO better way of doing this
-    PrsBindCSymbols;
-  }
-}
-
 /**
- * Has format
- * U8 type
- * U8 name[]
- * U8 src_file[]
- * U8 help_idx[]
- * I32 min_ln
- * I32 max_ln
- * I32 line_offsets[max_ln-min_ln+1]
+ * Has format 
+ * if(HTT_FUN)
+ *     FUNC_NAME(U8[])
+ *     FUNC_FILE(U8[])
+ *     FUNC_HELP_IDX(U8[])
+ *     U32 s,e;
+ *     U32 line_offsets[]
+ *     U32 stk_size
+ *     U32 var_cnt
+ *          VAR_NAME(U8[])
+ *          VAR_TYPE(U8[])
+ *          U32 reg
+ *          U32 offset
+ *          U32 star_cnt
+ *          U32 total_dim //I64 array[3][4] would have total_dim of 12
+ *
+ * if(HTT_HELP_FILE)
+ *     POINTS_TO_FILE(U8[])
+ *     HELP_IDX(U8[])
+ * ...
  */
-I64 __AiwniosWriteDbgInfo(CTask *universe=NULL,U8 *write_to=NULL) {
-  I64 len=0,idx,ln,lns;
-  CHashFun *tmpf;
-  CHash *h;
-  U8 *fn;
-  U32 *offs;
-  for(idx=0;idx<=universe->hash_table->mask;idx++) {
-    for(h=universe->hash_table->body[idx];h;h=h->next) {
-      if(h->type&HTT_FUN) {
-        tmpf=h;
-        if(write_to)
-          write_to[len]=HTt_FUN;
-        len++;
-        if(write_to)
-          StrCpy(write_to+len,h->str);
-        len+=StrLen(h->str)+1;
-        if(tmpf->idx) {
-          if(write_to)
-            StrCpy(write_to+len,tmpf->idx);
-          len+=StrLen(tmpf->idx)+1;
-        } else {
-          if(write_to)
-            write_to[len]=0;
-          len++;
-        }
-        fn=StrNew(tmpf->src_link);
-        if(!fn) fn=StrNew("");
-        StrFirstRem(fn,":");
-        StrLastRem(fn,",");
-        if(write_to)
-          StrCpy(write_to+len,fn);
-        len+=StrLen(fn)+1;
-        Free(fn);
-        if(tmpf->dbg_info) {
-          lns=1+tmpf->dbg_info->max_line-tmpf->dbg_info->min_line;
-          if(write_to)
-            write_to[len](U32)=tmpf->dbg_info->min_line;
-          len+=4;
-          if(write_to)
-            write_to[len](U32)=tmpf->dbg_info->max_line;
-          len+=4;
-          if(write_to) {
-            offs=write_to+len;
-            for(ln=0;ln!=lns;ln++) {
-              //dbg_info[0] is the function address always
-              offs[ln]=tmpf->dbg_info[ln+1]-tmpf->dbg_info[0];
+I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
+  I64 i,ln,size=0,min,max;
+  CHashSrcSym *tmph;
+  CHashFun *,*pub_tmph;
+  CHashClass *tmpc;
+  CMemberLst *fun_mem;
+  CDbgInfo *dbg_info;
+  U32 start_ptr,cnt;
+  U8 *src_link,buffer[1024],*bptr=&buffer;
+  for (i=0;i<=h->mask;i++) {
+    for(tmph=h->body[i];tmph;tmph=tmph->next)
+      if (tmph->src_link && !(tmph->type & (HTF_IMPORT | HTF_PRIVATE)) && (dbg_info=tmph->dbg_info)) {
+        if((tmph->type&HTT_FUN)&&!(tmph(CHashFun*)->flags&(1<<Cf_EXTERN))) {
+	  if(to) (to+size)(I64*)[0]=tmph->type&(HTT_FUN|HTF_PUBLIC);
+	  size+=sizeof(I64);
+	  StrScan(tmph->src_link,"FL:%s,%d",&bptr,&ln);
+	  if(to) StrCpy(to+size,tmph->str);
+	  size+=StrLen(tmph->str)+1;
+	  if(to) StrCpy(to+size,buffer);
+	  size+=StrLen(buffer)+1;
+	  pub_tmph=HashFind(tmph->str,h,HTF_PUBLIC);
+          if(pub_tmph) {
+	    if(pub_tmph->idx) {
+	      if(to) StrCpy(to+size,pub_tmph->idx);
+	      size+=StrLen(pub_tmph->idx)+1;
+	      goto wrote_help_idx;
+	    }
+	  }
+	  if(tmph->idx) {
+	    if(to) StrCpy(to+size,tmph->idx);
+	    size+=StrLen(tmph->idx)+1;
+	  } else {
+	    if(to) StrCpy(to+size,"");
+	    size+=StrLen("")+1;
+	  }
+wrote_help_idx:
+	  min=dbg_info->min_line;
+	  max=dbg_info->max_line;
+	  if(to) (to+size)(U32*)[0]=min;
+	  if(to) (to+size)(U32*)[1]=max;
+	  size+=2*sizeof(U32);
+	  max-=min;
+	  min-=min;
+	  start_ptr=dbg_info->body[0];
+	  for(ln=0;ln<=max+1;ln++) {
+	    if(to) (to+size)(U32*)[0]=dbg_info->body[ln]-start_ptr;
+	    size+=4;
+	  }
+	  if(to) (to+size)(U32*)[0]=tmph(CHashFun*)->size;
+	  size+=4;
+	  fun_mem=tmph(CHashFun*)->member_lst_and_root;
+	  for(cnt=0;fun_mem;fun_mem=fun_mem->next)
+	    cnt++;
+	  if(to) (to+size)(U32*)[0]=cnt;
+	  size+=4;
+	  fun_mem=tmph(CHashFun*)->member_lst_and_root;
+	  for(;fun_mem;fun_mem=fun_mem->next) {
+	    if(to) StrCpy(to+size,fun_mem->str);
+	    size+=StrLen(fun_mem->str)+1;
+            tmpc=fun_mem->member_class;
+            tmpc-=tmpc->ptr_stars_cnt;
+            if(tmpc->str) {
+	      if(to) StrCpy(to+size,tmpc->str);
+	      size+=StrLen(tmpc->str)+1;
+            } else {
+              if(to) to[size]=0;
+              size++;
             }
-          }
-          len+=4*lns;
-        } else {
-          //Min_ln and Max_ln
-          if(write_to)
-            write_to[len](U64)=0;
-          len+=8;
-          //Dummy body field
-          if(write_to)
-            write_to[len](U32)=0;
-          len+=4;
+	    if(to) (to+size)(U32*)[0]=fun_mem->reg;
+	    size+=4;
+	    if(to) (to+size)(U32*)[0]=fun_mem->offset;
+	    size+=4;
+            if(to) (to+size)(U32*)[0]=fun_mem->member_class->ptr_stars_cnt;
+            size+=4;
+            if(to) (to+size)(U32*)[0]=fun_mem->dim.total_cnt;
+            size+=4;
+	  }
+        }
+      } else if(tmph->type&HTT_HELP_FILE){
+        if(to) (to+size)(I64*)[0]=HTT_HELP_FILE;
+        size+=sizeof(I64);
+        if(to) StrCpy(to+size,tmph->str);
+        size+=StrLen(tmph->str)+1;
+        if(to) StrCpy(to+size,tmph->idx);
+        size+=StrLen(tmph->idx)+1;
+      }
+  }
+  return size;
+}
+U0 DbgInfoWrite(CHashTable *h,U8 *name) {
+	I64 len=__DbgInfoWrite(h,NULL);
+	U8 *buf=MAlloc(len);
+	__DbgInfoWrite(h,buf);
+	FileWrite(name,buf,len);
+	Free(buf);
+}
+U0 DbgInfoRead(U8 *name) {
+  I64 len,min,max,ln,type;
+  CHashSrcSym *tmph;
+  CMemberLst *tmpm=NULL,*tmpm2=NULL;
+  CDbgInfo *dbg_info;
+  CHashClass *tmpc;
+  U8 *body=FileRead(name,&len),*ptr=body,*fn,*idx;
+  while(ptr<body+len) {
+    type=ptr(I64*)[0];
+    ptr+=8;
+    if(type&HTT_FUN) {
+      tmph=HashFind(ptr,Fs->hash_table,HTT_FUN);
+      ptr+=StrLen(ptr)+1;
+      fn=ptr;
+      ptr+=StrLen(ptr)+1;
+      idx=ptr;
+      ptr+=StrLen(ptr)+1;
+      min=ptr(U32*)[0];
+      max=ptr(U32*)[1];
+      ptr+=2*sizeof(U32);
+      if(tmph&&tmph->type&HTT_FUN) {
+        tmph->type|=type; //type may include HTF_PUBLIC
+        Free(tmph->src_link);
+        Free(tmph->idx);
+        if(StrLen(idx))
+	  tmph->idx=StrNew(idx);
+        else
+	  tmph->idx=NULL;
+        tmph->src_link=MStrPrint("FL:%s,%d",fn,min);
+        tmph->dbg_info=CAlloc(sizeof(CDbgInfo)+sizeof(I64)*(max-min+1));
+        tmph->dbg_info->min_line=min;
+        tmph->dbg_info->max_line=max;
+        for(ln=min;ln<=max+1;ln++) {
+	  tmph->dbg_info->body[ln-min]=tmph(CHashFun*)->exe_addr(U8*)+ptr(U32*)[ln-min];
         }
       }
+      ptr+=sizeof(U32)*(max-min+1+1);
+      if(tmph) tmph(CHashFun*)->size=ptr(I32*)[0];
+      ptr+=sizeof(U32);
+      max=ptr(U32*)[0];
+      ptr+=sizeof(U32);
+      tmpm=NULL;
+      for(min=0;min!=max;min++) {
+        tmpm2=tmpm;
+        if(tmph) tmpm=CAlloc(sizeof(CMemberLst));
+        if(tmpm2) tmpm2->next=tmpm;
+        if(tmph) tmpm->str=StrNew(ptr);
+        ptr+=StrLen(ptr)+1;
+        tmpc=HashFind(ptr,Fs->hash_table,HTT_CLASS|HTT_INTERNAL_TYPE);
+        if(tmph) tmpm->member_class=tmpc;
+        ptr+=StrLen(ptr)+1;
+        //If we couldn't find a class,continue
+        if(!tmpc) {
+          if(tmpm) Free(tmpm->str);
+          Free(tmpm);
+          if(tmpm2) tmpm2->next=NULL;
+          tmpm=tmpm2;
+          ptr+=16;
+          goto next;
+        } 
+	if(tmph) tmpm->reg=ptr(U32*)[0];
+	ptr+=4;
+       	if(tmph) tmpm->offset=ptr(I32*)[0];
+        ptr+=4;
+        if(tmpm) tmpm->member_class+=ptr(U32*)[0]; //In TempleOS,the next class is a "pointer star"
+        ptr+=4;
+        if(tmpm) tmpm->dim.total_cnt=tmpm->dim.cnt=ptr(U32*)[0];
+        ptr+=4;
+        next:;
+      }
+      if(tmph) {
+        tmpm=tmph(CHashFun*)->member_lst_and_root;
+        for(;tmpm&&tmpm->next;tmpm=tmpm->next);
+        if(tmpm)
+	  tmpm->next=tmpm2;
+        else
+	  tmph(CHashFun*)->member_lst_and_root=tmpm2;
+      }
+    } else if(type&HTT_HELP_FILE) {
+      tmph=CAlloc(sizeof(CHashSrcSym));
+      tmph->type=HTF_PUBLIC|HTT_HELP_FILE;
+      tmph->str=StrNew(ptr);
+      ptr+=StrLen(ptr)+1;
+      tmph->idx=StrNew(ptr);
+      ptr+=StrLen(ptr)+1;
+      HashAdd(tmph,Fs->hash_table);
     }
   }
-  return len;
-}
-U0 AiwniosWriteDbgInfo(CTask *universe,U8 *to) {
-  I64 len=__AiwniosWriteDbgInfo(universe,NULL);
-  U8 *data=MAlloc(len);
-  __AiwniosWriteDbgInfo(universe,data);
-  FileWrite(to,data,len);
-  Free(data);
+  Free(body);
 }
 
-/**
- * Has format
- * U8 type
- * U8 name[]
- * U8 src_file[]
- * U8 help_idx[]
- * I32 first_ln
- * I32 last_ln
- * I32 line_offsets[last_ln-first_ln+1]
- */
-/*
-U0 AiwniosLoadDbgInfo(CTask *universe,U8 *from) {
-  U8 *ftxt=FileRead(from),*src=ftxt,*name,*help_idx,*fn;
-  I64 type,max_ln,min_ln;
-  CHashFun *tmpf;
-  while(type=*src++) {
-    switch(type) {
-    start:
-      name=src;
-      src+=StrLen(name)+1;
-      fn=src;
-      src +=StrLen(fn)+1;
-      help_idx=src;
-      src+=StrLen(help_idx)+1;
-      min_ln=*src(U32*)++;
-      max_ln=*src(U32*)++;
-    case HTt_FUN:
-      tmpf=HashFind(name,universe,HTT_FUN);
-      if(tmpf) {
-        if(min_ln==max_ln&&!min_ln) {
-        }
-      }
-      break;
-    end:
-    ;
-    }
-  }
-}
-*/
-/*
-//Compile universe's symbols with CCF_AOT
-U0 AiwniosAotCompile(U8 *file,U8 *write_to,U8 *dbg_info=NULL) {
-  U8 *ret;
-  I64 len;
-  CHashTable *old=Fs->hash_table;
-  Fs->hash_table=HashTableNew(0x1000);
-  Fs->hash_table->next=old;
-  V
-  CCmpCtrl *cc=CmpCtrlNew(
-    MStrPrint("#include \"%s\";;",file),
-    CCF_AOT_COMPILE,
-    "Tmp"
-  );
-  Lex(cc);
-  COCPush(cc);
-  while(cc->token) {
-    PrsStmt(cc);
-  }
-  //TODO compile main code
-  COCPop(cc);
-  len=__AiwniosAotCmp(Fs,NULL);
-  ret=MAlloc(len);
-  __AiwniosAotCmp(Fs,ret);
-  FileWrite(write_to,ret,len);
-  Free(ret);
-  HashTableDel(Fs->hash_table);
-  Fs->hash_table=old;
-}
-*/

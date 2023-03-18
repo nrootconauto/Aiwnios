@@ -1,4 +1,4 @@
-//#help_index "Graphics" TODO 
+#help_index "Graphics"
 
 public Bool GrPlot0(CDC *dc=0,I64 x,I64 y)
 {//2D. No clipping or transformation or thick.
@@ -65,7 +65,7 @@ public I64 GrPeek0(CDC *dc=0,I64 x,I64 y)
   return dc->body[dc->width_internal*y+x];
 }
 
-//#help_index "Graphics;Graphics/Device Contexts"
+#help_index "Graphics;Graphics/Device Contexts"
 
 public I64 GrBlot(CDC *dc=0,I64 x,I64 y,CDC *img)
 {//2D. Clipping but not transformation..
@@ -585,7 +585,7 @@ here1a:
     return 0;
 }
 
-//#help_index "Graphics/Device Contexts"
+#help_index "Graphics/Device Contexts"
 
 U8 *GrBitMap4ToBitMap8(U8 *dst,U8 *src,I64 src_size,I64 bkcolor)
 {
@@ -689,7 +689,7 @@ df_done:
   return res;
 }
 
-//#help_index "Graphics/Char;Char/Graphics"
+#help_index "Graphics/Char;Char/Graphics"
 
 public I64 GrPutChar(CDC *dc=0,I64 x,I64 y,U8 ch)
 {//2D. Clipping but not transformation.
@@ -1010,7 +1010,7 @@ public I64 GrVPrint(CDC *dc=0,I64 x,I64 y,U8 *fmt,...)
   return res;
 }
 
-//#help_index "Graphics"
+#help_index "Graphics"
 public I64 GrRect(CDC *dc=0,I64 x,I64 y,I64 w,I64 h)
 {//2D. Width Height. Clipping but not transformation.
 //Returns cnt of pixs changed.

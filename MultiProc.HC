@@ -16,7 +16,7 @@ U0 CoreAPSethTask()
     LBts(&(Fs->task_flags),TASKf_AWAITING_MSG);
     LBtr(&(ctrl->flags),JOBCf_LOCKED);
     LBts(&(Fs->task_flags),TASKf_IDLE);
-    ns=0.1*JIFFY_FREQ,t=__GetTicksHP;
+    ns=0.1*JIFFY_FREQ*1000,t=__GetTicksHP;
     task1=Fs;
     for(task=Fs->next_task;task!=task1;task=task->next_task) {
       if(Bt(&task->task_flags,TASKf_SUSPENDED)||Bt(&task->task_flags,TASKf_AWAITING_MSG))

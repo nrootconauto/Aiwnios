@@ -1,4 +1,4 @@
-//#help_index "Graphics/Misc" TODO RESTORE
+#help_index "Graphics/Misc"
 Bool IsPixCovered0(CTask *task,I64 x,I64 y) {//No clipping
   x>>=3;
   y>>=3;

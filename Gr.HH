@@ -1,4 +1,4 @@
-//#help_index "Sprites/Binary"
+#help_index "Sprites/Binary"
 
 class CMeshTri
 {
@@ -150,7 +150,7 @@ public class CSpritePtMeshU8s : CSpriteBase
 #define SPT_TYPES_NUM		30
 #define SPG_TYPE_MASK		0x7F
 
-//#help_index "Graphics/Sprite;Sprites;Sprites/Binary"
+#help_index "Graphics/Sprite;Sprites;Sprites/Binary"
 
 //See $LK,"Sprites",A="HI:Sprites"$.  See $LK,"::/Adam/Gr/GrSpritePlot.HC",A="FL:::/Adam/Gr/GrSpritePlot.HC,1"$ and
 //$LK,"::/Demo/Graphics/SpriteRaw.HC"$ for how CSprite are stored.

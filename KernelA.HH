@@ -4908,6 +4908,15 @@ class CCtrlBttnState
   U8 *state_texts;
   CColorROPU32 *state_colors;
 };
+
+#define FM_NORMAL	0
+#define FM_PICK_FILE	1
+#define FM_PICK_DIR	2
+class CFMUncollapsedLst
+{
+  CFMUncollapsedLst *next;
+  U8 *name;
+};
 extern U0 (*fp_update_ctrls)(CTask *task);
 extern class CTemplateCS;
 extern class CSoundEffectFrame;
@@ -5903,4 +5912,38 @@ extern I64 PopUpFindMenu();
 extern I64 FindFile(U8 *needle_str,U8 *haystack_filename,	I64 *_fuf_flags,U8 *replace_text);
 extern I64 Find(U8 *needle_str,U8 *files_find_mask="*",	U8 *fu_flags=NULL,U8 *replace_text=NULL);
 extern I64 FileOcc(U8 *needle_str,	U8 *files_find_mask="*",U8 *fu_flags="+r+i+l");
+extern U8 *FileMgr(I64 mode=FM_NORMAL,CTask *mem_task=NULL);
+extern U0 DirFileDoc(CDoc *doc,CDirEntry *tmpde);
+extern CFMUncollapsedLst *FMCollectUncollapsedLst(CDoc *doc);
+extern U0 FMMarkUncollapsed(CDoc *doc,CFMUncollapsedLst *tmpc,	U8 *cur_entry,U8 *next_entry);
+extern U0 FMDelUncollapsedLst(CFMUncollapsedLst *tmpc);
+extern CDirEntry *FMRebuildDocDrv(U8 drv_let,CDoc *doc,CDirEntry **_head,Bool init);
+extern U0 FMRebuildDoc(CDoc **_doc,CDirEntry **_head,I64 mode);
+extern U0 FMRename(CDoc *doc);
+extern U0 FMMkDir(CDoc *doc);
+extern U0 FMDelete(CDoc *doc);
+extern U0 FMChgDsk(CDoc *doc);
+extern U0 FMMountISO(CDoc *doc);
+extern U0 FMUnmount(CDoc *doc);
+extern U0 FMFmtDrv(CDoc *doc);
+extern U0 FMMakeISO(CDoc *doc);
+extern U0 FMBurnISO(CDoc *doc);
+extern U0 FMCopy(CDoc *doc);
+extern I64 PopUpFMRight(U8 *header=NULL,U8 *footer=NULL);
+extern U0 FMRightClick();
+extern U0 FMFinalScrnUpdate(CDC *dc);
+extern I64 DirTreeSerializeSize(CDirEntry *tmpde);
+extern I64 DirTreeSerializeFill(CDirEntry *tmpde,U8 *dst);
+extern U8 *DirTreeSerialize(CDirEntry *tmpde,I64 *_size=NULL);
+extern U8 *DirTreeUnserialize2(U8 *src,CDirEntry **tmpde);
+extern CDirEntry *DirTreeUnserialize(U8 *src);
+extern U0 FOFlatten(CDirEntry *tmpde,CDirEntry **a,I64 *i);
+extern I64 Size1(CDirEntry *tmpde,I64 *_fuf_flags,I64 round_to);
+extern I64 Size(U8 *files_find_mask="/*",U8 *fu_flags=NULL,I64 round_to=0);
+extern I64 FileCnt(CDirEntry *tmpde);
+extern I64 FF(U8 *files_find_mask,U8 *fu_flags=NULL);
+extern I64 Zip(U8 *files_find_mask="*",U8 *fu_flags=NULL);
+extern I64 Unzip(U8 *files_find_mask="*.Z",U8 *fu_flags=NULL);
+extern U0 DbgInfoWrite(CHashTable *h,U8 *name);
+extern U0 DbgInfoRead(U8 *name);
 #include "Headers.HH";

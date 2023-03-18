@@ -1,4 +1,4 @@
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 
 U0 GrInit1()
 {

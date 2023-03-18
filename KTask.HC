@@ -425,7 +425,7 @@ I64 TaskEnd()
   LBtr(&task->srv_ctrl.flags,JOBCf_LOCKED);
   LBtr(&task->task_flags,TASKf_TASK_LOCK);
 
-  task->wake_jiffy=__GetTicksHP+DYING_JIFFIES;
+  task->wake_jiffy=__GetTicksHP+DYING_JIFFIES*1000;
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     ; //TODO ATOMIC LOCK
   PrintI("p1",3);

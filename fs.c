@@ -231,11 +231,17 @@ void VFsSetPwd(char *pwd) {
 }
 
 FILE *VFsFOpenW(char *f) {
-  return fopen(f,"wb");
+  char *path=__VFsFileNameAbs(f);
+  FILE *r=fopen(path,"wb");
+  A_FREE(path);
+  return r;
 }
 
 FILE *VFsFOpenR(char *f) {
-  return fopen(f,"rb");
+  char *path=__VFsFileNameAbs(f);
+  FILE *r=fopen(path,"rb");
+  A_FREE(path);
+  return r;
 }
 
 int64_t VFsDirMk(char *f) {

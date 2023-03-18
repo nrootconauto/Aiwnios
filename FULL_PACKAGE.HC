@@ -140,6 +140,7 @@ SetFs(Gs->seth_task);
 #endif
 #ifdef COMPONET_GR
 #include "ADskA.HC"
+#include "ADskB.HC"
 #include "MakeGr.HC"
 #include "Menu.HC"
 #include "Win.HC"
@@ -154,7 +155,8 @@ SetFs(Gs->seth_task);
 #include "TaskSettings.HC"
 #include "MakeCtrls.HC"
 #include "Utils.HC"
-Cmp("TEST2.HC",,"HCRT2.BIN");
+#include "FileMgr.HC"
+//Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
 #endif
@@ -176,6 +178,8 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
 U0 InitSymbols() {
   ExeFile("KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
+  if(FileFind("HCRT2.DBG.Z"))
+    DbgInfoRead("HCRT2.DBG.Z");
   #ifdef GEN_HEADERS
   DocWrite(unfound);
   DocDel(unfound);

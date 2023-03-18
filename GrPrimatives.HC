@@ -1,4 +1,4 @@
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 
 public Bool GrClamp(CDC *dc=NULL,I64 *left,I64 *top,I64 *right,I64 *bottom,
 	I64 width=0,I64 height=0)
@@ -837,7 +837,7 @@ gr_done:
   return res;
 }
 
-//#help_index "Graphics/Char;Char/Graphics" TODO RESTORE
+#help_index "Graphics/Char;Char/Graphics"
 
 public Bool GrPutChar3(CDC *dc=0,I64 x,I64 y,I64 z,U8 ch)
 {//3D. Transformation. DCF_SYMMETRY is silly.
@@ -871,7 +871,7 @@ public I64 GrVPrint3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *fmt,...)
   return res;
 }
 
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 
 public Bool GrEllipse3(CDC *dc=0,
 		I64 cx,I64 cy,I64 cz,
@@ -1022,7 +1022,7 @@ gr_done:
   return res;
 }
 
-//#help_index "Graphics;Graphics/Device Contexts" TODO RESTORE
+#help_index "Graphics;Graphics/Device Contexts"
 
 Option(OPTf_WARN_HEADER_MISMATCH,OFF);
 public I64 GrBlot3(CDC *dc=0,I64 x1,I64 y1,I64 z1,CDC *img)
@@ -1240,7 +1240,7 @@ gr_done:
   return res;
 }
 
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 
 public Bool Gr2Bezier3(CDC *dc=0,CD3I32 *ctrl)
 {//2nd order. Clipping and transform and thick.

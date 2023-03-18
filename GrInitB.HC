@@ -1,4 +1,4 @@
-//#help_index "Graphics/Scrn" TODO
+#help_index "Graphics/Scrn"
 
 U0 GrSetUpTables()
 {
@@ -83,7 +83,7 @@ U0 GrSetUpTables()
   }
 }
 
-//#help_index "Graphics/Scrn;Windows" TODO
+#help_index "Graphics/Scrn;Windows"
 
 U0 WinZBufFill(CTask *task)
 {//Not public
@@ -159,7 +159,7 @@ public U0 WinZBufUpdate()
   }
 }
 
-//#help_index "Graphics" TODO
+#help_index "Graphics"
 U0 GrInit2()
 {
   MemSet(&gr,0,sizeof(CGrGlbls));

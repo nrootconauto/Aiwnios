@@ -176,7 +176,7 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
     res=NULL;
   } else {
     if (map_name)
-      __AiwniosWriteDbgInfo(cc->htc.glbl_hash_table,map_name);
+      DbgInfoWrite(cc->htc.glbl_hash_table,map_name);
     FillInShortCalls(cc);
     HashTableDel(cc->htc.local_hash_table);
     HashTableDel(cc->htc.glbl_hash_table);

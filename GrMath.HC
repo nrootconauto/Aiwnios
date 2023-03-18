@@ -1,4 +1,4 @@
-//#help_index "Graphics/Math" TODO
+#help_index "Graphics/Math"
 
 public I64 gr_x_offsets[8]={-1, 0, 1,-1,1,-1,0,1},
 	   gr_y_offsets[8]={-1,-1,-1, 0,0, 1,1,1},
@@ -76,7 +76,7 @@ public Bool Line(U8 *aux_data,I64 x1,I64 y1,I64 z1,I64 x2,I64 y2,I64 z2,
   return TRUE;
 }
 
-//#help_index "Graphics/Math/3D Transformation" TODO RESTORE
+#help_index "Graphics/Math/3D Transformation"
 public I64 *Mat4x4MulMat4x4Equ(I64 *dst,I64 *m1,I64 *m2)
 {//Multiply 4x4 matrices and store in dst. Uses $LK,"fixed-point",A="FI:::/Demo/Lectures/FixedPoint.HC"$.
 //Conceptually, the transform m1 is applied after m2
@@ -279,7 +279,7 @@ public U0 DCReflect(CDC *dc,I64 *_x,I64 *_y,I64 *_z)
   }
 }
 
-//#help_index "Graphics/Math" TODO RESTORE
+#help_index "Graphics/Math"
 #define GR_SCALE1_BITS	24
 #define GR_SCALE2_BITS	8
 public Bool Circle(U8 *aux_data,I64 cx,I64 cy,I64 cz,I64 radius,
@@ -447,7 +447,7 @@ public Bool RegPoly(U8 *aux_data,I64 cx,I64 cy,I64 cz,
   return TRUE;
 }
 
-//#help_index "Graphics/Data Types/D3I32;Math/Data Types/D3I32;Data Types/D3I32" TODO RESTORE
+#help_index "Graphics/Data Types/D3I32;Math/Data Types/D3I32;Data Types/D3I32"
 public F64 D3I32Dist(CD3I32 *p1,CD3I32 *p2)
 {//Distance
   return Sqrt(SqrI64(p1->x-p2->x)+SqrI64(p1->y-p2->y)+SqrI64(p1->z-p2->z));
@@ -468,7 +468,7 @@ public I64 D3I32NormSqr(CD3I32 *p)
   return SqrI64(p->x)+SqrI64(p->y)+SqrI64(p->z);
 }
 
-//#help_index "Graphics/Math" TODO RESTORE
+#help_index "Graphics/Math"
 public Bool Bezier2(U8 *aux_data,CD3I32 *ctrl,
 	Bool (*fp_plot)(U8 *aux,I64 x,I64 y,I64 z),Bool first=TRUE)
 {//Go in 2nd order bezier calling callback.

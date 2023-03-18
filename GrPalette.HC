@@ -1,4 +1,4 @@
-//#help_index "Graphics/Color" TODO RESTORE
+#help_index "Graphics/Color"
 public U8 gr_rainbow_10[10]={
   BLACK,BROWN,RED,LTRED,YELLOW,GREEN,BLUE,PURPLE,LTGRAY,WHITE};
 

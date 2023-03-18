@@ -1,4 +1,4 @@
-//#help_index "Graphics" TODO RESTORE
+#help_index "Graphics"
 public I64 GrFillPoly3(CDC *dc=0,I64 n,CD3I32 *poly)
 {//3D. Must be convex.
 //Returns cnt of pixs changed
@@ -252,7 +252,7 @@ public Bool GrTextDiamond3(CDC *dc=0,
   return !!(res);
 }
 
-//#help_index "Graphics/Mesh"  TODO RESTORE
+#help_index "Graphics/Mesh"
 public I64 Gr3Mesh(CDC *dc=0,I64 vertex_cnt,CD3I32 *p,
 	I64 tri_cnt,CMeshTri *tri)
 {//Returns cnt of pixs changed.
@@ -302,7 +302,7 @@ mesh_done:
   return res;
 }
 
-//#help_index "Graphics/Misc;Mouse/Ptr"  TODO RESTORE
+#help_index "Graphics/Misc;Mouse/Ptr"
 public U0 DrawStdMs(CDC *dc,I64 x,I64 y)
 {//This is a callback. See $LK,"::/Demo/Graphics/Grid.HC"$.
 //Called by $LK,"DrawMs",A="MN:DrawMs"$() which is
@@ -329,7 +329,7 @@ public U0 DrawWaitMs(CDC *dc,I64 x,I64 y)
   dc->color=old_color;
 }
 
-//#help_index "Graphics/GR Files;Graphics/Scrn"  TODO RESTORE
+#help_index "Graphics/GR Files;Graphics/Scrn"
 public Bool GRScrnCaptureRead(U8 *filename,CDC *dc=0,I64 x=0,I64 y=0)
 {//GrBlot TempleOS GR File to dc,x,y.
   CDC *dc2;

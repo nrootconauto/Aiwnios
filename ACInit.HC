@@ -1,4 +1,4 @@
-//#help_index "AutoComplete/Dictionary"
+#help_index "AutoComplete/Dictionary"
 acd.has_words=FileFind(ACD_WORD_FILENAME);
 acd.has_defs =FileFind(ACD_DEF_FILENAME)||FileFind(ACD_DEF_FILENAME_Z);
 
@@ -40,7 +40,7 @@ public U0 ACDWordsLoad()
   }
 }
 
-//#help_index "AutoComplete"
+#help_index "AutoComplete"
 CHashAC *ACHashAdd(U8 *w)
 {
   CHashAC *tmpw=HashFind(w,ac.hash_table,HTT_WORD);
