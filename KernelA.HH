@@ -4823,6 +4823,26 @@ extern class CMeshEdVertex;
 extern class CMeshFrame;
 extern class CMeshEdTri;
 
+#define FND_REPLACE	0
+#define FND_SKIP	1
+#define FND_ALL		2
+#define FND_ED		3
+#define FND_ABORT_FILE	4
+#define FND_SKIP_FILE	5
+class CFind
+{
+  U8	find_text[STR_LEN] format "$$DA-P,"
+	"A=\"FIND        :%s\"$$\n";
+  U8	replace_text[STR_LEN] format "$$DA-P,"
+	"A=\"REPLACE     :%s\"$$\n";
+  Bool	replace		format "$$CB,\"REPLACE\"$$\n";
+  Bool	match_case	format "$$CB,\"MATCH CASE\"$$\n";
+  Bool	whole_labels	format "$$CB,\"WHOLE LABELS\"$$\n";
+  U8	filemask[STR_LEN] format "$$DA-P,A=\"FILE MASK   :%s\"$$\n";
+  Bool	recurse		format "$$CB,\"RECURSE\"$$\n";
+};
+
+
 #define CMPF_ASM_BLK		1
 #define CMPF_ONE_ASM_INS	2
 #define CMPF_LEX_FIRST		4
@@ -5879,4 +5899,8 @@ extern U0 LeftClickCtrlBttn(CCtrl *c,I64,I64,Bool down);
 extern CCtrl *CtrlBttnNew(I64 x,I64 y,I64 width=-1,I64 height=-1,	I64 num_states=1,U8 *state_texts,	I32 *state_colors,CCtrlBttnState *_s=NULL);
 extern U0 CtrlBttnDel(CCtrl *c);
 extern CTemplateCS *CtrlSliderGet();
+extern I64 PopUpFindMenu();
+extern I64 FindFile(U8 *needle_str,U8 *haystack_filename,	I64 *_fuf_flags,U8 *replace_text);
+extern I64 Find(U8 *needle_str,U8 *files_find_mask="*",	U8 *fu_flags=NULL,U8 *replace_text=NULL);
+extern I64 FileOcc(U8 *needle_str,	U8 *files_find_mask="*",U8 *fu_flags="+r+i+l");
 #include "Headers.HH";

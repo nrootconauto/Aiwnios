@@ -759,8 +759,19 @@ U0 PrsMembers(CCmpCtrl *cc) {
   if(!ic_dim)
     new=RPNAddNew(cc,IC_DEREF,off,cls,TRUE);
   else {
-    cc->coc.coc_head.next(CRPN*)->ic_dim=ic_dim;
-    cc->coc.coc_head.next(CRPN*)->ic_class=cls;
+    added=cc->coc.coc_head.next;
+    //Here's the deal
+    // IC_DEREF's act on their ic_class,so if our last item is a IC_DEFEF
+    //  Derefernece as usual,THEN use our dim
+    //  a->some_class->array_u8 
+    // a->some_class must derefnce to a pointer(8 bytes),then we switch the result type to
+    // array of u8[0]. I do this by adding 0 to the result
+    if(added->type==IC_DEREF) {
+      RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],TRUE);
+      added=RPNAddNew(cc,IC_ADD,0,cls,TRUE);
+    }
+    added->ic_dim=ic_dim;
+    added->ic_class=cls;
   }
 }
 
