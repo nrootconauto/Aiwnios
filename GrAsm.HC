@@ -3,7 +3,7 @@ Bool IsPixCovered0(CTask *task,I64 x,I64 y) {//No clipping
   x>>=3;
   y>>=3;
   y*=TEXT_COLS;
-  return !(task->win_z_num<=gr.win_z_buf[y+x]);
+  return !(task->win_z_num>=gr.win_z_buf[y+x]);
 }
 U0 GrRopEquU8NoClipping(I64 ch,U8 *dst,I64 width_internal) {
   U64 font=text.font[ch&0xff],color=gr.to_8_colors[(ch>>8)&0xff],cnt;

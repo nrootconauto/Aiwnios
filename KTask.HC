@@ -271,7 +271,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
   Free(old_task_title);
   if (cc->flags&CCF_JUST_LOAD) {
     if (cc->error_cnt)
-      return FALSE;
+      return FALSE;
     else
       return TRUE;
   } else

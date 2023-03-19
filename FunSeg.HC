@@ -273,7 +273,7 @@ U8 *SrcFileName(U8 *addr,I64 cnt=1,CTask *mem_task=NULL)
 	  while (!body[ii])
 	    ii++;
 	  if (addr<body[ii]) {
-	    d=addr(I64)-body[i];
+	    d=addr-body[i];
 	    if (d<best_d) {
 	      best_d=d;
 	      best=tmph->src_link;
@@ -286,7 +286,7 @@ U8 *SrcFileName(U8 *addr,I64 cnt=1,CTask *mem_task=NULL)
   }
   if (best) {
     src=StrNew(best,mem_task);
-    StrFirstRem(src,":");
+    StrFirstRem(src,":");
     StrLastRem(src,",");
     return src;
   } else

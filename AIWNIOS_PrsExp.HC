@@ -334,7 +334,8 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
   I64 width;
   CHashClass *ic_class;
   Bool divide=FALSE;
-  rpn->ic_line=cc->lex_include_stk->line_num;
+  if(!(cc->lex_include_stk->flags&LFSF_DEFINE))
+    rpn->ic_line=cc->lex_include_stk->line_num;
   QueIns(rpn,&cc->coc.coc_head);
   if(add_to_prs_stk) {
     switch(intermediate_code_table[rpn->type].arg_cnt) {

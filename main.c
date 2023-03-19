@@ -545,6 +545,7 @@ void BootAiwnios()
 }
 static void Boot(char *bin) {
   Fs = calloc(sizeof(CTask), 1);
+  InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
   VFsMountDrive('T',"./");
   BootAiwnios();
@@ -555,6 +556,6 @@ int main()
 {
   int64_t z = 3;
 	int64_t idx;
-	LaunchSDL(&Boot,"HCRT2.BIN");
+  LaunchSDL(&Boot,"HCRT2.BIN");
 	return EXIT_SUCCESS;
 }

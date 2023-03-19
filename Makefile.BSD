@@ -1,6 +1,6 @@
 C_FILES = arm64_asm.c  arm_backend.c  bungis.c  cque.c  except.c  fs.c  \
 	hash.c  lex.c  main.c  mem.c  misc.c  optpass.c  parser.c \
-  arm_loader.c windows.c sound.c
+  arm_loader.c windows.c sound.c dbg.c
 C_OBJS = ${C_FILES:.c=.o}
 A_FILES = exceptAARCH64.s  miscAARCH64.s  swapctxAARCH64.s
 A_OBJS = ${A_FILES:.s=.o}

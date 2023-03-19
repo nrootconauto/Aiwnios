@@ -950,3 +950,4 @@ CCmpCtrl* CmpCtrlDel(CCmpCtrl *d);
 void SndFreq(int64_t f);
 void InitSound();
 int64_t IsValidPtr(char *chk);
+void InstallDbgSignalsForThread();

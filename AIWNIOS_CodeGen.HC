@@ -216,7 +216,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   U8 *cc2=__HC_CodeCtrlPush(acc);
   if(info) {
     idx=cc->max_line-cc->min_line;
-    *info=MAlloc((idx+1)*8+sizeof(CDbgInfo));
+    *info=MAlloc((idx+2)*8+sizeof(CDbgInfo));
     info[0]->min_line=cc->min_line;
     info[0]->max_line=cc->max_line;
   }
@@ -410,8 +410,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           }
         }
       }
-      if(foff)
-        "\n%s,%d\n",cc->htc.fun->str,foff;
       __HC_ICAdd_SetStaticsSize(cc2,foff);
     }
     Free(foff_lookup);
@@ -708,7 +706,8 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     __HC_ICSetLine(new,cur->ic_line);
   }
   //TODO free AIWNIOS CmpCtrl
-  machine_code=__HC_Compile(acc,res_sz,&aiwnios_dbg_info);
+  aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+1));
+  machine_code=__HC_Compile(acc,res_sz,aiwnios_dbg_info);
   __HC_CodeCtrlPop(acc);
   if(info) {
     info[0]->body[0]=machine_code;
@@ -846,8 +845,11 @@ wrote_help_idx:
 	  min-=min;
 	  start_ptr=dbg_info->body[0];
 	  for(ln=0;ln<=max+1;ln++) {
-	    if(to) (to+size)(U32*)[0]=dbg_info->body[ln]-start_ptr;
-	    size+=4;
+      if(dbg_info->body[ln]) {
+	      if(to) (to+size)(U32*)[0]=dbg_info->body[ln]-start_ptr;
+	    } else
+	      if(to) (to+size)(U32*)[0]=0;
+      size+=4;      
 	  }
 	  if(to) (to+size)(U32*)[0]=tmph(CHashFun*)->size;
 	  size+=4;
@@ -931,6 +933,8 @@ U0 DbgInfoRead(U8 *name) {
         tmph->dbg_info->max_line=max;
         for(ln=min;ln<=max+1;ln++) {
 	  tmph->dbg_info->body[ln-min]=tmph(CHashFun*)->exe_addr(U8*)+ptr(U32*)[ln-min];
+	  if(ln-min&&tmph->dbg_info->body[ln-min]==tmph(CHashFun*)->exe_addr)
+	    tmph->dbg_info->body[ln-min]=NULL;
         }
       }
       ptr+=sizeof(U32)*(max-min+1+1);

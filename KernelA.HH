@@ -1768,7 +1768,7 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_RSI		6
 #define REG_RDI		7
 #define REG_R8		8
-#define REG_REGS_NUM	16
+#define REG_REGS_NUM	31
 
 #define REG_RIP		16	//Used by compiler, not really it's num
 //Be careful: RBPu8, RSPu8, RSIu8, RDIu8 are 20-24
@@ -3276,7 +3276,7 @@ class CTaskDying
 	*dbg_task;
   CWinScroll horz_scroll,vert_scroll;
 
-  I64	user_data,user_data2;
+  I64	user_data,user_data2,is_single_step;
 };
 
 class CTSS
@@ -5946,4 +5946,25 @@ extern I64 Zip(U8 *files_find_mask="*",U8 *fu_flags=NULL);
 extern I64 Unzip(U8 *files_find_mask="*.Z",U8 *fu_flags=NULL);
 extern U0 DbgInfoWrite(CHashTable *h,U8 *name);
 extern U0 DbgInfoRead(U8 *name);
+extern Bool ChkOnStk(U8 *ptr,CTask *task=NULL) ;
+extern U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE);
+extern CTask *GetDebuggedProcess() ;
+extern U0 CallerRep(U8 **x29=NULL,CTask *task=NULL);
+extern U0 DebuggerSpawn(CTask *debugee) ;
+extern U0 AiwniosDbgCB(I64 *gps) ;
+extern CBpt *BptFind(U8 *needle_addr,CTask *haystack_task=NULL,Bool rem=FALSE);
+extern Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE);
+extern Bool BptR(U8 *addr,CTask *task=NULL,Bool live=TRUE,Bool rem=TRUE);
+extern Bool B(U8 *addr,CTask *task=NULL,Bool live=TRUE);
+extern I64 B2(CTask *task=NULL,Bool live=TRUE);
+extern U0 G(U8 *ip=INVALID_PTR,CTask *task=NULL);
+extern U0 G2(U8 *ip=INVALID_PTR,CTask *task=NULL);
+extern U0 BList(CTask *task=NULL) ;
+extern I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) ;
+extern Bool ClassRep2(CDoc *doc,U8 *_d,U8 *class_name=lastclass,	I64 depth,I64 max_depth,Bool dynamic,I64 types=HTT_CLASS,I64 offset=0);
+extern U0 ClassRep(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);
+extern U0 ClassRepD(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);
+extern U0 UpdateRegVarImg(CHashFun *tmpf,U8 *_b,CTask *task);
+extern U0 FunRep(U8 *st,U8 *rbp=NULL,I64 max_depth=2,CTask *task=NULL);
+extern Bool ViewFrameVars(I64 frame=0,I64 depth=2);
 #include "Headers.HH";

@@ -48,7 +48,7 @@ I64 ToI64(F64 i) {
   return i;
 }
 
-I64 ClampI64(I64 i,I64 lo,I64 hi) {
+I64 ClampI64(I64 i,I64 lo,I64 hi) {
   if(i<lo) return lo;
   if(i>hi) return hi;
   return i;

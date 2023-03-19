@@ -156,6 +156,8 @@ SetFs(Gs->seth_task);
 #include "MakeCtrls.HC"
 #include "Utils.HC"
 #include "FileMgr.HC"
+#include "KDbg.HC"
+#include "ADbg.HC"
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");

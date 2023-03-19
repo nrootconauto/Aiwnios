@@ -233,8 +233,12 @@ U0 CmpLoadDefines()
 	"R8u16\0R9u16\0R10u16\0R11u16\0R12u16\0R13u16\0R14u16\0R15u16\0");
   DefineLstLoad("ST_U32_REGS","EAX\0ECX\0EDX\0EBX\0ESP\0EBP\0ESI\0EDI\0"
 	"R8u32\0R9u32\0R10u32\0R11u32\0R12u32\0R13u32\0R14u32\0R15u32\0");
-  DefineLstLoad("ST_U64_REGS","RAX\0RCX\0RDX\0RBX\0RSP\0RBP\0RSI\0RDI\0"
-	"R8\0R9\0R10\0R11\0R12\0R13\0R14\0R15\0");
+  DefineLstLoad("ST_U64_REGS","X0\0X1\0X2\0X2\0X3\0X4\0X5\0X6\0"
+	"X7\0X9\0X10\0X11\0X12\0X13\0X14\0X15\0X16\0X17\0X18\0X19\0"
+  "X20\0X21\0X22\0X23\0X24\0X25\0X26\0X27\0X28\0X29\0X30\0X31\0");
+  DefineLstLoad("ST_F64_REGS","D0\0D1\0D2\0D2\0D3\0D4\0D5\0D6\0"
+	"D7\0D9\0D10\0D11\0D12\0D13\0D14\0D15\0D16\0D17\0D18\0D19\0D19\0"
+  "D20\0D21\0D22\0D23\0D24\0D25\0D26\0D27\0D28\0D29\0D30\0D31\0");
   DefineLstLoad("ST_MM_REGS","MM0\0MM1\0MM2\0MM3\0MM4\0MM5\0MM6\0MM7\0");
   DefineLstLoad("ST_XMM_REGS",
 	"XMM0\0XMM1\0XMM2\0XMM3\0XMM4\0XMM5\0XMM6\0XMM7\0");
@@ -258,16 +262,16 @@ U0 CmpFillTables()
   cmp.to_reg_vars_map=CAlloc(REG_REGS_NUM*sizeof(U8));
   cmp.num_reg_vars=0;
   cmp.reg_vars_mask=REGG_LOCAL_VARS;
-  for (i=0;i<REG_REGS_NUM;i++)
+  /*for (i=0;i<REG_REGS_NUM;i++) TODO RESTORE
     if (Bt(&cmp.reg_vars_mask,i))
-      cmp.to_reg_vars_map[cmp.num_reg_vars++]=i;
+      cmp.to_reg_vars_map[cmp.num_reg_vars++]=i;*/
 
   cmp.non_ptr_vars_map=CAlloc(REG_REGS_NUM*sizeof(U8));
   cmp.num_non_ptr_vars=0;
   cmp.non_ptr_vars_mask=REGG_LOCAL_NON_PTR_VARS;
-  for (i=0;i<REG_REGS_NUM;i++)
+  /*for (i=0;i<REG_REGS_NUM;i++) TODO RESTORE
     if (Bt(&cmp.non_ptr_vars_mask,i))
-      cmp.non_ptr_vars_map[cmp.num_non_ptr_vars++]=i;
+      cmp.non_ptr_vars_map[cmp.num_non_ptr_vars++]=i;*/
 
   cmp.dual_U16_tokens1=d=CAlloc(sizeof(U32)*TK_TKS_NUM);
   d['!']=TK_NOT_EQU<<16+'=';

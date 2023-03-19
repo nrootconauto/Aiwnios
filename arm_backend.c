@@ -2136,7 +2136,9 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	int64_t* range_cmp_types;
 	char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr, ***range_fail_addrs;
 	if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass == 3 && rpn->ic_line) { //Final run
-		cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] = bin + code_off;
+    if(MSize(cctrl->code_ctrl->dbg_info)/8>rpn->ic_line - cctrl->code_ctrl->min_ln) {
+      cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] = bin + code_off;
+    }
 	}
 	switch (rpn->type) {
 		break;
@@ -3374,6 +3376,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	int64_t code_off, run, idx, cnt = 0, cnt2,final_size;
 	int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
 	char* bin = NULL;
+  char *ptr;
 	CCodeMisc* misc;
 	CHashImport* import;
 	CRPN* r;
@@ -3397,7 +3400,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	}
 	if (dbg_info) {
     //Dont allocate on cctrl->hc heap ctrl as we want to share our datqa
-		cctrl->code_ctrl->dbg_info = *dbg_info = A_CALLOC((max_ln - min_ln + 1) * sizeof(void*), NULL);
+		cctrl->code_ctrl->dbg_info = dbg_info;
 		cctrl->code_ctrl->min_ln = min_ln;
 	}
 	CRPN* forwards[cnt2 = cnt];
@@ -3531,7 +3534,23 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
     } 
 	}
 	__builtin___clear_cache(bin, bin + MSize(bin));
-	if (res_sz)
-		*res_sz = final_size;
+  if(dbg_info) {
+    cnt=MSize(dbg_info)/8;
+    ptr=dbg_info[0]=bin;
+    for(idx=1;idx<cnt;idx++) {
+      if(!dbg_info[idx]) {
+        dbg_info[idx]=NULL;
+        continue;
+      }
+      if(ptr>dbg_info[idx]) {
+        //No backwards jumps
+        dbg_info[idx]=NULL;
+        continue;
+      }
+      ptr=dbg_info[idx];
+    }
+  }
+  if (res_sz)
+      *res_sz = final_size;
 	return bin;
 }
