@@ -3879,7 +3879,14 @@ import U0 SetKBCallback(U8 *fptr);
 import U0 SetMSCallback(U8 *fptr);
 import U0 SndFreq(I64);
 import F64 Pow(F64,F64);
+import CCPU *Gs();
+import U0 SetGs(CCPU *);
+import I64 mp_cnt();
+import U0 SpawnCore(U0(*fp)(I64),CCPU *);
 #else
+extern I64 mp_cnt();
+extern CCPU *Gs();
+extern U0 SetGs(CCPU *);
 #define public 
 extern F64 Pow(F64,F64);
 extern U0 SndFreq(I64);
@@ -3964,7 +3971,6 @@ extern U8 *FileRead(U8 *,I64 *,I64 *attr=NULL);
 extern U0 FileWrite(U8 *filename,U8 *fbuf,I64 size,CDate cdt=0,I64 attr=0);
 
 extern I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0);
-#define mp_cnt 1 //TODO RESTORE
 
 //Forward declarations
 extern Bool DirMk(U8 *filename,I64 entry_cnt=0);
@@ -5172,7 +5178,6 @@ extern U8 *AMAlloc(I64 cnt,CTask *task=NULL) ;
 extern U8 *ACAlloc(I64 cnt) ;
 extern U8 *MAllocIdent(U8 *ptr,CTask *task=NULL) ;
 extern U8 *AMAllocIdent(U8 *ptr) ;
-extern CCPU *Gs() ;
 extern U0 SwapU8(U8 *a,U8 *b) ;
 extern U0 SwapU16(U16 *a,U16 *b) ;
 extern U0 SwapU32(I32 *a,I32 *b) ;

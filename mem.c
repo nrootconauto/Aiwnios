@@ -60,10 +60,9 @@ void* __AIWNIOS_MAlloc(int64_t cnt, void* t)
 	// Rounnd up to 8
 	cnt += 7 + sizeof(CMemUnused);
 	cnt &= (int8_t)0xf8;
-	// TODO atomic
-	while (hc->locked_flags & HClF_LOCKED)
+	//HClF_LOCKED is 1
+	while (LBts(&hc->locked_flags,1))
 		;
-	hc->locked_flags |= HClF_LOCKED;
 	if (cnt > MEM_HEAP_HASH_SIZE)
 		goto big;
 	if (hc->heap_hash[cnt / 8]) {
@@ -99,8 +98,7 @@ big:
 	goto almost_done;
 almost_done:
 	hc->used_u8s += cnt;
-	// TODO atomic
-	hc->locked_flags &= ~HClF_LOCKED;
+  LBtr(&hc->locked_flags,1);
 	ret->hc = hc;
 	ret++;
 	return ret;
@@ -121,10 +119,8 @@ void __AIWNIOS_Free(void* ptr)
 	if (un->sz < 0) // Aligned chunks are negative and point to start
 		un = un->sz + (char*)un;
 	hc = un->hc;
-	// TODO atomic
-	while (hc->locked_flags & HClF_LOCKED)
+  while (LBts(&hc->locked_flags,1))
 		;
-	hc->locked_flags |= HClF_LOCKED;
 	hc->used_u8s -= un->sz;
 	if (un->sz <= MEM_HEAP_HASH_SIZE) {
 		hash = hc->heap_hash[un->sz / 8];
@@ -138,7 +134,7 @@ void __AIWNIOS_Free(void* ptr)
 		MemPagTaskFree((char*)(un) - sizeof(CMemBlk), hc);
 	}
 fin:
-	hc->locked_flags &= ~HClF_LOCKED;
+	LBtr(&hc->locked_flags,1);
 }
 
 int64_t MSize(void* ptr)
@@ -177,9 +173,8 @@ void HeapCtrlDel(CHeapCtrl* ct)
 {
 	CMemBlk *next, *m;
 	// TODO atomic
-	while (ct->locked_flags & HClF_LOCKED)
+	while (Bt(&ct->locked_flags,1))
 		;
-	ct->locked_flags |= HClF_LOCKED;
 	for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
 		next = m->base.next;
 		munmap(m, m->pags * MEM_PAG_SIZE);

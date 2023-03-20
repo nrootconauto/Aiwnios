@@ -342,6 +342,13 @@ static void* GetHolyFs()
   }
 	return HolyFs;
 }
+static __thread void *HolyGs;
+void *GetHolyGs() {
+  return HolyGs;
+}
+void SetHolyGs(void *ptr) {
+  HolyGs=ptr;
+}
 static int64_t MemCmp(char *a ,char *b,int64_t s) {
   return memcmp(a,b,s);
 }
@@ -430,7 +437,11 @@ void BootAiwnios()
 		PrsBindCSymbol("PutS", &PutS);
 		PrsBindCSymbol("SetFs", &SetHolyFs);
 		PrsBindCSymbol("Fs", &GetHolyFs);
-		PrsBindCSymbol("__GetTicks", &__GetTicks);
+    PrsBindCSymbol("SpawnCore",SpawnCore);
+    PrsBindCSymbol("mp_cnt",mp_cnt);
+    PrsBindCSymbol("Gs",GetHolyGs);
+		PrsBindCSymbol("SetGs",SetHolyGs);
+    PrsBindCSymbol("__GetTicks", &__GetTicks);
     PrsBindCSymbol("__Sleep",__Sleep);
     PrsBindCSymbol("ImportSymbolsToHolyC",ImportSymbolsToHolyC);
 		PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_getcontext);

@@ -97,10 +97,9 @@ public F64 Beat()
 {//Time in music beats.
   F64 res,cur_tM;
   Bool bl=BreakLock;
-  /*if (mp_cnt>1) TODO RESTORE
+  if (mp_cnt>1)
     while (LBts(&sys_semas[SEMA_TMBEAT],0))
       ; //TODO atomic
-  */
   cur_tM=tM;
   res=music.last_Beat;
   if (music.tempo)
@@ -293,10 +292,9 @@ U0 MusicSettingsRst()
   music.meter_bottom=4;
   SndRst;
   bl=BreakLock;
-  /*if (mp_cnt>1) TODO???
+  if (mp_cnt>1)
     while (LBts(&sys_semas[SEMA_TMBEAT],0))
       PAUSE
-  */
   music.last_tM=tM;
   music.last_Beat=0.0;
   if(bl) BreakUnlock;

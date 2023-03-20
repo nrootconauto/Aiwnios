@@ -4,6 +4,7 @@
 #include "CompilerB.HH"
 #include "KGlbls.HC"
 CCPU cpu_structs[64];
+SetGs(&cpu_structs[0]);
 //AIWNIOS Boot stuff
 U8 *StrNew(U8 *str,CTask *task=NULL) {
   if(!task)
@@ -54,9 +55,6 @@ U8 *AMAllocIdent(U8 *ptr) {
 
 CTask *aiwnios_boot_task=__CAlloc(sizeof CTask);
 SetFs(aiwnios_boot_task);
-CCPU *Gs() {
-  return &cpu_structs[0];
-}
 extern U0 Print(U8*,...);
 
 U0 SwapU8(U8 *a,U8 *b) {
@@ -119,9 +117,14 @@ TaskInit(adam_task,0);
 #include "Mouse.HC"
 #include "EdLite.HC"
 #include "KMain.HC"
+U0 SCRoutine() {
+  TaskInit(Fs,0);
+  Gs->seth_task=Fs;
+  CoreAPSethTask;
+}
 U0 InitCPUs() {
+  I64 idx;
   MemSet(&cpu_structs,0,sizeof(CCPU) *64);
-  //TODO mp_cnt
   cpu_structs[0].addr=&cpu_structs[0];
   cpu_structs[0].seth_task=adam_task;
   //See MultiProc.HC
@@ -133,6 +136,14 @@ U0 InitCPUs() {
   adam_task->gs=c;
   adam_task->task_signature=TASK_SIGNATURE_VAL;
   //cpu_structs[0].seth_task=Spawn(&CoreAPSethTask,,,,adam_task,,0); //TODO
+  for(idx=1;idx<mp_cnt;idx++) {
+    c=&cpu_structs[idx];
+    c->addr=c;
+    c->num=idx;
+    c->idle_factor=0.01;
+    QueInit(&c->next_dying);
+    SpawnCore(&SCRoutine,c);
+  }
 }
 InitCPUs;
 #ifndef NO_BOOT

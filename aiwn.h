@@ -951,3 +951,7 @@ void SndFreq(int64_t f);
 void InitSound();
 int64_t IsValidPtr(char *chk);
 void InstallDbgSignalsForThread();
+void *GetHolyGs();
+void SetHolyGs(void *);
+int64_t mp_cnt();
+void SpawnCore(void(*fp)(),void *gs);
