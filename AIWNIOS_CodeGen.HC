@@ -680,7 +680,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_NOBOUND_SWITCH:
     __HC_ICAdd_UnboundedSwitch(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_RET:
-    //TODO CHECK IF CUR FUN IS I64/F64
     new=__HC_ICAdd_Ret(cc2);
     break;case IC_CALL_INDIRECT:
     new=__HC_ICAdd_Call(
@@ -705,7 +704,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     }
     __HC_ICSetLine(new,cur->ic_line);
   }
-  //TODO free AIWNIOS CmpCtrl
   aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+1));
   machine_code=__HC_Compile(acc,res_sz,aiwnios_dbg_info);
   __HC_CodeCtrlPop(acc);

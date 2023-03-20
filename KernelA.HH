@@ -301,7 +301,7 @@ I64i union I64
 //0xFF for your own interrupts.
 #define I_USER			0x40
 
-#define MP_PROCESSORS_NUM	128
+#define MP_PROCESSORS_NUM	128
 
 #define SYS_START_CR0		0x0031
 
@@ -4909,6 +4909,49 @@ class CCtrlBttnState
   CColorROPU32 *state_colors;
 };
 
+class CGrGlbls
+{
+  I64	*to_8_bits,*to_8_colors;
+  CDC	*scrn_image,	//Read only.
+	*dc,		//Persistent
+	*dc1,
+	*dc2,		//Updated every refresh
+	*dc_cache,
+	*zoomed_dc;
+  U32	*text_base;	//See $LK,"TextBase Layer",A="HI:TextBase Layer"$. (Similar to 0xB8000 but 32 bits)
+  U16	*win_z_buf;
+
+  #define SPHT_ELEM_CODE	1
+  CHashTable *sprite_hash;
+
+  U16	*win_uncovered_bitmap;
+  I64	highest_uncovered;
+  U16	*vga_text_cache;
+  I64	pan_text_x,pan_text_y;	//[-7,7]
+  U0	(*fp_final_scrn_update)(CDC *dc);//Mouse cursor is handled here.
+  U0	(*fp_wall_paper)(CTask *task);
+  U0	(*fp_draw_ms)(CDC *dc,I64 x,I64 y);
+  U0	(*fp_draw_grab_ms)(CDC *dc,I64 x,I64 y,Bool closed);
+  U8	*empty_sprite; //Gets assigned $LK,"gr.empty_sprite",A="FF:::/Adam/AMouse.HC,empty_sprite"$
+
+  #define GR_PEN_BRUSHES_NUM 64
+  CDC	*pen_brushes[GR_PEN_BRUSHES_NUM],
+	*collision_pen_brushes[GR_PEN_BRUSHES_NUM],
+	*even_pen_brushes[GR_PEN_BRUSHES_NUM],
+	*odd_pen_brushes[GR_PEN_BRUSHES_NUM];
+  I8	circle_lo[GR_PEN_BRUSHES_NUM][GR_PEN_BRUSHES_NUM],
+	circle_hi[GR_PEN_BRUSHES_NUM][GR_PEN_BRUSHES_NUM];
+
+  #define GR_SCRN_ZOOM_MAX	8
+  U8	*scrn_zoom_tables[GR_SCRN_ZOOM_MAX+1];
+  I64	scrn_zoom,sx,sy;
+
+  //When zoomed, this keeps the mouse centered.
+  Bool	continuous_scroll,
+	hide_row,hide_col;
+};
+extern CGrGlbls gr;
+
 #define FM_NORMAL	0
 #define FM_PICK_FILE	1
 #define FM_PICK_DIR	2
@@ -4973,7 +5016,7 @@ extern CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) ;
 extern U0 DbgPrint(U8 *fmt,...) ;
 extern CRPN *DumpRPN(CRPN *rpn,I64 indent=0) ;
 extern U0 PrsMembers(CCmpCtrl *cc) ;
-extern Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) ;
+extern Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) ;
 extern U0 ParserTest() ;
 extern U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL);
 extern Bool IsLexExpression2Bin(CCmpCtrl *cc,U8 **_machine_code);
@@ -5967,4 +6010,58 @@ extern U0 ClassRepD(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FA
 extern U0 UpdateRegVarImg(CHashFun *tmpf,U8 *_b,CTask *task);
 extern U0 FunRep(U8 *st,U8 *rbp=NULL,I64 max_depth=2,CTask *task=NULL);
 extern Bool ViewFrameVars(I64 frame=0,I64 depth=2);
+#define TEXT_ROWS text.rows
+#define TEXT_COLS text.cols
+extern CJob sys_macro_head;
+extern CTask *sys_macro_task;
+extern CDoc *sys_clip_doc;
+
+extern CTask *adam_task,*sys_focus_task;
+extern I64 sys_num_spawned_tasks;
+
+extern CTask *sys_winmgr_task,*sys_task_being_scrn_updated;
+extern U8 *rev_bits_table, //Table with U8 bits revd
+   *set_bits_table; //Table with count of set bits in a U8
+extern CDate local_time_offset;
+extern F64	*pow10_I64,
+	sys_os_version;
+
+extern CAutoCompleteDictGlbls acd;
+extern CAutoCompleteGlbls ac;
+extern CBlkDevGlbls	blkdev;
+extern CDbgGlbls	dbg;
+extern CDevGlbls	dev;
+extern CGridGlbls	ms_grid; //See $LK,"::/Demo/Graphics/Grid.HC"$.
+extern CMsStateGlbls	ms,ms_last;
+extern CKbdStateGlbls	kbd;
+extern CKeyDevGlbls	keydev;
+extern CMsHardStateGlbls ms_hard,ms_hard_last;
+extern CScrnCastGlbls	scrncast;
+extern CTextGlbls	text;
+
+extern CProgress sys_progresses[4];
+#define progress1 sys_progresses[0].val
+#define progress1_max sys_progresses[0].max
+#define progress1_t0 sys_progresses[0].t0
+#define progress1_tf sys_progresses[0].tf
+#define progress1_desc sys_progresses[0].desc
+
+#define progress2 sys_progresses[1].val
+#define progress2_max sys_progresses[1].max
+#define progress2_t0 sys_progresses[1].t0
+#define progress2_tf sys_progresses[1].tf
+#define progress2_desc sys_progresses[1].desc
+
+#define progress3 sys_progresses[2].val
+#define progress3_max sys_progresses[2].max
+#define progress3_t0 sys_progresses[2].t0
+#define progress3_tf sys_progresses[2].tf
+#define progress3_desc sys_progresses[2].desc
+
+#define progress4 sys_progresses[3].val
+#define progress4_max sys_progresses[3].max
+#define progress4_t0 sys_progresses[3].t0
+#define progress4_tf sys_progresses[3].tf
+#define progress4_desc sys_progresses[3].desc
+extern CCPU cpu_structs[64];;
 #include "Headers.HH";

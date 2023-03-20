@@ -205,22 +205,9 @@ U0 UserStartUp()
   //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
   //CPURep;
 }
-U0 Poodacle(I64) {
-  CTask *t; 
-  I64 x=0,y=0;
-  PaletteSetStd;
-  WinMax(t=User);
-  while(TRUE) {
-    DCFill;
-    gr.dc->color=RED;
-    GrRect(,x,y,100,100);
-    x+=5,y+=5;
-    x%=GR_WIDTH;
-    y%=GR_HEIGHT;
-    Refresh;
-  }
-}
-Spawn(&Poodacle);
+PaletteSetStd;
+WinMax(User);
 ACInit("T:/Kernel*.HH*");
+ExePrint2("#include \"WallPaper.HC\";WallPaperInit;;");
 CoreAPSethTask;
 #endif;

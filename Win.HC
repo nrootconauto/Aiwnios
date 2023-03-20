@@ -15,14 +15,12 @@ U0 ProgressBarsRegTf(U8 *path=NULL)
   F64 t,p1,p2,p3,p4;
   if (path) {
     t=tS;
-    /*TODO RESTORE
     if (progress1_t0) p1=t-progress1_t0; else p1=0;
     if (progress2_t0) p2=t-progress2_t0; else p2=0;
     if (progress3_t0) p3=t-progress3_t0; else p3=0;
     if (progress4_t0) p4=t-progress4_t0; else p4=0;
     RegWrite(path,"progress1_tf=%0.3f;progress2_tf=%0.3f;\n"
 	  "progress3_tf=%0.3f;progress4_tf=%0.3f;\n",p1,p2,p3,p4);
-    */
   }
 }
 
@@ -105,7 +103,7 @@ U0 WinGrid(Bool val)
   MemCpy(&last_grid,&ms_grid,sizeof(CGridGlbls));
   if (!val || PopUpForm(&ms_grid)) {
     if (!val)
-      ;//GridInit; TODO RESTORE
+      GridInit;
     ms_hard.prescale.x*=last_grid.x_speed/ms_grid.x_speed;
     ms_hard.prescale.y*=last_grid.y_speed/ms_grid.y_speed;
     ms_hard.prescale.z*=last_grid.z_speed/ms_grid.z_speed;
@@ -337,7 +335,6 @@ public I64 WinToTop(CTask *task=NULL,Bool update_z_buf=TRUE)
     WinZBufUpdate;
   return res;
 }
-//ext[EXT_WIN_TO_TOP]=&WinToTop; TODO RESTORE?
 
 public CTask *WinFocus(CTask *task=NULL)
 {//Set task as focus task.
@@ -349,7 +346,6 @@ public CTask *WinFocus(CTask *task=NULL)
   if(bl) BreakUnlock;
   return sys_focus_task;
 }
-//ext[EXT_WIN_FOCUS]=&WinFocus; TODO RESTORE?
 
 public Bool WinHorz(I64 left,I64 right,CTask *task=NULL)
 {//Set task's win left and right columns.

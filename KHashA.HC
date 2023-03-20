@@ -11,7 +11,6 @@ CHash *HashFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1)
 {
   I64 idx=HashStr(needle)&table->mask;
   CHash *ret;
-  //TODO lock
   for(ret=table->body[idx];ret;ret=ret->next) {
     if(ret->type&mask)
       if(!StrCmp(ret->str,needle))
@@ -25,7 +24,6 @@ CHash *HashFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1)
   else
     ret=NULL;
 pass:
-  //TODO unlock
   return ret;
 }
 
@@ -33,7 +31,6 @@ CHash *HashSingleTableFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1)
 {
   I64 idx=HashStr(needle)&table->mask;
   CHash *ret;
-  //TODO lock
   for(ret=table->body[idx];ret;ret=ret->next) {
     if(ret->type&mask)
       if(!StrCmp(ret->str,needle))
@@ -44,7 +41,6 @@ CHash *HashSingleTableFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1)
   }
   ret=NULL;
 pass:
-  //TODO unlock
   return ret;
 }
 
@@ -55,11 +51,9 @@ CHash **HashBucketFind(U8 *str,CHashTable *table)
 }
 U0 HashAdd(CHash *h,CHashTable *table)
 {
-  //TODO lock
   I64 idx=HashStr(h->str)&table->mask;
   h->next=table->body[idx];
   table->body[idx]=h;
-  //TODO unlock
 }
 extern U0 HashDel(CHashSrcSym *tmph);
 Bool HashRemDel(CHash *tmph,CHashTable *table,

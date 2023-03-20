@@ -345,7 +345,7 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
         PrsPop3(cc->ps);
       }
       break;case IS_2_ARG:
-      rpn->t.arg2_tree=PrsPop3(cc->ps);
+      rpn->t.arg2_tree=PrsPop3(cc->ps);
       rpn->t.arg1_tree=PrsPop3(cc->ps);
       rpn->t.arg2_class=rpn->t.arg2_tree->ic_class;
       rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;

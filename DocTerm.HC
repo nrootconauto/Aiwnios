@@ -46,7 +46,7 @@ public U0 DocTermNew()
   pdoc->desc='Term';
   Fs->put_doc=Fs->display_doc=pdoc;
   Fs->border_doc=DocBorderNew(pdoc);
-  //Fs->cur_menu=MenuFile("::/Doc/EdPullDown.DD"); TODO RESTORE
+  Fs->cur_menu=MenuFile("::/Doc/EdPullDown.DD");
   WinScrollsInit(Fs);
 }
 

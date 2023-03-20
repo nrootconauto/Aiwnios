@@ -29,6 +29,7 @@ next:;
       Gs->idle_pt_hits+=ns;
       __SleepHP(ns);
     }
+    Gs->total_jiffies=__GetTicksHP;
     Yield;
     LBtr(&(Fs->task_flags),TASKf_IDLE);
   }

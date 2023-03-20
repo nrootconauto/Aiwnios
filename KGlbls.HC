@@ -61,3 +61,4 @@ CProgress sys_progresses[4];
 #define progress4_t0 sys_progresses[3].t0
 #define progress4_tf sys_progresses[3].tf
 #define progress4_desc sys_progresses[3].desc
+

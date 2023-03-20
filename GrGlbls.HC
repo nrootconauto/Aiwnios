@@ -46,5 +46,3 @@ public class CGrGlbls
 //See $LK,"SysGrInit",A="MN:SysGrInit"$()
 
 #help_index "Char;TextBase Layer/Char"
-#define TEXT_ROWS text.rows
-#define TEXT_COLS text.cols

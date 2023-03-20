@@ -705,7 +705,7 @@ lex_float_start:
 	    if (1) 
 	      LexAttachDoc(cc,,,buf2);
       else
-        LexIncludeStr(cc,buf2,FileRead(buf2,NULL),TRUE); //TODO
+        LexIncludeStr(cc,buf2,FileRead(buf2,NULL),TRUE);
       Free(buf2);
 	    break;
 	  case KW_DEFINE:

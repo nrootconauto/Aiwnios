@@ -316,9 +316,8 @@ U0 UserTaskCont()
 U0 SrvCmdLine(I64 dummy=0)
 {
   Fs->win_inhibit=WIG_USER_TASK_DFT;
-  //TODO remove
   DocTermNew;
-  //Type("::/Doc/Start.DD");
+  Type("::/Doc/Start.DD");
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   WinToTop;
   WinZBufUpdate;
@@ -391,6 +390,10 @@ I64 TaskEnd()
     } while (tmpt!=tmpt1);
     return task->next_task;
   }
+  
+  if (LBtr(&task->display_flags,DISPLAYf_SHOW))
+    LBts(&sys_semas[SEMA_UPDATE_WIN_Z_BUF],0);
+  
   while (LBts(&task->task_flags,TASKf_TASK_LOCK))
     ; //TODO atomic LOCK
   while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))
@@ -402,8 +405,8 @@ I64 TaskEnd()
     /*if (!Gs->num) TODO RESTORE
       SingleUser(OFF);*/
     sys_focus_task=NULL;
-    /*if (fp_set_std_palette) TODO RESTORE
-      (*fp_set_std_palette)();*/
+    if (fp_set_std_palette)
+      (*fp_set_std_palette)();
   }
 
   //QueRem

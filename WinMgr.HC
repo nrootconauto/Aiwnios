@@ -296,7 +296,6 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
       DCDel(scrncast.dc); //TODO: $LK,"MemRep",A="MN:MemRep"$ can crash.
       scrncast.dc=NULL;
     }
-    /* TODO RESTORE
     if (sys_focus_task && !Bt(&sys_focus_task->task_flags,TASKf_HAS_SONG)) {
       Free(music.cur_song);
       music.cur_song=NULL;
@@ -308,7 +307,6 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
       Kill(music.cur_song_task);
       music.cur_song_task=NULL;
     }
-    */
     winmgr.updates++;
     //TODO RESTORE???
     //if (ms_hard.install_attempts) //Don't call before boot mouse install attempt

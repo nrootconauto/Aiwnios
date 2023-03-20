@@ -18,18 +18,15 @@ U0 BlkWriteZero(CDrv *dv,I64 blk,I64 cnt)
     BlkWrite(dv,z,blk,n);
     blk+=n;
     cnt-=n;
-    /*if (show_progress) TODO RESTORE
+    if (show_progress)
       progress1+=n;
-    */
     Yield;  //Prevent locking
   }
   Free(z);
-  /*TODO RESTORE
   if (show_progress) {
     *progress1_desc=0;
     progress1=progress1_max=0;
   }
-  */
 }
 
 Bool BlkRead(CDrv *dv,U8 *buf, I64 blk, I64 cnt)
