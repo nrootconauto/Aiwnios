@@ -431,6 +431,8 @@ void BootAiwnios()
 		PrsBindCSymbol("LBtc", &LBtc);
 		PrsBindCSymbol("LBts", &LBts);
 		PrsBindCSymbol("LBtr", &LBtr);
+		PrsBindCSymbol("Bts", &Bts);
+		PrsBindCSymbol("Btr", &Btr);
 		PrsBindCSymbol("Bsf", &Bsf);
 		PrsBindCSymbol("Bsr", &Bsr);
 		PrsBindCSymbol("DbgPutS", &PutS);

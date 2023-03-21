@@ -316,9 +316,8 @@ U0 KbdBuildSC(U8 raw_byte,Bool in_irq,U8 *_last_raw_byte,I64 *_last_sc)
 
 U0 KbdInit() {
   MemSet(&kbd,0,sizeof(CKbdStateGlbls));
-  kbd.fifo=FifoU8New(8);
-  kbd.fifo2=FifoU8New(0x1000);
   kbd.scan_code_fifo=FifoI64New(0x1000);
+  kbd.scan_code_fifo2=FifoI64New(0x1000);
   kbd.irqs_working=TRUE; //???
 }
 
@@ -352,19 +351,23 @@ I64 KbdMsEvtTime()
 
 I64 kb_mtx=0;
 U0 KBCb(I64 c,I64 s) {
-  U8 *old_rip;
-  CTask *old=Fs;
-  F64 time_out;
-  I64 old_idle_pt_hits;
-  U0 (*cb)(I64);
   while(LBts(&kb_mtx,0))
     ; //TODO ATOMIC WAIT
-  SetFs(adam_task);
-  kbd.last_down_scan_code=s;
+  FifoI64Ins(kbd.scan_code_fifo2,s);
+  kbd.timestamp=__GetTicks;
+  LBtr(&kb_mtx,0);
+}
+SetKBCallback(&KBCb);
+U0 CheckForKBData() {
+  U0 (*cb)(I64);
+  I64 s,c,time_out;
+loop:
+  if(!FifoI64Rem(kbd.scan_code_fifo2,&s)) return;
+  FifoI64Ins(kbd.scan_code_fifo,s);
+  if(!(s&SCF_KEY_UP))
+    kbd.last_down_scan_code=s;
   kbd.scan_code=s;
   LBEqu(&kbd.down_bitmap,s&0x7f,!(s&SCF_KEY_UP));
-  FifoI64Ins(kbd.scan_code_fifo,s);
-  kbd.timestamp=__GetTicks;
   c=ScanCode2Char(s&0x7f);
   if(keydev.fp_ctrl_alt_cbs&&!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&'a'<=c<='z') {
     if(cb=keydev.fp_ctrl_alt_cbs[c-'a'])
@@ -394,7 +397,5 @@ U0 KBCb(I64 c,I64 s) {
       }
     }
   }
-  LBtr(&kb_mtx,0);
-  SetFs(old);
+  goto loop;
 }
-SetKBCallback(&KBCb);

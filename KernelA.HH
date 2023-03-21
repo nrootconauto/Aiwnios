@@ -2902,7 +2902,7 @@ class CMemRange
 	timestamp,	//Output: GetTSC when event.
 	new_key_timestamp; //Output: GetTSC when new key event.
   CFifoU8 *fifo,*fifo2; //Private
-  CFifoI64 *scan_code_fifo;
+  CFifoI64 *scan_code_fifo,*scan_code_fifo2;
 
   //BitTest, $LK,"Bt",A="MN:Bt"$(), with a merged scan code.
   //(Left and right shift merged, for example.)
@@ -3833,6 +3833,8 @@ import I64 StrLen(I64);
 import I64 StrCmp(U8*,U8*);
 import U64 ToUpper(U64);
 import U64 Bt(U8 *,I64);
+import U64 Btr(U8 *,I64);
+import U64 Bts(U8 *,I64);
 import F64 Log10(F64);
 import F64 Log2(F64);
 import F64 Pow10(F64);
@@ -3886,6 +3888,8 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern U64 Btr(U8 *,I64);
+extern U64 Bts(U8 *,I64);
 extern I64 mp_cnt();
 extern CCPU *Gs();
 extern U0 SetGs(CCPU *);
@@ -6104,4 +6108,23 @@ extern CD3 *D3Copy(CD3 *a,CD3*b) ;
 extern CD3 *D3Cross(CD3 *cross,CD3 *a,CD3*b) ;
 extern F64 D3Dot(CD3*a,CD3 *b) ;
 extern F64 D3Unit(CD3 *unit) ;
+class CWho
+{
+  CHashGeneric *h;
+  U8 *idx;
+};
+extern I64 HashEntriesCompare(CWho *h1,CWho *h2);
+extern I64 HashEntriesCompare2(CWho *h1,CWho *h2);
+extern I64 HelpIndexCnt(U8 *ptr,U8 *idx);
+extern U8 *HelpIndexStr(U8 **_ptr,U8 *idx);
+extern U8 *HelpComment(CTask *task,CHash *tmph,U8 *_src_link);
+extern I64 HashEntriesCompare3(CWho *h1,CWho *h2);
+extern U0 Who(U8 *fu_flags=NULL,CHashTable *h=NULL,U8 *idx=NULL,CDoc *doc=NULL);
+extern I64 HashDepthRep(CHashTable *table=NULL);
+extern U0 PopUpHelpIndex(U8 *idx,CTask *parent=NULL);
+extern U0 MapFileLoad(U8 *filename);
+extern U0 CheckForKBData();
+extern I64 HashEntrySize(CHashSrcSym *tmph);
+extern I64 HashEntrySize2(CHashSrcSym *tmph);
+extern I64 HashTableSize2(CHashTable *table);
 #include "Headers.HH";

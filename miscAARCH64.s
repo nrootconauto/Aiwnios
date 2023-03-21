@@ -2,6 +2,8 @@
 .global LBtr
 .global LBtc
 .global Bt
+.global Btr
+.global Bts
 .global Caller
 Bt:
   lsr x3,x1,3
@@ -30,6 +32,36 @@ _Bts_0:
   cbnz w4,_Bts_0
   mov x0,x5
   ret
+
+Bts:
+  lsr x3,x1,3
+  and x1,x1,0x7
+  add x0,x3,x0
+  ldrb w3,[x0]
+  mov x4,1
+  lslv w4,w4,w1
+  tst w3,w4
+  cset x5, ne
+  orr w3,w3,w4
+  strb w3,[x0]
+  mov x0,x5
+  ret
+
+Btr:
+  lsr x3,x1,3
+  and x1,x1,0x7
+  add x0,x3,x0
+  ldrb w3,[x0]
+  mov x4,1
+  lslv w4,w4,w1
+  tst w3,w4
+  cset x5, ne
+  mvn w4,w4
+  and w3,w3,w4
+  strb w3,[x0]
+  mov x0,x5
+  ret
+
 
 LBtc:
   lsr x3,x1,3
