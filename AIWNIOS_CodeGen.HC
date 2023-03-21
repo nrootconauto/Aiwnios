@@ -287,8 +287,16 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         }
       }
     }
-    //Assign offsets
+    //In FunRep,the function is assumes to store registers somewhere
+    //So i "store" them at the start of the function
     foff=0;
+    for(idx=0;idx!=member_cnt;idx++) {
+      if(mv[idx].m->reg!=REG_NONE) {
+        mv[idx].m->offset=foff;
+        foff+=8;
+      }
+    }
+    //Assign offsets
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
       if(mlst->reg==REG_NONE) {

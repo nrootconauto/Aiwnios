@@ -240,7 +240,6 @@ i  j  k
 Normal:  dz1*i + dz2*j - k
 */
   I64 i,j;
-DbgPrint("CN\n");
   for (j=0;j<MAP_HEIGHT-1;j++) {
     for (i=0;i<MAP_WIDTH-1;i++) {
       normals[j][i].x=elevations[j][i+1]-elevations[j][i];
@@ -252,7 +251,6 @@ DbgPrint("CN\n");
   }
   for (i=0;i<MAP_WIDTH-1;i++)
     MemSet(&normals[j][i],0,sizeof(CD3));
-DbgPrint("EX\n");
 }
 
 Bool TestSameSlope(I64 x,I64 y,I64 w,I64 h)
@@ -271,7 +269,6 @@ Bool TestSameSlope(I64 x,I64 y,I64 w,I64 h)
 
 U0 MPDoPanels(CTask *task)
 {
-DbgPrint("Poodle:%d\n",Gs->num);
   I64 i,j,l,k1,k2,w,h,threshold,lo,hi;
   Bool cont;
   Panel *tmpp,*start_ptr=NULL,*end_ptr=NULL;
@@ -443,8 +440,7 @@ for each spot.
   panel_head=NULL;
   mp.init_not_done_flags=1<<mp_cnt-1;
   for (i=0;i<mp_cnt;i++) {
-    DbgPrint("%x\n",i);
-    DbgPrint("%x\n",Spawn(&MPDoPanels,Fs,"Do Panels",i));
+     Spawn(&MPDoPanels,Fs,"Do Panels",i);
   }
   while (mp.init_not_done_flags)
     Sleep(1);
@@ -999,7 +995,7 @@ U0 AnimateTask(I64)
 	  WrapAngles;
 	}
 	speed=1.0;
-	if (rolled_over || !(tmpo=FishFind(x1,y1,&dd)))
+	if (rolled_over || !(tmpo=FishFind(x1,y1,&dd)))
 	  claws_down=0;
 	else {
 	  d=Sqrt(dd);
@@ -1181,18 +1177,15 @@ U0 Talons()
 	"  Right(,,SC_CURSOR_RIGHT);"
 	"}"
 	);
-  AutoComplete;
+  AutoComplete;
   WinBorder;
   WinMax;
   DocCursor;
   DocClear;
   "Initializing...\n";
   Fs->song_task=Spawn(&SongTask,NULL,"Song",,Fs);
-  DbgPutS("Here \n");
   PreInit;
-  DbgPutS("Here2 \n");
   Init;
-  DbgPutS("Here3 \n");
   Fs->animate_task=Spawn(&AnimateTask,NULL,"Animate",,Fs);
   Fs->draw_it=&DrawIt;
   try //in case <CTRL-ALT-c> is pressed.

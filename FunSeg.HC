@@ -81,7 +81,7 @@ fs_abort_task:;
       h=h->next;
     }
   }
-  *_offset=best;
+  *_offset=best;
   return res;
 }
 
@@ -286,7 +286,7 @@ U8 *SrcFileName(U8 *addr,I64 cnt=1,CTask *mem_task=NULL)
   }
   if (best) {
     src=StrNew(best,mem_task);
-    StrFirstRem(src,":");
+    StrFirstRem(src,":");
     StrLastRem(src,",");
     return src;
   } else

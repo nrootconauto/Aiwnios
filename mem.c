@@ -211,7 +211,7 @@ int64_t IsValidPtr(char *chk) {
   char *ptr=buffer;
   char *start,*end;
   FILE *f=fopen("/proc/self/maps","rb");
-  while(getline(&ptr,&sz,f)) {
+  while(-1!=getline(&ptr,&sz,f)) {
     start=Hex2I64(ptr,&ptr);
     if(*ptr++!='-')
       break;

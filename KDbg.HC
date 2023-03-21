@@ -256,7 +256,7 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
   CTask *t=GetDebuggedProcess;
   CHash *fun;
   U8 *rip;
-  I64 oframe=frame;
+  I64 oframe=frame,dummy;
   rbp=t->context_save_area[11];
   rip=t->context_save_area[12];
   while(frame>0) {
@@ -265,7 +265,7 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
     if(!ChkOnStk(rbp,t)) return FALSE;
     frame--;
   }
-  fun=FunSegFind(rip,NULL);
+  fun=FunSegFind(rip,&dummy);
   if(!fun) return FALSE;
   FunRep(fun->str,rbp,depth,t);
   return TRUE;

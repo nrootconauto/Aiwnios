@@ -161,7 +161,7 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
 	I64 target_cpu=-1,	//-1 for current CPU. See $LK,"multi-core",A="FI:::/Demo/MultiCore/LoadTest.HC"$.
 	CTask *parent=NULL,	//NULL means adam
 	I64 stk_size=0,		//0=default
-	I64 flags=1<<JOBf_ADD_TO_QUE)
+	I64 flags=1<<JOBf_ADD_TO_QUE)
 {//Create task on core running at address.
 //Alloc $LK,"CTask",A="MN:CTask"$ structure from code heap so addr will be short.
   //Could be alloced off of data heap.
@@ -254,7 +254,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
     if (machine_code!=INVALID_PTR) {
       if (!(cc->flags&CCF_JUST_LOAD)) {
 	t0=tS;
-  imachine=machine_code;
+  imachine=machine_code;
 	res=(*imachine)();
 	Fs->answer=res;
 	Fs->answer_type=type;

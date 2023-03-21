@@ -1026,12 +1026,12 @@ rc_adjust_xy:
 	if (sys_focus_task==win_task &&
 	      recalc_flags&RECALCG_MASK==RECALCt_TO_SCRN &&
 	      !(doc_e->de_flags&DOCEF_DONT_DRAW)) {
-	  /*if (doc_e->aux_str &&
+	  if (doc_e->aux_str &&
 		(!music.cur_song || StrCmp(music.cur_song,doc_e->aux_str))) {
 	    Free(music.cur_song);
 	    MusicSettingsRst;
 	    music.cur_song=AStrNew(doc_e->aux_str);
-	  }*/
+	  }
 	}
 	doc->flags|=DOCF_HAS_SONG;
 	break;

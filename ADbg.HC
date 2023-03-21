@@ -238,14 +238,12 @@ public U0 FunRep(U8 *st,U8 *rbp=NULL,I64 max_depth=2,CTask *task=NULL)
   if (tmpf) {
     if (rbp) {
       if (task) {
-//tmpf->size is negative.It's the bottom
-	//of the fun local var space relative to RBP .
-	size=tmpf->arg_cnt*8-tmpf->size+16;
+	size=tmpf->size;
 
 	img=MAlloc(size);
 	MemCpy(img,rbp+tmpf->size,size);
-	UpdateRegVarImg(tmpf,img-tmpf->size,task);
-	ClassRep(img-tmpf->size,st,max_depth,TRUE,rbp-img+tmpf->size);
+	UpdateRegVarImg(tmpf,img,task);
+	ClassRep(img,st,max_depth,TRUE,size);
 	Free(img);
       } else
 	ClassRep(rbp,st,max_depth,TRUE);
