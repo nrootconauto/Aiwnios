@@ -73,7 +73,7 @@ CJob *TaskExe(CTask *srv,CTask *master,U8 *data,I64 flags)
   return res;
 }
 
-CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
+CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
 {//Post StdIn text to servant task. Tell who the master task is.
   Bool bl=FALSE;
   CJob *res;
@@ -314,7 +314,6 @@ I64 JobRunOne(I64 run_flags,CJobCtrl *ctrl)
 	      tmpc->res=ExePrint("%s",tmpc->aux_str);
       catch
 	Fs->catch_except=TRUE;
-      PrintI("wm",Bt(&flags,JOBf_WAKE_MASTER));
       //SetRFlags(old_flags); TODO RESTORE
       break;
     default:
@@ -520,7 +519,8 @@ CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
   CTask *seth;
   if (!(0<=target_cpu<mp_cnt))
     throw('MultCore');
-  //__AwakeCore(target_cpu); TODO RESTORE
+  if(target_cpu) //TODO REMOVE target_cpu!=0 check
+    MPAwake(target_cpu);
   tmpc=CAlloc(sizeof(CJob),adam_task);
   QueInit(tmpc);
   if (aux_str)
@@ -532,9 +532,12 @@ CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
   tmpc->aux1=aux1;
   tmpc->aux2=aux2;
   seth=cpu_structs[target_cpu].seth_task;
-  tmpc->ctrl=ctrl=&seth->srv_ctrl;
+  ctrl=&seth->srv_ctrl;
+  tmpc->ctrl=ctrl;
   while (LBts(&ctrl->flags,JOBCf_LOCKED))
     Yield;
+  if(ctrl->next_waiting==ctrl)
+    LBtr(&seth->task_flags,TASKf_AWAITING_MSG);
   QueIns(tmpc,ctrl->last_waiting);
   LBtr(&ctrl->flags,JOBCf_LOCKED);
   return tmpc;
@@ -546,7 +549,8 @@ CTask *SpawnQue(U0 (*fp_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
 {
   CTask *res;
   CJob *tmpc=JobQue(fp_addr,data,target_cpu,
-	flags,JOBT_SPAWN_TASK,task_name,parent,stk_size);
+	flags,JOBT_SPAWN_TASK
+  ,task_name,parent,stk_size);
   CJobCtrl *ctrl;
 
   while (!Bt(&tmpc->flags,JOBf_DONE)) {

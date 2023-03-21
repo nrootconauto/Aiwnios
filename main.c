@@ -438,6 +438,8 @@ void BootAiwnios()
 		PrsBindCSymbol("SetFs", &SetHolyFs);
 		PrsBindCSymbol("Fs", &GetHolyFs);
     PrsBindCSymbol("SpawnCore",SpawnCore);
+    PrsBindCSymbol("MPSleepHP",MPSleepHP);
+    PrsBindCSymbol("MPAwake",MPAwake);
     PrsBindCSymbol("mp_cnt",mp_cnt);
     PrsBindCSymbol("Gs",GetHolyGs);
 		PrsBindCSymbol("SetGs",SetHolyGs);
@@ -554,7 +556,8 @@ void BootAiwnios()
     PrsBindCSymbol("SetMSCallback",SetMSCallback);
 	}
 }
-static void Boot(char *bin) {
+static void Boot() {
+  char *bin="HCRT2.BIN";
   Fs = calloc(sizeof(CTask), 1);
   InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
@@ -565,8 +568,11 @@ static void Boot(char *bin) {
 }
 int main()
 {
-  int64_t z = 3;
-	int64_t idx;
-  LaunchSDL(&Boot,"HCRT2.BIN");
+  int64_t quit=0;
+  SDL_Init(SDL_INIT_EVERYTHING);
+  InitSound();
+  user_ev_num=SDL_RegisterEvents(1);
+  SpawnCore(&Boot,NULL,0);
+  InputLoop(&quit);
 	return EXIT_SUCCESS;
 }

@@ -301,7 +301,7 @@ I64i union I64
 //0xFF for your own interrupts.
 #define I_USER			0x40
 
-#define MP_PROCESSORS_NUM	128
+#define MP_PROCESSORS_NUM	128
 
 #define SYS_START_CR0		0x0031
 
@@ -1407,7 +1407,7 @@ tries to do something.
 #define WIF_FOCUS_TASK_BORDER	0x01000000
 #define WIF_FOCUS_TASK_GRAB_SCROLL 0x02000000
 
-#define WIG_DBL_CLICK		(WIF_FOCUS_TASK_MS_L_D|WIF_FOCUS_TASK_MS_R_D)
+#define WIG_DBL_CLICK		(WIF_FOCUS_TASK_MS_L_D|WIF_FOCUS_TASK_MS_R_D)
 #define WIG_TASK_DFT		(WIF_FOCUS_TASK_MENU|WIG_DBL_CLICK|\
 	0xFFFF-WIF_SELF_DOC-WIF_SELF_ODE)
 #define WIG_NO_FOCUS_TASK_DFT	(WIG_TASK_DFT-WIF_SELF_BORDER\
@@ -1443,8 +1443,8 @@ class CWinMgrTimingGlbls
   I64	calc_idle_cnt;
 };
 
-#define WINMGR_FPS	(30000.0/1001)
-#define WINMGR_PERIOD	(1001/30000.0)
+#define WINMGR_FPS	(10000.0/1001)
+#define WINMGR_PERIOD	(1001/10000.0)
 
 /*public */ class CWinMgrGlbls
 {
@@ -3882,7 +3882,9 @@ import F64 Pow(F64,F64);
 import CCPU *Gs();
 import U0 SetGs(CCPU *);
 import I64 mp_cnt();
-import U0 SpawnCore(U0(*fp)(I64),CCPU *);
+import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
+import U0 MPSleepHP(I64);
+import U0 MPAwake(I64);
 #else
 extern I64 mp_cnt();
 extern CCPU *Gs();
@@ -6069,4 +6071,37 @@ extern CProgress sys_progresses[4];
 #define progress4_tf sys_progresses[3].tf
 #define progress4_desc sys_progresses[3].desc
 extern CCPU cpu_structs[64];;
+extern Bool RegCache();
+extern Bool RegDft(U8 *path,U8 *val,Bool is_adam_entry=FALSE);
+extern I64 RegExe(U8 *path);
+extern I64 RegCnt(U8 *path);
+extern Bool RegAppend(U8 *path,U8 *fmt,...);
+extern Bool OneTimePopUp(U8 *_flags,I64 flag_num,U8 *msg);
+extern U0 RegInit();
+extern U0 AOnceFlush();
+extern U0 OnceFlush();
+extern U0 AOnce(U8 *fmt,...);
+extern U0 Once(U8 *fmt,...);
+extern U0 AOnceDrv(U8 drv_let=0,U8 *fmt,...);
+extern U0 OnceDrv(U8 drv_let=0,U8 *fmt,...);
+extern U0 OnceExe();
+extern U0 SCRoutine() ;
+extern F64 D3Norm(CD3 *norm) ;
+extern F64 D3NormSqr(CD3 *norm) ;
+extern CD3 *D3Zero(CD3 *z) ;
+extern CD3 *D3MulEqu(CD3 *z,F64 s) ;
+extern CD3 *D3Sub(CD3 *a,CD3*b,CD3 *c) ;
+extern CD3 *D3Equ(CD3 *a,F64 x=0.,F64 y=0.,F64 z=0.) ;
+extern CD3 *D3Mul(CD3 *a,F64 s,CD3 *c) ;
+extern CD3 *D3SubEqu(CD3 *a,CD3*b) ;
+extern CD3 *D3Div(CD3 *a,CD3 *c,F64 s) ;
+extern CD3 *D3DivEqu(CD3 *a,F64 s) ;
+extern F64 D3Dist(CD3 *a,CD3 *b) ;
+extern F64 D3DistSqr(CD3 *a,CD3 *b) ;
+extern CD3 *D3Add(CD3 *a,CD3*b,CD3 *c) ;
+extern CD3 *D3AddEqu(CD3 *a,CD3 *b) ;
+extern CD3 *D3Copy(CD3 *a,CD3*b) ;
+extern CD3 *D3Cross(CD3 *cross,CD3 *a,CD3*b) ;
+extern F64 D3Dot(CD3*a,CD3 *b) ;
+extern F64 D3Unit(CD3 *unit) ;
 #include "Headers.HH";

@@ -294,11 +294,11 @@ U0 MusicSettingsRst()
   bl=BreakLock;
   if (mp_cnt>1)
     while (LBts(&sys_semas[SEMA_TMBEAT],0))
-      PAUSE
+      ;
   music.last_tM=tM;
   music.last_Beat=0.0;
   if(bl) BreakUnlock;
-  //LBtr(&sys_semas[SEMA_TMBEAT],0); TODO
+  LBtr(&sys_semas[SEMA_TMBEAT],0);
 }
 
 MusicSettingsRst;

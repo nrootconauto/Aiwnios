@@ -142,7 +142,7 @@ U0 InitCPUs() {
     c->num=idx;
     c->idle_factor=0.01;
     QueInit(&c->next_dying);
-    SpawnCore(&SCRoutine,c);
+    SpawnCore(&SCRoutine,c,idx);
   }
 }
 InitCPUs;
@@ -169,6 +169,8 @@ SetFs(Gs->seth_task);
 #include "FileMgr.HC"
 #include "KDbg.HC"
 #include "ADbg.HC"
+#include "ARegistry.HC"
+
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");

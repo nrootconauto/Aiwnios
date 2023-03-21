@@ -1,7 +1,7 @@
 F64 Clamp(F64 d,F64 lo,F64 hi)
 {//Clamp to F64 [] range.
   if (d<lo)
-    return lo;
+    return lo;
   if (d>hi)
     return hi;
   return d;

@@ -337,11 +337,11 @@ public U8 *SpriteInterpolate(F64 t,U8 *elems0,U8 *elems1)
   CSprite *tmpg0=elems0-offset(CSprite.start),
 	*tmpg1=elems1-offset(CSprite.start),*tmpgr;
   if (t<0.5) {
-    i=SpriteSize(elems0),
+    i=SpriteSize(elems0);
 	  res=MAlloc(i);
     MemCpy(res,elems0,i);
   } else {
-    i=SpriteSize(elems1),
+    i=SpriteSize(elems1);
 	  res=MAlloc(i);
     MemCpy(res,elems1,i);
   }

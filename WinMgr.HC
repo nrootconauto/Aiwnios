@@ -263,13 +263,11 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
   WinMsUpdate;
 
   if (!LBtr(&sys_semas[SEMA_JUST_PUMP_MSGS],0)) {
-    /*
     t=tS+WINMGR_PERIOD/8;
     while (winmgr.ideal_refresh_tS<t) {
       winmgr.ideal_refresh_tS+=WINMGR_PERIOD;
     }
     timeout_val=__GetTicks+(winmgr.ideal_refresh_tS-tS)*JIFFY_FREQ;
-    */
     LBts(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0);
     GrUpdateScrn;
     LBtr(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0);
@@ -311,7 +309,7 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
     //TODO RESTORE???
     //if (ms_hard.install_attempts) //Don't call before boot mouse install attempt
     //  KbdMsHndlr(FALSE,TRUE);
-    Sleep(WINMGR_PERIOD*JIFFY_FREQ);
+    SleepUntil(timeout_val);
   }
   return msg_code;
 }

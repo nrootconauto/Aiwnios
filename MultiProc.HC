@@ -8,6 +8,10 @@ U0 CoreAPSethTask()
     bl=BreakLock;
     do {
       TaskKillDying;
+      //Dirty fix by nroot.
+      //Messages will return a JOBT_DONE(0) from a JobRunOne
+      //Seth task's dont need messages so i will flush them
+      FlushMsgs;
       while (LBts(&ctrl->flags,JOBCf_LOCKED))
         ; //TODO atomic lock
     } while (ctrl->next_waiting!=ctrl && JobRunOne(0,ctrl));
@@ -27,7 +31,7 @@ next:;
     }
     if(ns>0) {
       Gs->idle_pt_hits+=ns;
-      __SleepHP(ns);
+      MPSleepHP(ns);
     }
     Gs->total_jiffies=__GetTicksHP;
     Yield;

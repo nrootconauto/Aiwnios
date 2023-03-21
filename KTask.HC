@@ -161,15 +161,15 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
 	I64 target_cpu=-1,	//-1 for current CPU. See $LK,"multi-core",A="FI:::/Demo/MultiCore/LoadTest.HC"$.
 	CTask *parent=NULL,	//NULL means adam
 	I64 stk_size=0,		//0=default
-	I64 flags=1<<JOBf_ADD_TO_QUE)
+	I64 flags=1<<JOBf_ADD_TO_QUE)
 {//Create task on core running at address.
 //Alloc $LK,"CTask",A="MN:CTask"$ structure from code heap so addr will be short.
   //Could be alloced off of data heap.
   Bool bl;
   CTask *task;
-  //if (target_cpu>=0) TODO RESTORE
-  //  return SpawnQue(fp_start_addr,data,task_name,target_cpu,
-	//  parent,stk_size,flags);
+  if (target_cpu>=0)
+    return SpawnQue(fp_start_addr,data,task_name,target_cpu,
+	  parent,stk_size,flags);
   task=CAlloc(sizeof(CTask),adam_task /*->code_heap*/ ); //AIWNIOS just takes the task
   task->task_signature=TASK_SIGNATURE_VAL;
   if (!task_name) task_name="Unnamed Task";
@@ -245,7 +245,9 @@ I64 ExeCmdLine(CCmpCtrl *cc)
 	if (ptr2<ptr3) *ptr2=0;
       } else
 	if ((ptr=cc->lex_include_stk->line_start) && *ptr)
-	  MemCpy(ptr2,ptr,MinI64(StrLen(ptr)+1,STR_LEN));
+    ptr3=ptr2;
+    while(ptr2-ptr3<STR_LEN)
+      *ptr2++=*ptr++;
     }
     cc->flags&=~CCF_HAS_MISC_DATA;
     machine_code=LexStmt2Bin(cc,&type);
@@ -271,7 +273,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
   Free(old_task_title);
   if (cc->flags&CCF_JUST_LOAD) {
     if (cc->error_cnt)
-      return FALSE;
+      return FALSE;
     else
       return TRUE;
   } else

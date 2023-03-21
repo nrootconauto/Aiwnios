@@ -954,4 +954,7 @@ void InstallDbgSignalsForThread();
 void *GetHolyGs();
 void SetHolyGs(void *);
 int64_t mp_cnt();
-void SpawnCore(void(*fp)(),void *gs);
+void SpawnCore(void(*fp)(),void *gs,int64_t core);
+void MPSleepHP(int64_t ns);
+void MPAwake(int64_t core);
+extern int64_t user_ev_num;

@@ -2282,7 +2282,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		} else if (next->raw_type != RT_F64 && rpn->raw_type == RT_F64) {
 			code_off = __OptPassFinal(cctrl, next, bin, code_off);
 			code_off = PutICArgIntoReg(cctrl, &next->res, next->raw_type, 0, bin, code_off);
-			if (rpn->res.reg == MD_REG) {
+			if (rpn->res.mode == MD_REG) {
 				AIWNIOS_ADD_CODE(ARM_fmovF64I64(rpn->res.reg, next->res.reg));
 			} else {
 				AIWNIOS_ADD_CODE(ARM_fmovF64I64(1, next->res.reg));

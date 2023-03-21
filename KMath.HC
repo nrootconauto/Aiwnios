@@ -48,7 +48,7 @@ I64 ToI64(F64 i) {
   return i;
 }
 
-I64 ClampI64(I64 i,I64 lo,I64 hi) {
+I64 ClampI64(I64 i,I64 lo,I64 hi) {
   if(i<lo) return lo;
   if(i>hi) return hi;
   return i;
@@ -92,7 +92,7 @@ public U0 P2R(F64 *_x=NULL,F64 *_y=NULL,F64 mag,F64 arg)
     *_y=mag*Sin(arg);
 }
 
-F64 Abs(F64 a) {
+F64 Abs(F64 a) {
   if(a<0.)
     return -a;
   return a;
@@ -132,4 +132,92 @@ F64 Wrap(F64 a,F64 base=-pi)
   else if (res<base)
     res+=2*pi;
   return res;
+}
+
+F64 D3Norm(CD3 *norm) {
+  F64 x=norm->x,y=norm->y,z=norm->z;
+  return Sqrt((x*x)+(y*y)+(z*z));
+}
+F64 D3NormSqr(CD3 *norm) {
+  F64 r=D3Norm(norm);
+  return r*r;
+}
+CD3 *D3Zero(CD3 *z) {
+  z->x=0,z->y=0,z->z=0;
+  return z;	
+}
+CD3 *D3MulEqu(CD3 *z,F64 s) {
+  z->x*=s,z->y*=s,z->z*=s;
+  return z;	
+}
+CD3 *D3Sub(CD3 *a,CD3*b,CD3 *c) {
+  a->x=b->x-c->x;
+  a->y=b->y-c->y;
+  a->z=b->y-c->z; 
+  return a;
+}
+CD3 *D3Equ(CD3 *a,F64 x=0.,F64 y=0.,F64 z=0.) {
+  a->x=x,a->y=y,a->z=z;
+  return a;
+} 
+CD3 *D3Mul(CD3 *a,F64 s,CD3 *c) {
+  a->x=s*c->x;
+  a->y=s*c->y;
+  a->z=s*c->z; 
+  return a;
+}
+CD3 *D3SubEqu(CD3 *a,CD3*b) {
+  return D3Sub(a,a,b);
+}
+CD3 *D3Div(CD3 *a,CD3 *c,F64 s) {
+  a->x=c->x/s;
+  a->y=c->y/s;
+  a->z=c->z/s; 
+  return a;
+}
+CD3 *D3DivEqu(CD3 *a,F64 s) {
+  return D3Div(a,a,s);
+}
+F64 D3Dist(CD3 *a,CD3 *b) {
+  F64 x=a->x-b->x;
+  F64 y=a->y-b->y;
+  F64 z=a->z-b->z;
+  return Sqrt(x*x+y*y+z*z);
+}
+F64 D3DistSqr(CD3 *a,CD3 *b) {
+  F64 x=a->x-b->x;
+  F64 y=a->y-b->y;
+  F64 z=a->z-b->z;
+  return x*x+y*y+z*z;
+}
+CD3 *D3Add(CD3 *a,CD3*b,CD3 *c) {
+  a->x=b->x+c->x;
+  a->y=b->y+c->y;
+  a->z=b->y+c->z; 
+  return a;
+}
+CD3 *D3AddEqu(CD3 *a,CD3 *b) {
+  return D3Add(a,a,b);
+}
+CD3 *D3Copy(CD3 *a,CD3*b) {
+  a->x=b->x,a->y=b->y,a->z=b->z;
+  return a;
+}
+CD3 *D3Cross(CD3 *cross,CD3 *a,CD3*b) {
+  cross->x=a->y*b->z-a->z*b->y;
+  cross->y=a->x*b->z-a->z*b->x;
+  cross->z=a->x*b->y-a->y*b->x;
+  return cross;
+}
+F64 D3Dot(CD3*a,CD3 *b) {
+  return a->x*b->x+a->y*b->y+a->z+b->z;
+}
+F64 D3Unit(CD3 *unit) {
+  F64 dist=D3Norm(unit);
+  if(dist) {
+    unit->x/=dist;
+    unit->y/=dist;
+    unit->z/=dist;
+  }
+  return unit;
 }

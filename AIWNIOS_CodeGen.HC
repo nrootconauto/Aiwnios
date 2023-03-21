@@ -403,7 +403,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           for(idx=0;idx!=member_cnt;idx++) {
             if(foff_lookup[idx*2]==cur->ic_data) {
               cur->ic_data=foff_lookup[idx*2+1];
-              DbgPrint("\n%s,%d\n",mlst->str,cur->ic_data);
               break;
             }
             mlst=mlst->next;

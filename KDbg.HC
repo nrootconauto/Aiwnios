@@ -33,7 +33,7 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
       if(!ChkOnStk(x29,task))
         break;
       ptr=x29+1;
-      if(!ptr) break;
+      if(!ptr) break;
       if (! --num)
 	return *ptr;
       if (x29>=*x29)
@@ -90,6 +90,7 @@ I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   CTask clone;
   I64 oip=gps[12]; 
   Fs->is_single_step=FALSE;
+  DbgPrint("%p,%p,%p,%p\n",Caller(0),Caller(1),Caller(2),Caller(3));
   if(Fs==sys_winmgr_task) {
     //Oh no,you crashed the window manager
     DbgPutS("You crashed the window manager,aborting\n");

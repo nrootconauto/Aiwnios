@@ -10,7 +10,7 @@ static SDL_Rect view_port;
 static SDL_Renderer *renderer;
 static uint32_t palette[0x100];
 static SDL_Thread *sdl_main_thread;
-static int64_t user_ev_num;
+int64_t user_ev_num;
 static SDL_mutex *screen_mutex,*screen_mutex2;
 static SDL_cond *screen_done_cond;
 #define USER_CODE_DRAW_WIN_NEW 1
@@ -26,7 +26,7 @@ static void _DrawWindowNew() {
   SDL_SetWindowMinimumSize(window,640,480);
   SDL_ShowCursor(SDL_DISABLE);
   SDL_SetSurfacePalette(screen,sdl_p=SDL_AllocPalette(256));
-  renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
+  renderer=SDL_CreateRenderer(window,-1,0);
   SDL_UnlockMutex(screen_mutex);
 }
 
