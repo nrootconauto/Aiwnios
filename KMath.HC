@@ -153,7 +153,7 @@ CD3 *D3MulEqu(CD3 *z,F64 s) {
 CD3 *D3Sub(CD3 *a,CD3*b,CD3 *c) {
   a->x=b->x-c->x;
   a->y=b->y-c->y;
-  a->z=b->y-c->z; 
+  a->z=b->z-c->z; 
   return a;
 }
 CD3 *D3Equ(CD3 *a,F64 x=0.,F64 y=0.,F64 z=0.) {
@@ -193,7 +193,7 @@ F64 D3DistSqr(CD3 *a,CD3 *b) {
 CD3 *D3Add(CD3 *a,CD3*b,CD3 *c) {
   a->x=b->x+c->x;
   a->y=b->y+c->y;
-  a->z=b->y+c->z; 
+  a->z=b->z+c->z; 
   return a;
 }
 CD3 *D3AddEqu(CD3 *a,CD3 *b) {

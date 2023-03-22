@@ -598,7 +598,6 @@ lex_float_start:
 	      cc->cur_f64=i*Pow10I64(-j-k);
 	    else
 	      cc->cur_f64=i*Pow10I64(j-k);
-      "%d,%d,%n\n",i,j-k,cc->cur_f64;
 	    cc->flags|=CCF_USE_LAST_U16;
 	    cc->token=TK_F64;
 	    goto lex_end;

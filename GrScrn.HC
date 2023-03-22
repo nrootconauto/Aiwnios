@@ -4,7 +4,7 @@ U0 GrUpdateTaskODEs(CTask *task)
 {
   sys_task_being_scrn_updated=task;
   try
-    ;//ODEsUpdate(task); TODO RESTORE
+    ODEsUpdate(task);
   catch {
     LBts(&task->win_inhibit,WIf_SELF_ODE);
     "Exception in WinMgr: Update Task ODEs\n";
@@ -79,7 +79,7 @@ U0 GrUpdateTasks()
       task1=task=cpu_structs[i].seth_task;
       do {
 	if (!TaskValidate(task)) break;
-	//GrUpdateTaskODEs(task); TODO RESTORE
+	GrUpdateTaskODEs(task);
 	if (!TaskValidate(task)) break;
 	task=task->next_task;
       } while (task!=task1);
@@ -89,8 +89,8 @@ U0 GrUpdateTasks()
     //Dbg("Exception in WinMgr"); TODO RESTORE
   }
   winmgr.last_ode_time=winmgr.ode_time;
-  //ode_alloced_factor=LowPass1(0.1,ode_alloced_factor, TODO RESTORE
-	//Clamp(Gs->idle_factor-0.1,0.2,0.8),1/winmgr.fps);
+  ode_alloced_factor=LowPass1(0.1,ode_alloced_factor,
+    Clamp(Gs->idle_factor-0.1,0.2,0.8),1/winmgr.fps);
   sys_task_being_scrn_updated=NULL;
 }
 

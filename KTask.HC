@@ -120,7 +120,7 @@ I64 TaskInit(CTask *task,I64 stk_size)
   QueInit(&task->next_cc);
   QueInit(&task->next_except);
   QueInit(&task->next_ctrl);
-  //QueInit(&task->next_ode); TOOD RESTORE
+  QueInit(&task->next_ode);
   task->hash_table=HashTableNew(TASK_HASH_TABLE_SIZE,task);
 
 /*

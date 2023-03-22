@@ -1,6 +1,6 @@
 #help_index "DolDoc/Tree"
 
-public Bool DocTreeFind(CDoc *haystack_doc,U8 *needle_path,
+public Bool DocTreeFind(CDoc *haystack_doc,U8 *needle_path,
   CDocEntry **_tree_entry=NULL,
   CDocEntry **_start_indent=NULL, CDocEntry **_end_indent=NULL)
 {//Find tree widget start and end.

@@ -6132,5 +6132,45 @@ extern I64 gr_x_offsets[8],
 	   gr_y_offsets[8],
 	  gr_x_offsets2[4],
 	  gr_y_offsets2[4];
-
+extern I64 HelpIndexCnt(U8 *ptr,U8 *idx);
+extern F64 Exp(F64 x) ;
+extern F64 Sinh(F64 x);
+extern F64 Cosh(F64 x);
+extern Complex *CAdd(Complex *sum,Complex *n1,Complex *n2);
+extern Complex *CSub(Complex *diff,Complex *n1,Complex *n2);
+extern Complex *CMul(Complex *prod,Complex *n1,Complex *n2);
+extern Complex *CDiv(Complex *quot,Complex *n1,Complex *n2);
+extern Complex *CScale(Complex *dst,F64 s);
+extern Complex *CCopy(Complex *dst,Complex *src);
+extern Complex *CEqu(Complex *dst,F64 x,F64 y);
+extern Complex *CPoly(Complex *dst,I64 n,Complex *zeros,Complex *x);
+extern F64 LowPass1(F64 a,F64 y0,F64 y,F64 dt=1.0);
+extern U0 ODERstPtrs(CMathODE *ode);
+extern CMathODE *ODENew(I64 n,F64 max_tolerance=1e-6,I64 flags=0);
+extern Bool ODEPause(CMathODE *ode,Bool val=ON);
+extern U0 ODEDel(CMathODE *ode);
+extern I64 ODESize(CMathODE *ode);
+extern U0 ODESetMassesPtrs(CMathODE *ode,F64 *state,F64 *DstateDt);
+extern U0 ODEState2Internal(CMathODE *ode);
+extern U0 ODEInternal2State(CMathODE *ode);
+extern U0 ODERenum(CMathODE *ode);
+extern CMass *MassFind(CMathODE *ode,F64 x,F64 y,F64 z=0);
+extern CSpring *SpringFind(CMathODE *ode,F64 x,F64 y,F64 z=0);
+extern U0 MassOrSpringFind(	CMathODE *ode,CMass **res_mass,CSpring **res_spring,	F64 x,F64 y,F64 z=0);
+extern CMass *MassFindNum(CMathODE *ode,I64 num);
+extern U0 ODERstInactive(CMathODE *ode);
+extern U0 ODECalcSprings(CMathODE *ode);
+extern U0 ODECalcDrag(CMathODE *ode);
+extern U0 ODEApplyAccelerationLimit(CMathODE *ode);
+extern U0 ODEMPTask(CMathODE *ode);
+extern U0 ODEMPWake(CMathODE *ode);
+extern U0 ODEMPSleep(CMathODE *ode);
+extern U0 ODECallMPDerivative(CMathODE *ode,F64 t,F64 *state,F64 *DstateDt);
+extern U0 ODECallDerivative(CMathODE *ode,F64 t,F64 *state,F64 *DstateDt);
+extern U0 ODEOneStep(CMathODE *ode);
+extern U0 ODERK4OneStep(CMathODE *ode);
+extern U0 ODECashKarp(CMathODE *ode);
+extern U0 ODERK5OneStep(CMathODE *ode);
+extern U0 ODEsUpdate(CTask *task);
+extern F64 ode_alloced_factor;
 #include "Headers.HH";

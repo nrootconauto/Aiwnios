@@ -40,40 +40,89 @@ __15:
   return TRUE;
 }
 Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
-  I64 res=FALSE;
+  U32 *ptr;
   if(x<0) {
     s+=-x;
     len-= -x;
     x=0;
-    
   }
+  x+=task->win_left;
+  if(x<0) {
+    s+=-x;
+    len-= -x;
+    x=0;
+  }
+  if(len<0) return FALSE;
+  y+=task->win_top;
+  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS) {
+    return FALSE;
+  }
+  if(task->win_right>=TEXT_COLS)
+    len=MinI64(len,TEXT_COLS-x);
+  else
+    len=MinI64(len,task->win_right-x);
+  if(!len) return FALSE;
+  ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
-    res|=TextChar(task,,x++,y,attr|*s++);
+    *ptr++=*s++|attr;
   }
-  return res;
+  return TRUE;
 }
 Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
-  I64 res=FALSE;
+  U32 *ptr;
   if(x<0) {
     attr_s+=-x;
     len-= -x;
     x=0;
   }
-  while(--len>=0) {
-    res|=TextChar(task,,x++,y,*attr_s++);
+  x+=task->win_left;
+  if(x<0) {
+    attr_s+=-x;
+    len-= -x;
+    x=0;
   }
-  return res;
+  if(len<0) return FALSE;
+  y+=task->win_top;
+  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS) {
+    return FALSE;
+  }
+  if(task->win_right>=TEXT_COLS)
+    len=MinI64(len,TEXT_COLS-x);
+  else
+    len=MinI64(len,task->win_right-x);
+  if(!len) return FALSE;
+  ptr=&gr.text_base[TEXT_COLS*y+x];
+  while(--len>=0) {
+    *ptr++=*attr_s++;
+  }
+  return TRUE;
 }
 Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
-  I64 res=FALSE;
+  U32 *ptr;
   if(x<0) {
     len-= -x;
     x=0;
   }
-  while(--len>=0) {
-    res|=TextChar(task,,x++,y,attr);
+  x+=task->win_left; 
+  if(x<0) {
+    len-= -x;
+    x=0;
   }
-  return res;
+  if(len<0) return FALSE;
+  y+=task->win_top;
+  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS) {
+    return FALSE;
+  }
+  if(task->win_right>=TEXT_COLS)
+    len=MinI64(len,TEXT_COLS-x);
+  else
+    len=MinI64(len,task->win_right-x);
+  if(!len) return FALSE;
+  ptr=&gr.text_base[TEXT_COLS*y+x];
+  while(--len>=0) {
+    *ptr++=attr;
+  }
+  return TRUE;
 }
 
 public U0 TextPrint(CTask *task,I64 x,I64 y,I64 attr,U8 *fmt,...)

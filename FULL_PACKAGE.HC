@@ -172,6 +172,8 @@ SetFs(Gs->seth_task);
 #include "ARegistry.HC"
 #include "CHash.HC"
 #include "AHash.HC"
+#include "AMath.HC"
+#include "AMathODE.HC" 
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
