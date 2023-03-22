@@ -9,7 +9,7 @@ static void AudioCB(void *ul,int8_t *out,int64_t len) {
   for( i=0; i<fpb; i++ ) {
     double t=(double)++sample/have.freq;
     double amp=-1.0+2.0*round(fmod(2.0*t*freq,1.0));
-    char maxed=(amp>0)?127:-127;
+    int64_t maxed=(amp>0)?127:-127;
     maxed*=vol;
     if(!freq) maxed=0;
     for(i2=0;i2!=have.channels;i2++)

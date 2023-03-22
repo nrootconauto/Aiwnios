@@ -3798,6 +3798,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 __HC_CmpCtrl_SetAOT(U8 *);
 import U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 import U0 __Sleep(I64);
 import U0 __SleepHP(I64);

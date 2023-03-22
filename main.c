@@ -451,6 +451,7 @@ void BootAiwnios()
 		PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_getcontext);
 		PrsBindCSymbol("AIWNIOS_LongJmp", &AIWNIOS_setcontext);
 		PrsBindCSymbol("IsValidPtr", &IsValidPtr);
+    PrsBindCSymbol("__HC_CmpCtrl_SetAOT",__HC_CmpCtrl_SetAOT);
 		PrsBindCSymbol("__HC_ICAdd_Typecast", __HC_ICAdd_Typecast);
 		PrsBindCSymbol("__HC_ICAdd_SubCall", __HC_ICAdd_SubCall);
 		PrsBindCSymbol("__HC_ICAdd_SubProlog", __HC_ICAdd_SubProlog);

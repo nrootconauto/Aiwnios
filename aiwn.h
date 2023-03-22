@@ -393,6 +393,7 @@ typedef struct CCmpCtrl {
 //
 #define CCF_IN_SUBSWITCH_START_BLOCK 0x1
 #define CCF_STRINGS_ON_HEAP 0x2
+#define CCF_AOT_COMPILE 0x4
 	int64_t flags;
 	CHashFun* cur_fun;
 	CCodeCtrl* code_ctrl;
@@ -521,7 +522,10 @@ typedef struct CICArg {
 #define __MD_ARM_SHIFT 8
 	int32_t mode;
 	int32_t raw_type;
-	int64_t reg;
+	int32_t reg;
+  //True on enter of things that want to set the flags
+  //True/False if the result of the thing set the flags or not
+  char set_flags;
 	union {
 		int64_t off;
 		int64_t integer;
@@ -792,7 +796,7 @@ int64_t ARM_csel(int64_t d,int64_t n,int64_t m,int64_t cond);
 int64_t ARM_cmpRegX(int64_t n,int64_t m);
 int64_t ARM_negsRegX(int64_t d,int64_t m);
 int64_t ARM_subRegX(int64_t d,int64_t n,int64_t m);
-int64_t ARM_addsRegX(int64_t d,int64_t n,int64_t m,int64_t shmod,int64_t sh);
+int64_t ARM_addsRegX(int64_t d,int64_t n,int64_t m);
 int64_t ARM_addRegX(int64_t d,int64_t n,int64_t m);
 int64_t ARM_movRegX(int64_t d,int64_t n);
 int64_t ARM_movReg(int64_t d,int64_t n);
@@ -960,3 +964,7 @@ void MPAwake(int64_t core);
 extern int64_t user_ev_num;
 int64_t Btr(void *,int64_t);
 int64_t Bts(void *,int64_t);
+int64_t ARM_andsImmX(int64_t d,int64_t n,int64_t imm);
+void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
+int64_t ARM_udivX(int64_t d,int64_t n,int64_t m);
+int64_t ARM_umullX(int64_t d,int64_t n,int64_t m);

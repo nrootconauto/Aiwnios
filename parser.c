@@ -4228,3 +4228,7 @@ CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs) {
   QueIns(rpn,cc->ir_code);
   return rpn;
 }
+
+void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
+  cc->flags|=CCF_AOT_COMPILE;
+} 

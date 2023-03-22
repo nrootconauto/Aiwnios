@@ -214,6 +214,8 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   U8 *cc2=__HC_CodeCtrlPush(acc);
+  if(cc->flags&CCF_AOT_COMPILE)
+    __HC_CmpCtrl_SetAOT(acc);
   if(info) {
     idx=cc->max_line-cc->min_line;
     *info=MAlloc((idx+2)*8+sizeof(CDbgInfo));

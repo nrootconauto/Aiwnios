@@ -1238,12 +1238,20 @@ found_end_square:
           Lex(cc);
         } else if(cc->hash_entry) {
           if(cc->hash_entry->type&HTT_FUN) {
-            rpn=RPNAddNew(
-              cc,
-              IC_ADDR_IMPORT,
-              CodeMiscHashNew(cc,cc->hash_entry),
-              cc->hash_entry,
-            );
+            if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
+              rpn=RPNAddNew(
+                cc,
+                IC_ADDR_IMPORT,
+                CodeMiscHashNew(cc,cc->hash_entry),
+                cc->hash_entry,
+              );
+            else
+              rpn=RPNAddNew(
+                cc,
+                IC_IMM_I64,
+                cc->hash_entry(CHashFun*)->exe_addr,
+                cc->hash_entry,
+              );
             ic_fun=cc->hash_entry;
             Lex(cc);
             if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {

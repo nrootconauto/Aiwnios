@@ -378,6 +378,11 @@ int64_t ARM_subImmX(int64_t d, int64_t n, int64_t imm)
 	return AddSubImmX(1, 0, d, n, imm, 0);
 }
 
+int64_t ARM_subsImmX(int64_t d, int64_t n, int64_t imm)
+{
+	return AddSubImmX(1, 1, d, n, imm, 0);
+}
+
 int64_t ARM_cmpImmX(int64_t n, int64_t imm)
 {
 	return AddSubImmX(1, 1, 31, n, imm, 0);
@@ -441,15 +446,24 @@ int64_t ARM_addRegX(int64_t d, int64_t n, int64_t m)
 	return AddSubShiftRegX(0, 0, d, n, m, LSL, 0, 0);
 }
 
-int64_t ARM_addsRegX(int64_t d, int64_t n, int64_t m, int64_t shmod,
-	int64_t sh)
+
+int64_t ARM_addsRegX(int64_t d, int64_t n, int64_t m)
 {
-	return AddSubShiftRegX(0, 1, d, n, m, shmod, sh, 0);
+	return AddSubShiftRegX(0, 1, d, n, m, LSL, 0, 0);
+}
+
+int64_t ARM_addsImmX(int64_t rd,int64_t rn,int64_t imm) {
+  return AddSubImmX(0, 1, rd, rn, imm, 0);
 }
 
 int64_t ARM_subRegX(int64_t d, int64_t n, int64_t m)
 {
 	return AddSubShiftRegX(1, 0, d, n, m, LSL, 0, 0);
+}
+
+int64_t ARM_subsRegX(int64_t d, int64_t n, int64_t m)
+{
+	return AddSubShiftRegX(1, 1, d, n, m, LSL, 0, 0);
 }
 
 int64_t ARM_negsRegX(int64_t d, int64_t m)
@@ -1116,3 +1130,7 @@ int64_t ARM_stpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
 int64_t ARM_ldpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
   return LdStSimdFpPairImm(1,1,r1,r2,ra,off);
 }
+int64_t ARM_andsImmX(int64_t d,int64_t n,int64_t imm) {return LogicalImmX(3,d,n,imm);}
+
+int64_t ARM_udivX(int64_t d,int64_t n,int64_t m) {return DataProc2Src(2,d,n,m);}
+int64_t ARM_umullX(int64_t d,int64_t n,int64_t m) {return DataProc3RegX(0,5,0,d,n,m,31);}
