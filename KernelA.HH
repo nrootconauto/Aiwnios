@@ -6115,7 +6115,7 @@ class CWho
 };
 extern I64 HashEntriesCompare(CWho *h1,CWho *h2);
 extern I64 HashEntriesCompare2(CWho *h1,CWho *h2);
-extern I64 HelpIndexCnt(U8 *ptr,U8 *idx);
+extern I64 HelpIndexCntgr(U8 *ptr,U8 *idx);
 extern U8 *HelpIndexStr(U8 **_ptr,U8 *idx);
 extern U8 *HelpComment(CTask *task,CHash *tmph,U8 *_src_link);
 extern I64 HashEntriesCompare3(CWho *h1,CWho *h2);
@@ -6127,4 +6127,9 @@ extern U0 CheckForKBData();
 extern I64 HashEntrySize(CHashSrcSym *tmph);
 extern I64 HashEntrySize2(CHashSrcSym *tmph);
 extern I64 HashTableSize2(CHashTable *table);
+extern I64 gr_x_offsets[8],
+	   gr_y_offsets[8],
+	  gr_x_offsets2[4],
+	  gr_y_offsets2[4];
+
 #include "Headers.HH";

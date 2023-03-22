@@ -44,7 +44,7 @@ public CTaskSettings *SettingsPush(CTask *task=NULL,I64 flags=0)
 
   tmpse->win_inhibit=task->win_inhibit;
   tmpse->text_attr=task->text_attr;
-  StrCpy(tmpse->task_title,task->task_title);
+  MemCpy(tmpse->task_title,task->task_title,STR_LEN);
   tmpse->title_src  =task->title_src;
   tmpse->border_attr=task->border_attr;
   tmpse->border_src =task->border_src;

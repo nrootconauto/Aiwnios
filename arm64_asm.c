@@ -918,7 +918,7 @@ int64_t ARM_ldrPreImmF64(int64_t d, int64_t p, int64_t off)
 }
 static int64_t LdStSimdFpReg(int64_t opc, int64_t d, int64_t n, int64_t m)
 {
-	uint32_t size = 0;
+	uint32_t size = 3;
 	uint32_t option = 3;
 	uint32_t S = 0;
 	uint32_t V = 1;
@@ -927,12 +927,12 @@ static int64_t LdStSimdFpReg(int64_t opc, int64_t d, int64_t n, int64_t m)
 
 int64_t ARM_strRegRegF64(int64_t d, int64_t n, int64_t m)
 {
-	return LdStSimdFpReg(2, d, n, m);
+	return LdStSimdFpReg(0, d, n, m);
 }
 
 int64_t ARM_ldrRegRegF64(int64_t d, int64_t n, int64_t m)
 {
-	return LdStSimdFpReg(3, d, n, m);
+	return LdStSimdFpReg(1, d, n, m);
 }
 
 //

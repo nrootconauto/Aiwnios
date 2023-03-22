@@ -234,21 +234,24 @@ I64 ExeCmdLine(CCmpCtrl *cc)
 	      ptr=doc_e->tag;
 	      while (*ptr && ptr2<ptr3)
 		*ptr2++=*ptr++;
+        *ptr2++=0;
 	      break;
 	    case DOCT_TAB:
 	    case DOCT_NEW_LINE:
-	      *ptr2++='.';
+        if(ptr2<ptr3)
+	        *ptr2++='.';
 	      break;
 	  }
 	  doc_e=doc_e->next;
 	}
-	if (ptr2<ptr3) *ptr2=0;
+	 *ptr2=0;
       } else
 	if ((ptr=cc->lex_include_stk->line_start) && *ptr)
     ptr3=ptr2;
-    while(ptr2-ptr3<STR_LEN)
+    while(ptr2-ptr3<STR_LEN-1)
       *ptr2++=*ptr++;
     }
+    *ptr2=0;
     cc->flags&=~CCF_HAS_MISC_DATA;
     machine_code=LexStmt2Bin(cc,&type);
     if (machine_code!=INVALID_PTR) {
