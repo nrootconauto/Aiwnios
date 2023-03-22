@@ -933,10 +933,10 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
         cur_prec=(PREC_OR_OR<<32|IC_OR_OR);
         last_consumes_right=1;
         break;case TK_SUB_EQU:
-        cur_prec=((PREC_OR_OR|ASSOCF_RIGHT)<<32|IC_SUB_EQU);
+        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SUB_EQU);
         last_consumes_right=1;
         break;case TK_ADD_EQU:
-        cur_prec=((PREC_OR_OR|ASSOCF_RIGHT)<<32|IC_ADD_EQU);
+        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_ADD_EQU);
         last_consumes_right=1;
         break;case TK_XOR_EQU:
         cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_XOR_EQU);
