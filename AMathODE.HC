@@ -22,7 +22,7 @@ U0 ODERstPtrs(CMathODE *ode)
   ode->tmp2=ptr;	ptr(I64)+=s;
   ode->tmp3=ptr;	ptr(I64)+=s;
   ode->tmp4=ptr;	ptr(I64)+=s;
-  ode->tmp5=ptr;	ptr(I64)+=s;
+  ode->tmp5=ptr;	ptr(I64)+=s;
   ode->tmp6=ptr;	ptr(I64)+=s;
   ode->tmp7=ptr;
 }
@@ -276,7 +276,7 @@ U0 ODECalcSprings(CMathODE *ode)
       e2=tmps->end2;
       d=D3Norm(D3Sub(&p,&e2->state->x,&e1->state->x));
       tmps->displacement=d-tmps->rest_len;
-      tmps->f=tmps->displacement*tmps->const;
+      tmps->f=tmps->displacement*tmps->const;
       if (tmps->f>0 && tmps->flags&SSF_NO_TENSION)
 	tmps->f=0;
       else if (tmps->f<0 && tmps->flags&SSF_NO_COMPRESSION)
@@ -352,6 +352,7 @@ U0 ODEMPWake(CMathODE *ode)
   }
   for (i=0;i<mp_cnt;i++) {
     Suspend(ode->slave_tasks[i],FALSE);
+    MPAwake(i);
   }
 }
 

@@ -398,6 +398,7 @@ void BootAiwnios()
     PrsBindCSymbol("ACos", &acos);
 		PrsBindCSymbol("ASin", &asin);
 		PrsBindCSymbol("ATan", &atan);
+		PrsBindCSymbol("Exp", &exp);
 		PrsBindCSymbol("HeapCtrlInit", &HeapCtrlInit);
 		PrsBindCSymbol("HeapCtrlDel", &HeapCtrlDel);
 		PrsBindCSymbol("__MAlloc", &__AIWNIOS_MAlloc);

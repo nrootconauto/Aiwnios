@@ -1,6 +1,3 @@
-F64 Exp(F64 x) {
-  return Pow(2.71,x);
-}
 public F64 Sinh(F64 x)
 {//Hyperbolic Sine.
   return 0.5*(Exp(x)-Exp(-x));

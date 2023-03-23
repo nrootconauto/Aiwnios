@@ -213,7 +213,7 @@ I64i union I64
 #define SSF_INACTIVE		1
 #define SSF_NO_COMPRESSION	2
 #define SSF_NO_TENSION		4
-/*public */ class CSpring
+/*public */ class CSpring
 {
   CSpring *next,*last;
   CMass	*end1,*end2;
@@ -1407,7 +1407,7 @@ tries to do something.
 #define WIF_FOCUS_TASK_BORDER	0x01000000
 #define WIF_FOCUS_TASK_GRAB_SCROLL 0x02000000
 
-#define WIG_DBL_CLICK		(WIF_FOCUS_TASK_MS_L_D|WIF_FOCUS_TASK_MS_R_D)
+#define WIG_DBL_CLICK		(WIF_FOCUS_TASK_MS_L_D|WIF_FOCUS_TASK_MS_R_D)
 #define WIG_TASK_DFT		(WIF_FOCUS_TASK_MENU|WIG_DBL_CLICK|\
 	0xFFFF-WIF_SELF_DOC-WIF_SELF_ODE)
 #define WIG_NO_FOCUS_TASK_DFT	(WIG_TASK_DFT-WIF_SELF_BORDER\
@@ -3798,6 +3798,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import F64 Exp(F64);
 import U0 __HC_CmpCtrl_SetAOT(U8 *);
 import U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
 import U0 __Sleep(I64);
@@ -3911,6 +3912,7 @@ extern F64 ATan(F64);
 extern F64 ASin(F64);
 extern F64 ACos(F64);
 //From AIWNIOS
+extern F64 Exp(F64);
 extern I64 MemCmp(U8*,U8*,I64);
 extern U8 *HeapCtrlInit(U8 *DO_NOT_USE,CTask *);
 extern U0 HeapCtrlDel(U8 *);
@@ -6133,7 +6135,6 @@ extern I64 gr_x_offsets[8],
 	  gr_x_offsets2[4],
 	  gr_y_offsets2[4];
 extern I64 HelpIndexCnt(U8 *ptr,U8 *idx);
-extern F64 Exp(F64 x) ;
 extern F64 Sinh(F64 x);
 extern F64 Cosh(F64 x);
 extern Complex *CAdd(Complex *sum,Complex *n1,Complex *n2);
