@@ -60,7 +60,7 @@ Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
   if(task->win_right>=TEXT_COLS)
     len=MinI64(len,TEXT_COLS-x);
   else
-    len=MinI64(len,task->win_right-x);
+    len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
@@ -89,7 +89,7 @@ Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
   if(task->win_right>=TEXT_COLS)
     len=MinI64(len,TEXT_COLS-x);
   else
-    len=MinI64(len,task->win_right-x);
+    len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
@@ -116,13 +116,14 @@ Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
   if(task->win_right>=TEXT_COLS)
     len=MinI64(len,TEXT_COLS-x);
   else
-    len=MinI64(len,task->win_right-x);
+    len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
-    *ptr++=attr;
+    if(ptr(U8*)[0]) break;
+    *ptr++=attr;
   }
-  return TRUE;
+  return len==-1;
 }
 
 public U0 TextPrint(CTask *task,I64 x,I64 y,I64 attr,U8 *fmt,...)

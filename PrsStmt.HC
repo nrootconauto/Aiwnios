@@ -758,7 +758,7 @@ sw_cont:
 	  break;
 	default:
 	  PrsStmt(cc,try_cnt,head.last->lb_break);
-      }
+      }
     }
 sw_sub_end:
     tmpss=head.last;

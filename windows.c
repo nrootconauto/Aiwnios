@@ -17,6 +17,8 @@ static SDL_cond *screen_done_cond;
 #define USER_CODE_UPDATE 2
 
 static void _DrawWindowNew() {
+  int rends;
+  SDL_RendererInfo info;
   screen_mutex=SDL_CreateMutex();
   screen_mutex2=SDL_CreateMutex();
   screen_done_cond=SDL_CreateCond();
@@ -26,7 +28,12 @@ static void _DrawWindowNew() {
   SDL_SetWindowMinimumSize(window,640,480);
   SDL_ShowCursor(SDL_DISABLE);
   SDL_SetSurfacePalette(screen,sdl_p=SDL_AllocPalette(256));
-  renderer=SDL_CreateRenderer(window,-1,0);
+  rends=SDL_GetNumRenderDrivers();
+  while(--rends>=0) {
+    SDL_GetRenderDriverInfo(rends,&info);
+    if(info.flags&SDL_RENDERER_ACCELERATED) break;
+  }
+  renderer=SDL_CreateRenderer(window,rends,SDL_RENDERER_ACCELERATED);
   SDL_UnlockMutex(screen_mutex);
 }
 
