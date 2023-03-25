@@ -194,7 +194,7 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   #endif
 }
 U0 InitSymbols() {
-  ExeFile("KernelA.HH");
+  ExeFile("T:/Src/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
   if(FileFind("HCRT2.DBG.Z"))
     DbgInfoRead("HCRT2.DBG.Z");
@@ -223,7 +223,7 @@ U0 UserStartUp()
 }
 PaletteSetStd;
 WinMax(User);
-ACInit("T:/Kernel*.HH*");
-ExePrint2("#include \"WallPaper.HC\";WallPaperInit;;");
+ACInit("T:/Src/Kernel*.HH*");
+ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
 CoreAPSethTask;
 #endif;

@@ -1,5 +1,5 @@
 #help_index "Math/ODE"
-#help_file "::/Doc/ODE"
+#help_file "::/Doc/ODE.DD"
 
 //See $LK,"::/Doc/Credits.DD"$.
 
@@ -274,9 +274,9 @@ U0 ODECalcSprings(CMathODE *ode)
     } else {
       e1=tmps->end1;
       e2=tmps->end2;
-      d=D3Norm(D3Sub(&p,&e2->state->x,&e1->state->x));
+      d=D3Norm(D3Sub(&p,&e2->state->x,&e1->state->x));
       tmps->displacement=d-tmps->rest_len;
-      tmps->f=tmps->displacement*tmps->const;
+      tmps->f=tmps->displacement*tmps->const;
       if (tmps->f>0 && tmps->flags&SSF_NO_TENSION)
 	tmps->f=0;
       else if (tmps->f<0 && tmps->flags&SSF_NO_COMPRESSION)
@@ -352,7 +352,6 @@ U0 ODEMPWake(CMathODE *ode)
   }
   for (i=0;i<mp_cnt;i++) {
     Suspend(ode->slave_tasks[i],FALSE);
-    MPAwake(i);
   }
 }
 
@@ -547,7 +546,7 @@ U0 ODERK5OneStep(CMathODE *ode)
     }
     errmax/=ode->tolerance_internal;
     if (errmax<=1.0 || ode->h==ode->h_min) break;
-    tmp=ode->h*SAFETY*Pow(errmax,PSHRNK);
+    tmp=ode->h*SAFETY*errmax`PSHRNK;
     if (tmp<0.1*ode->h)
       ode->h*=0.1;
     else
@@ -555,7 +554,7 @@ U0 ODERK5OneStep(CMathODE *ode)
   }
   ode->t+=ode->h;
   if (errmax>ERRCON)
-    ode->h*=SAFETY*Pow(errmax,PGROW);
+    ode->h*=SAFETY*errmax`PGROW;
   else
     ode->h*=5.0;
   ode->h=Clamp(ode->h,ode->h_min,ode->h_max);
@@ -576,6 +575,7 @@ it has a timeout.
 */
   I64 i;
   F64 d,start_time,timeout_time,t_desired,t_initial,interpolation;
+  F64 orig;
   CMathODE *ode;
 
   if (task->next_ode==&task->next_ode)
@@ -614,20 +614,22 @@ it has a timeout.
 	    ODEState2Internal(ode);
 	    MemCpy(ode->initial_state,ode->state_internal,
 		  ode->n_internal*sizeof(F64));
+	    ode->h=(t_desired-ode->t)/1024;
 	    while (ode->t<t_desired) {
 	      ode->h_max=t_desired-ode->t;
-	      ODECallDerivative(ode,ode->t,ode->state_internal,ode->DstateDt);
+//	      ODECallDerivative(ode,ode->t,ode->state_internal,ode->DstateDt);
 	      for (i=0;i<ode->n_internal;i++)
 		ode->state_scale[i]=Abs(ode->state_internal[i])+
 		      Abs(ode->DstateDt[i]*ode->h)+ode->tolerance_internal;
-	      ODERK5OneStep(ode);
-	      if (tS>timeout_time) {
+	      orig=ode->t;
+	      ODEOneStep(ode);
+	      if(orig==ode->t) ode->h=ode->h_max;
+/*	      if (tS>timeout_time) {
 		ode->base_t+=t_desired-ode->t; //Slip
 		goto ode_done;
 
-	      }
+	      }*/
 	    }
-
 	    //Interpolate if end time was not exact.
 	    if (ode->t!=t_desired) {
 	      if (interpolation=ode->t-t_initial) {
@@ -674,9 +676,9 @@ ode_done:
       if (!(ode->flags&ODEF_PAUSED) && ode->derive) {
 	if (ode->min_tolerance!=ode->max_tolerance) {
 	  if (d>0)
-	    ode->tolerance_internal*=Pow(10.0,d);
+	    ode->tolerance_internal*=10.0`d;
 	  else
-	    ode->tolerance_internal*=Pow(2.0,d);
+	    ode->tolerance_internal*=2.0`d;
 	}
 	ode->tolerance_internal=Clamp(ode->tolerance_internal,
 	      ode->min_tolerance,ode->max_tolerance);
@@ -686,3 +688,4 @@ ode_done:
     winmgr.ode_time+=task->last_ode_time=tS-start_time;
   }
 }
+
