@@ -4,10 +4,10 @@
 
 public U0 Mat4x4MulXYZ(I64 *r,I64 *_x,I64 *_y,I64 *_z)
 {//Rotate 3D point using 4x4 matrix. Uses $LK,"fixed-point",A="FI:::/Demo/Lectures/FixedPoint.HC"$.
-  I64 x1,y1,z1,xx=*_x,yy=*_y,zz=*_z;
-  x1=(r[0*4+0]*xx+r[0*4+1]*yy+r[0*4+2]*zz+r[0*4+3])>>32;
-  y1=(r[1*4+0]*xx+r[1*4+1]*yy+r[1*4+2]*zz+r[1*4+3])>>32;
-  z1=(r[2*4+0]*xx+r[2*4+1]*yy+r[2*4+2]*zz+r[2*4+3])>>32;
+  F64 x1,y1,z1,xx=*_x,yy=*_y,zz=*_z;
+  x1=(r[0*4+0]*xx+r[0*4+1]*yy+r[0*4+2]*zz+r[0*4+3])/GR_SCALE;
+  y1=(r[1*4+0]*xx+r[1*4+1]*yy+r[1*4+2]*zz+r[1*4+3])/GR_SCALE;
+  z1=(r[2*4+0]*xx+r[2*4+1]*yy+r[2*4+2]*zz+r[2*4+3])/GR_SCALE;
   *_x=x1;*_y=y1;*_z=z1;
 }
 
@@ -18,7 +18,7 @@ public U0 DCTransform(CDC *dc,I64 *_x,I64 *_y,I64 *_z)
   *_x+=dc->x;
   *_y+=dc->y;
   *_z+=dc->z;
-}
+}  
 
 public I64 *Mat4x4IdentEqu(I64 *r)
 {//Set matrix to identity. Uses $LK,"fixed-point",A="FI:::/Demo/Lectures/FixedPoint.HC"$.

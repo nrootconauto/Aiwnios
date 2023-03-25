@@ -351,10 +351,24 @@ I64 KbdMsEvtTime()
 
 I64 kb_mtx=0;
 U0 KBCb(I64 c,I64 s) {
+  I64 initial_time,freeze_time=100;
   while(LBts(&kb_mtx,0))
     ; //TODO ATOMIC WAIT
   FifoI64Ins(kbd.scan_code_fifo2,s);
   kbd.timestamp=__GetTicks;
+  c=ScanCode2Char(s&0x7f);
+  if(!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&(c=='c'||c=='x')&&TaskValidate(sys_focus_task)) {
+    initial_time=cpu_structs[0].total_jiffies;
+    while(initial_time==cpu_structs[0].total_jiffies&&freeze_time>=0) {
+      __Sleep(2);
+      freeze_time-=2;
+    }
+    if(initial_time!=cpu_structs[0].total_jiffies) {
+      //Not frozen
+    } else {
+      InteruptCore(0);
+    }
+  }
   LBtr(&kb_mtx,0);
 }
 SetKBCallback(&KBCb);

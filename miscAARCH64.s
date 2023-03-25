@@ -3,6 +3,7 @@
 .global LBtc
 .global Bt
 .global Btr
+.global Btc
 .global Bts
 .global Caller
 Bt:
@@ -30,6 +31,20 @@ _Bts_0:
   orr w3,w3,w4
   stxrb w4,w3,[x0]
   cbnz w4,_Bts_0
+  mov x0,x5
+  ret
+
+Btc:
+  lsr x3,x1,3
+  and x1,x1,0x7
+  add x0,x3,x0
+  ldrb w3,[x0]
+  mov x4,1
+  lslv w4,w4,w1
+  tst w3,w4
+  cset x5, ne
+  eor w3,w3,w4
+  strb w3,[x0]
   mov x0,x5
   ret
 

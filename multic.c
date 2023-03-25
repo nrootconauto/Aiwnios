@@ -10,12 +10,13 @@ typedef struct {
   int64_t num;
 } CorePair;
 typedef struct {
-  int64_t is_sleeping;
+  int32_t is_sleeping;
   pthread_t pt;
   int wake_futex;
 } CCPU;
 static CCPU cores[128];
 static __thread core_num=0;
+CHashTable *glbl_table;
 static void threadrt(CorePair *pair) {
   SetHolyGs(pair->gs);
   core_num=pair->num;
@@ -24,13 +25,28 @@ static void threadrt(CorePair *pair) {
   free(pair);
   fp();
 }
+void InteruptCore(int64_t core) {
+  pthread_kill(cores[core].pt,SIGUSR1);
+}
+static void InteruptRt(int ul) {
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set,SIGUSR1);
+  pthread_sigmask(SIG_UNBLOCK,&set,NULL);
+  CHashExport *y=HashFind("Yield",glbl_table,HTT_EXPORT_SYS_SYM,1);
+  void (*fp)();
+  if(y) {
+    fp=y->val;
+    (*fp)();
+  }
+} 
 void SpawnCore(void (*fp)(),void *gs,int64_t core) {
   char buf[144];
   CorePair pair={fp,gs,core},*ptr=malloc(sizeof(CorePair));
   *ptr=pair;
   cores[core].is_sleeping=0;
-  sprintf(buf,"Core:%d",core);
-  SDL_CreateThread(&threadrt,buf,ptr);
+  pthread_create(&cores[core].pt,NULL,threadrt,ptr);
+  signal(SIGUSR1,InteruptRt);
 }
 int64_t mp_cnt() {
   static int64_t ret=0;
@@ -49,5 +65,4 @@ void MPSleepHP(int64_t ns) {
 void MPAwake(int64_t core) {
   if(!LBts(&cores[core].wake_futex,0))
     syscall(SYS_futex,&cores[core].wake_futex,1,FUTEX_WAKE,NULL,NULL,0);
-  
 }

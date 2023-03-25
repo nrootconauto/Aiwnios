@@ -54,14 +54,15 @@ U0 Init()
   }
   objs[O_BURNING_BUSH].type=OT_BUSH1;
 
-  vx=0; vz=0; é=0;
+  vx=0; vz=0; é=0.0;
   horeb_done=FALSE;
 }
 
 #define ANIMATE_STEPS	5
 
-U0 AnimateéTask(F64 a)
+U0 AnimateéTask(I64 _a)
 {
+  F64 a=_a(F64);
   I64 i;
   for (i=0;i<ANIMATE_STEPS;i++) {
     é+=a/ANIMATE_STEPS;
@@ -69,8 +70,9 @@ U0 AnimateéTask(F64 a)
   }
 }
 
-U0 AnimateVTask(F64 v)
+U0 AnimateVTask(I64 _v)
 {
+  F64 v=_v(F64);
   I64 i;
   for (i=0;i<ANIMATE_STEPS;i++) {
     vx+=v/ANIMATE_STEPS*Sin(é);

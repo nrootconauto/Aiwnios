@@ -64,7 +64,6 @@ Bool Kill(CTask *task,Bool wait=TRUE,Bool just_break=FALSE)
 	  if (task==cpu_structs[i].seth_task)
 	    return FALSE;
 	LBts(&task->task_flags,TASKf_KILL_TASK);
-  PrintI("ktask",task);
 	if (wait) {
 	  do Yield;
 	  while (TaskValidate(task) && Bt(&task->task_flags,TASKf_KILL_TASK));
@@ -327,7 +326,6 @@ U0 SrvCmdLine(I64 dummy=0)
   WinToTop;
   WinZBufUpdate;
   //CallExtStr("SrvStartUp"); TODO RESTORE
-  PrintI("poodles",0);
   SrvTaskCont;
 }
 
@@ -436,7 +434,6 @@ I64 TaskEnd()
   task->wake_jiffy=__GetTicksHP+DYING_JIFFIES*1000;
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     ; //TODO ATOMIC LOCK
-  PrintI("p1",3);
   QueIns(task,Gs->last_dying);
   LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
 

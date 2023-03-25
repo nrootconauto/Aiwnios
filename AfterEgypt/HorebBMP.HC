@@ -95,4 +95,3 @@ U0 DrawHoreb(CTask *task,CDC *dc)
     GrPrint(dc,cx-21*FONT_WIDTH/2,cy-FONT_HEIGHT/2,"Find the Burning Bush.");
   }
 }
-

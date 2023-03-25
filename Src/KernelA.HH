@@ -213,7 +213,7 @@ I64i union I64
 #define SSF_INACTIVE		1
 #define SSF_NO_COMPRESSION	2
 #define SSF_NO_TENSION		4
-/*public */ class CSpring
+/*public */ class CSpring
 {
   CSpring *next,*last;
   CMass	*end1,*end2;
@@ -3798,6 +3798,9 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U8 *AiwniosGetClipboard();
+import U0 AiwniosSetClipboard(U8 *);
+import U0 InteruptCore(I64);
 import F64 Exp(F64);
 import U0 __HC_CmpCtrl_SetAOT(U8 *);
 import U0 ImportSymbolsToHolyC(U8 (*cb)(U8*,U8*));
@@ -3837,6 +3840,7 @@ import U64 ToUpper(U64);
 import U64 Bt(U8 *,I64);
 import U64 Btr(U8 *,I64);
 import U64 Bts(U8 *,I64);
+import U64 Btc(U8 *,I64);
 import F64 Log10(F64);
 import F64 Log2(F64);
 import F64 Pow10(F64);
@@ -3890,8 +3894,11 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern U8 *AiwniosGetClipboard();
+extern U0 AiwniosSetClipboard(U8 *);
 extern U64 Btr(U8 *,I64);
 extern U64 Bts(U8 *,I64);
+extern U64 Btc(U8 *,I64);
 extern I64 mp_cnt();
 extern CCPU *Gs();
 extern U0 SetGs(CCPU *);
@@ -5037,7 +5044,7 @@ extern U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL);
 extern Bool IsLexExpression2Bin(CCmpCtrl *cc,U8 **_machine_code);
 extern I64 LexExpressionI64(CCmpCtrl *cc);
 extern F64 LexExpressionF64(CCmpCtrl *cc);
-extern I64 LexExpression(CCmpCtrl *cc);
+extern I64 LexExpression(CCmpCtrl *cc);
 extern CRPN *RPNNext(CRPN *rpn) ;
 extern CRPN *RPNArgN(CRPN *rpn,I64 arg) ;
 extern U0 AOTStoreCodeU8(CCmpCtrl *cc,U8 b);
@@ -6174,4 +6181,5 @@ extern U0 ODECashKarp(CMathODE *ode);
 extern U0 ODERK5OneStep(CMathODE *ode);
 extern U0 ODEsUpdate(CTask *task);
 extern F64 ode_alloced_factor;
+#define CMP_AIWN Cd("Src");Cmp("TEST2.HC","HCRT2.DBG.Z","HCRT2.BIN");Copy("HCRT2.*","T:/");;
 #include "Headers.HH";

@@ -570,8 +570,11 @@ static int64_t DerefToICArg(CCmpCtrl* cctrl, CICArg* res, CRPN* rpn,
 
 						//Store
 						off = cctrl->backend_user_data2;
+            if(SpillsTmpRegs(next4))
+              PushSpilledTmp(cctrl,next2);
+            else
+              PushTmp(cctrl, next2, NULL);
 						PushTmp(cctrl, next4, NULL);
-						PushTmp(cctrl, next2, NULL);
 						code_off = __OptPassFinal(cctrl, next2, bin, code_off);
 						code_off = __OptPassFinal(cctrl, next4, bin, code_off);
 						if (next4->res.mode != MD_REG) {

@@ -73,7 +73,7 @@ CJob *TaskExe(CTask *srv,CTask *master,U8 *data,I64 flags)
   return res;
 }
 
-CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
+CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
 {//Post StdIn text to servant task. Tell who the master task is.
   Bool bl=FALSE;
   CJob *res;
@@ -470,7 +470,6 @@ U0 XTalkWait(CTask *task,U8 *fmt,...)
 U0 InStr(U8 *fmt,...)
 {//Send InFile code to self.
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
-  DbgPutS(buf);
   if (Bt(&(Fs->task_flags),TASKf_INPUT_FILTER_TASK))
     ExePrint("%s",buf);
   else

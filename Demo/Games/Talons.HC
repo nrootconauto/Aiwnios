@@ -575,7 +575,6 @@ I64 update_jiffy_limit;
 
 U0 MPDrawIt(CTask *task,CDC *dc)
 {
-DbgPrint("AP\n");
   I64 j,update=winmgr.updates&65535,strip_width,*s2w,x1,y1,z1,xx,yy,
 	xh,yh,zh,yh2,xh2,x1h,y1h,x1wa,y1wa,x1wb,y1wb,x3,y3,z3,dd,dd_old,
 	cx=task->pix_width>>1,cy=task->pix_height>>1,r[16],*elems1,*elems_hard;
@@ -1177,7 +1176,7 @@ U0 Talons()
 	"  Right(,,SC_CURSOR_RIGHT);"
 	"}"
 	);
-  AutoComplete;
+  AutoComplete;
   WinBorder;
   WinMax;
   DocCursor;

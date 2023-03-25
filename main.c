@@ -363,6 +363,19 @@ static double Arg(double x,double y) {
 static void __Sleep(int64_t ms) {
   SDL_Delay(ms);
 }
+static char *AiwniosGetClipboard() {
+  char *has,*ret;
+  if(!SDL_HasClipboardText())
+    return A_STRDUP("",NULL);
+  has=SDL_GetClipboardText();
+  ret=A_STRDUP(has,NULL);
+  SDL_free(has);
+  return ret;
+}
+static void AiwniosSetClipboard(char *c) {
+  if(c)
+    SDL_SetClipboardText(c);
+}
 void BootAiwnios()
 {
   int32_t Poop[64];
@@ -390,6 +403,8 @@ void BootAiwnios()
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
+    PrsBindCSymbol("AiwniosSetClipboard",AiwniosSetClipboard);
+    PrsBindCSymbol("AiwniosGetClipboard",AiwniosGetClipboard);
     PrsBindCSymbol("__HC_CmpCtrlDel",CmpCtrlDel);
 		PrsBindCSymbol("Cos", &cos);
 		PrsBindCSymbol("Sin", &sin);
@@ -399,6 +414,7 @@ void BootAiwnios()
 		PrsBindCSymbol("ASin", &asin);
 		PrsBindCSymbol("ATan", &atan);
 		PrsBindCSymbol("Exp", &exp);
+		PrsBindCSymbol("Btc", &Btc);
 		PrsBindCSymbol("HeapCtrlInit", &HeapCtrlInit);
 		PrsBindCSymbol("HeapCtrlDel", &HeapCtrlDel);
 		PrsBindCSymbol("__MAlloc", &__AIWNIOS_MAlloc);
@@ -558,6 +574,7 @@ void BootAiwnios()
     PrsBindCSymbol("SetKBCallback",SetKBCallback);
     PrsBindCSymbol("SndFreq",SndFreq);
     PrsBindCSymbol("SetMSCallback",SetMSCallback);
+    PrsBindCSymbol("InteruptCore",InteruptCore);
 	}
 }
 static void Boot() {
@@ -567,6 +584,7 @@ static void Boot() {
 	TaskInit(Fs, NULL, 0);
   VFsMountDrive('T',"./");
   BootAiwnios();
+  glbl_table=Fs->hash_table;
   if(bin)
     Load(bin);
 }

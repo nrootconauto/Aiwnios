@@ -155,5 +155,5 @@ public U0 GodBiblePassage(I64 num_lines=20)
   U8 *verse=BibleLine2Verse(start);
   "%s\n\n",verse;
   Free(verse);
-  BookLines(,start,num_lines);
+  BookLines(,start,num_lines,BIBLE_FILENAME);
 }

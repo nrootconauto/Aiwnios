@@ -90,7 +90,7 @@ I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   CTask clone;
   I64 oip=gps[12]; 
   Fs->is_single_step=FALSE;
-  DbgPrint("%p,%p,%p,%p\n",Caller(0),Caller(1),Caller(2),Caller(3));
+  DbgPrint("%p,%p,%p,%p\n",Caller(0),Caller(1),Caller(2),Caller(3));
   if(Fs==sys_winmgr_task) {
     //Oh no,you crashed the window manager
     DbgPutS("You crashed the window manager,aborting\n");
@@ -100,7 +100,6 @@ I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   MemCpy(Fs->context_save_area,gps,22*8);
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
-  DbgPutS("DW\n");
   DeathWait(&task);
   if(sig!=5)
     Exit;
@@ -114,7 +113,6 @@ fin:
   MemCpy(gps,clone.context_save_area,22*8);
   Fs->task_flags=clone.task_flags;
   Fs->bpt_lst=clone.bpt_lst;
-  DbgPutS("HERE\n");
   return clone.is_single_step;
 }
 CBpt *BptFind(U8 *needle_addr,CTask *haystack_task=NULL,Bool rem=FALSE)
