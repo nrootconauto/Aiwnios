@@ -1188,7 +1188,10 @@ found_end_square:
       } else
         flags&=~PEF_FUN_BEFORE;
       break;start:
+        if(!last_consumes_right)
+          finish=TRUE;
         case TK_STR:
+        if(finish) break;
         cc->flags|=CCF_HAS_MISC_DATA;
         misc=COCMiscNew(cc,CMT_STR_CONST);
         misc->str=LexExtStr(cc,&str_len);
@@ -1196,6 +1199,7 @@ found_end_square:
         RPNAddNew(cc,IC_STR_CONST,misc);
         last_consumes_right=0;
         break;case TK_INS_BIN:
+        if(finish) break;
         cc->flags|=CCF_HAS_MISC_DATA;
         misc=COCMiscNew(cc,CMT_STR_CONST);
         misc->st_len=cc->cur_str_len;
@@ -1205,18 +1209,22 @@ found_end_square:
         last_consumes_right=0;
         Lex(cc);
         break;case TK_CHAR_CONST:
+        if(finish) break;
         RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
         last_consumes_right=0;
         Lex(cc);
         break;case TK_I64:
+        if(finish) break;
         RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
         last_consumes_right=0;
         Lex(cc);
         break;case TK_F64:
+        if(finish) break;
         RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64));
         last_consumes_right=0;
         Lex(cc);
         break;case TK_IDENT:
+        if(finish) break;
         last_consumes_right=0;
         if(cc->local_var_entry) {
           if(cc->local_var_entry->flags&MLF_STATIC) {

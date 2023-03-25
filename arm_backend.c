@@ -830,7 +830,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		use_reg2 = AIWNIOS_TMP_IREG_POOP;
 		indir_off = 0;
 		if (cctrl->code_ctrl->final_pass >= 2) {
-			ARM_adrX(use_reg2, dst->off - code_off + cctrl->code_ctrl->statics_offset);
+			AIWNIOS_ADD_CODE(ARM_adrX(use_reg2, dst->off - code_off + cctrl->code_ctrl->statics_offset));
 		} else
 			AIWNIOS_ADD_CODE(0);
 		goto indir_r2;
@@ -1423,10 +1423,12 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl* cctrl, CRPN* deref, CICArg* arg,
 }
 
 static int64_t __SexyPreOp(CCmpCtrl* cctrl, CRPN* rpn,
-	int32_t (*i_imm_op)(int64_t, int64_t, int64_t),
+	int64_t (*i_imm_op)(int64_t, int64_t, int64_t),
+  int64_t (*i_reg_op)(int64_t,int64_t,int64_t),
 	int32_t (*f_op)(int64_t, int64_t, int64_t),
 	char* bin, int64_t code_off)
 {
+  int64_t code;
 	CRPN *next = rpn->base.next, *tc;
 	CICArg derefed={0}, tmp={0}, tmp2={0};
 	if (next->type == IC_TYPECAST) {
@@ -1475,7 +1477,13 @@ static int64_t __SexyPreOp(CCmpCtrl* cctrl, CRPN* rpn,
 		} else {
 			CICArg orig = next->res;
 			code_off = PutICArgIntoReg(cctrl, &next->res, next->raw_type, 1, bin, code_off);
-			AIWNIOS_ADD_CODE(i_imm_op(next->res.reg, next->res.reg, rpn->integer));
+			code=i_imm_op(next->res.reg, next->res.reg, rpn->integer);
+      if(code!=ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(code);
+      } else {
+        code_off=__ICMoveI64(cctrl,2,rpn->integer,bin,code_off);
+        AIWNIOS_ADD_CODE(i_reg_op(next->res.reg, next->res.reg,2))
+      }
 			code_off = ICMov(cctrl, &orig, &next->res, bin, code_off);
 			code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
 		}
@@ -1493,7 +1501,13 @@ static int64_t __SexyPreOp(CCmpCtrl* cctrl, CRPN* rpn,
 			code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
 			tmp = derefed;
 			code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
-			AIWNIOS_ADD_CODE(i_imm_op(tmp.reg, tmp.reg, rpn->integer));
+      code=i_imm_op(tmp.reg,tmp.reg,rpn->integer);
+			if(code!=ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(code);
+      } else {
+        code_off=__ICMoveI64(cctrl,1,rpn->integer,bin,code_off);
+        AIWNIOS_ADD_CODE(i_reg_op(tmp.reg, tmp.reg,1))
+      }
 			code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
 			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 		}
@@ -1502,11 +1516,13 @@ static int64_t __SexyPreOp(CCmpCtrl* cctrl, CRPN* rpn,
 }
 
 static int64_t __SexyPostOp(CCmpCtrl* cctrl, CRPN* rpn,
-	int32_t (*i_imm_op)(int64_t, int64_t, int64_t),
-	int32_t (*f_op)(int64_t, int64_t, int64_t),
+	int64_t (*i_imm_op)(int64_t, int64_t, int64_t),
+	int64_t (*i_reg_op)(int64_t, int64_t, int64_t),
+  int64_t (*f_op)(int64_t, int64_t, int64_t),
 	char* bin, int64_t code_off)
 {
 	CRPN *next = rpn->base.next, *tc;
+  int64_t code;
 	CICArg derefed={0}, tmp={0}, tmp2={0};
 	if (next->type == IC_TYPECAST) {
 		TYPECAST_ASSIGN_BEGIN(next, next);
@@ -1521,7 +1537,13 @@ static int64_t __SexyPostOp(CCmpCtrl* cctrl, CRPN* rpn,
 			CICArg orig = next->res;
 			code_off = PutICArgIntoReg(cctrl, &next->res, next->raw_type, 1, bin, code_off);
 			code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
-			AIWNIOS_ADD_CODE(i_imm_op(next->res.reg, next->res.reg, rpn->integer));
+      code=i_imm_op(next->res.reg, next->res.reg, rpn->integer);
+      if(code!=ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(code);
+      } else {
+        code_off=__ICMoveI64(cctrl,2,rpn->integer,bin,code_off);
+        AIWNIOS_ADD_CODE(i_reg_op(next->res.reg, next->res.reg,2))
+      }
 			code_off = ICMov(cctrl, &orig, &next->res, bin, code_off);
 		}
 		TYPECAST_ASSIGN_END(next);
@@ -1539,7 +1561,13 @@ static int64_t __SexyPostOp(CCmpCtrl* cctrl, CRPN* rpn,
 			tmp = derefed;
 			code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
 			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-			AIWNIOS_ADD_CODE(i_imm_op(tmp.reg, tmp.reg, rpn->integer));
+      code=i_imm_op(tmp.reg, tmp.reg, rpn->integer);
+      if(code!=ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(code);
+      } else { 
+        code_off=__ICMoveI64(cctrl,1,rpn->integer,bin,code_off);
+        AIWNIOS_ADD_CODE(i_reg_op(tmp.reg, tmp.reg,1))
+      }
 			code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
 		}
 	}
@@ -1682,22 +1710,29 @@ static int64_t __SexyAssignOp(CCmpCtrl* cctrl, CRPN* rpn,
 		code_off = __OptPassFinal(cctrl, next2, bin, code_off);
 		code_off = DerefToICArg(cctrl, &derefed, next, 2, bin, code_off);
 		PopTmp(cctrl, next2);
-		//                ____________
-		// (o)    (o)    /            \
-			//  \      /    |             |
-		//   \ ___/     |    tmp2 has |
-		//  / _____\    |   register 3|
-		// /  \___/ \___| as fallback |
-		// \ _________________________/
-		//
-		code_off = PutICArgIntoReg(cctrl, &b->res, next->raw_type, 1, bin, code_off); // 1
 		tmp2 = derefed;
-		code_off = PutICArgIntoReg(cctrl, &tmp2, next->raw_type, 3, bin, code_off);
-		if (tmp2.raw_type == RT_F64) {
-			AIWNIOS_ADD_CODE(f_op(tmp2.reg, tmp2.reg, b->res.reg));
+		//Check if different
+    if((tmp2.raw_type==RT_F64)^(b->res.raw_type==RT_F64)) {
+        code_off=PutICArgIntoReg(cctrl,&b->res,RT_F64,1,bin,code_off);
+        code_off=PutICArgIntoReg(cctrl,&tmp2,RT_F64,3,bin,code_off);
+        AIWNIOS_ADD_CODE(f_op(tmp2.reg, tmp2.reg, b->res.reg));
 		} else {
-			AIWNIOS_ADD_CODE(i_op(tmp2.reg, tmp2.reg, b->res.reg));
-		}
+      //                ____________
+      // (o)    (o)    /            \
+        //  \      /    |             |
+      //   \ ___/     |    tmp2 has |
+      //  / _____\    |   register 3|
+      // /  \___/ \___| as fallback |
+      // \ _________________________/
+      //
+      code_off = PutICArgIntoReg(cctrl, &b->res, next->raw_type, 1, bin, code_off); // 1
+      code_off = PutICArgIntoReg(cctrl, &tmp2, next->raw_type, 3, bin, code_off);
+      if (tmp2.raw_type == RT_F64) {
+        AIWNIOS_ADD_CODE(f_op(tmp2.reg, tmp2.reg, b->res.reg));
+      } else {
+        AIWNIOS_ADD_CODE(i_op(tmp2.reg, tmp2.reg, b->res.reg));
+      }
+    }
 		code_off = ICMov(cctrl, &derefed, &tmp2, bin, code_off);
 		code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
 		return code_off;
@@ -3064,16 +3099,16 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		BACKEND_UNOP(ARM_mvnRegX, ARM_mvnRegX);
 		break;
 	case IC_POST_INC:
-		code_off = __SexyPostOp(cctrl, rpn, ARM_addImmX, ARM_faddReg, bin, code_off);
+		code_off = __SexyPostOp(cctrl, rpn, ARM_addImmX, ARM_addRegX,ARM_faddReg, bin, code_off);
 		break;
 	case IC_POST_DEC:
-		code_off = __SexyPostOp(cctrl, rpn, ARM_subImmX, ARM_fsubReg, bin, code_off);
+		code_off = __SexyPostOp(cctrl, rpn, ARM_subImmX, ARM_subRegX,ARM_fsubReg, bin, code_off);
 		break;
 	case IC_PRE_INC:
-		code_off = __SexyPreOp(cctrl, rpn, ARM_addImmX, ARM_faddReg, bin, code_off);
+		code_off = __SexyPreOp(cctrl, rpn, ARM_addImmX, ARM_addRegX,ARM_faddReg, bin, code_off);
 		break;
 	case IC_PRE_DEC:
-		code_off = __SexyPreOp(cctrl, rpn, ARM_subImmX, ARM_fsubReg, bin, code_off);
+		code_off = __SexyPreOp(cctrl, rpn, ARM_subImmX, ARM_subRegX,ARM_fsubReg, bin, code_off);
 		break;
 	case IC_AND_AND:
 #define BACKEND_BOOLIFY(to, reg, rt)                        \

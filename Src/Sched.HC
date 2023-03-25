@@ -92,7 +92,7 @@ U0 Yield() {
       }
     }
     if(LBtr(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)&&sys_focus_task) {
-      LBts(&sys_focus_task->task_flags,TASKf_KILL_TASK)
+      LBts(&sys_focus_task->task_flags,TASKf_KILL_TASK);
       task=sys_focus_task;
       SetFs(sys_focus_task);
       task=TaskEnd();
