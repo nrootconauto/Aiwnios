@@ -3894,6 +3894,7 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern F64 Ln(F64);
 extern U8 *AiwniosGetClipboard();
 extern U0 AiwniosSetClipboard(U8 *);
 extern U64 Btr(U8 *,I64);

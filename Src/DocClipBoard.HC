@@ -80,7 +80,7 @@ public U0 ClipPaste(CDoc *doc)
 	unlock_doc2=DocLock(doc2);
   CDocEntry *doc_ce=doc->cur_entry,*doc_e;
   if(cb=AiwniosGetClipboard) {
-    DocPrint(doc,"%s",cb);
+    DocPrintPartial(doc,"%s",cb);
     Free(cb);
   }
   if (unlock_doc2)
