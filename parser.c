@@ -4199,6 +4199,14 @@ CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym
 	return rpn;
 }
 
+//Sets how many bytes before function start a symbol starts at
+//Symbol    <=====RIP-off
+//some...code
+//Fun Start <==== RIP
+void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off) {
+  r->code_misc->aot_before_hint=off;
+}
+
 CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len) {
   CCodeMisc *misc=CodeMiscNew(cmp,CMT_STATIC_DATA);
   misc->integer=at;

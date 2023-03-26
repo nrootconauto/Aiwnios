@@ -18,6 +18,8 @@ static CCPU cores[128];
 static __thread core_num=0;
 CHashTable *glbl_table;
 static void threadrt(CorePair *pair) {
+  Fs=calloc(sizeof(CTask),1);
+  TaskInit(Fs,NULL,0);
   SetHolyGs(pair->gs);
   core_num=pair->num;
   void (*fp)();

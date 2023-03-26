@@ -403,6 +403,7 @@ void BootAiwnios()
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
+    PrsBindCSymbol("__HC_SetAOTRelocBeforeRIP",__HC_SetAOTRelocBeforeRIP);
     PrsBindCSymbol("AiwniosSetClipboard",AiwniosSetClipboard);
     PrsBindCSymbol("AiwniosGetClipboard",AiwniosGetClipboard);
     PrsBindCSymbol("__HC_CmpCtrlDel",CmpCtrlDel);

@@ -4,6 +4,7 @@
 //  your backend again when you port to another arch
 //
 #ifdef IMPORT_AIWNIOS_SYMS
+import U0 __HC_SetAOTRelocBeforeRIP(U8*,I64); //See aiwn.h(TAKESnumber of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
@@ -567,6 +568,13 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           cc2,
           h(CHashFun*)->exe_addr
         );
+      }
+    }
+    if(cc->flags&CCF_AOT_COMPILE) {
+      if(h->type&HTT_GLBL_VAR&&h->type&HTF_EXPORT) {
+        __HC_SetAOTRelocBeforeRIP(new,h(CHashGlblVar*)->data_addr_rip-cc->aotc->rip);
+      } else if(h->type&HTT_FUN&&!Bt(&(h(CHashFun*)->flags),Cf_EXTERN)) {
+        __HC_SetAOTRelocBeforeRIP(new,h(CHashFun*)->exe_addr-cc->aotc->rip);
       }
     }
     break;case IC_REG:

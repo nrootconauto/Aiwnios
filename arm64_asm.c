@@ -361,7 +361,7 @@ int64_t LdStSimdFpRegRegShift(uint32_t opc, int64_t vt,int64_t rn,int64_t rm) {
 int64_t ARM_adrX(int64_t d, int64_t pc_off)
 {
 	int32_t inst = 0x10 << 24;
-	ARM_FORCE_ALIGN(pc_off, 19 + 2, 0);
+	ARM_FORCE_ALIGN(pc_off, 21, 0);
 	inst |= MASKn(d, 6, 0);
 	inst |= MASKn(pc_off >> 2, 19, 5);
 	inst |= MASKn(pc_off, 2, 29);

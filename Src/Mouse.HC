@@ -188,6 +188,7 @@ U0 KbdMsRst()
 U0 MsInit2()
 {
   MemSet(&ms_hard,0,sizeof(CMsHardStateGlbls));
+  ms_hard.has_wheel=TRUE; //Added by nroot
   ms_hard.fifo=FifoU8New(8);
   ms_hard.fifo2=FifoU8New(0x1000);
   ms_hard.scale.x=0.5;

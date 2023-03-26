@@ -118,7 +118,10 @@ TaskInit(adam_task,0);
 #include "EdLite.HC"
 #include "KMain.HC"
 U0 SCRoutine() {
+  CTask *self=CAlloc(sizeof CTask,adam_task);
+  SetFs(self);
   TaskInit(Fs,0);
+  Fs->task_signature=TASK_SIGNATURE_VAL;
   Gs->seth_task=Fs;
   CoreAPSethTask;
 }

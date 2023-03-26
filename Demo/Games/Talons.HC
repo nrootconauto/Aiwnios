@@ -917,7 +917,7 @@ U0 Core0Talons()
   GrLine3(dc,cx+5,cy,0,cx-5,cy,0);
   GrLine3(dc,cx,cy+5,0,cx,cy-5,0);
   if (invert_pitch)
-    GrPrint(dc,0,0,"Pitch:%5.1f Roll:%5.1f Heading:%5.1f "
+    GrPrint(dc,0,0,"Pitch:%5.1f Roll:%5.1f Heading:%5.1f "
 	  "Height:%5d [Core Strip:%3d]",
 	  pitch*180/pi,Wrap(roll+pi)*180/pi,Wrap(heading+pi,0)*180/pi,
 	  height,strip_height);
@@ -1027,7 +1027,6 @@ U0 AnimateTask(I64)
 	else
 	  speed-=0.0001;
 	speed=Clamp(speed+(0.0005-0.0002*Abs(è)/(pi/4)),0.1,5.0);
-        PrintF("Speed2",speed);
       }
 
       for (i=0;i<mp_cnt;i++) {

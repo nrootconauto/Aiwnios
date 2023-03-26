@@ -385,6 +385,7 @@ typedef struct CCodeMisc {
 		double flt;
 		int64_t integer;
 	};
+  int64_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
 } CCodeMisc;
 typedef struct CCmpCtrl {
 	CLexer* lex;
@@ -539,7 +540,7 @@ struct CRPN {
 #define ICF_DEAD_CODE 2
 #define ICF_TMP_NO_UNDO 4
 
-	int64_t type, length, raw_type, flags,ic_line;
+	int32_t type, length, raw_type, flags,ic_line;
 	CHashClass* ic_class;
 	CHashFun* ic_fun;
 	CArrayDim* ic_dim;
@@ -971,3 +972,8 @@ int64_t ARM_udivX(int64_t d,int64_t n,int64_t m);
 int64_t ARM_umullX(int64_t d,int64_t n,int64_t m);
 void InteruptCore(int64_t core);
 extern CHashTable *glbl_table;
+//Sets how many bytes before function start a symbol starts at
+//Symbol    <=====RIP-off
+//some...code
+//Fun Start <==== RIP
+void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off);
