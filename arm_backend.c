@@ -1214,7 +1214,6 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			} else
 				AIWNIOS_ADD_CODE(0);
 			if (src->raw_type == RT_F64 && src->raw_type == dst->raw_type) {
-				use_reg2 = src->reg;
 			} else if ((src->raw_type == RT_F64) ^ (RT_F64 == dst->raw_type)) {
 				goto dft;
 			}

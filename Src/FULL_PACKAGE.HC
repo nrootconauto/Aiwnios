@@ -177,6 +177,11 @@ SetFs(Gs->seth_task);
 #include "AHash.HC"
 #include "AMath.HC"
 #include "AMathODE.HC" 
+#include "InFile.HC" 
+#include "TaskRep.HC"
+#include "Diff.HC" 
+#include "Merge.HC" 
+#include "DocUtils.HC" 
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
@@ -221,12 +226,13 @@ U0 UserStartUp()
   WinToTop;
   WinZBufUpdate;
   //Dir;
-  //"$TX,"82,150",D="DD_TEMPLEOS_LOC"$LOC:";
+  //"$TX,"",D="DD_TEMPLEOS_LOC"$LOC:";
   //CPURep;
 }
 PaletteSetStd;
 WinMax(User);
 ACInit("T:/Src/Kernel*.HH*");
 ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
+ExePrint2("#include \"T:/Src/AMouse.HC\";");
 CoreAPSethTask;
 #endif;

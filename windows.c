@@ -263,10 +263,6 @@ static int32_t __ScanKey(int64_t *ch,int64_t *sc,SDL_Event *_e) {
                 mod|=SCF_CAPS;
             if(e.key.keysym.mod&(KMOD_NUM))
                 mod|=SCF_NUM;
-            if(e.key.keysym.mod&KMOD_LGUI)
-                mod|=SCF_MS_L_DOWN;
-            if(e.key.keysym.mod&KMOD_RGUI)
-                mod|=SCF_MS_R_DOWN;
             *sc=e.key.keysym.scancode;
             switch(e.key.keysym.scancode) {
             case SDL_SCANCODE_SPACE:
@@ -432,8 +428,9 @@ static int32_t __ScanKey(int64_t *ch,int64_t *sc,SDL_Event *_e) {
             case SDL_SCANCODE_DELETE:
             *sc=mod|SC_DELETE;
             return 1;
-            case SC_GUI:
-            *sc=mod|SDL_SCANCODE_APPLICATION;
+            case SDL_SCANCODE_LGUI:
+            case SDL_SCANCODE_RGUI:
+            *sc=mod|SC_GUI;
             return 1;
             case SDL_SCANCODE_PRINTSCREEN:
             *sc=mod|SC_PRTSCRN1;

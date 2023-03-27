@@ -227,6 +227,8 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
   CDC *diff;
   CDate cdt;
 
+  CheckForKBData;
+
   //TimeCal; TODO RESTORE
   if ((t_delta=(t=tS)-winmgr.last_refresh_tS)>0.01)
     winmgr.fps=Max(1.0/t_delta,1);
@@ -309,7 +311,6 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
     //TODO RESTORE???
     //if (ms_hard.install_attempts) //Don't call before boot mouse install attempt
     //  KbdMsHndlr(FALSE,TRUE);
-    CheckForKBData;
     SleepUntil(timeout_val);
   }
   return msg_code;
@@ -354,12 +355,12 @@ Bool WinKeyNavMenu()
   CMenu *m;
   CMenuEntry *tmpme;
   CTask *focus=MenuTask;
-  if (Bt(kbd.down_bitmap,SC_GUI) && focus && (m=focus->cur_menu)) {
+  if (Bt(kbd.down_bitmap,SC_ALT) && focus && (m=focus->cur_menu)) {
     winmgr.show_menu=TRUE;
     sys_cur_submenu_entry=NULL;
     old_pos.x=ms.pos.x; old_pos.y=ms.pos.y;
     ms.pos.x=new_pos.x=ms.pos.y=new_pos.y=0;
-    while (Bt(kbd.down_bitmap,SC_GUI)) {
+    while (Bt(kbd.down_bitmap,SC_ALT)) {
       old_key_cnt=kbd.cnt;
       if (Bt(kbd.down_bitmap,SC_CURSOR_LEFT)) {
 	while (Bt(kbd.down_bitmap,SC_CURSOR_LEFT) && kbd.cnt==old_key_cnt)

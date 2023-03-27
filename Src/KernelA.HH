@@ -5521,6 +5521,7 @@ extern F64 Sign(F64 a) ;
 extern F64 Sqr(F64 a) ;
 extern F64 Wrap(F64 a,F64 base=-pi);
 extern F64 Clamp(F64 d,F64 lo,F64 hi);
+extern U64 ClampU64(U64 d,U64 lo,U64 hi);
 extern F64 Min(F64 n1,F64 n2);
 extern F64 Max(F64 n1,F64 n2);
 extern U64 FloorU64(U64 num,U64 to);
@@ -6257,4 +6258,48 @@ extern F64 ode_alloced_factor;
 #define EF_RENUM_ASM	2
 #define EF_CTRL_SLIDER	3
 #define EF_CH_SC	4
+#define DS_USE_FILE1	0
+#define DS_USE_FILE2	1
+#define DS_REMAINDER_1	2
+#define DS_REMAINDER_2	3
+#define DS_ABORT_FILE	4
+#define DF_MODIFIED			0x01
+#define DF_DONT_MODIFIED		0x02
+#define DF_REMAINDER_ALL_FILE1		0x04
+#define DF_REMAINDER_ALL_FILE2		0x08
+#define DF_ABORT_FILE			0x10
+#define DF_ABORT_ALL_FILES		0x20
+#define DF_NO_MORE_PMTS_THIS_FILE	0x40
+extern I64 PopUpDiffMenu();
+extern I64 DiffEntriesCompare(CDocEntry *doc_e1,CDocEntry *doc_e2);
+extern U0 DiffSel(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,	I64 j2_lo,I64 j2_hi,I64 cnt1,I64 cnt2,	CDocEntry **doc_unsorted1,CDocEntry **doc_unsorted2);
+extern Bool DiffSub(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,I64 j2_lo,I64 j2_hi,	I64 cnt1,I64 cnt2,CDocEntry **doc_sorted1,CDocEntry **doc_sorted2,	CDocEntry **doc_unsorted1,CDocEntry **doc_unsorted2);
+extern Bool DiffBins(CDoc *doc1,CDoc *doc2);
+extern Bool Diff(U8 *dst_file,U8 *src_file,I64 *_df_flags=NULL);
+extern I64 ZRepCompare(CDirEntry *e1,CDirEntry *e2);
+extern U0 ZipRep(U8 *files_find_mask="/*",U8 *fu_flags=NULL,  Bool just_text_not_graphics=TRUE);
+extern U0 CursorRemFile(U8 *filename);
+extern U0 CursorRem(U8 *files_find_mask="*");
+extern U0 CollapseFile(U8 *filename,Bool collapse=TRUE);
+extern U0 Collapse(U8 *files_find_mask="*",	Bool collapse=TRUE,U8 *fu_flags=NULL);
+extern I64 DocOptEntry(CDoc *,CDocEntry *doc_e,I64 fuf_flags);
+extern I64 DocOptDoc(CDoc *doc,I64 fuf_flags);
+extern I64 DocOptFile(U8 *filename,I64 fuf_flags);
+extern I64 DocOptLst(CDirEntry *tmpde,I64 fuf_flags);
+extern I64 DocOpt(U8 *files_find_mask="*",U8 *fu_flags=NULL);
+extern U0 InGetStr(U8 *st);
+extern U0 InPrint(I64 mS=100,U8 *fmt,...);
+extern U0 InGetKey(I64 scan_code,I64 sc_mask=0xFF|SCF_SHIFT|SCF_CTRL|SCF_ALT);
+extern I64 InGetChar(...);
+extern U0 InUntilKey(I64 scan_code,I64 sc_mask=0xFF|SCF_SHIFT|SCF_CTRL|SCF_ALT);
+extern I64 InUntilChar(...);
+extern Bool InView();
+extern Bool InSetMsPlot(I64 mS,I64 x,I64 y,I64 z);
+extern U0 InSetMs(I64 mS=7,I64 x=I64_MAX,I64 y=I64_MAX,I64 z=I64_MAX,		I64 l=I64_MAX,I64 r=I64_MAX);
+extern CDirEntry MGFind(CDirEntry *needle_entry,CDirEntry *haystack_lst);
+extern U0 Merge2(CDirEntry *tmpde1,CDirEntry *tmpde2,I64 *_fuf_flags,I64 *_df_flags);
+extern U0 Merge(U8 *dst_files_find_mask="/*",U8 *src_files_find_mask="/*",  U8 *fu_flags=NULL);
+extern U0 NewFiles(U8 *files_find_mask="/*",CDate cdt=0,U8 *fu_flags=NULL);
+extern U0 TaskRepTask(CTask *task,I64 indent);
+extern U0 TaskRep();
 #include "Headers.HH";

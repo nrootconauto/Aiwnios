@@ -2904,9 +2904,9 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			return rpn->raw_type;
 		} else if (BETWEEN(a, RT_I8i, RT_U32i) && BETWEEN(a, RT_I8i, RT_U32i)) {
 			// Promote to I64i
-			rpn->raw_type = RT_I64i;
-		} else
-			rpn->raw_type = (a > b) ? a : b;
+			a = RT_I64i;
+		}
+    rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_EQ:
@@ -2924,9 +2924,9 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			return rpn->raw_type;
 		} else if (BETWEEN(a, RT_I8i, RT_U32i) && BETWEEN(a, RT_I8i, RT_U32i)) {
 			// Promote to I64i
-			rpn->raw_type = RT_I64i;
-		} else
-			rpn->raw_type = (a > b) ? a : b;
+			a = RT_I64i;
+		}
+    rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_DIV:
@@ -2935,9 +2935,9 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 		b = AssignRawTypeToNode(ccmp, rpn->base.next);
 		if (BETWEEN(a, RT_I8i, RT_U32i) && BETWEEN(b, RT_I8i, RT_U32i)) {
 			// Promote to I64i
-			rpn->raw_type = RT_I64i;
-		} else
-			rpn->raw_type = (a > b) ? a : b;
+			a = RT_I64i;
+		}
+    rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_MUL:

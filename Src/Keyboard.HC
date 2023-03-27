@@ -354,6 +354,7 @@ U0 KBCb(I64 c,I64 s) {
   I64 initial_time,freeze_time=100;
   while(LBts(&kb_mtx,0))
     ; //TODO ATOMIC WAIT
+  kbd.cnt++;
   FifoI64Ins(kbd.scan_code_fifo2,s);
   kbd.timestamp=__GetTicks;
   c=ScanCode2Char(s&0x7f);
@@ -381,7 +382,12 @@ loop:
   if(!(s&SCF_KEY_UP))
     kbd.last_down_scan_code=s;
   kbd.scan_code=s;
-  LBEqu(&kbd.down_bitmap,s&0x7f,!(s&SCF_KEY_UP));
+  switch(s&0xff) {
+    break; case 0x0 ... 0x7f:
+    LBEqu(&kbd.down_bitmap,s&0x7f,!(s&SCF_KEY_UP));
+    break; case SC_GUI:
+    LBEqu(&kbd.down_bitmap,SC_GUI,!(s&SCF_KEY_UP));
+  }
   c=ScanCode2Char(s&0x7f);
   if(keydev.fp_ctrl_alt_cbs&&!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&'a'<=c<='z') {
     if(cb=keydev.fp_ctrl_alt_cbs[c-'a'])

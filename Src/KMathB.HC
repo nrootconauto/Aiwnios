@@ -7,6 +7,15 @@ F64 Clamp(F64 d,F64 lo,F64 hi)
   return d;
 }
 
+U64 ClampU64(U64 d,U64 lo,U64 hi)
+{//Clamp to U64 [] range.
+  if (d<lo)
+    return lo;
+  if (d>hi)
+    return hi;
+  return d;
+}
+
 F64 Min(F64 n1,F64 n2)
 {//Min of two F64s.
   if (n1<=n2)
