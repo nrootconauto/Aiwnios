@@ -10,6 +10,6 @@ all: aiwnios
 .s.o:
 	gcc -g -c ${.IMPSRC} -o ${.TARGET}
 .c.o: ${C_HEADERS}
-	gcc -w  -g -c ${.IMPSRC} -o ${.TARGET}
+	gcc -w -Ofast  -g -c ${.IMPSRC} -o ${.TARGET}
 aiwnios: ${C_OBJS} ${A_OBJS}
 	gcc ${.ALLSRC} -lm ${LIBS} -o ${.TARGET}

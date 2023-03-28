@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <SDL2/SDL.h>
 #define ERR 0x7fFFffFFffFFffFF
+#define INVALID_PTR ERR
 #define A_FREE __AIWNIOS_Free
 #define A_MALLOC(sz,task) __AIWNIOS_MAlloc(sz,task)
 #define A_CALLOC(sz,task) __AIWNIOS_CAlloc(sz,task)
@@ -385,7 +386,8 @@ typedef struct CCodeMisc {
 		double flt;
 		int64_t integer;
 	};
-  int64_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
+  int32_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
+  int32_t use_cnt;
 } CCodeMisc;
 typedef struct CCmpCtrl {
 	CLexer* lex;
@@ -977,3 +979,4 @@ extern CHashTable *glbl_table;
 //some...code
 //Fun Start <==== RIP
 void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off);
+void __HC_CodeMiscIsUsed(CCodeMisc *cm);

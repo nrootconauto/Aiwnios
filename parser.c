@@ -4207,6 +4207,10 @@ void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off) {
   r->code_misc->aot_before_hint=off;
 }
 
+void __HC_CodeMiscIsUsed(CCodeMisc *cm) {
+  return cm->use_cnt!=0;
+}
+
 CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len) {
   CCodeMisc *misc=CodeMiscNew(cmp,CMT_STATIC_DATA);
   misc->integer=at;

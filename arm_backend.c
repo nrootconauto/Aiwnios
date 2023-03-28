@@ -40,6 +40,16 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 // Decemeber 16,2022 Im stuck at home because of a snow storm
 // Decemeber 23,2022,i got 3 monster energy drinks
 //
+static int64_t IsTerminalInst(CRPN *r) {
+  switch(r->type) {
+    break;
+    case IC_RET:
+    case IC_GOTO:
+    return 1;
+  }
+  return 0;
+}
+
 
 static int64_t IsConst(CRPN* rpn)
 {
@@ -2276,9 +2286,10 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
     //See __HC_SetAOTRelocBeforeRIP(Seriously read it) 
     if((cctrl->flags&CCF_AOT_COMPILE)&&(ARM_ERR_INV_OFF!=ARM_adrX(into_reg,i))&&misc->aot_before_hint<0) {
       AIWNIOS_ADD_CODE(ARM_adrX(into_reg,i));
-    } else if (cctrl->code_ctrl->final_pass >= 2)
+    } else if (cctrl->code_ctrl->final_pass >= 2) {
+      misc->use_cnt++;
 			AIWNIOS_ADD_CODE(ARM_ldrLabelX(into_reg, (char*)misc->addr - (bin + code_off)))
-		else {
+		} else {
 			AIWNIOS_ADD_CODE(0);
     }
 		if (rpn->res.mode != MD_REG) {
@@ -3569,7 +3580,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 //
 char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 {
-	int64_t code_off, run, idx, cnt = 0, cnt2,final_size;
+	int64_t code_off, run, idx, cnt = 0, cnt2,final_size,is_terminal;
 	int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
 	char* bin = NULL;
   char *ptr;
@@ -3626,8 +3637,18 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 			code_off = 0;
 		}
 		code_off = FuncProlog(cctrl, bin, code_off);
-		for (cnt = 0; cnt != cnt2; cnt++)
-			code_off = __OptPassFinal(cctrl, forwards[cnt], bin, code_off);
+		for (cnt = 0; cnt < cnt2; cnt++) {
+enter:
+      r=forwards[cnt];
+			code_off = __OptPassFinal(cctrl, r, bin, code_off);
+      if(IsTerminalInst(r)) {
+        cnt++;
+        for(;cnt<cnt2;cnt++) {
+          if(forwards[cnt]->type==IC_LABEL) 
+            goto enter;
+        }
+      }
+    }
 		cctrl->epilog_offset = code_off;
 		code_off = FuncEpilog(cctrl, bin, code_off);
 		for (misc = cctrl->code_ctrl->code_misc->next;
@@ -3682,6 +3703,11 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 				}
 				break;
 			case CMT_RELOC_U64:
+        //No need to make room for an unued misc
+        if(run>=2&&!misc->use_cnt) {
+          *misc->patch_addr=INVALID_PTR;
+          break;
+        }
 				if (code_off % 8)
 					code_off += 8 - code_off % 8;
 				misc->addr = bin + code_off;
