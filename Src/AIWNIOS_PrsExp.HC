@@ -1179,6 +1179,9 @@ found_end_square:
       PrsPop(cc->ps);
       PrsPop2(cc->ps);
       Lex(cc);
+      next=cc->coc.coc_head.next;
+      if(next->ic_class->raw_type==RT_F64)
+        RPNAddNew(cc,IC_TO_I64);
       RPNAddNew(cc,IC_ADD);
       RPNAddNew(cc,IC_DEREF);
       last_consumes_right=0;

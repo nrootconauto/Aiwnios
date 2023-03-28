@@ -815,6 +815,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 	case __MD_ARM_SHIFT:
 		if (src->mode == MD_REG && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
 			switch (dst->raw_type) {
+      case RT_U0:
 				break;
 			case RT_U8i:
 			case RT_I8i:
@@ -895,6 +896,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, -indir_off2));
 		}
 		switch (dst->raw_type) {
+    case RT_U0:
 			break;
 		case RT_F64:
 			opc = ARM_strRegImmF64(use_reg, use_reg2, indir_off);
@@ -981,6 +983,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			if ((src->raw_type == RT_F64) != (dst->raw_type == RT_F64))
 				goto dft;
 			switch (src->raw_type) {
+      case RT_U0:
 				break;
 			case RT_U8i:
 				AIWNIOS_ADD_CODE(ARM_ldrbRegRegShift(dst->reg, src->reg, src->reg2));
@@ -1090,6 +1093,7 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				AIWNIOS_ADD_CODE(ARM_subImmX(use_reg2, use_reg2, -indir_off2));
 			}
 			switch (src->raw_type) {
+      case RT_U0:
 				break;
 			case RT_F64:
 				opc = ARM_ldrRegImmF64(use_reg, use_reg2, indir_off);
