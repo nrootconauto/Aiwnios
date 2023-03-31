@@ -321,7 +321,6 @@ U0 SrvCmdLine(I64 dummy=0)
 {
   Fs->win_inhibit=WIG_USER_TASK_DFT;
   DocTermNew;
-  Type("::/Doc/Start.DD");
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   WinToTop;
   WinZBufUpdate;

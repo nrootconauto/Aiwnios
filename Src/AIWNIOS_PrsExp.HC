@@ -706,9 +706,9 @@ U0 PrsMembers(CCmpCtrl *cc) {
       }
       Lex(cc);
       mlst=MemberFind(cc->cur_str,cls);
-      off+=mlst->offset;
       if(!mlst||ic_dim)
         LexExcept(cc,"Invalid member at");
+      off+=mlst->offset;
       cls=mlst->member_class;
       ic_dim=mlst->dim.next;
       Lex(cc);
@@ -743,7 +743,7 @@ U0 PrsMembers(CCmpCtrl *cc) {
     } else
       break;
   }
-  if(off) {
+  if(off) {
     //Prevent from expading ptr airth.
     cc->coc.coc_head.next(CRPN*)->ic_class=cmp.internal_types[RT_I64];
     RPNAddNew(cc,IC_IMM_I64,off,,TRUE);
@@ -1181,7 +1181,7 @@ found_end_square:
       Lex(cc);
       next=cc->coc.coc_head.next;
       if(next->ic_class->raw_type==RT_F64)
-        RPNAddNew(cc,IC_TO_I64);
+        RPNAddNew(cc,IC_TO_I64);
       RPNAddNew(cc,IC_ADD);
       RPNAddNew(cc,IC_DEREF);
       last_consumes_right=0;

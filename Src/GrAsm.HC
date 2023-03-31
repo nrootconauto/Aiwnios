@@ -9,17 +9,42 @@ Bool IsPixCovered0(CTask *task,I64 x,I64 y) {//No clipping
     return TRUE;
 }
 U0 GrRopEquU8NoClipping(I64 ch,U8 *dst,I64 width_internal) {
-  U64 font=text.font[ch&0xff],color=gr.to_8_colors[(ch>>8)&0xff],cnt;
-  U64 m,t;
+  U64 font=text.font[ch&0xff],color=gr.to_8_colors[(ch>>8)&0xff];
+  U64 m;
+  U64 *to_8_bits=gr.to_8_bits;
   if(ch&(1<<ATTRf_UNDERLINE)) {
     font|=0xFF00000000000000;
   }
-  for(cnt=0;cnt!=8;cnt++) {
-    m=gr.to_8_bits[font&255];
-    font>>=8;
-    t=dst(U64*)[0];
-    t=t&~m|color&m;
-    dst(U64*)[0]=t;
-    dst+=width_internal;
-  }
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
+  m=to_8_bits[font&255];
+  font>>=8;
+  dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
+  dst+=width_internal;
 }

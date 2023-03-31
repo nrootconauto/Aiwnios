@@ -3938,7 +3938,7 @@ CRPN* __HC_ICAdd_Switch(CCodeCtrl* cc, CCodeMisc* misc,CCodeMisc* dft)
 CRPN* __HC_ICAdd_UnboundedSwitch(CCodeCtrl* cc, CCodeMisc* misc)
 {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
-	rpn->type = IC_BOUNDED_SWITCH;
+	rpn->type = IC_UNBOUNDED_SWITCH;
 	rpn->code_misc = misc;
 	QueIns(rpn, cc->ir_code);
 	return rpn;

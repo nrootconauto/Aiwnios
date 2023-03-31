@@ -4838,7 +4838,7 @@ class CDualBuf
   CBlkDev *dvd_bd;
 };
 
-extern class CMeshTri;
+extern class CMeshTri;
 extern class CQueMeshTri;
 extern class COptMemberVar;
 extern class CEdSprite;
@@ -5045,7 +5045,7 @@ extern U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL);
 extern Bool IsLexExpression2Bin(CCmpCtrl *cc,U8 **_machine_code);
 extern I64 LexExpressionI64(CCmpCtrl *cc);
 extern F64 LexExpressionF64(CCmpCtrl *cc);
-extern I64 LexExpression(CCmpCtrl *cc);
+extern I64 LexExpression(CCmpCtrl *cc);
 extern CRPN *RPNNext(CRPN *rpn) ;
 extern CRPN *RPNArgN(CRPN *rpn,I64 arg) ;
 extern U0 AOTStoreCodeU8(CCmpCtrl *cc,U8 b);
@@ -6302,4 +6302,162 @@ extern U0 Merge(U8 *dst_files_find_mask="/*",U8 *src_files_find_mask="/*",  U8 *
 extern U0 NewFiles(U8 *files_find_mask="/*",CDate cdt=0,U8 *fu_flags=NULL);
 extern U0 TaskRepTask(CTask *task,I64 indent);
 extern U0 TaskRep();
+extern class CLine;
+extern U0 EdLiteUpdate(CLine *head,CLine *cur_line,I64 cur_col,I64 line_start_col);
+extern Bool EdLite(U8 *filename,I64 num=1,I64 edf_dof_flags=0);
+extern Bool EdLiteFileLine(U8 *fl_file_line,I64 edf_dof_flags=0);
+extern U0 FixSet(U8 *filename,I64 line);
+extern Bool Fix(I64 edf_dof_flags=0);
+
+class CMeshTri
+{
+  I32 color;	//Give one of 0-7 colors.
+//Colors 8-15 are 0-7 with intensity bit set.
+  I32 nums[3];	//Vertex number
+};
+
+class CQueMeshTri
+{
+  CQueMeshTri *next,*last;
+  U0 start;
+  I32 color;
+  I32 nums[3];
+};
+
+class CSpriteBase
+{
+  U8 type;
+};
+
+class CSpriteColor : CSpriteBase
+{
+  U8 color;
+};
+
+class CSpriteDitherColor : CSpriteBase
+{
+  U16 dither_color;
+};
+
+class CSpriteT : CSpriteBase
+{
+  I32 thick;
+};
+
+class CSpritePt : CSpriteBase
+{
+  I32 x1;
+  I32 y1;
+};
+
+class CSpritePtRad : CSpritePt
+{
+  I32 radius;
+};
+
+class CSpritePtPt : CSpritePt
+{
+  I32 x2;
+  I32 y2;
+};
+
+class CSpritePtPtAng : CSpritePtPt
+{
+  F64 angle;
+};
+
+class CSpritePtWH : CSpritePt
+{
+  I32 width;
+  I32 height;
+};
+
+class CSpritePtWHU8s : CSpritePtWH
+{
+  U8 u[0];
+};
+
+class CSpritePtWHAng : CSpritePtWH
+{
+  F64 angle;
+};
+
+class CSpritePtWHAngSides : CSpritePtWHAng
+{
+  I32 sides;
+};
+
+class CSpriteNumU8s : CSpriteBase
+{
+  I32 num;
+  U8  u[0];
+};
+
+class CSpriteNumPtU8s : CSpriteBase
+{
+  I32 num;
+  I32 x;
+  I32 y;
+  U8  u[0];
+};
+
+class CSpritePtStr : CSpritePt
+{
+  U8  st[0];
+};
+
+class CSpriteMeshU8s : CSpriteBase
+{
+  I32 vertex_cnt;
+  I32 tri_cnt;
+  U8  u[0];
+};
+
+class CSpritePtMeshU8s : CSpriteBase
+{
+  I32 x;
+  I32 y;
+  I32 z;
+  I32 vertex_cnt;
+  I32 tri_cnt;
+  U8  u[0];
+};
+
+#define SPF_SEL			128
+#define SPf_SEL			7
+
+#define SPT_END			0	//$LK,"CSpriteBase",A="MN:CSpriteBase"$
+#define SPT_COLOR		1	//$LK,"CSpriteColor",A="MN:CSpriteColor"$
+#define SPT_DITHER_COLOR	2	//$LK,"CSpriteDitherColor",A="MN:CSpriteDitherColor"$
+#define SPT_THICK		3	//$LK,"CSpriteT",A="MN:CSpriteT"$
+#define SPT_PLANAR_SYMMETRY	4	//$LK,"CSpritePtPt",A="MN:CSpritePtPt"$
+#define SPT_TRANSFORM_ON	5	//$LK,"CSpriteBase",A="MN:CSpriteBase"$
+#define SPT_TRANSFORM_OFF	6	//$LK,"CSpriteBase",A="MN:CSpriteBase"$
+#define SPT_SHIFT		7	//$LK,"CSpritePt",A="MN:CSpritePt"$
+#define SPT_PT			8	//$LK,"CSpritePt",A="MN:CSpritePt"$
+#define SPT_POLYPT		9	//$LK,"CSpriteNumPtU8s",A="MN:CSpriteNumPtU8s"$
+#define SPT_LINE		10	//$LK,"CSpritePtPt",A="MN:CSpritePtPt"$
+#define SPT_POLYLINE		11	//$LK,"CSpriteNumU8s",A="MN:CSpriteNumU8s"$
+#define SPT_RECT		12	//$LK,"CSpritePtPt",A="MN:CSpritePtPt"$
+#define SPT_ROTATED_RECT	13	//$LK,"CSpritePtPtAng",A="MN:CSpritePtPtAng"$
+#define SPT_CIRCLE		14	//$LK,"CSpritePtRad",A="MN:CSpritePtRad"$
+#define SPT_ELLIPSE		15	//$LK,"CSpritePtWHAng",A="MN:CSpritePtWHAng"$
+#define SPT_POLYGON		16	//$LK,"CSpritePtWHAngSides",A="MN:CSpritePtWHAngSides"$
+#define SPT_BSPLINE2		17	//$LK,"CSpriteNumU8s",A="MN:CSpriteNumU8s"$
+#define SPT_BSPLINE2_CLOSED	18	//$LK,"CSpriteNumU8s",A="MN:CSpriteNumU8s"$
+#define SPT_BSPLINE3		19	//$LK,"CSpriteNumU8s",A="MN:CSpriteNumU8s"$
+#define SPT_BSPLINE3_CLOSED	20	//$LK,"CSpriteNumU8s",A="MN:CSpriteNumU8s"$
+#define SPT_FLOOD_FILL		21	//$LK,"CSpritePt",A="MN:CSpritePt"$
+#define SPT_FLOOD_FILL_NOT	22	//$LK,"CSpritePt",A="MN:CSpritePt"$
+#define SPT_BITMAP		23	//$LK,"CSpritePtWHU8s",A="MN:CSpritePtWHU8s"$
+#define SPT_MESH		24	//$LK,"CSpriteMeshU8s",A="MN:CSpriteMeshU8s"$ See $MA-X+PU,"::/Apps/GrModels",LM="Cd(\"::/Apps/GrModels\");Dir;View;\n"$.
+#define SPT_SHIFTABLE_MESH	25	//$LK,"CSpritePtMeshU8s",A="MN:CSpritePtMeshU8s"$ See $MA-X+PU,"::/Apps/GrModels",LM="Cd(\"::/Apps/GrModels\");Dir;View;\n"$.
+#define SPT_ARROW		26	//$LK,"CSpritePtPt",A="MN:CSpritePtPt"$
+#define SPT_TEXT		27	//$LK,"CSpritePtStr",A="MN:CSpritePtStr"$
+#define SPT_TEXT_BOX		28	//$LK,"CSpritePtStr",A="MN:CSpritePtStr"$
+#define SPT_TEXT_DIAMOND	29	//$LK,"CSpritePtStr",A="MN:CSpritePtStr"$
+#define SPT_TYPES_NUM		30
+#define SPG_TYPE_MASK		0x7F
+
+extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #include "Headers.HH";

@@ -6,7 +6,7 @@ tuned.
 
 ## Screenshot
 
-[screenshot](scrot.png)
+![screenshot](scrot.png)
 
 ## Building Aiwnios
 
@@ -26,7 +26,9 @@ assembly on arm is limited in terms of address space(`adr reg,off` is 26 bits,`l
 so It wouldn't be ideal for some stuff,I think it would be better for optimizing functions and stuff.
 
 I also want to add a proper `ptrace` debugger for linux and (future) FreeBSD builds.
-`ptrace` infuriates me though so if you are up to helping me with it,I will be up to it
+`ptrace` infuriates me though so if you are up to helping me with it,I will be up to it.
+**EDIT** Ptrace is not suited for a realtime debugger,so If I was to write a "proper" debgger,it be not
+so great.
 
 Because Aiwnios runs pretty slow on my current hardware,I could make some of the games animations
 time(*tS*) not *Sleep(n)* dependant.
