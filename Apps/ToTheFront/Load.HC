@@ -1,7 +1,7 @@
 #help_index "Games"
 
 Cd(__DIR__);;
-#include "TTFGlbls"
+#include "TTFGlbls"
 #include "TTFLib"
 #include "TTFInit"
 #include "TTFVis"

@@ -43,7 +43,7 @@ U0 GrRopEquU8NoClipping(I64 ch,U8 *dst,I64 width_internal) {
   font>>=8;
   dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
   dst+=width_internal;
-  m=to_8_bits[font&255];
+  m=to_8_bits[font&255];
   font>>=8;
   dst(U64*)[0]=dst(U64*)[0]&~m|color&m;
   dst+=width_internal;

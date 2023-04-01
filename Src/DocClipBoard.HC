@@ -10,7 +10,7 @@ public U0 ClipDel()
 public U0 ClipCopy(CDoc *doc)
 {//Copy $LK,"DOCET_SEL",A="MN:DOCET_SEL"$ flagged entries to clip.
   CDoc *doc2=sys_clip_doc;
-  U8 *plain;
+  U8 *plain;
   Bool unlock_doc=DocLock(doc),
 	unlock_doc2=DocLock(doc2);
   CDocEntry *doc_e=doc->head.next,*doc_ne;

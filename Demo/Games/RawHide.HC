@@ -333,7 +333,7 @@ U0 AnimateTask(CTask *parent)
   F64 f,d,dx,dy,s,stress;
   Animal *tmpa,*tmpa1;
   while (TRUE) {
-    max_speed=ClampU64(max_speed,U32_MAX/3,200*U32_MAX);
+    max_speed=ClampU64(max_speed,U32_MAX/3,200*U32_MAX);
     cx=(MAP_WIDTH -parent->pix_width)/2,
 	  cy=(MAP_HEIGHT-parent->pix_height)/2;
     cursor_x=ms.pos.x+cx-parent->pix_left-parent->scroll_x;

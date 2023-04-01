@@ -4838,7 +4838,7 @@ class CDualBuf
   CBlkDev *dvd_bd;
 };
 
-extern class CMeshTri;
+extern class CMeshTri;
 extern class CQueMeshTri;
 extern class COptMemberVar;
 extern class CEdSprite;

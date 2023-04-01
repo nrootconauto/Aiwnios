@@ -48,7 +48,7 @@ U0 PsmRightClick(I64 x,I64 y)
 	  if (tmpn->type==PSMT_NOTE && tmpn->ona) {
 	    if (Btr(&tmpn->flags,PSMf_FLAT))
 	      tmpn->ona++;
-	    if (Btc(&tmpn->flags,PSMf_SHARP))
+	    if (Btc(&tmpn->flags,PSMf_SHARP))
 	      tmpn->ona--;
 	    else
 	      tmpn->ona++;

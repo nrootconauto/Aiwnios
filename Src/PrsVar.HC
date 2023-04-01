@@ -262,7 +262,7 @@ U0 PrsArrayDims(CCmpCtrl *cc,I64 mode,CArrayDim *dim)
     if (mode.u8[1]==PRS1B_FUN_ARG)
       LexExcept(cc,"No arrays in fun args at ");
     do {
-      if (Lex(cc)==']' && !dim->next)
+      if (Lex(cc)==']' && !dim->next)
 	j=0;
       else {
 	if ((j=LexExpressionI64(cc))<0)

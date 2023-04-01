@@ -450,7 +450,7 @@ U0 AnimateTask(CTask *parent_task)
 	    nearest_ball[o->team]=o;
           if(nearest_ball[o->team])
 	    if(o->get_ball_dt<nearest_ball[o->team]->get_ball_dt)
-	      nearest_ball[o->team]=o;
+	      nearest_ball[o->team]=o;
 	}
       }
       nearest_ball[0]->nearest_ball=TRUE;

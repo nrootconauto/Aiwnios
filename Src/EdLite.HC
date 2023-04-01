@@ -61,7 +61,7 @@ Bool EdLite(U8 *filename,I64 num=1,I64 edf_dof_flags=0)
 	old_raw_flags=text.raw_flags,bl;
   CLine head,*tmpl,*tmpl1,*cur_line;
   Bool	res=FALSE,
-	old_raw=Raw(ON),
+	old_raw=Raw(ON),
 	old_debug=DbgMode(ON),
 	old_single=SingleUser(ON);
 

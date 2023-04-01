@@ -257,4 +257,4 @@ I64 ARM_Fsub(I64 d,I64 a,I64 b) {return FpDataProc2Reg(0,0,1,3,d,a,b);}
 I64 ARM_Fmax(I64 d,I64 a,I64 b) {return FpDataProc2Reg(0,0,1,4,d,a,b);}
 I64 ARM_Fmin(I64 d,I64 a,I64 b) {return FpDataProc2Reg(0,0,1,5,d,a,b);}
 I64 ARM_Stp(I64 a,I64 b,I64 adr_n,I64 off) { return LdStRegPairImmX(2,0,a,b,adr_n,off);}
-I64 ARM_Ldp(I64 a,I64 b,I64 adr_n,I64 off) { return LdStRegPairImmX(2,1,a,b,adr_n,off);}
+I64 ARM_Ldp(I64 a,I64 b,I64 adr_n,I64 off) { return LdStRegPairImmX(2,1,a,b,adr_n,off);}

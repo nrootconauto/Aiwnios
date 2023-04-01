@@ -44,7 +44,7 @@ I64 WinQueIPMsgs(Bool que)
     arg1=ms.pos.x-task_focus->pix_left-task_focus->scroll_x;
     arg2=ms.pos.y-task_focus->pix_top-task_focus->scroll_y;
     single_arg1=single_ms.x-task_focus->pix_left-task_focus->scroll_x;
-    single_arg2=single_ms.y-task_focus->pix_top-task_focus->scroll_y;
+    single_arg2=single_ms.y-task_focus->pix_top-task_focus->scroll_y;
     if (old_ms.presnap.x!=ms.presnap.x || old_ms.presnap.y!=ms.presnap.y) {
       if (que)
 	TaskMsg(task_focus,0,

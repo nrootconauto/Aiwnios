@@ -95,7 +95,7 @@ public U8 *BallGen()
     r=bd2.radius;
     n=bd2.n_lattitude;
     m=bd2.n_longitude;
-    d_a1=2*pi/n/4;
+    d_a1=2*pi/n/4;
     d_a2=2*pi/m/2;
     for (j=-n;j<n;j++) {
       r1=r*Cos( j   *d_a1);

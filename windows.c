@@ -18,6 +18,7 @@ static SDL_cond *screen_done_cond;
 
 static void _DrawWindowNew() {
   int rends;
+  SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY,"linear",SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
   screen_mutex=SDL_CreateMutex();
   screen_mutex2=SDL_CreateMutex();

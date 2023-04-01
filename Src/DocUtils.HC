@@ -13,7 +13,7 @@ public U0 CursorRem(U8 *files_find_mask="*")
   CDirEntry *tmpde=FilesFind(files_find_mask,fuf_flags),*tmpde1=tmpde;
   while (tmpde) {
     CursorRemFile(tmpde->full_name);
-    //Touch(tmpde->full_name,"",,tmpde->datetime);
+    //Touch(tmpde->full_name,"",,tmpde->datetime);
     tmpde=tmpde->next;
   }
   DirTreeDel(tmpde1);

@@ -114,7 +114,7 @@ U0 Init()
       "Too large\n";
     else if (table_size<1) {
       "No table specified, aborting.\n";
-      throw('Undef');
+      throw('Undef');
     }
   } while (table_size>TABLE_SIZE_MAX);
 

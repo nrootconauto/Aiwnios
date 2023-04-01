@@ -181,7 +181,7 @@ SetFs(Gs->seth_task);
 #include "TaskRep.HC"
 #include "Diff.HC" 
 #include "Merge.HC" 
-#include "DocUtils.HC" 
+#include "DocUtils.HC" 
 //Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");

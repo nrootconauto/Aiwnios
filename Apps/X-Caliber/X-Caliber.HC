@@ -550,7 +550,7 @@ U0 DrawIt(CTask *task,CDC *dc)
 	  D3Sub(&p2,&tmpsp->p[2].x,&tmpsp->p[0].x);
 	  D3Unit(D3Add(&p,&p1,&p2));
 
-	  if (!(tmpsp->s[3].flags&SSF_INACTIVE)) {
+	  if (!(tmpsp->s[3].flags&SSF_INACTIVE)) {
 	    dc->color=YELLOW;
 	    D3AddEqu(D3Mul(&p1,t_left/25,&p),&tmpsp->p[3].x);
 	    GrLine(dc,tmpsp->p[1].x,tmpsp->p[1].y,p1.x,p1.y);

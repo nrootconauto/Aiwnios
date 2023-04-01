@@ -274,7 +274,7 @@ U0 ODECalcSprings(CMathODE *ode)
     } else {
       e1=tmps->end1;
       e2=tmps->end2;
-      d=D3Norm(D3Sub(&p,&e2->state->x,&e1->state->x));
+      d=D3Norm(D3Sub(&p,&e2->state->x,&e1->state->x));
       tmps->displacement=d-tmps->rest_len;
       tmps->f=tmps->displacement*tmps->const;
       if (tmps->f>0 && tmps->flags&SSF_NO_TENSION)

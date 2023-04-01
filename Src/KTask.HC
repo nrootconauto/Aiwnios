@@ -252,7 +252,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
       }
     }
     cc->flags&=~CCF_HAS_MISC_DATA;
-    machine_code=LexStmt2Bin(cc,&type);
+    machine_code=LexStmt2Bin(cc,&type);
     if (machine_code!=INVALID_PTR) {
       if (!(cc->flags&CCF_JUST_LOAD)) {
 	t0=tS;

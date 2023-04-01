@@ -319,7 +319,7 @@ U0 Follow(CTask *,Peasant *tmpp)
       d+=1000*Sqr(tS-tmps->t0);
       if (d<best_d) {
 	best_d=d;
-//Nroot centers  the step locations
+//Nroot centers  the step locations
 	tmpp->é=Arg((tmps->x+KING_STEP/2)-tmpp->x,(tmps->y+KING_STEP/2)-tmpp->y);
       }
     }

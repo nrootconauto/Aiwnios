@@ -573,7 +573,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     if(cc->flags&CCF_AOT_COMPILE) {
       if(h->type&HTT_GLBL_VAR&&h->type&HTF_EXPORT) {
         __HC_SetAOTRelocBeforeRIP(new,h(CHashGlblVar*)->data_addr_rip-cc->aotc->rip);
-      } else if(h->type&HTT_FUN&&!Bt(&(h(CHashFun*)->flags),Cf_EXTERN)) {
+      } else if(h->type&HTT_FUN&&!Bt(&(h(CHashFun*)->flags),Cf_EXTERN)) {
         __HC_SetAOTRelocBeforeRIP(new,h(CHashFun*)->exe_addr-cc->aotc->rip);
       }
     }

@@ -149,4 +149,3 @@ public U0 PunchIn()
   }
   TimeEntriesDel(header);
 }
-

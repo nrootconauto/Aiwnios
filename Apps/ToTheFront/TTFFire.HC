@@ -74,7 +74,7 @@ Bool DamageDo(Unit *target,F64 damage)
     } else {
       if (target->armor) {
 	if (damage>0.6*target->life) {
-	  target->movement=0;
+	  target->movement=0;
 	  "$$RED$$Immobilized$$FG$$\n";
 	} else
 	  "$$GREEN$$No Penetration$$FG$$\n";

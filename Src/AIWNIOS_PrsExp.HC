@@ -743,7 +743,7 @@ U0 PrsMembers(CCmpCtrl *cc) {
     } else
       break;
   }
-  if(off) {
+  if(off) {
     //Prevent from expading ptr airth.
     cc->coc.coc_head.next(CRPN*)->ic_class=cmp.internal_types[RT_I64];
     RPNAddNew(cc,IC_IMM_I64,off,,TRUE);

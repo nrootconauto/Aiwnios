@@ -206,7 +206,7 @@ CD3 *D3Copy(CD3 *a,CD3*b) {
 CD3 *D3Cross(CD3 *cross,CD3 *a,CD3*b) {
   cross->x=a->y*b->z-a->z*b->y;
   cross->y=a->z*b->x-a->x*b->z;
-  cross->z=a->x*b->y-a->y*b->x;
+  cross->z=a->x*b->y-a->y*b->x;
   return cross;
 }
 F64 D3Dot(CD3*a,CD3 *b) {

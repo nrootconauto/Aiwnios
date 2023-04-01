@@ -4,7 +4,7 @@ extern I64 ExeFile2(U8 *name,I64 ccf_flags=0);
 extern I64 ExePrint(U8 *fmt,...);
 extern I64 ExePrint2(U8 *fmt,...);
 extern I64 ExePutS(U8 *buf,U8 *filename=NULL,I64 ccf_flags=0,
-	CLexHashTableContext *htc=NULL);
+	CLexHashTableContext *htc=NULL);
 extern I64 ExePutS2(U8 *buf,U8 *filename=NULL,I64 ccf_flags=0);
 extern I64 RunFile(U8 *name,I64 ccf_flags=0,...);
 extern I64 RunFile2(U8 *name,I64 ccf_flags=0,...);

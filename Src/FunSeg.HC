@@ -81,7 +81,7 @@ fs_abort_task:;
       h=h->next;
     }
   }
-  *_offset=best;
+  *_offset=best;
   return res;
 }
 

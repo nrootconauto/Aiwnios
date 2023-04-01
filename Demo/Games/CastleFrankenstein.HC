@@ -415,7 +415,7 @@ U0 Init()
 
   dc=Sprite2DC($IB,"<1>",BI=1$);
   map_width =dc->width/MAP_SCALE+2;
-  map_height=dc->height/MAP_SCALE+2;
+  map_height=dc->height/MAP_SCALE+2;
   Free(map);
   Free(panels_processed_bitmap);
   map=CAlloc(map_width*map_height*sizeof(U8));

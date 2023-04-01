@@ -102,7 +102,7 @@ Bool IsDir(U8 *dir_name)
   Silent(old_silent);
   return res;
 }
-
+
 I64 Dir(U8 *files_find_mask,Bool full)
 {//List directory.
   CDirEntry *tmpde1=NULL,*tmpde2;

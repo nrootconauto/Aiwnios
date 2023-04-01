@@ -1,6 +1,6 @@
 #help_index "DolDoc/File"
 
-public U0 DocLoad(CDoc *doc,U8 *src2,I64 size)
+public U0 DocLoad(CDoc *doc,U8 *src2,I64 size)
 {//Fetch doc from raw mem buf.
   I64 i;
   U8 *src;

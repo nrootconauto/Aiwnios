@@ -121,7 +121,7 @@ Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
     if(ptr(U8*)[0]) break;
-    *ptr++=attr;
+    *ptr++=attr;
   }
   return len==-1;
 }

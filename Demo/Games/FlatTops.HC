@@ -766,7 +766,7 @@ U0 AnimateTask(I64)
 	    tmpo->flags|=OF_RETURNING;
 	  if (tmpo->flags&OF_RETURNING)
 	    tmpo->dé+=Wrap(Arg(tmpo->host->x-tmpo->x,
-		  tmpo->host->y-tmpo->y)-(tmpo->é+tmpo->dé),-pi);
+		  tmpo->host->y-tmpo->y)-(tmpo->é+tmpo->dé),-pi);
 	} else if (tmpo->type==OT_CARRIER)
 	  ShipFix(tmpo,2.5*period);
       }

@@ -213,7 +213,7 @@ U8 *sys_pos_pows_lets=" KMGTPEZY",
 #define SLOP		8
 
 U8 *StrPrintJoin(U8 *dst,U8 *fmt,I64 argc,I64 *argv)
-{/*$LK,"Print(\"\") Fmt Strings",A="FI:::/Doc/Print.DD"$
+{/*$LK,"Print(\"\") Fmt Strings",A="FI:::/Doc/Print.DD"$
 In float formatting, do not exceed 18-digits
 before or after the decimal point
 because the numbers before and after
