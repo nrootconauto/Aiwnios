@@ -174,7 +174,7 @@ today.
     ptr++;
     if (*ptr=='+' || *ptr=='-')
       res.date=Str2I64(ptr,,&ptr);
-    res+=0;//Now+local_time_offset; TODO RESTORE
+    res+=Now+local_time_offset;
   } else {
     StrFirstRem(ptr,"/",v); //Put mon into v
     ds.mon=Str2I64(v);
@@ -186,7 +186,7 @@ today.
 	ds.year+=2000;
     } else {
       ds.day_of_mon=Str2I64(ptr,,&ptr);
-      Date2Struct(&ds_now, Now +local_time_offset);
+      Date2Struct(&ds_now, Now() +local_time_offset);
       ds.year=ds_now.year;
     }
     res=Struct2Date(&ds);

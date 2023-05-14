@@ -24,7 +24,7 @@ U0 BlkWriteZero(CDrv *dv,I64 blk,I64 cnt)
   }
   Free(z);
   if (show_progress) {
-    *progress1_desc=0;
+    progress1_desc[0]=0;
     progress1=progress1_max=0;
   }
 }

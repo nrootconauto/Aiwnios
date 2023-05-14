@@ -4,7 +4,7 @@
 //  your backend again when you port to another arch
 //
 #ifdef IMPORT_AIWNIOS_SYMS
-import U0 __HC_SetAOTRelocBeforeRIP(U8*,I64); //See aiwn.h(TAKESnumber of bytes before current RIP the symbol is located at)
+import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
@@ -171,11 +171,42 @@ extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 //
 // See arm_backend.c
 //
+#ifdef TARGET_AARCH64
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
 #define AIWNIOS_FREG_START 8
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
+#endif
 
+#ifdef TARGET_X86_SYSV
+#define	REG_RAX 0
+#define	REG_RCX 1
+#define	REG_RDX 2
+#define	REG_RBX 3
+#define	REG_RSP 4
+#define	REG_RBP 5
+#define	REG_RSI 6
+#define	REG_RDI 7
+#define	REG_R8 8
+#define	REG_R9 9
+#define	REG_R10 10
+#define	REG_R11 11
+#define	REG_R12 12
+#define	REG_R13 13
+#define	REG_R14 14
+#define	REG_R15 15
+#define	REG_RIP 16
+#define AIWNIOS_IREG_START 12
+#define AIWNIOS_IREG_CNT 4
+#define AIWNIOS_TMP_IREG_CNT 3
+#define AIWNIOS_REG_FP REG_RBP
+#define AIWNIOS_REG_SP REG_RSP
+#define AIWNIOS_TMP_IREG_START 0
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_FREG_CNT 0
+#define AIWNIOS_TMP_FREG_START 2
+#define AIWNIOS_TMP_FREG_CNT 14
+#endif
 //
 // Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
 //
@@ -197,6 +228,15 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc) {
       }
     }
   }
+}
+I64 VarIRegToReg(I64 r)  {
+	switch(r) {
+		break;case 0: return REG_RBX;
+		break;case 1: return REG_R12;
+		break;case 2: return REG_R14;
+		break;case 3: return REG_R15;
+	}
+	throw('Compile');
 }
 //
 // Turns my CRPN from the parser into the IC for the C side
@@ -267,7 +307,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
             mv[idx].m->reg=REG_NONE;
         } else {
           if(AIWNIOS_IREG_START<=ir<AIWNIOS_IREG_START+AIWNIOS_IREG_CNT) {
-            mv[idx].m->reg=ir++;
+            mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
           } else {
             mv[idx].m->reg=REG_NONE;
           }
@@ -303,12 +343,29 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
       if(mlst->reg==REG_NONE) {
+        #ifdef TARGET_AARCH64
         foff_lookup[idx].i32[1]=foff;
         foff_lookup[idx].i32[0]=mlst->offset;
         mlst->offset=foff;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
         if(foff&7)
+          foff+=8-(foff&7); //Align to 8#endifg
+        #endif
+        #ifdef TARGET_X86_SYSV
+        foff_lookup[idx].i32[0]=mlst->offset;
+        //In X86_64 the stack grows down and the RBP is above the stack pointer,
+        //SO MOVE THE OFFSETS DOWN TO THE BOTTOM
+        //RBP
+        //x0
+        //x1
+        //....
+        //x8 <<=offset
+        foff+=mlst->member_class->size*mlst->dim.total_cnt;  
+        if(foff&7)
           foff+=8-(foff&7); //Align to 8
+        mlst->offset=foff;
+        foff_lookup[idx].i32[1]=foff;
+        #endif
       }
     }
     
@@ -746,12 +803,12 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       // dont add a "fill-in-later" for it
       //
       if(cc->flags&CCF_AOT_COMPILE) {
-        if(misc->addr!=INVALID_PTR) {
+		if(misc->addr!=INVALID_PTR) {
           tmpaie=CAlloc(sizeof(CAOTImportExport));
           tmpaie->type=IET_IMM_I64;
           tmpaie->str=StrNew(misc->h->str);
-          tmpaie->rip=cc->aotc->rip+misc->addr(U8*)-machine_code;
-          //All non-imported functions are short calls
+          tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
+		  //All non-imported functions are short calls
           if(misc->flags&CMF_SHORT_ADDR) {
             tmpaie->short_jmp=TRUE;
           }

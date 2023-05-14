@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ucontext.h>
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char* str, int64_t i) { printf("%s:%ld\n", str, i); }
@@ -67,7 +68,7 @@ static void FuzzTest1()
 	for (o = 0; o != sizeof(bopers) / sizeof(char*); o++) {
 		for (i = 0; i != sizeof(operandsA) / sizeof(char*); i++)
 			for (i2 = 0; i2 != sizeof(operandsB) / sizeof(char*); i2++) {
-				fprintf(f, "PrintI(\"%s %s %s ==\", %s %s %s);\n", operandsA[i],
+				fprintf(f, "PrintI(\"%s(123) %s %s(6) ==\", %s %s %s);\n", operandsA[i],
 					bopers[o], operandsB[i2], operandsA[i], bopers[o],
 					operandsB[i2]);
 			}
@@ -77,7 +78,7 @@ static void FuzzTest1()
 		for (i = 0; i != sizeof(operandsA) / sizeof(char*) - 2; i++)
 			for (i2 = 0; i2 != sizeof(operandsB) / sizeof(char*); i2++) {
 				fprintf(f, "%s = 123;\n", operandsA[i]);
-				fprintf(f, "%s %s %s;\nPrintI(\"%s %s %s ==\", %s);\n", operandsA[i],
+				fprintf(f, "%s %s %s;\nPrintI(\"%s(123) %s %s(6) ==\", %s);\n", operandsA[i],
 					assignOps[o], operandsB[i2], operandsA[i], assignOps[o],
 					operandsB[i2], operandsA[i]);
 			}
@@ -232,7 +233,7 @@ static void FuzzTest3()
 					operandsB[i2]);
 			}
 
-	//Test subtraction between ptr and ptr
+	// Test subtraction between ptr and ptr
 	for (i = 0; i != sizeof(operandsA) / sizeof(char*) - 2; i++) {
 		fprintf(f, "PrintPtr(\"%s-0x10(I32i*)\",%s-0x10(I32i*));\n",
 			operandsA[i],
@@ -307,116 +308,128 @@ static void PutS(char* s)
 	printf("%s", s);
 }
 
-//This a "symbolic" Fs only used from the HolyC part
+// This a "symbolic" Fs only used from the HolyC part
 static void SetHolyFs(void* fs)
 {
 	HolyFs = fs;
 }
-static int64_t __GetTicksHP() {
-  struct timespec ts;
-  static int64_t initial=0;
-  int64_t theTick = 0U;
-  if(!initial) {
-    clock_gettime(CLOCK_REALTIME,&ts);
-    theTick  = ts.tv_nsec / 1000;
-    theTick += ts.tv_sec*1000000U;
-    initial=theTick;
-    return 0;
-  }
-  clock_gettime(CLOCK_REALTIME,&ts);
-  theTick  = ts.tv_nsec / 1000;
-  theTick += ts.tv_sec*1000000U;
-  return theTick-initial;
+static int64_t __GetTicksHP()
+{
+	struct timespec ts;
+	static int64_t initial = 0;
+	int64_t theTick = 0U;
+	if (!initial) {
+		clock_gettime(CLOCK_REALTIME, &ts);
+		theTick = ts.tv_nsec / 1000;
+		theTick += ts.tv_sec * 1000000U;
+		initial = theTick;
+		return 0;
+	}
+	clock_gettime(CLOCK_REALTIME, &ts);
+	theTick = ts.tv_nsec / 1000;
+	theTick += ts.tv_sec * 1000000U;
+	return theTick - initial;
 }
-static int64_t __GetTicks() {
-  return __GetTicksHP()/1000;
-} 
-static void __SleepHP(int64_t us) {
-  usleep(us);
+static int64_t __GetTicks()
+{
+	return __GetTicksHP() / 1000;
+}
+static void __SleepHP(int64_t us)
+{
+	usleep(us);
 }
 static void* GetHolyFs()
 {
-  if(!HolyFs) {
-    HolyFs=calloc(sizeof(CTask),1);
-    TaskInit(HolyFs,NULL,0);
-  }
+	if (!HolyFs) {
+		HolyFs = calloc(sizeof(CTask), 1);
+		TaskInit(HolyFs, NULL, 0);
+	}
 	return HolyFs;
 }
-static __thread void *HolyGs;
-void *GetHolyGs() {
-  return HolyGs;
+static __thread void* HolyGs;
+void* GetHolyGs()
+{
+	return HolyGs;
 }
-void SetHolyGs(void *ptr) {
-  HolyGs=ptr;
+void SetHolyGs(void* ptr)
+{
+	HolyGs = ptr;
 }
-static int64_t MemCmp(char *a ,char *b,int64_t s) {
-  return memcmp(a,b,s);
+static int64_t MemCmp(char* a, char* b, int64_t s)
+{
+	return memcmp(a, b, s);
 }
 extern void AIWNIOS_setcontext(void*);
-extern void AIWNIOS_getcontext(void*);
-int64_t UnixNow() {
-  return (int64_t)time(NULL);
+extern int64_t AIWNIOS_getcontext(void*);
+extern int64_t AIWNIOS_makecontext(void*,void*,void*);
+int64_t UnixNow()
+{
+	return (int64_t)time(NULL);
 }
-static double Arg(double x,double y) {
-  return atan2(y,x);
+static double Arg(double x, double y)
+{
+	return atan2(y, x);
 }
-static void __Sleep(int64_t ms) {
-  SDL_Delay(ms);
+static void __Sleep(int64_t ms)
+{
+	SDL_Delay(ms);
 }
-static char *AiwniosGetClipboard() {
-  char *has,*ret;
-  if(!SDL_HasClipboardText())
-    return A_STRDUP("",NULL);
-  has=SDL_GetClipboardText();
-  ret=A_STRDUP(has,NULL);
-  SDL_free(has);
-  return ret;
+static char* AiwniosGetClipboard()
+{
+	char *has, *ret;
+	if (!SDL_HasClipboardText())
+		return A_STRDUP("", NULL);
+	has = SDL_GetClipboardText();
+	ret = A_STRDUP(has, NULL);
+	SDL_free(has);
+	return ret;
 }
-static void AiwniosSetClipboard(char *c) {
-  if(c)
-    SDL_SetClipboardText(c);
+static void AiwniosSetClipboard(char* c)
+{
+	if (c)
+		SDL_SetClipboardText(c);
 }
+
+static void TaskContextSetRIP(int64_t *ctx,void *p) {
+	ctx[0]=p;
+}
+
+//strcmp returns int(32 bit on some platforms)
+static int64_t StrCmp(char *a,char *b) {
+	return strcmp(a,b);
+} 
+
 void BootAiwnios()
 {
-  int32_t Poop[64];
-  uint64_t tmp; 
-  for(int64_t i=0;i!=63;i++) {
-    Poop[i]=ARM_andImmX(1,2,0b11l<<i);
-  }
-  #define ROT(x,n) ((x)>>n)|((x)<<(64-n))
-  for(int64_t i=0;i!=31;i++) {
-    tmp=0b111;
-    tmp|=tmp<<32;
-    Poop[i]=ARM_andImmX(1,2,ROT(tmp,i));
-  }
-  
-	//WIP
-	CLexer* lex = LexerNew("None", "1+1;;;//#include\"FULL_PACKAGE.HC\";");
+	// WIP
+	CLexer* lex = LexerNew("None", "1+1;//#include\"STAGE1.HC\";");
 	CCmpCtrl* ccmp = CmpCtrlNew(lex);
 	void (*to_run)();
 	CodeCtrlPush(ccmp);
 	Lex(lex);
 	while (PrsStmt(ccmp)) {
-		to_run = Compile(ccmp,NULL,NULL);
+		to_run = Compile(ccmp, NULL, NULL);
 		to_run();
 		A_FREE(to_run);
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
-    PrsBindCSymbol("__HC_SetAOTRelocBeforeRIP",__HC_SetAOTRelocBeforeRIP);
-    PrsBindCSymbol("__HC_CodeMiscIsUsed",__HC_CodeMiscIsUsed);
-    PrsBindCSymbol("AiwniosSetClipboard",AiwniosSetClipboard);
-    PrsBindCSymbol("AiwniosGetClipboard",AiwniosGetClipboard);
-    PrsBindCSymbol("__HC_CmpCtrlDel",CmpCtrlDel);
+		PrsBindCSymbol("TaskContextSetRIP",TaskContextSetRIP);
+		PrsBindCSymbol("MakeContext",AIWNIOS_makecontext);
+		PrsBindCSymbol("__HC_SetAOTRelocBeforeRIP", __HC_SetAOTRelocBeforeRIP);
+		PrsBindCSymbol("__HC_CodeMiscIsUsed", __HC_CodeMiscIsUsed);
+		PrsBindCSymbol("AiwniosSetClipboard", AiwniosSetClipboard);
+		PrsBindCSymbol("AiwniosGetClipboard", AiwniosGetClipboard);
+		PrsBindCSymbol("__HC_CmpCtrlDel", CmpCtrlDel);
 		PrsBindCSymbol("Cos", &cos);
 		PrsBindCSymbol("Sin", &sin);
 		PrsBindCSymbol("Tan", &tan);
-    PrsBindCSymbol("Arg", &Arg);
-    PrsBindCSymbol("ACos", &acos);
+		PrsBindCSymbol("Arg", &Arg);
+		PrsBindCSymbol("ACos", &acos);
 		PrsBindCSymbol("ASin", &asin);
 		PrsBindCSymbol("ATan", &atan);
 		PrsBindCSymbol("Exp", &exp);
-		PrsBindCSymbol("Btc", &Btc);
+		PrsBindCSymbol("Btc", &Misc_Btc);
 		PrsBindCSymbol("HeapCtrlInit", &HeapCtrlInit);
 		PrsBindCSymbol("HeapCtrlDel", &HeapCtrlDel);
 		PrsBindCSymbol("__MAlloc", &__AIWNIOS_MAlloc);
@@ -425,14 +438,14 @@ void BootAiwnios()
 		PrsBindCSymbol("MSize", &MSize);
 		PrsBindCSymbol("__SleepHP", &__SleepHP);
 		PrsBindCSymbol("__GetTicksHP", &__GetTicksHP);
-    PrsBindCSymbol("__StrNew", &__AIWNIOS_StrDup);
+		PrsBindCSymbol("__StrNew", &__AIWNIOS_StrDup);
 		PrsBindCSymbol("MemCpy", &memcpy);
 		PrsBindCSymbol("MemSet", &memset);
 		PrsBindCSymbol("MemSetU16", &MemSetU16);
 		PrsBindCSymbol("MemSetU32", &MemSetU32);
 		PrsBindCSymbol("MemSetU64", &MemSetU64);
 		PrsBindCSymbol("StrLen", &strlen);
-		PrsBindCSymbol("StrCmp", &strcmp);
+		PrsBindCSymbol("StrCmp", &StrCmp);
 		PrsBindCSymbol("ToUpper", &ToUpper);
 		PrsBindCSymbol("Log10", &log10);
 		PrsBindCSymbol("Log2", &log2);
@@ -446,31 +459,31 @@ void BootAiwnios()
 		PrsBindCSymbol("Ceil", &ceil);
 		PrsBindCSymbol("Sqrt", &sqrt);
 		PrsBindCSymbol("MemCmp", &MemCmp);
-		PrsBindCSymbol("Bt", &Bt);
-		PrsBindCSymbol("LBtc", &LBtc);
-		PrsBindCSymbol("LBts", &LBts);
-		PrsBindCSymbol("LBtr", &LBtr);
-		PrsBindCSymbol("Bts", &Bts);
-		PrsBindCSymbol("Btr", &Btr);
+		PrsBindCSymbol("Bt", &Misc_Bt);
+		PrsBindCSymbol("LBtc", &Misc_LBtc);
+		PrsBindCSymbol("LBts", &Misc_LBts);
+		PrsBindCSymbol("LBtr", &Misc_LBtr);
+		PrsBindCSymbol("Bts", &Misc_Bts);
+		PrsBindCSymbol("Btr", &Misc_Btr);
 		PrsBindCSymbol("Bsf", &Bsf);
 		PrsBindCSymbol("Bsr", &Bsr);
 		PrsBindCSymbol("DbgPutS", &PutS);
 		PrsBindCSymbol("PutS", &PutS);
 		PrsBindCSymbol("SetFs", &SetHolyFs);
 		PrsBindCSymbol("Fs", &GetHolyFs);
-    PrsBindCSymbol("SpawnCore",SpawnCore);
-    PrsBindCSymbol("MPSleepHP",MPSleepHP);
-    PrsBindCSymbol("MPAwake",MPAwake);
-    PrsBindCSymbol("mp_cnt",mp_cnt);
-    PrsBindCSymbol("Gs",GetHolyGs);
-		PrsBindCSymbol("SetGs",SetHolyGs);
-    PrsBindCSymbol("__GetTicks", &__GetTicks);
-    PrsBindCSymbol("__Sleep",__Sleep);
-    PrsBindCSymbol("ImportSymbolsToHolyC",ImportSymbolsToHolyC);
+		PrsBindCSymbol("SpawnCore", SpawnCore);
+		PrsBindCSymbol("MPSleepHP", MPSleepHP);
+		PrsBindCSymbol("MPAwake", MPAwake);
+		PrsBindCSymbol("mp_cnt", mp_cnt);
+		PrsBindCSymbol("Gs", GetHolyGs);
+		PrsBindCSymbol("SetGs", SetHolyGs);
+		PrsBindCSymbol("__GetTicks", &__GetTicks);
+		PrsBindCSymbol("__Sleep", __Sleep);
+		PrsBindCSymbol("ImportSymbolsToHolyC", ImportSymbolsToHolyC);
 		PrsBindCSymbol("AIWNIOS_SetJmp", &AIWNIOS_getcontext);
 		PrsBindCSymbol("AIWNIOS_LongJmp", &AIWNIOS_setcontext);
 		PrsBindCSymbol("IsValidPtr", &IsValidPtr);
-    PrsBindCSymbol("__HC_CmpCtrl_SetAOT",__HC_CmpCtrl_SetAOT);
+		PrsBindCSymbol("__HC_CmpCtrl_SetAOT", __HC_CmpCtrl_SetAOT);
 		PrsBindCSymbol("__HC_ICAdd_Typecast", __HC_ICAdd_Typecast);
 		PrsBindCSymbol("__HC_ICAdd_SubCall", __HC_ICAdd_SubCall);
 		PrsBindCSymbol("__HC_ICAdd_SubProlog", __HC_ICAdd_SubProlog);
@@ -501,7 +514,7 @@ void BootAiwnios()
 		PrsBindCSymbol("__HC_ICAdd_Le", __HC_ICAdd_Le);
 		PrsBindCSymbol("__HC_ICAdd_Ge", __HC_ICAdd_Ge);
 		PrsBindCSymbol("__HC_ICAdd_LNot", __HC_ICAdd_LNot);
-    PrsBindCSymbol("__HC_ICAdd_Vargs",__HC_ICAdd_Vargs);
+		PrsBindCSymbol("__HC_ICAdd_Vargs", __HC_ICAdd_Vargs);
 		PrsBindCSymbol("__HC_ICAdd_BNot", __HC_ICAdd_BNot);
 		PrsBindCSymbol("__HC_ICAdd_AndAnd", __HC_ICAdd_AndAnd);
 		PrsBindCSymbol("__HC_ICAdd_OrOr", __HC_ICAdd_OrOr);
@@ -541,62 +554,66 @@ void BootAiwnios()
 		PrsBindCSymbol("__HC_ICAdd_Ret", __HC_ICAdd_Ret);
 		PrsBindCSymbol("__HC_ICAdd_Arg", __HC_ICAdd_Arg);
 		PrsBindCSymbol("__HC_ICAdd_SetFrameSize", __HC_ICAdd_SetFrameSize);
-    PrsBindCSymbol("__HC_ICAdd_Reloc",__HC_ICAdd_Reloc);
-    PrsBindCSymbol("__HC_ICSetLine",__HC_ICSetLine);
-    PrsBindCSymbol("__HC_ICAdd_StaticRef",__HC_ICAdd_StaticRef);
-    PrsBindCSymbol("__HC_ICAdd_StaticData",__HC_ICAdd_StaticData);
-    PrsBindCSymbol("__HC_ICAdd_SetStaticsSize",__HC_ICAdd_SetStaticsSize);
-    PrsBindCSymbol("__HC_ICAdd_ToI64",__HC_ICAdd_ToI64);
-    PrsBindCSymbol("__HC_ICAdd_ToF64",__HC_ICAdd_ToF64);
-    PrsBindCSymbol("__HC_ICAdd_ShortAddr",__HC_ICAdd_ShortAddr);
-    PrsBindCSymbol("Caller",Caller);
-    PrsBindCSymbol("VFsSetPwd",VFsSetPwd);
-    PrsBindCSymbol("VFsExists",VFsFileExists);
-    PrsBindCSymbol("VFsIsDir",VFsIsDir);
-    PrsBindCSymbol("VFsFSize",VFsFSize);
-    PrsBindCSymbol("VFsFRead",VFsFileRead);
-    PrsBindCSymbol("VFsFWrite",VFsFileWrite);
-    PrsBindCSymbol("VFsDel",VFsDel);
-    PrsBindCSymbol("VFsDir",VFsDir);
-    PrsBindCSymbol("VFsDirMk",VFsDirMk);
-    PrsBindCSymbol("VFsFBlkRead",VFsFBlkRead);
-    PrsBindCSymbol("VFsFBlkWrite",VFsFBlkWrite);
-    PrsBindCSymbol("VFsFOpenW",VFsFOpenW);
-    PrsBindCSymbol("VFsFOpenR",VFsFOpenR);
-    PrsBindCSymbol("VFsFClose",VFsFClose);
-    PrsBindCSymbol("VFsFSeek",VFsFSeek);
-    PrsBindCSymbol("VFsSetDrv",VFsSetDrv);
-    PrsBindCSymbol("FUnixTime",VFsUnixTime);
-    PrsBindCSymbol("FSize",VFsFSize);
-    PrsBindCSymbol("VFsFTrunc",VFsTrunc);
-    PrsBindCSymbol("UnixNow",UnixNow);
-    PrsBindCSymbol("__GrPaletteColorSet",GrPaletteColorSet);
-    PrsBindCSymbol("DrawWindowNew",DrawWindowNew);
-    PrsBindCSymbol("UpdateScreen",UpdateScreen);
-    PrsBindCSymbol("SetKBCallback",SetKBCallback);
-    PrsBindCSymbol("SndFreq",SndFreq);
-    PrsBindCSymbol("SetMSCallback",SetMSCallback);
-    PrsBindCSymbol("InteruptCore",InteruptCore);
+		PrsBindCSymbol("__HC_ICAdd_Reloc", __HC_ICAdd_Reloc);
+		PrsBindCSymbol("__HC_ICSetLine", __HC_ICSetLine);
+		PrsBindCSymbol("__HC_ICAdd_StaticRef", __HC_ICAdd_StaticRef);
+		PrsBindCSymbol("__HC_ICAdd_StaticData", __HC_ICAdd_StaticData);
+		PrsBindCSymbol("__HC_ICAdd_SetStaticsSize", __HC_ICAdd_SetStaticsSize);
+		PrsBindCSymbol("__HC_ICAdd_ToI64", __HC_ICAdd_ToI64);
+		PrsBindCSymbol("__HC_ICAdd_ToF64", __HC_ICAdd_ToF64);
+		PrsBindCSymbol("__HC_ICAdd_ShortAddr", __HC_ICAdd_ShortAddr);
+		PrsBindCSymbol("Caller", Misc_Caller);
+		PrsBindCSymbol("VFsSetPwd", VFsSetPwd);
+		PrsBindCSymbol("VFsExists", VFsFileExists);
+		PrsBindCSymbol("VFsIsDir", VFsIsDir);
+		PrsBindCSymbol("VFsFSize", VFsFSize);
+		PrsBindCSymbol("VFsFRead", VFsFileRead);
+		PrsBindCSymbol("VFsFWrite", VFsFileWrite);
+		PrsBindCSymbol("VFsDel", VFsDel);
+		PrsBindCSymbol("VFsDir", VFsDir);
+		PrsBindCSymbol("VFsDirMk", VFsDirMk);
+		PrsBindCSymbol("VFsFBlkRead", VFsFBlkRead);
+		PrsBindCSymbol("VFsFBlkWrite", VFsFBlkWrite);
+		PrsBindCSymbol("VFsFOpenW", VFsFOpenW);
+		PrsBindCSymbol("VFsFOpenR", VFsFOpenR);
+		PrsBindCSymbol("VFsFClose", VFsFClose);
+		PrsBindCSymbol("VFsFSeek", VFsFSeek);
+		PrsBindCSymbol("VFsSetDrv", VFsSetDrv);
+		PrsBindCSymbol("FUnixTime", VFsUnixTime);
+		PrsBindCSymbol("FSize", VFsFSize);
+		PrsBindCSymbol("VFsFTrunc", VFsTrunc);
+		PrsBindCSymbol("UnixNow", UnixNow);
+		PrsBindCSymbol("__GrPaletteColorSet", GrPaletteColorSet);
+		PrsBindCSymbol("DrawWindowNew", DrawWindowNew);
+		PrsBindCSymbol("UpdateScreen", UpdateScreen);
+		PrsBindCSymbol("SetKBCallback", SetKBCallback);
+		PrsBindCSymbol("SndFreq", SndFreq);
+		PrsBindCSymbol("SetMSCallback", SetMSCallback);
+		PrsBindCSymbol("InteruptCore", InteruptCore);
 	}
 }
-static void Boot() {
-  char *bin="HCRT2.BIN";
-  Fs = calloc(sizeof(CTask), 1);
-  InstallDbgSignalsForThread();
+static void Boot()
+{
+	char* bin = "HCRT2.BIN";
+	Fs = calloc(sizeof(CTask), 1);
+	InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
-  VFsMountDrive('T',"./");
-  BootAiwnios();
-  glbl_table=Fs->hash_table;
-  if(bin)
-    Load(bin);
+	FuzzTest1();
+	FuzzTest2();
+	FuzzTest3();
+	VFsMountDrive('T', "./");
+	BootAiwnios();
+	glbl_table = Fs->hash_table;
+	if (bin)
+		Load(bin);
 }
 int main()
 {
-  int64_t quit=0;
-  SDL_Init(SDL_INIT_EVERYTHING);
-  InitSound();
-  user_ev_num=SDL_RegisterEvents(1);
-  SpawnCore(&Boot,NULL,0);
-  InputLoop(&quit);
+	int64_t quit = 0;
+	SDL_Init(SDL_INIT_EVERYTHING);
+	InitSound();
+	user_ev_num = SDL_RegisterEvents(1);
+	SpawnCore(&Boot, NULL, 0);
+	InputLoop(&quit);
 	return EXIT_SUCCESS;
 }

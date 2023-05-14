@@ -125,6 +125,8 @@ U0 SCRoutine() {
   Gs->seth_task=Fs;
   CoreAPSethTask;
 }
+MakeContext(adam_task->context_save_area,NULL,adam_task->stk);
+
 U0 InitCPUs() {
   I64 idx;
   MemSet(&cpu_structs,0,sizeof(CCPU) *64);
@@ -182,7 +184,6 @@ SetFs(Gs->seth_task);
 #include "Diff.HC" 
 #include "Merge.HC" 
 #include "DocUtils.HC" 
-//Cmp("TEST2.HC",,"HCRT2.BIN");
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
 #endif
@@ -221,7 +222,7 @@ sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 UserStartUp()
 {//Run each time a user a spawned
   DocTermNew;
-  //Type("::/Doc/Start.DD");
+  Type("::/Doc/Start.DD");
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   WinToTop;
   WinZBufUpdate;

@@ -13,11 +13,12 @@ CHash *HashFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1)
   CHash *ret;
   for(ret=table->body[idx];ret;ret=ret->next) {
     if(ret->type&mask)
-      if(!StrCmp(ret->str,needle))
+      if(!StrCmp(ret->str,needle)) {
         if(!--inst) {
           ret->use_cnt++;
           goto pass;
         }
+      }
   }
   if(table->next)
     ret=HashFind(needle,table->next,mask,inst);

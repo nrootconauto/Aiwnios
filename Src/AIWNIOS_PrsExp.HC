@@ -1351,14 +1351,13 @@ found_end_square:
             LexExcept(cc,"Unknown symbol at ");
         rpn=cc->coc.coc_head.next;
         if(ic_dim=rpn->ic_dim) {
-          rpn=RPNAddNew(cc,IC_ADDR,,,TRUE);
+          RPNAddNew(cc,IC_ADDR,,,TRUE);
           //IC_ADDR of IC_DEREF will cancel each other out,so re-assign the dim
           rpn=cc->coc.coc_head.next;
           rpn->ic_dim=ic_dim;
         }
-        
 fin_ident:
-        next=cc->coc.coc_head.next;
+		next=cc->coc.coc_head.next;
         if(next->ic_class->type&HTT_FUN) {
           flags|=PEF_FUN_BEFORE;
         } else

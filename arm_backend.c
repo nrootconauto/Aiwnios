@@ -2698,7 +2698,7 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		tmp.mode = MD_REG;                                                           \
 		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                     \
 	}
-#define BACKUP_BINOP_IMM(i_imm_op, i_op)                                           \
+#define BACKEND_BINOP_IMM(i_imm_op, i_op)                                           \
 	next = ICArgN(rpn, 1);                                                         \
 	next2 = ICArgN(rpn, 0);                                                        \
 	if (rpn->raw_type != RT_F64 && IsConst(next2) && next2->type != IC_F64&& \
@@ -2733,10 +2733,10 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
     if(use_flags&&rpn->res.raw_type!=RT_F64) {
       rpn->res.set_flags=1;
       rpn->res.mode=MD_NULL;
-      BACKUP_BINOP_IMM(ARM_addsImmX, ARM_addsRegX);
+      BACKEND_BINOP_IMM(ARM_addsImmX, ARM_addsRegX);
       BACKEND_BINOP(ARM_faddReg, ARM_addsRegX);
     }else {
-      BACKUP_BINOP_IMM(ARM_addImmX, ARM_addRegX);
+      BACKEND_BINOP_IMM(ARM_addImmX, ARM_addRegX);
       BACKEND_BINOP(ARM_faddReg, ARM_addRegX);
     }
 		break;
@@ -2784,10 +2784,10 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		if(use_flags&&rpn->res.raw_type!=RT_F64) {
       rpn->res.set_flags=1;
       rpn->res.mode=MD_NULL;
-      BACKUP_BINOP_IMM(ARM_subsImmX, ARM_subsRegX);
+      BACKEND_BINOP_IMM(ARM_subsImmX, ARM_subsRegX);
       BACKEND_BINOP(ARM_fsubReg, ARM_subsRegX);
     }else {
-      BACKUP_BINOP_IMM(ARM_subImmX, ARM_subRegX);
+      BACKEND_BINOP_IMM(ARM_subImmX, ARM_subRegX);
       BACKEND_BINOP(ARM_fsubReg, ARM_subRegX);
     }
 		break;
@@ -2902,10 +2902,10 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
     if(use_flags&&rpn->res.raw_type!=RT_F64) {
       rpn->res.set_flags=1;
       rpn->res.mode=MD_NULL;
-      BACKUP_BINOP_IMM(ARM_andsImmX,ARM_andsRegX);
+      BACKEND_BINOP_IMM(ARM_andsImmX,ARM_andsRegX);
       BACKEND_BIT_BINOP(ARM_andsRegX, 0);
 		}else {
-      BACKUP_BINOP_IMM(ARM_andImmX, ARM_andRegX);
+      BACKEND_BINOP_IMM(ARM_andImmX, ARM_andRegX);
       BACKEND_BIT_BINOP(ARM_andRegX, 0);
     }		
     break;
@@ -2993,14 +2993,14 @@ static int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 		break;
 	case IC_XOR:
-		BACKUP_BINOP_IMM(ARM_eorImmX,ARM_eorRegX);
+		BACKEND_BINOP_IMM(ARM_eorImmX,ARM_eorRegX);
 		BACKEND_BIT_BINOP(ARM_eorRegX, 0);
 		break;
 	case IC_MOD:
 		code_off = __CompileMod(cctrl, rpn, bin, code_off);
 		break;
 	case IC_OR:
-    BACKUP_BINOP_IMM(ARM_orrImmX,ARM_orrRegX);
+    BACKEND_BINOP_IMM(ARM_orrImmX,ARM_orrRegX);
 		BACKEND_BIT_BINOP(ARM_orrRegX, 0);
 		break;
 	case IC_LT:

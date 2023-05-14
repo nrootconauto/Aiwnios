@@ -110,7 +110,7 @@ U0 Yield() {
         LBts(&task->task_flags,TASKf_PENDING_BREAK);
         goto restore;
       }
-      task->context_save_area[12]=&Break; //12 is the return address from our context save
+      TaskContextSetRIP(task->context_save_area,&Break);
       if(Bt(&task->task_flags,TASKf_BREAK_TO_SHIFT_ESC)) {
         goto restore;
       }

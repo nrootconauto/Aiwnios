@@ -55,18 +55,18 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 				AssignRawTypeToNode(cctrl, rpn2);
 			}
 		} else {
-			//If we are passing an F64 to an I64 argument,be sure to convert the F64 to a I64
-			if ((arg->member_class->raw_type == RT_F64) ^ //Check for difference
+			// If we are passing an F64 to an I64 argument,be sure to convert the F64 to a I64
+			if ((arg->member_class->raw_type == RT_F64) ^ // Check for difference
 				(AssignRawTypeToNode(cctrl, rpn2) == RT_F64)) {
 				if (arg->member_class->raw_type == RT_F64) {
 					ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 					ic->type = IC_TO_F64;
 					QueIns(ic, rpn2->base.last);
-          AssignRawTypeToNode(cctrl,ic);
+					AssignRawTypeToNode(cctrl, ic);
 				} else {
 					ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 					ic->type = IC_TO_I64;
-          AssignRawTypeToNode(cctrl,ic);
+					AssignRawTypeToNode(cctrl, ic);
 					QueIns(ic, rpn2->base.last);
 				}
 			}
@@ -92,12 +92,12 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 		rpn2 = ICArgN(rpn, rpn->length - cnt2 - 1 + 1);
 		last = rpn;
 		vargc = rpn->length - cnt2;
-		//Pass argv
+		// Pass argv
 		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		ic->type = __IC_VARGS;
 		ic->length = vargc;
 		QueIns(ic, last);
-		//Pass argc
+		// Pass argc
 		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		ic->type = IC_I64;
 		ic->integer = vargc;
@@ -258,7 +258,7 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			break;
 		case IC_ARROW:
 		addrof_arr:
-			//If we already have a addrof,no need to do it twice
+			// If we already have a addrof,no need to do it twice
 			if (rpn->base.last != cctrl->code_ctrl->ir_code) {
 				b = rpn->base.last;
 				if (b->type == IC_ADDR_OF) {
@@ -345,7 +345,7 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			rpn->raw_type = RT_PTR;
 		}
 	}
-	//Remove addresses of dereferences
+	// Remove addresses of dereferences
 	for (rpn = cctrl->code_ctrl->ir_code->next;
 		 rpn != cctrl->code_ctrl->ir_code;) {
 		a = rpn;
@@ -994,12 +994,12 @@ static int64_t OptMemberVarSortSz(COptMemberVar* a, COptMemberVar* b)
 void OptPassRegAlloc(CCmpCtrl* cctrl)
 {
 	/*
-   * Heres the deal. AIWNIOS will not do fancy register allocation
-   * shenanigins. We will get a score for REG_MAYBE|REG_ALLOC(bigger
-   * score means more chance of getting put in a register).
-   * If we dereference a variable with IC_ADDR,it will be turned into
-   * REG_NONE(can't get pointer of register)
-   */
+	 * Heres the deal. AIWNIOS will not do fancy register allocation
+	 * shenanigins. We will get a score for REG_MAYBE|REG_ALLOC(bigger
+	 * score means more chance of getting put in a register).
+	 * If we dereference a variable with IC_ADDR,it will be turned into
+	 * REG_NONE(can't get pointer of register)
+	 */
 	COptMemberVar* mv;
 	CMemberLst* tmpm;
 	CRPN *rpn, *next;
@@ -1212,7 +1212,18 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 					mv[i].m->reg = REG_NONE;
 			} else if (RT_I8i <= mv[i].m->member_class->raw_type && mv[i].m->member_class->raw_type <= RT_PTR && !mv[i].m->dim.next) {
 				if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
+					#ifdef TARGET_X86V
+					switch (ireg++-AIWNIOS_IREG_START) {
+						break;case 0: mv[i].m->reg=RBX;
+						break;case 1: mv[i].m->reg=R12;
+						//break;case 1: res->reg=R13; R13 is weird with dereferences
+						break;case 2: mv[i].m->reg=R14;
+						break;case 3: mv[i].m->reg=R15;
+						break;default:abort();
+					}
+					#else
 					mv[i].m->reg = ireg++;
+					#endif
 				} else
 					mv[i].m->reg = REG_NONE;
 			} else
@@ -1253,8 +1264,16 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 			off += (align - off % align) % align;
 			sz = mv[i].m->member_class->sz;
 			sz *= mv[i].m->dim.total_cnt;
-			// Stack grows down on every computer ever
 			mv[i].m->off = off;
+			#ifdef TARGET_X86V
+				//In X86_64 the base pointer above of the  stack's bottom,
+				//I will move the items down by thier size so they are at the bottom
+				//
+				// RBP<===base ptr+0
+				// I64 x(local_mem->off+=8) //Move x to be 8 bytes below RBP
+				// RSP<=== -8 //Move x down here
+				mv[i].m->off += mv[i].m->member_class->sz*mv[i].m->dim.total_cnt;
+			#endif
 			off += sz;
 		}
 	}
@@ -1380,7 +1399,7 @@ void OptPassRemoveUselessArith(CCmpCtrl* cctrl)
 		}
 	}
 }
-char* Compile(CCmpCtrl* cctrl,int64_t *res_sz,char **dbg_info)
+char* Compile(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 {
 	CRPN* r;
 	int64_t old_flags = cctrl->flags;
@@ -1391,9 +1410,9 @@ char* Compile(CCmpCtrl* cctrl,int64_t *res_sz,char **dbg_info)
 	OptPassExpandPtrs(cctrl);
 	OptPassConstFold(cctrl);
 	OptPassMergeCommunitives(cctrl);
-	//OptPassDeadCodeElim(cctrl);
+	// OptPassDeadCodeElim(cctrl);
 	OptPassRegAlloc(cctrl);
 	OptPassRemoveUselessArith(cctrl);
 	cctrl->flags = old_flags;
-	return OptPassFinal(cctrl,res_sz,dbg_info);
+	return OptPassFinal(cctrl, res_sz, dbg_info);
 }

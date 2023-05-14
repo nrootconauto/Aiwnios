@@ -106,7 +106,7 @@ public U8 *GodDoodleSprite(U8 *hex=NULL)
   WinMax;
 
   if (!hex)
-    PopUpOk("The $LK+PU,"Holy Spirit",A="FI:::/HSNotes.DD"$ can puppet you.\n\n"
+    PopUpOk("The \dLK+PU,\"Holy Spirit\",A=\"FI:::/HSNotes.DD\"\d can puppet you.\n\n"
 	  "Press $$GREEN$$<SPACE>$$FG$$ until it finishes.");
 
   god.doodle_ch=0;

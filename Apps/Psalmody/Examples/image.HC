@@ -11,18 +11,19 @@ U0 DrawIt(CTask *,CDC *dc)
   I64 i,j;
 
   dc->color=BLACK;
-  dc->thick=7;
+  dc->thick=7;
   for (i=0;i<4;i++) {
     y=0;
     d=dt%4;
     if (d<1) {
       d+=0.25*i;
       if (d<1.0)
-	y=Tri(d,1)`2.0;
+	y=Pow(Tri(d,1),2.0);
     }
     x1=X+(i-2.5)*WIDTH;
     y1=50-20*y;
     GrLine3(dc,x1,y1,0,(X*3+x1)/4,Y,0);
+
   }
 
   x1=X+1.3*WIDTH;
@@ -35,20 +36,20 @@ U0 DrawIt(CTask *,CDC *dc)
     if (d<1) {
       d+=0.25*i;
       if (d<1.0)
-	y=Tri(d,1)`2.0;
+	y=Pow(Tri(d,1),2.0);
     }
     x1=X+(i-2.5)*WIDTH;
     y1=50-20*y;
     dc->color=YELLOW;
-    dc->thick=5;
+    dc->thick=1;
     GrLine3(dc,x1,y1,0,(X*3+x1)/4,Y,0);
 
     dc->color=BLACK;
     for (j=0;j<4;j++) {
       x2=(x1*(4-j)+(X*3+x1)/4*j)/4;
       y2=(y1*(4-j)+Y*j)/4;
-      GrLine(dc,x2-2,y2,x2,y2-1);
-      GrLine(dc,x2,y2-1,x2+1,y2);
+//      GrLine(dc,x2-2,y2,x2,y2-1);
+//      GrLine(dc,x2,y2-1,x2+1,y2);
     }
   }
 
@@ -60,10 +61,10 @@ U0 DrawIt(CTask *,CDC *dc)
   dc->color=BLACK;
   x2=0.6*x1+0.4*(X*3+x1)/4;
   y2=0.6*y1+0.4*Y;
-  GrLine(dc,x2,y2-1,x2-1,y2+1);
+//  GrLine(dc,x2,y2-1,x2-1,y2+1);
   x2=0.2*x1+0.8*(X*3+x1)/4;
   y2=0.2*y1+0.8*Y;
-  GrLine(dc,x2-1,y2,x2-1,y2+2);
+//  GrLine(dc,x2-1,y2,x2-1,y2+2);
 }
 
 U0 Song()

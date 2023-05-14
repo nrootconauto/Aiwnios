@@ -46,9 +46,9 @@ U0 throw(I64 ch=0,Bool no_log=FALSE)
 {//ch can be up to 8 chars like $LK,"PutChars",A="MN:PutChars"$().
 //In the catcher, fetch ch from Fs->except_ch.
   CExcept *tmpt=Fs->last_except;
-  I64 except_pad[22];
+  I64 except_pad[2048];
   if(tmpt==&(Fs->next_except)) goto panic;
-  MemCpy(&except_pad,tmpt->AARCH64_except_pad,8*22);
+  MemCpy(&except_pad,tmpt->AARCH64_except_pad,2048);
   SysUntry;
   Bool was_raw;
   I64 i;

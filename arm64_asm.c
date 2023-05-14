@@ -3,7 +3,7 @@
 #include <stdint.h>
 #define MASKn(v, bits, off) (((v) & ((1ull << (bits)) - 1)) << (off))
 
-//https://math.stackexchange.com/questions/490813/range-twos-complement
+// https://math.stackexchange.com/questions/490813/range-twos-complement
 #define ARM_FORCE_ALIGN(v, bits, chop)                  \
 	{                                                   \
 		if ((v) & ((1 << (chop)) - 1))                  \
@@ -46,10 +46,11 @@ typedef struct {
 	int64_t ext;
 } CARMAdrScImm;
 
-static int64_t LdStRegExt(int64_t sz,int64_t opc,int64_t rt,int64_t n,int64_t m,int64_t mod) {
-  int64_t s=1;
-  int64_t v=0;
-  return (sz<<30)|(7<<27)|(v<<26)|(opc<<22)|(1<<21)|(m<<16)|(mod<<13)|(s<<12)|(2<<10)|(n<<5)|rt;
+static int64_t LdStRegExt(int64_t sz, int64_t opc, int64_t rt, int64_t n, int64_t m, int64_t mod)
+{
+	int64_t s = 1;
+	int64_t v = 0;
+	return (sz << 30) | (7 << 27) | (v << 26) | (opc << 22) | (1 << 21) | (m << 16) | (mod << 13) | (s << 12) | (2 << 10) | (n << 5) | rt;
 }
 
 static int64_t MvWideImmX(uint32_t opc, int64_t d, int64_t imm, int64_t shift)
@@ -170,7 +171,7 @@ static int64_t LdStRegUnImm(int64_t sz, int64_t opc, int64_t r,
 	return MASKn(adr->off >> sz, 12, 10) | (sz << 30) | (0x7 << 27) | (1 << 24) | (opc << 22) | (adr->n << 5) | (r);
 }
 
-static int64_t LdStRegReg(int64_t size, int64_t opc, int64_t rt, int64_t m, int64_t n,int64_t shift)
+static int64_t LdStRegReg(int64_t size, int64_t opc, int64_t rt, int64_t m, int64_t n, int64_t shift)
 {
 	//(1<<12) triggers shift
 	int64_t S = shift;
@@ -245,7 +246,8 @@ static int64_t BitfieldX(int64_t op, int64_t d, int64_t n, uint64_t immr,
 static int64_t AddSubImmX(int64_t op, int64_t s, int64_t d, int64_t n,
 	int64_t imm, int64_t sh)
 {
-  if(imm<0) return ARM_ERR_INV_OFF;
+	if (imm < 0)
+		return ARM_ERR_INV_OFF;
 	ARM_FORCE_ALIGN(imm, 12, 0);
 	int32_t imm12 = MASKn(imm, 12, 10);
 	int32_t shift = MASKn(sh, 1, 22);
@@ -349,12 +351,13 @@ static int64_t MvRegX(int64_t d, int64_t n)
 		return LogicalShiftRegX(1, 0, d, 31, n, LSL, 0);
 }
 
-int64_t LdStSimdFpRegRegShift(uint32_t opc, int64_t vt,int64_t rn,int64_t rm) {
-  uint32_t size = 3;
-  uint32_t option = 3;
-  uint32_t S =1;
-  uint32_t V = 1;
-  return (size<<30)|(0x7<<27)|(V<<26)|(opc<<22)|(1<<21)|(rm<<16)|(option<<13)|(S<<12)|(2<<10)|(rn<<5)|vt;
+int64_t LdStSimdFpRegRegShift(uint32_t opc, int64_t vt, int64_t rn, int64_t rm)
+{
+	uint32_t size = 3;
+	uint32_t option = 3;
+	uint32_t S = 1;
+	uint32_t V = 1;
+	return (size << 30) | (0x7 << 27) | (V << 26) | (opc << 22) | (1 << 21) | (rm << 16) | (option << 13) | (S << 12) | (2 << 10) | (rn << 5) | vt;
 }
 
 // dst+=label
@@ -446,14 +449,14 @@ int64_t ARM_addRegX(int64_t d, int64_t n, int64_t m)
 	return AddSubShiftRegX(0, 0, d, n, m, LSL, 0, 0);
 }
 
-
 int64_t ARM_addsRegX(int64_t d, int64_t n, int64_t m)
 {
 	return AddSubShiftRegX(0, 1, d, n, m, LSL, 0, 0);
 }
 
-int64_t ARM_addsImmX(int64_t rd,int64_t rn,int64_t imm) {
-  return AddSubImmX(0, 1, rd, rn, imm, 0);
+int64_t ARM_addsImmX(int64_t rd, int64_t rn, int64_t imm)
+{
+	return AddSubImmX(0, 1, rd, rn, imm, 0);
 }
 
 int64_t ARM_subRegX(int64_t d, int64_t n, int64_t m)
@@ -592,7 +595,7 @@ int64_t ARM_tbnz(int64_t rt, int64_t bit, int64_t label)
 
 int64_t ARM_strbRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(0, 0, r, a, b,0);
+	return LdStRegReg(0, 0, r, a, b, 0);
 }
 
 int64_t ARM_strbRegImm(int64_t r, int64_t n, int64_t off)
@@ -613,12 +616,12 @@ int64_t ARM_ldrbRegImm(int64_t r, int64_t n, int64_t off)
 
 int64_t ARM_ldrbRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(0, 1, r, a, b,0);
+	return LdStRegReg(0, 1, r, a, b, 0);
 }
 
 int64_t ARM_strhRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(1, 0, r, a, b,0);
+	return LdStRegReg(1, 0, r, a, b, 0);
 }
 
 int64_t ARM_strhRegImm(int64_t r, int64_t n, int64_t off)
@@ -631,7 +634,7 @@ int64_t ARM_strhRegImm(int64_t r, int64_t n, int64_t off)
 
 int64_t ARM_ldrhRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(1, 1, r, a, b,0);
+	return LdStRegReg(1, 1, r, a, b, 0);
 }
 
 int64_t ARM_ldrhRegImm(int64_t r, int64_t n, int64_t off)
@@ -652,12 +655,12 @@ int64_t ARM_strRegImm(int64_t r, int64_t n, int64_t off)
 
 int64_t ARM_strRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(2, 0, r, a, b,0);
+	return LdStRegReg(2, 0, r, a, b, 0);
 }
 
 int64_t ARM_ldrRegReg(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(2, 1, r, a, b,0);
+	return LdStRegReg(2, 1, r, a, b, 0);
 }
 
 int64_t ARM_ldrRegImm(int64_t r, int64_t n, int64_t off)
@@ -686,11 +689,11 @@ int64_t ARM_ldrRegImmX(int64_t r, int64_t n, int64_t off)
 
 int64_t ARM_strRegRegX(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(3, 0, r, a, b,0);
+	return LdStRegReg(3, 0, r, a, b, 0);
 }
 int64_t ARM_ldrRegRegX(int64_t r, int64_t a, int64_t b)
 {
-	return LdStRegReg(3, 1, r, a, b,0);
+	return LdStRegReg(3, 1, r, a, b, 0);
 }
 
 int64_t ARM_fmulReg(int64_t d, int64_t n, int64_t m)
@@ -963,44 +966,54 @@ int64_t ARM_fmovF64I64(int64_t d, int64_t s)
 	return ConversionFpIntFI(1, 0, 1, 0, 7, d, s);
 }
 
-int64_t ARM_strbRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(0,0,a,n,m,1);
+int64_t ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(0, 0, a, n, m, 1);
 }
 
-int64_t ARM_ldrbRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(0,1,a,n,m,1);
+int64_t ARM_ldrbRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(0, 1, a, n, m, 1);
 }
 
-int64_t ARM_strhRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(1,0,a,n,m,1);
+int64_t ARM_strhRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(1, 0, a, n, m, 1);
 }
 
-int64_t ARM_ldrhRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(1,1,a,n,m,1);
+int64_t ARM_ldrhRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(1, 1, a, n, m, 1);
 }
 
-int64_t ARM_strRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(2,0,a,n,m,1);
+int64_t ARM_strRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(2, 0, a, n, m, 1);
 }
 
-int64_t ARM_ldrRegRegShift(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(2,1,a,n,m,1);
+int64_t ARM_ldrRegRegShift(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(2, 1, a, n, m, 1);
 }
 
-int64_t ARM_strRegRegShiftX(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(3,0,a,n,m,1);
+int64_t ARM_strRegRegShiftX(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(3, 0, a, n, m, 1);
 }
 
-int64_t ARM_ldrRegRegShiftX(int64_t a,int64_t n,int64_t m) {
-  return LdStRegReg(3,1,a,n,m,1);
+int64_t ARM_ldrRegRegShiftX(int64_t a, int64_t n, int64_t m)
+{
+	return LdStRegReg(3, 1, a, n, m, 1);
 }
 
-int64_t ARM_ldrRegRegShiftF64(int64_t a,int64_t n,int64_t m) {
-  return LdStSimdFpRegRegShift(1,a,n,m);
+int64_t ARM_ldrRegRegShiftF64(int64_t a, int64_t n, int64_t m)
+{
+	return LdStSimdFpRegRegShift(1, a, n, m);
 }
 
-int64_t ARM_strRegRegShiftF64(int64_t a,int64_t n,int64_t m) {
-  return LdStSimdFpRegRegShift(0,a,n,m);
+int64_t ARM_strRegRegShiftF64(int64_t a, int64_t n, int64_t m)
+{
+	return LdStSimdFpRegRegShift(0, a, n, m);
 }
 
 //
@@ -1010,127 +1023,153 @@ int64_t ARM_strRegRegShiftF64(int64_t a,int64_t n,int64_t m) {
 //
 
 // Return's -1 on poo poo unencodable
-static int64_t GenNImmSImmR(int64_t imm) {
-  //TODO write this stuff in assemblt
-  if(imm==0||~imm==0)
-    return ARM_ERR_INV_OFF;
-  int64_t consec=0,idx,zero_gap=0,first_zeros,width,x;
-  uint64_t pattern;
-  #define ROT(x,n) ((x)>>n)|((x)<<(64-n)) 
-  //Find first 1
-  zero_gap=__builtin_ctzl(imm);
-  //Count consecitive bits for the pattern
-  consec=__builtin_ctzl((~imm)>>zero_gap);
-  //If leading is zero,check the number of ones at the end
-  if(zero_gap==0) {
-    //Zeros may be present at the other side of  the ones
-    //"[10000111]"
-    //   ^^^^
-    if((imm>>consec)==0)
-      zero_gap=64-consec;
-    else
-      zero_gap=__builtin_ctzl(imm>>consec)-consec;
-    consec+=__builtin_clzl(~imm);
-  } else if(zero_gap!=0) {
-    //add leading 0s to the gap amount
-    zero_gap+=__builtin_clzl(imm);
-  }
-  //Our pattern size is zero_gap+consec
-  width=zero_gap+consec;
-  switch(width) {
-    #define MAKE_PATT \
-      x=consec-1; \
-      pattern=0; \
-      for(idx=0;idx!=64/width;idx++) \
-        if(!idx) \
-          pattern|=(1l<<consec)-1l; \
-        else \
-          pattern|=((1l<<consec)-1l)<<(width*idx);
-        
-    
-    #define CHECK_PATT(n) \
-    for(idx=0;idx!=width;idx++) \
-      if(pattern==imm) \
-        return (n<<12)|(idx<<6)|x; \
-      else \
-        pattern=ROT(pattern,1);
-    break;case 2:
-    MAKE_PATT;
-    CHECK_PATT(0);
-    break;case 4:
-    MAKE_PATT;
-    CHECK_PATT(0);
-    break;case 8:
-    MAKE_PATT;
-    CHECK_PATT(0);
-    break;case 16:
-    MAKE_PATT;
-    CHECK_PATT(0);
-    break;case 32:
-    MAKE_PATT;
-    CHECK_PATT(0);
-    break;case 64:
-    MAKE_PATT;
-    CHECK_PATT(1);
-    break;default:;
-  }
-  return ARM_ERR_INV_OFF;
+static int64_t GenNImmSImmR(int64_t imm)
+{
+	// TODO write this stuff in assemblt
+	if (imm == 0 || ~imm == 0)
+		return ARM_ERR_INV_OFF;
+	int64_t consec = 0, idx, zero_gap = 0, first_zeros, width, x;
+	uint64_t pattern;
+#define ROT(x, n) ((x) >> n) | ((x) << (64 - n))
+	// Find first 1
+	zero_gap = __builtin_ctzl(imm);
+	// Count consecitive bits for the pattern
+	consec = __builtin_ctzl((~imm) >> zero_gap);
+	// If leading is zero,check the number of ones at the end
+	if (zero_gap == 0) {
+		// Zeros may be present at the other side of  the ones
+		//"[10000111]"
+		//    ^^^^
+		if ((imm >> consec) == 0)
+			zero_gap = 64 - consec;
+		else
+			zero_gap = __builtin_ctzl(imm >> consec) - consec;
+		consec += __builtin_clzl(~imm);
+	} else if (zero_gap != 0) {
+		// add leading 0s to the gap amount
+		zero_gap += __builtin_clzl(imm);
+	}
+	// Our pattern size is zero_gap+consec
+	width = zero_gap + consec;
+	switch (width) {
+#define MAKE_PATT                           \
+	x = consec - 1;                         \
+	pattern = 0;                            \
+	for (idx = 0; idx != 64 / width; idx++) \
+		if (!idx)                           \
+			pattern |= (1l << consec) - 1l; \
+		else                                \
+			pattern |= ((1l << consec) - 1l) << (width * idx);
+
+#define CHECK_PATT(n)                          \
+	for (idx = 0; idx != width; idx++)         \
+		if (pattern == imm)                    \
+			return (n << 12) | (idx << 6) | x; \
+		else                                   \
+			pattern = ROT(pattern, 1);
+		break;
+	case 2:
+		MAKE_PATT;
+		CHECK_PATT(0);
+		break;
+	case 4:
+		MAKE_PATT;
+		CHECK_PATT(0);
+		break;
+	case 8:
+		MAKE_PATT;
+		CHECK_PATT(0);
+		break;
+	case 16:
+		MAKE_PATT;
+		CHECK_PATT(0);
+		break;
+	case 32:
+		MAKE_PATT;
+		CHECK_PATT(0);
+		break;
+	case 64:
+		MAKE_PATT;
+		CHECK_PATT(1);
+		break;
+	default:;
+	}
+	return ARM_ERR_INV_OFF;
 }
 
-static int64_t LogicalImm(int64_t opc,int64_t d,int64_t s,int64_t i) {
-  int64_t poodle=GenNImmSImmR(i);
-  if(i==ARM_ERR_INV_OFF) return i;
-  return MASKn(opc,8,29)|MASKn(0x24,8,23)|MASKn(s,14,10)|MASKn(s,6,5)|MASKn(d,6,0);
+static int64_t LogicalImm(int64_t opc, int64_t d, int64_t s, int64_t i)
+{
+	int64_t poodle = GenNImmSImmR(i);
+	if (i == ARM_ERR_INV_OFF)
+		return i;
+	return MASKn(opc, 8, 29) | MASKn(0x24, 8, 23) | MASKn(s, 14, 10) | MASKn(s, 6, 5) | MASKn(d, 6, 0);
 }
 
-static int64_t LogicalImmX(int64_t opc,int64_t d,int64_t s,int64_t i) {
-  int64_t poodle=GenNImmSImmR(i);
-  if(poodle==ARM_ERR_INV_OFF) return poodle;
-  return (1<<31)|MASKn(opc,8,29)|MASKn(0x24,8,23)|MASKn(poodle,14,10)|MASKn(s,6,5)|MASKn(d,6,0);
+static int64_t LogicalImmX(int64_t opc, int64_t d, int64_t s, int64_t i)
+{
+	int64_t poodle = GenNImmSImmR(i);
+	if (poodle == ARM_ERR_INV_OFF)
+		return poodle;
+	return (1 << 31) | MASKn(opc, 8, 29) | MASKn(0x24, 8, 23) | MASKn(poodle, 14, 10) | MASKn(s, 6, 5) | MASKn(d, 6, 0);
 }
 
-int64_t ARM_andImmX(int64_t d,int64_t s,int64_t i) {
-  return LogicalImmX(0,d,s,i);
+int64_t ARM_andImmX(int64_t d, int64_t s, int64_t i)
+{
+	return LogicalImmX(0, d, s, i);
 }
 
-int64_t ARM_orrImmX(int64_t d,int64_t s,int64_t i) {
-  return LogicalImmX(1,d,s,i);
+int64_t ARM_orrImmX(int64_t d, int64_t s, int64_t i)
+{
+	return LogicalImmX(1, d, s, i);
 }
 
-int64_t ARM_eorImmX(int64_t d,int64_t s,int64_t i) {
-  return LogicalImmX(2,d,s,i);
+int64_t ARM_eorImmX(int64_t d, int64_t s, int64_t i)
+{
+	return LogicalImmX(2, d, s, i);
 }
 
-static int64_t LdStRegPairImm(int64_t opc,int64_t L,int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  int64_t times=2;
-  if(off%times) return ARM_ERR_INV_OFF;
-  if(off>times*256) return ARM_ERR_INV_OFF;
-  if(off<times*-256) return ARM_ERR_INV_OFF;
-  return MASKn(opc, 32,30)|MASKn(0x5, 32,27)|MASKn(2,32, 23)|MASKn(L,32, 22)|MASKn(off/8,7, 15)|MASKn(r2,5, 10)|MASKn(ra,5, 5)|MASKn(r1,5, 0);
+static int64_t LdStRegPairImm(int64_t opc, int64_t L, int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	int64_t times = 2;
+	if (off % times)
+		return ARM_ERR_INV_OFF;
+	if (off > times * 256)
+		return ARM_ERR_INV_OFF;
+	if (off < times * -256)
+		return ARM_ERR_INV_OFF;
+	return MASKn(opc, 32, 30) | MASKn(0x5, 32, 27) | MASKn(2, 32, 23) | MASKn(L, 32, 22) | MASKn(off / 8, 7, 15) | MASKn(r2, 5, 10) | MASKn(ra, 5, 5) | MASKn(r1, 5, 0);
 }
 
-int64_t ARM_stpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStRegPairImm(2,0,r1,r2,ra,off);
+int64_t ARM_stpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	return LdStRegPairImm(2, 0, r1, r2, ra, off);
 }
-int64_t ARM_ldpImmX(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStRegPairImm(2,1,r1,r2,ra,off);
-}
-
-static int64_t LdStSimdFpPairImm(int64_t opc,int64_t L,int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  int64_t times=2;
-  if(off%times) return ARM_ERR_INV_OFF;
-  if(off>times*256) return ARM_ERR_INV_OFF;
-  if(off<times*-256) return ARM_ERR_INV_OFF;
-  return MASKn(opc, 32,30)|MASKn(0x5, 32,27)|(1<<26)|MASKn(2,32, 23)|MASKn(L,32, 22)|MASKn(off/8,7, 15)|MASKn(r2,5, 10)|MASKn(ra,5, 5)|MASKn(r1,5, 0);
+int64_t ARM_ldpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	return LdStRegPairImm(2, 1, r1, r2, ra, off);
 }
 
-int64_t ARM_stpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStSimdFpPairImm(1,0,r1,r2,ra,off);
+static int64_t LdStSimdFpPairImm(int64_t opc, int64_t L, int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	int64_t times = 2;
+	if (off % times)
+		return ARM_ERR_INV_OFF;
+	if (off > times * 256)
+		return ARM_ERR_INV_OFF;
+	if (off < times * -256)
+		return ARM_ERR_INV_OFF;
+	return MASKn(opc, 32, 30) | MASKn(0x5, 32, 27) | (1 << 26) | MASKn(2, 32, 23) | MASKn(L, 32, 22) | MASKn(off / 8, 7, 15) | MASKn(r2, 5, 10) | MASKn(ra, 5, 5) | MASKn(r1, 5, 0);
 }
-int64_t ARM_ldpImmF64(int64_t r1,int64_t r2,int64_t ra,int64_t off) {
-  return LdStSimdFpPairImm(1,1,r1,r2,ra,off);
-}
-int64_t ARM_andsImmX(int64_t d,int64_t n,int64_t imm) {return LogicalImmX(3,d,n,imm);}
 
-int64_t ARM_udivX(int64_t d,int64_t n,int64_t m) {return DataProc2Src(2,d,n,m);}
-int64_t ARM_umullX(int64_t d,int64_t n,int64_t m) {return DataProc3RegX(0,5,0,d,n,m,31);}
+int64_t ARM_stpImmF64(int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	return LdStSimdFpPairImm(1, 0, r1, r2, ra, off);
+}
+int64_t ARM_ldpImmF64(int64_t r1, int64_t r2, int64_t ra, int64_t off)
+{
+	return LdStSimdFpPairImm(1, 1, r1, r2, ra, off);
+}
+int64_t ARM_andsImmX(int64_t d, int64_t n, int64_t imm) { return LogicalImmX(3, d, n, imm); }
+
+int64_t ARM_udivX(int64_t d, int64_t n, int64_t m) { return DataProc2Src(2, d, n, m); }
+int64_t ARM_umullX(int64_t d, int64_t n, int64_t m) { return DataProc3RegX(0, 5, 0, d, n, m, 31); }

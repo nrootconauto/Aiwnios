@@ -147,7 +147,7 @@ I64i union I64
   F64	x,y;
 };
 
-/*public */ class CD3 //Three dimensional F64 pt
+/*public */ class CD3 //Three dimensional F64 pt
 {
   F64	x,y,z;
 };
@@ -1443,8 +1443,8 @@ class CWinMgrTimingGlbls
   I64	calc_idle_cnt;
 };
 
-#define WINMGR_FPS	(10000.0/1001)
-#define WINMGR_PERIOD	(1001/10000.0)
+#define WINMGR_FPS	(30000.0/1001)
+#define WINMGR_PERIOD	(1001/30000.0)
 
 /*public */ class CWinMgrGlbls
 {
@@ -3052,7 +3052,7 @@ class CBpt
 class CExcept
 {
   CExcept *next,*last;
-  I64 AARCH64_except_pad[22];
+  I64 AARCH64_except_pad[2048];
 };
 
 class CFPU
@@ -3228,7 +3228,7 @@ class CTaskDying
 
   //These must be in this order
   //for $LK,"TASK_CONTEXT_SAVE",A="FF:::/Kernel/Sched.HC,TASK_CONTEXT_SAVE"$ and $LK,"_TASK_CONTEXT_RESTORE",A="FF:::/Kernel/Sched.HC,_TASK_CONTEXT_RESTORE"$
-  I64	context_save_area[22];
+  U8	context_save_area[2048];
   CCPU	*gs;
   CFPU	*fpu_mmx;
   I64	swap_cnter;
@@ -3798,6 +3798,8 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 TaskContextSetRIP(U8 *,U8 *);
+import U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 import U8 *AiwniosGetClipboard();
 import U0 AiwniosSetClipboard(U8 *);
 import U0 InteruptCore(I64);
@@ -3894,6 +3896,7 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 extern F64 Ln(F64);
 extern U8 *AiwniosGetClipboard();
 extern U0 AiwniosSetClipboard(U8 *);
@@ -4244,7 +4247,8 @@ class CTransformForm
 class CRenum
 {
   CRenum *next,*last;
-  U8 label[sizeof(CEdFindText.find_text)];
+  //Was U8 label[sizeof(CEdFindText.find_text)];
+  U8 label[STR_LEN];
 };
 public extern Bool PopUpTransform(I64 *r);
 extern I64 DitherColor2(U8 *header=NULL);
@@ -4276,7 +4280,7 @@ extern Bool DocFileEd(I64 _type,U8 *filename,
 public extern I64 EdLinkCvt(U8 *link_st,U8 **_filename=NULL,U8 **_needle_str=NULL,
 	I64 *_num=NULL,I64 edf_dof_flags=0);
 public extern Bool DocLinkChk(CDoc *doc,U8 *link_st);
-U0 SysMacroStripKey(CJob *macro_head,I64 arg1,I64 arg2);
+extern U0 SysMacroStripKey(CJob *macro_head,I64 arg1,I64 arg2);
 #define MT_NULL	0
 #define MT_MSG	1
 #define MT_CHAR	2
@@ -5388,10 +5392,11 @@ extern U0 GrUpdateScrn();
 extern U0 Sprite3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,	Bool just_one_elem=FALSE);
 extern U0 Sprite3B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems);
 extern U0 Sprite3Mat4x4B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,I64 *m);
-extern U0 Sprite3XB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 è=0);
-extern U0 Sprite3YB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 ê=0);
-extern U0 Sprite3ZB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 é=0);
-extern U0 SpriteExtents(U8 *elems,I64 *min_x=NULL,I64 *max_x=NULL,				   I64 *min_y=NULL,I64 *max_y=NULL);
+extern U0 Sprite3XB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 angle=0);
+extern U0 Sprite3YB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 angle=0);
+extern U0 Sprite3ZB(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,F64 angle=0);
+extern U0 SpriteExtents(U8 *elems,I64 *min_x=NULL,I64 *max_x=NULL,
+				   I64 *min_y=NULL,I64 *max_y=NULL);
 extern CDC *Sprite2DC(U8 *elems);
 extern U8 *SpriteInterpolate(F64 t,U8 *elems0,U8 *elems1);
 extern CDocEntry *Sprite(U8 *elems,U8 *fmt=NULL);
@@ -5744,7 +5749,7 @@ extern U0 SpriteEdUpdate(CDoc *doc,CDocEntry *doc_ce,CSprite *head);
 extern U0 SpriteSetOrigin(CSprite *head,I64 dx,I64 dy,I64 dz);
 extern CSprite *SpriteTransformCircle(I64 *r,CSprite *tmpg);
 extern CSprite *SpriteTransformEllipse(I64 *r,CSprite *tmpg);
-extern CSprite *SpriteTransformRect(I64 *r,CSprite *tmpg,F64 é);
+extern CSprite *SpriteTransformRect(I64 *r,CSprite *tmpg,F64 angle);
 extern CSprite *SpriteTransformBitMap(I64 *r,CSprite *tmpg);
 extern U0 SpriteTransformQue(CSprite *head,I64 *r);
 extern I64 SpriteQueSelCnt(CSprite *head,Bool val=TRUE);
@@ -6183,7 +6188,7 @@ extern U0 ODECashKarp(CMathODE *ode);
 extern U0 ODERK5OneStep(CMathODE *ode);
 extern U0 ODEsUpdate(CTask *task);
 extern F64 ode_alloced_factor;
-#define CMP_AIWN Cd("T:/Src");Cmp("TEST2.HC","HCRT2.DBG.Z","HCRT2.BIN");Copy("HCRT2.*","T:/");;
+#define CMP_AIWN Cd("T:/Src");Cmp("STAGE1.HC","HCRT2.DBG.Z","HCRT2.BIN");
 #define PROGRESS_BAR_HEIGHT	20
 #define PROGRESS_BAR_WIDTH	(3*GR_WIDTH/4)
 #define SEL_MESH_EQU	0

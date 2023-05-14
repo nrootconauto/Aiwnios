@@ -19,7 +19,7 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	if (!hc)
 		hc = Fs->heap;
 	CMemBlk* ret = mmap(NULL, pags * MEM_PAG_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE,
-		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		MAP_PRIVATE | MAP_ANONYMOUS|MAP_32BIT, -1, 0);
 	int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
 	CMemUnused **unm, *tmp, *tmp2;
 	if (!ret || ret == MAP_FAILED)
@@ -48,6 +48,8 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 
 void* __AIWNIOS_MAlloc(int64_t cnt, void* t)
 {
+	if(!cnt) return NULL;
+	cnt+=16;
 	if (!t)
 		t = Fs->heap;
 	CHeapCtrl* hc = t;
@@ -60,8 +62,8 @@ void* __AIWNIOS_MAlloc(int64_t cnt, void* t)
 	// Rounnd up to 8
 	cnt += 7 + sizeof(CMemUnused);
 	cnt &= (int8_t)0xf8;
-	//HClF_LOCKED is 1
-	while (LBts(&hc->locked_flags,1))
+	// HClF_LOCKED is 1
+	while (Misc_LBts(&hc->locked_flags, 1))
 		;
 	if (cnt > MEM_HEAP_HASH_SIZE)
 		goto big;
@@ -98,7 +100,7 @@ big:
 	goto almost_done;
 almost_done:
 	hc->used_u8s += cnt;
-  LBtr(&hc->locked_flags,1);
+	Misc_LBtr(&hc->locked_flags, 1);
 	ret->hc = hc;
 	ret++;
 	return ret;
@@ -119,7 +121,7 @@ void __AIWNIOS_Free(void* ptr)
 	if (un->sz < 0) // Aligned chunks are negative and point to start
 		un = un->sz + (char*)un;
 	hc = un->hc;
-  while (LBts(&hc->locked_flags,1))
+	while (Misc_LBts(&hc->locked_flags, 1))
 		;
 	hc->used_u8s -= un->sz;
 	if (un->sz <= MEM_HEAP_HASH_SIZE) {
@@ -134,7 +136,7 @@ void __AIWNIOS_Free(void* ptr)
 		MemPagTaskFree((char*)(un) - sizeof(CMemBlk), hc);
 	}
 fin:
-	LBtr(&hc->locked_flags,1);
+	Misc_LBtr(&hc->locked_flags, 1);
 }
 
 int64_t MSize(void* ptr)
@@ -173,7 +175,7 @@ void HeapCtrlDel(CHeapCtrl* ct)
 {
 	CMemBlk *next, *m;
 	// TODO atomic
-	while (Bt(&ct->locked_flags,1))
+	while (Misc_Bt(&ct->locked_flags, 1))
 		;
 	for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
 		next = m->base.next;
@@ -192,46 +194,49 @@ char* __AIWNIOS_StrDup(char* str, void* t)
 	return ret;
 }
 
-static int64_t Hex2I64(char *s,char **end) {
-  int64_t ret=0;
-  while(isxdigit(*s)) {
-    ret<<=4;
-    if(isdigit(*s))
-      ret+=*s-'0';
-    else
-      ret+=toupper(*s)-'A'+10;
-    s++;
-  }
-  if(end) *end=s;
-  return ret;
+static int64_t Hex2I64(char* s, char** end)
+{
+	int64_t ret = 0;
+	while (isxdigit(*s)) {
+		ret <<= 4;
+		if (isdigit(*s))
+			ret += *s - '0';
+		else
+			ret += toupper(*s) - 'A' + 10;
+		s++;
+	}
+	if (end)
+		*end = s;
+	return ret;
 }
-int64_t IsValidPtr(char *chk) {
-  int64_t ok=0,sz=0x1000;
-  char buffer[0x1000];
-  char *ptr=buffer;
-  char *start,*end;
-  FILE *f=fopen("/proc/self/maps","rb");
-  while(-1!=getline(&ptr,&sz,f)) {
-    start=Hex2I64(ptr,&ptr);
-    if(*ptr++!='-')
-      break;
-    end=Hex2I64(ptr,&ptr);
-    if(start<=chk) {
-      if(chk<end) {
-        if(*ptr++!=' ')
-          break;
-        while(*ptr++!=' ')
-          if(*ptr=='w') {
-            ok=1;
-            break;
-          }
-        break;
-      }
-    } else if(start>chk) //These appear to be sorted
-      break;
-    ptr=buffer;
-    sz=0x1000;
-  }
-  fclose(f);
-  return ok;
+int64_t IsValidPtr(char *chk)
+{
+	int64_t ok = 0, sz = 0x1000;
+	char buffer[0x1000];
+	char* ptr = buffer;
+	char *start, *end;
+	FILE* f = fopen("/proc/self/maps", "rb");
+	while (-1 != getline(&ptr, &sz, f)) {
+		start = Hex2I64(ptr, &ptr);
+		if (*ptr++ != '-')
+			break;
+		end = Hex2I64(ptr, &ptr);
+		if (start <= chk) {
+			if (chk < end) {
+				if (*ptr++ != ' ')
+					break;
+				while (*ptr++ != ' ')
+					if (*ptr == 'w') {
+						ok = 1;
+						break;
+					}
+				break;
+			}
+		} else if (start > chk) // These appear to be sorted
+			break;
+		ptr = buffer;
+		sz = 0x1000;
+	}
+	fclose(f);
+	return ok;
 }

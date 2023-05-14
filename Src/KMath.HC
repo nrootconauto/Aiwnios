@@ -124,7 +124,7 @@ F64 Sqr(F64 a) {
   return a*a;
 }
 
-F64 Wrap(F64 a,F64 base=-pi)
+F64 Wrap(F64 a,F64 base=-pi)
 {//Returns angle in range [base,base+2*ã)
   F64 res=a%(2*pi);
   if (res>=base+2*pi)
@@ -150,7 +150,7 @@ CD3 *D3MulEqu(CD3 *z,F64 s) {
   z->x*=s,z->y*=s,z->z*=s;
   return z;	
 }
-CD3 *D3Sub(CD3 *a,CD3*b,CD3 *c) {
+CD3 *D3Sub(CD3 *a,CD3 *b,CD3 *c) {
   a->x=b->x-c->x;
   a->y=b->y-c->y;
   a->z=b->z-c->z; 
@@ -166,7 +166,7 @@ CD3 *D3Mul(CD3 *a,F64 s,CD3 *c) {
   a->z=s*c->z; 
   return a;
 }
-CD3 *D3SubEqu(CD3 *a,CD3*b) {
+CD3 *D3SubEqu(CD3 *a,CD3 *b) {
   return D3Sub(a,a,b);
 }
 CD3 *D3Div(CD3 *a,CD3 *c,F64 s) {
@@ -190,7 +190,7 @@ F64 D3DistSqr(CD3 *a,CD3 *b) {
   F64 z=a->z-b->z;
   return x*x+y*y+z*z;
 }
-CD3 *D3Add(CD3 *a,CD3*b,CD3 *c) {
+CD3 *D3Add(CD3 *a,CD3 *b,CD3 *c) {
   a->x=b->x+c->x;
   a->y=b->y+c->y;
   a->z=b->z+c->z; 
@@ -199,17 +199,17 @@ CD3 *D3Add(CD3 *a,CD3*b,CD3 *c) {
 CD3 *D3AddEqu(CD3 *a,CD3 *b) {
   return D3Add(a,a,b);
 }
-CD3 *D3Copy(CD3 *a,CD3*b) {
+CD3 *D3Copy(CD3 *a,CD3 *b) {
   a->x=b->x,a->y=b->y,a->z=b->z;
   return a;
 }
-CD3 *D3Cross(CD3 *cross,CD3 *a,CD3*b) {
+CD3 *D3Cross(CD3 *cross,CD3 *a,CD3 *b) {
   cross->x=a->y*b->z-a->z*b->y;
   cross->y=a->z*b->x-a->x*b->z;
   cross->z=a->x*b->y-a->y*b->x;
   return cross;
 }
-F64 D3Dot(CD3*a,CD3 *b) {
+F64 D3Dot(CD3 *a,CD3 *b) {
   return a->x*b->x+a->y*b->y+a->z+b->z;
 }
 F64 D3Unit(CD3 *unit) {

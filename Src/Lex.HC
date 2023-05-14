@@ -447,7 +447,8 @@ I64 Lex(CCmpCtrl *cc)
   cc->last_line_num=cc->lex_include_stk->line_num;
   while (TRUE) {
 lex_cont:
-    switch (ch=LexGetChar(cc)) {
+	ch=LexGetChar(cc);
+	switch (ch) {
       case 0:
 	return cc->token=TK_EOF;
       case TK_SUPERSCRIPT:
@@ -701,7 +702,7 @@ lex_float_start:
 	    fbuf=ExtDft(cc->cur_str,"HC.Z");
 	    buf2=FileNameAbs(fbuf);
 	    Free(fbuf);
-	    if (1) 
+	    if (!TEXT_MODE) //TODO Was 1  TODO RESTORE 
 	      LexAttachDoc(cc,,,buf2);
       else
         LexIncludeStr(cc,buf2,FileRead(buf2,NULL),TRUE);

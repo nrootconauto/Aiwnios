@@ -149,3 +149,4 @@ public I64 PopUpColorDither(U8 *header=NULL)
   StrPrint(buf,"DitherColor2(0x%X);",header);
   return PopUp(buf,Fs);
 }
+

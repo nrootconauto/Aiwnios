@@ -1,0 +1,16 @@
+C_FILES = x86_64_backend.c  bungis.c  cque.c  except.c  fs.c  \
+	hash.c  lex.c  main.c  mem.c  misc.c  optpass.c  parser.c \
+  arm_loader.c windows.c sound.c dbg.c multic.c
+S_FILES = miscX86.s swapctxX86.s
+YASM_OBJS = ${S_FILES:.s=.o}
+C_OBJS = ${C_FILES:.c=.o}
+AS =  yasm -f elf64
+LIBS = ` pkg-config --libs sdl2` -pthread
+all: aiwnios
+	echo "Done"
+.yasm.o:
+	${AS} ${.IMPSRC} -o ${.TARGET}
+.c.o: ${C_HEADERS}
+	gcc -w -Wno-implicit-function-declaration  -O0  -g -DTARGET_X86V -c ${.IMPSRC} -o ${.TARGET}
+aiwnios: ${C_OBJS} ${YASM_OBJS}
+	gcc ${.ALLSRC} -lm ${LIBS} -o ${.TARGET}

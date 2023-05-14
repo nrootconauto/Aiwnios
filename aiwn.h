@@ -2,9 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <signal.h>
 #include <unistd.h>
+#include <time.h>
 #include <stdio.h>
 #include <assert.h>
+#include <ucontext.h>
 #include <SDL2/SDL.h>
 #define ERR 0x7fFFffFFffFFffFF
 #define INVALID_PTR ERR
@@ -113,13 +116,14 @@ typedef struct CQue {
 #define MEM_PAG_SIZE (1 << MEM_PAG_BITS)
 struct CHashTable;
 #include <ucontext.h>
+#include <setjmp.h>
 typedef struct CExceptPad {
 	int64_t gp[30-18+1];
 	double fp[15-8+1];
 } CExceptPad;
 typedef struct CExcept {
 	CQue base;
-	CExceptPad ctx;
+	jmp_buf ctx;
 } CExcept;
 typedef struct CTask {
 	int64_t task_signature;
@@ -130,7 +134,7 @@ typedef struct CTask {
 	void* stack;
 	ucontext_t ctx;
 	ucontext_t exit_ctx;
-	CExceptPad throw_pad;
+	jmp_buf throw_pad;
 	struct CHeapCtrl* heap;
 } CTask;
 typedef struct CHeapCtrl {
@@ -523,24 +527,30 @@ typedef struct CICArg {
 // integer is the shift amt
 //
 #define __MD_ARM_SHIFT 8
+//
+// X86_64 SIB
+//
+#define __MD_X86_64_SIB 9
 	int32_t mode;
 	int32_t raw_type;
-	int32_t reg;
+	int32_t reg,reg2;
   //True on enter of things that want to set the flags
   //True/False if the result of the thing set the flags or not
-  char set_flags;
+	char set_flags;
 	union {
-		int64_t off;
 		int64_t integer;
-    int64_t reg2;
+		int64_t off;
 		double flt;
 	};
+ 	int64_t __SIB_scale;
 } CICArg;
 struct CRPN {
 	CQue base;
 #define ICF_SPILLED 1 // See PushSpilledTmp in XXX_backend.c
 #define ICF_DEAD_CODE 2
 #define ICF_TMP_NO_UNDO 4
+#define ICF_PRECOMPUTED 8 //Doesnt re-compile a node,useful for putting in "dummy" values
+
 
 	int32_t type, length, raw_type, flags,ic_line;
 	CHashClass* ic_class;
@@ -559,7 +569,7 @@ struct CRPN {
 };
 extern char *Compile(struct CCmpCtrl *cctrl,int64_t *sz,char **dbg_info);
 extern __thread struct CTask *Fs;
-extern void AIWNIOS_throw(uint64_t code);
+void AIWNIOS_throw(uint64_t code);
 #define throw AIWNIOS_throw
 void QueDel(CQue *f);
 int64_t QueCnt(CQue *head);
@@ -641,10 +651,10 @@ extern __thread struct CTask *Fs;
 char *OptPassFinal(CCmpCtrl *cctrl,int64_t *res_sz,char **dbg_info);
 
 void AIWNIOS_ExitCatch();
-CExceptPad *__throw(uint64_t code);
+jmp_buf *__throw(uint64_t code);
 void AIWNIOS_throw(uint64_t code);
 int64_t AIWNIOS_enter_try();
-CExceptPad *__enter_try();
+jmp_buf *__enter_try();
 
 void LexTests();
 void LexerDump(CLexer *lex);
@@ -662,13 +672,20 @@ int64_t MSize(void *ptr);
 void __AIWNIOS_Free(void *ptr);
 void *__AIWNIOS_MAlloc(int64_t cnt,void *t);
 
-int64_t LBtr(void *,int64_t);
-int64_t LBts(void *,int64_t);
-int64_t Bt(void *,int64_t);
-int64_t Btc(void *,int64_t);
-int64_t Bsr(int64_t v);
-int64_t Bsf(int64_t v);
-void *Caller(int64_t c);
+
+extern int64_t Misc_Bt(void *ptr,int64_t);
+extern int64_t Misc_Btc(void *ptr,int64_t);
+extern int64_t Misc_Btr(void *ptr,int64_t);
+extern int64_t Misc_Bts(void *ptr,int64_t);
+extern int64_t Misc_LBt(void *ptr,int64_t);
+extern int64_t Misc_LBtc(void *ptr,int64_t);
+extern int64_t Misc_LBtr(void *ptr,int64_t);
+extern int64_t Misc_LBts(void *ptr,int64_t);
+extern int64_t Bsr(int64_t v);
+extern int64_t Bsf(int64_t v);
+
+
+void *Misc_Caller(int64_t c);
 uint64_t ToUpper(uint64_t ch);
 char *WhichFun(char *fptr);
 int64_t LBtc(char*,int64_t);
@@ -676,6 +693,39 @@ int64_t LBtc(char*,int64_t);
 //
 // These are used by optpass
 //
+#if defined(TARGET_X86V)
+enum {
+	RAX = 0,
+	RCX = 1,
+	RDX = 2,
+	RBX = 3,
+	RSP = 4,
+	RBP = 5,
+	RSI = 6,
+	RDI = 7,
+	R8 = 8,
+	R9 = 9,
+	R10 = 10,
+	R11 = 11,
+	R12 = 12,
+	R13 = 13,
+	R14 = 14,
+	R15 = 15,
+	RIP = 16
+};
+#define AIWNIOS_IREG_START 12
+#define AIWNIOS_IREG_CNT (15 - AIWNIOS_IREG_START + 1 -1 +1) //-1 for R13 as it is wierd,+1 for RBX TODO
+#define AIWNIOS_REG_FP RBP
+#define AIWNIOS_REG_SP RSP
+#define AIWNIOS_TMP_IREG_POOP R8
+#define AIWNIOS_TMP_IREG_POOP2 RCX
+#define AIWNIOS_TMP_IREG_START 0
+#define AIWNIOS_TMP_IREG_CNT 5
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_FREG_CNT 0
+#define AIWNIOS_TMP_FREG_START 3
+#define AIWNIOS_TMP_FREG_CNT (16-AIWNIOS_TMP_FREG_START+1)
+#elif defined(TARGET_ARM64V)
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
 #define AIWNIOS_REG_FP ARM_REG_FP
@@ -688,7 +738,7 @@ int64_t LBtc(char*,int64_t);
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #define AIWNIOS_TMP_FREG_START 16
 #define AIWNIOS_TMP_FREG_CNT (31 - 16 + 1)
-
+#endif
 
 #define try                                              \
 	{                                                    \

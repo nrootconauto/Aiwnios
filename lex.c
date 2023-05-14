@@ -608,7 +608,7 @@ re_enter:;
 						// --->(at plus)
 						//
 						lex->file->pos--;
-						//We dont want to use the last charactor now that we are in a macro
+						// We dont want to use the last charactor now that we are in a macro
 						lex->flags &= ~LEXF_USE_LAST_CHAR;
 						//
 						new_file = A_MALLOC(sizeof(CLexFile), NULL);

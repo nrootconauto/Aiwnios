@@ -144,7 +144,7 @@ U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
 	  *_base=MAlloc(i);
 	else
 	  *_base=MAlloc(i /*,Fs->code_heap*/ );
-	MemCpy(*_base,st,i);
+      MemCpy(*_base,st,i);
 	*_dst=*_base+i;
       } else {
 	MemCpy(*_dst,st,tmpad1->cnt);
@@ -272,7 +272,13 @@ U0 PrsArrayDims(CCmpCtrl *cc,I64 mode,CArrayDim *dim)
       tmpad->next=NULL;
       tmpad1=&dim;
       do {
-	tmpad1->total_cnt*=j;
+      //
+      //Nroot Fix,getting addres of &dim is an 8byte ptr,SO DONT WRITE INTO IT IT
+      // [RBP]
+      // [RBP-8] &dim(writing a member may corrupt RBP)
+      //
+      if(&dim!=tmpad1)
+        tmpad1->total_cnt*=j;
 	if (!tmpad1->next) {
 	  tmpad1->next=tmpad;
 	  break;

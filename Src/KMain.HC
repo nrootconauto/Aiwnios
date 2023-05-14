@@ -80,13 +80,13 @@ U0 KMain()
   BlkDevsInitAll;
   //"DskChg(':');\n"; TODO RESTORE
   DskChg(':');
+  
   /*DrvRep; TODO RESTORE
   Spawn(&MsHardDrvrInstall);*/
   
   MsInit2;
   MsInit;
   KbdInit;
-  
   /*"Loading Compiler\n"; TODO RESTORE
   Cd("/Compiler");
   Load("Compiler",LDF_SILENT);

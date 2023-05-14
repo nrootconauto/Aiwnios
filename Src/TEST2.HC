@@ -1,4 +1,3 @@
 #define IMPORT_AIWNIOS_SYMS 1
-#define COMPONET_GR 1
-#define GEN_HEADERS 1
-#include "HCRT_TOS.HC"
+#define TEXT_MODE 1
+#include "FULL_PACKAGE.HC";;

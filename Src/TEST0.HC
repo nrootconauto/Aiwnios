@@ -1,6 +1,9 @@
 //TEST0.HC
 // December 18,a week until christmas
+extern U0 PrintI(U8i*,I64i);
+PrintI("PPOOP",1);
 I64i Sum(...) {
+PrintI("100>argc>0",100>argc>0);
   if(100>argc>0)
     PrintI("PASS",1);
   if(argc>=0)
@@ -16,27 +19,27 @@ I64i Sum(...) {
   if(!(argc>0))
     ;
   else
-    PrintI("FAIL",1);
+    PrintI("PASS",7);
   if(!(argc>=0))
     ;
   else
-    PrintI("FAIL",2);
+    PrintI("PASS",8);
   if(!(argc<100))
     ;
   else
-    PrintI("FAIL",3);
+    PrintI("PASS",9);
   if(!(argc<=3))
     ;
   else
-    PrintI("FAIL",4);
+    PrintI("PASS",10);
   if(!(argc==3))
     ;
   else
-    PrintI("FAIL",5);
+    PrintI("PASS",11);
   if(!(argc!=4))
     ;
   else
-    PrintI("FAIL",6);
+    PrintI("PASS",12);
   
   I64i a,sum;
   for(sum=a=0;a!=argc;a+=1) 
@@ -46,6 +49,7 @@ I64i Sum(...) {
 I64i Foo() {
   return Sum(1,2,3);
 }
+PrintI("Foo",Foo);
 I64i Swit(I64i a) {
   switch(a) {
   case 1:
@@ -55,11 +59,17 @@ I64i Swit(I64i a) {
   }
   return 0;
 }
+PrintI("Swit(1)",Swit(1));
+PrintI("Swit(2)",Swit(2));
+PrintI("Swit(3)",Swit(3));
+PrintI("Swit(4)",Swit(6));
 I64i Fib(I64i n) {
   if(n<2)
     return n;
   return Fib(n-1)+Fib(n-2);
 }
+PrintI("Fib(8)",Fib(8));
+
 I64i SubSwit(I64i a) {
   switch(a) {
   case 0: break;
@@ -77,6 +87,14 @@ I64i SubSwit(I64i a) {
    }
    return a;
 }
+PrintI("SS0",SubSwit(0));
+PrintI("SS1",SubSwit(1));
+PrintI("SS2",SubSwit(2));
+PrintI("SS3",SubSwit(3));
+PrintI("SS4",SubSwit(4));
+PrintI("SS5",SubSwit(5));
+PrintI("SS6",SubSwit(6));
+PrintI("SS7",SubSwit(7));
 I64i DeadCode() {
   goto @@a;
   1+2;
@@ -95,6 +113,7 @@ U0 Bar() {
   array[3]=0;
   PutS(array);
 }
+Bar;
 I64i union I64 {
   U8i u8[8];
   I8i i8[8];
@@ -121,6 +140,7 @@ U0 UnionTest() {
   if(abcdef12.u16[0]==0x1122)
     PutS("0xaabb");
 }
+UnionTest;
 U0 FlowTest() {
   I64 z=0,c;
   if(!z) {
@@ -184,3 +204,4 @@ e:
   }
   PutS("pass10");
 }
+FlowTest;

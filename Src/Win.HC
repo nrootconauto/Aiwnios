@@ -325,7 +325,6 @@ public I64 WinToTop(CTask *task=NULL,Bool update_z_buf=TRUE)
     }
     if (task->popup_task &&
 	  task->popup_task->parent_task==task) {
-    PrintI("woof",task);
       res+=WinToTop(task->popup_task,FALSE);
     }
   }

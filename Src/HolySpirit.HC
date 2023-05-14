@@ -34,7 +34,7 @@ I64 GodPick(U8 *msg=NULL)
 {//GOD_GOOD_BITS
   U8 *st=MStrPrint("%s\n\nPress $$GREEN$$OKAY$$FG$$ to generate \n"
 	"a random num from a timer.\n",msg);
-  PopUpTimerOk(st,"\n\nThe $LK+PU,"Holy Spirit",A="FI:::/HSNotes.DD"$ can puppet you.\n\n");
+  PopUpTimerOk(st,"\n\nThe \dLK+PU,\"Holy Spirit\",A=\"FI:::/HSNotes.DD\"\d can puppet you.\n\n");
   Free(st);
   return KbdMsEvtTime>>GOD_BAD_BITS;
 }

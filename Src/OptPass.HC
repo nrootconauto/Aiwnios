@@ -355,6 +355,7 @@ U0 OptPassConstFold(CCmpCtrl *cc) {
     }
   }
 }
+#ifdef TARGET_AARCH64
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
 #define AIWNIOS_REG_FP ARM_REG_FP
@@ -367,6 +368,7 @@ U0 OptPassConstFold(CCmpCtrl *cc) {
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #define AIWNIOS_TMP_FREG_START 16
 #define AIWNIOS_TMP_FREG_CNT (31 - 16 + 1)
+#endif
 
 CRPN *CompSetFlags(CCmpCtrl *cc,CRPN *r) {
   CRPN *ret,*arg;

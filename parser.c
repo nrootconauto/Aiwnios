@@ -5,11 +5,11 @@
 #include <stdarg.h>
 CCodeCtrl* CodeCtrlPush(CCmpCtrl* ccmp)
 {
-  CCodeCtrl* cctrl = A_MALLOC(sizeof(CCodeCtrl), ccmp->hc);
-	cctrl->hc=ccmp->hc;
+	CCodeCtrl* cctrl = A_MALLOC(sizeof(CCodeCtrl), ccmp->hc);
+	cctrl->hc = ccmp->hc;
 	cctrl->next = ccmp->code_ctrl;
 	cctrl->ir_code = A_MALLOC(sizeof(CRPN), cctrl->hc);
-  ((CRPN*)cctrl->ir_code)->type=IC_NOP;
+	((CRPN*)cctrl->ir_code)->type = IC_NOP;
 	cctrl->code_misc = A_MALLOC(sizeof(CQue), cctrl->hc);
 	QueInit(cctrl->ir_code);
 	QueInit(cctrl->code_misc);
@@ -42,7 +42,7 @@ void CodeCtrlAppend(CCmpCtrl* ccmp, CCodeCtrl* ct)
 		ct->code_misc->last->next = next;
 		ct->code_misc->next->last = head;
 	}
-	//Transfer "ownership"  of the code-miscs and CRPN's
+	// Transfer "ownership"  of the code-miscs and CRPN's
 	QueInit(ct->code_misc);
 	QueInit(ct->ir_code);
 }
@@ -93,9 +93,9 @@ void CodeCtrlDel(CCodeCtrl* ctrl)
 			break;
 		case CMT_JMP_TAB:
 			A_FREE(misc->jmp_tab);
-    break;
-    case CMT_STATIC_DATA:
-      A_FREE(misc->str); 
+			break;
+		case CMT_STATIC_DATA:
+			A_FREE(misc->str);
 		}
 	}
 	QueDel(ctrl->ir_code);
@@ -120,25 +120,26 @@ void CodeCtrlPop(CCmpCtrl* ccmp)
 
 int64_t PrsKw(CCmpCtrl* ccmp, int64_t);
 int64_t PrsStmt(CCmpCtrl* ccmp);
-int64_t PrsIf(CCmpCtrl* ccmp); //YES
-int64_t PrsDo(CCmpCtrl* ccmp); //YES
-int64_t PrsWhile(CCmpCtrl* ccmp); //YES
-int64_t PrsFor(CCmpCtrl* ccmp); //YES
-int64_t PrsSwitch(CCmpCtrl* ccmp); //YES
+int64_t PrsIf(CCmpCtrl* ccmp); // YES
+int64_t PrsDo(CCmpCtrl* ccmp); // YES
+int64_t PrsWhile(CCmpCtrl* ccmp); // YES
+int64_t PrsFor(CCmpCtrl* ccmp); // YES
+int64_t PrsSwitch(CCmpCtrl* ccmp); // YES
 int64_t PrsScope(CCmpCtrl* ccmp);
 int64_t PrsLabel(CCmpCtrl* ccmp);
 int64_t PrsGoto(CCmpCtrl* ccmp);
 int64_t PrsReturn(CCmpCtrl* ccmp);
 int64_t ParseErr(CCmpCtrl* ctrl, char* fmt, ...);
-int64_t PrsTry(CCmpCtrl* cctrl); //YES
+int64_t PrsTry(CCmpCtrl* cctrl); // YES
 int64_t PrsDecl(CCmpCtrl* ccmp, CHashClass* base, CHashClass* add_to,
 	int64_t* is_func_decl, int64_t flags, char* import_name);
 int64_t PrsSwitch(CCmpCtrl* cctrl);
 CHashClass* PrsClass(CCmpCtrl* cctrl, int64_t flags);
 CMemberLst* MemberFind(char* needle, CHashClass* cls);
-CCmpCtrl* CmpCtrlDel(CCmpCtrl *d) {
-  HeapCtrlDel(d->hc);
-  A_FREE(d);
+CCmpCtrl* CmpCtrlDel(CCmpCtrl* d)
+{
+	HeapCtrlDel(d->hc);
+	A_FREE(d);
 }
 CCmpCtrl* CmpCtrlNew(CLexer* lex)
 {
@@ -146,7 +147,7 @@ CCmpCtrl* CmpCtrlNew(CLexer* lex)
 	CHashClass* cls;
 	CCmpCtrl* ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL);
 	ccmp->lex = lex;
-  ccmp->hc=HeapCtrlInit(NULL,Fs);
+	ccmp->hc = HeapCtrlInit(NULL, Fs);
 	struct {
 		char* name;
 		int64_t rt;
@@ -202,15 +203,15 @@ CRPN* ICFwd(CRPN* rpn)
 	CRPN* orig_rpn = rpn;
 	int64_t idx;
 	switch (rpn->type) {
-    break;
-  case __IC_STATICS_SIZE:
-  case __IC_SET_STATIC_DATA:
-  case __IC_STATIC_REF:
-    return rpn->base.next;
-    break;
-  case IC_SHORT_ADDR:
-  case IC_RELOC:
-    return rpn->base.next;
+		break;
+	case __IC_STATICS_SIZE:
+	case __IC_SET_STATIC_DATA:
+	case __IC_STATIC_REF:
+		return rpn->base.next;
+		break;
+	case IC_SHORT_ADDR:
+	case IC_RELOC:
+		return rpn->base.next;
 		break;
 	case IC_TO_F64:
 	case IC_TO_I64:
@@ -235,7 +236,7 @@ CRPN* ICFwd(CRPN* rpn)
 			rpn = ICFwd(rpn);
 		return rpn;
 		break;
-  case __IC_CALL:
+	case __IC_CALL:
 	case IC_CALL:
 		rpn = rpn->base.next;
 		// Args
@@ -456,7 +457,7 @@ static char* PrsString(CCmpCtrl* ccmp, int64_t* sz)
 	int64_t len = 0;
 	while (ccmp->lex->cur_tok == TK_STR) {
 		len += ccmp->lex->str_len;
-		tmp = A_MALLOC(len+1, NULL);
+		tmp = A_MALLOC(len + 1, NULL);
 		if (ret)
 			memcpy(tmp, ret, len - ccmp->lex->str_len);
 		A_FREE(ret);
@@ -466,7 +467,7 @@ static char* PrsString(CCmpCtrl* ccmp, int64_t* sz)
 		ret[len] = 0;
 	}
 	if (sz)
-		*sz = len+1;
+		*sz = len + 1;
 	return ret;
 }
 
@@ -546,23 +547,26 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 		printf("  ");
 	INDENT;
 	switch (rpn->type) {
-    break;case __IC_STATICS_SIZE:
-    printf("STATICS_SZ:%ld\n",rpn->integer);
-    goto ret;
-    break;case __IC_SET_STATIC_DATA:
-    printf("SET_STATIC_DATA:%ld(%ld)\n",rpn->code_misc->integer,rpn->code_misc->str_len);
-    goto ret;
-    break;case __IC_STATIC_REF:
-    printf("SET_STATIC_REF:(%ld)",rpn->integer);
-    DumpRPNType(rpn);
-    printf("\n");
-    goto ret;
-  case IC_SHORT_ADDR:
-    printf("SHORT_ADDR:%s\n", rpn->code_misc->str);
-    return ICFwd(rpn);
+		break;
+	case __IC_STATICS_SIZE:
+		printf("STATICS_SZ:%ld\n", rpn->integer);
+		goto ret;
+		break;
+	case __IC_SET_STATIC_DATA:
+		printf("SET_STATIC_DATA:%ld(%ld)\n", rpn->code_misc->integer, rpn->code_misc->str_len);
+		goto ret;
+		break;
+	case __IC_STATIC_REF:
+		printf("SET_STATIC_REF:(%ld)", rpn->integer);
+		DumpRPNType(rpn);
+		printf("\n");
+		goto ret;
+	case IC_SHORT_ADDR:
+		printf("SHORT_ADDR:%s\n", rpn->code_misc->str);
+		return ICFwd(rpn);
 	case IC_RELOC:
-    printf("RELOC:%s\n", rpn->code_misc->str);
-    return ICFwd(rpn);
+		printf("RELOC:%s\n", rpn->code_misc->str);
+		return ICFwd(rpn);
 	case __IC_VARGS:
 		printf("VARGS:%d\n", rpn->length);
 		rpn = rpn->base.next;
@@ -624,7 +628,7 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 		printf("SWITCH()\n");
 		goto swit;
 		break;
-  case __IC_CALL:  
+	case __IC_CALL:
 	case IC_CALL:
 		rpn = rpn->base.next;
 		printf("CALL");
@@ -1129,7 +1133,7 @@ next:
 			Lex(ccmp->lex);
 			if (binop_before) {
 				// Unary
-				binop_before = 1; //Like a binop as it consumes the right item
+				binop_before = 1; // Like a binop as it consumes the right item
 				prec = 0;
 				type = IC_NEG;
 			} else {
@@ -1148,7 +1152,7 @@ next:
 			Lex(ccmp->lex);
 			if (binop_before) {
 				// Unary
-				binop_before = 1; //Consumes like a binop
+				binop_before = 1; // Consumes like a binop
 				prec = 0;
 				type = IC_DEREF;
 			} else {
@@ -1161,7 +1165,7 @@ next:
 			Lex(ccmp->lex);
 			if (binop_before) {
 				// Unary
-				binop_before = 1; //Consumes next thing like a binop
+				binop_before = 1; // Consumes next thing like a binop
 				prec = 0;
 				type = IC_ADDR_OF;
 			} else {
@@ -1204,13 +1208,13 @@ next:
 			Lex(ccmp->lex);
 			prec = 1;
 			type = IC_BNOT;
-			binop_before = 1; //Acts like a binop as it consumes the right side
+			binop_before = 1; // Acts like a binop as it consumes the right side
 			break;
 		case '!':
 			Lex(ccmp->lex);
 			prec = 2;
 			type = IC_LNOT;
-			binop_before = 1; //Acts like a binop as it consumes the right side
+			binop_before = 1; // Acts like a binop as it consumes the right side
 			break;
 		case '(':
 			Lex(ccmp->lex);
@@ -1221,7 +1225,7 @@ next:
 				if (ccmp->lex->cur_tok == TK_NAME) {
 					if (tc_class = HashFind(ccmp->lex->string, Fs->hash_table, HTT_CLASS, 1)) {
 						//
-						//If our previous item is an uncalled function (we assumed we call functions when a '(' comes after),
+						// If our previous item is an uncalled function (we assumed we call functions when a '(' comes after),
 						// we will now call it. IT makes no  sense to typecast a function
 						//
 						// I64 Foo() {}
@@ -1237,7 +1241,7 @@ next:
 						}
 
 						//
-						//See ghost ahead
+						// See ghost ahead
 						//
 						ic2 = ccmp->code_ctrl->ir_code->next;
 						//
@@ -1264,12 +1268,12 @@ next:
 						// |  \___/ | <===_______/
 						// |        |
 						// \/\/\/\/\/
-						//if we have function,make an implicit function call and typecast
+						// if we have function,make an implicit function call and typecast
 						// the result
 						if (ic2->type == IC_GLOBAL) {
-							//If IC_ADDR_OF comes before,dont do an implicit call
+							// If IC_ADDR_OF comes before,dont do an implicit call
 							if (ic_stk[stk_ptr - 1] == IC_ADDR_OF) {
-								//Do nothing
+								// Do nothing
 								if (ic2->global_var->base.type & HTF_EXTERN)
 									ParseErr(ccmp, "Can't address of extern symbol");
 							} else if (ic2->global_var->base.type & HTT_FUN) {
@@ -1340,7 +1344,7 @@ next:
 			prec = -1;
 			type = IC_ARRAY_ACC;
 			Lex(ccmp->lex);
-			binop_before = 1; //Acts like a binop as it consumes the right side
+			binop_before = 1; // Acts like a binop as it consumes the right side
 			break;
 		case ']':
 			binop_before = 0;
@@ -1418,11 +1422,11 @@ next:
 					ic->type = IC_GLOBAL;
 					ic->global_var = global_var;
 					if (ccmp->lex->cur_tok != '(') {
-						//If IC_ADDR_OF comes before,dont do an implicit call
-						if (ic_stk[stk_ptr - 1] == IC_ADDR_OF) {
-							//Do nothing
+						// If IC_ADDR_OF comes before,dont do an implicit call
+						if (stk_ptr&&ic_stk[stk_ptr - 1] == IC_ADDR_OF) {
+							// Do nothing
 							if (ic->global_var->base.type & HTF_EXTERN)
-								ParseErr(ccmp, "Can't address of extern symbol");
+								ParseWarn(ccmp, "Can't address of extern symbol");
 						} else if (ic->global_var->base.type & HTT_FUN) {
 							QueIns(ic, ccmp->code_ctrl->ir_code);
 							ic2 = ic;
@@ -1875,8 +1879,8 @@ not_label:
 			Lex(ccmp->lex);
 		} else if (!(cls = PrsClass(ccmp, flags)))
 			ParseErr(ccmp, "Expected a type name.");
-		else { //cls was declared if we reach here
-			//Don't whine about class declaration without variable declared also
+		else { // cls was declared if we reach here
+			// Don't whine about class declaration without variable declared also
 			if (ccmp->lex->cur_tok == ';') {
 				Lex(ccmp->lex);
 				return 1;
@@ -2066,13 +2070,13 @@ int64_t PrsI64(CCmpCtrl* ccmp)
 	ir_code = A_CALLOC(sizeof(CRPN), NULL);
 	ir_code->type = IC_RET;
 	QueIns(ir_code, ccmp->code_ctrl->ir_code);
-	binf = bin = Compile(ccmp,NULL,NULL);
+	binf = bin = Compile(ccmp, NULL, NULL);
 	if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
 		res = (*bin)();
 	else
 		res = (*binf)();
 	CodeCtrlPop(ccmp);
-	ccmp->cur_fun = fun; //Restore
+	ccmp->cur_fun = fun; // Restore
 	return res;
 }
 
@@ -2089,13 +2093,13 @@ double PrsF64(CCmpCtrl* ccmp)
 	ir_code = A_CALLOC(sizeof(CRPN), NULL);
 	ir_code->type = IC_RET;
 	QueIns(ir_code, ccmp->code_ctrl->ir_code);
-	binf = bin = Compile(ccmp,NULL,NULL);
+	binf = bin = Compile(ccmp, NULL, NULL);
 	if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
 		res = (*bin)();
 	else
 		res = (*binf)();
 	CodeCtrlPop(ccmp);
-  ccmp->cur_fun=fun;
+	ccmp->cur_fun = fun;
 	return res;
 }
 
@@ -2167,6 +2171,7 @@ int64_t PrsFunArgs(CCmpCtrl* ccmp, CHashFun* fun)
 		} else if (ccmp->lex->cur_tok == TK_DOT_DOT_DOT) {
 			fun->base.flags |= CLSF_VARGS;
 			bungis = A_CALLOC(sizeof(CMemberLst), NULL);
+			bungis->dim.total_cnt=1; //MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
 			bungis->reg = REG_MAYBE;
 			bungis->member_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
 			assert(bungis->member_class);
@@ -2179,6 +2184,7 @@ int64_t PrsFunArgs(CCmpCtrl* ccmp, CHashFun* fun)
 			bungis->member_class++;
 			bungis->str = A_STRDUP("argv", NULL);
 			MemberAdd(ccmp, bungis, fun);
+			bungis->dim.total_cnt=1; //MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
 			Lex(ccmp->lex);
 			fun->argc += 2;
 			if (ccmp->lex->cur_tok == ')') {
@@ -2300,8 +2306,8 @@ char* PrsArray(CCmpCtrl* ccmp, CHashClass* base, CArrayDim* dim, char* write_to)
 			write_to = PrsArray(ccmp, base, dim->next, write_to);
 			if (ccmp->lex->cur_tok != ',') {
 				if (i + 1 == cap) {
-					//I64 arr[3]={1,2,3,};
-					//All is good,not expecting other item
+					// I64 arr[3]={1,2,3,};
+					// All is good,not expecting other item
 				} else
 					ParseErr(ccmp, "Expected another array element.");
 			} else
@@ -2312,8 +2318,8 @@ char* PrsArray(CCmpCtrl* ccmp, CHashClass* base, CArrayDim* dim, char* write_to)
 			PrsArray(ccmp, cur_mem->member_class, cur_mem->dim.next, write_to + cur_mem->off);
 			if (ccmp->lex->cur_tok != ',') {
 				if (!cur_mem->next) {
-					//class {I64 a,b,c;}={1,2,3,};
-					//All is good,not expecting other item
+					// class {I64 a,b,c;}={1,2,3,};
+					// All is good,not expecting other item
 				} else
 					ParseErr(ccmp, "Expected another member element.");
 			} else
@@ -2409,7 +2415,7 @@ int64_t PrsDecl(CCmpCtrl* ccmp, CHashClass* base, CHashClass* add_to,
 		// filled in later
 		//
 		ccmp->cur_fun->base.base.type |= HTF_EXTERN;
-		ccmp->cur_fun->fun_ptr = Compile(ccmp,NULL,NULL);
+		ccmp->cur_fun->fun_ptr = Compile(ccmp, NULL, NULL);
 		ccmp->cur_fun->base.base.type &= ~HTF_EXTERN;
 		if (ccmp->cur_fun->base.base.str)
 			SysSymImportsResolve(ccmp->cur_fun->base.base.str, 0);
@@ -2444,7 +2450,7 @@ int64_t PrsDecl(CCmpCtrl* ccmp, CHashClass* base, CHashClass* add_to,
 				case RT_U64i:
 				case RT_I64i:
 				case RT_PTR:
-				case RT_FUNC: //func ptr
+				case RT_FUNC: // func ptr
 					tmpi = lst->dft_val = PrsI64(ccmp);
 					if (flags & PRSF_STATIC) {
 						lst->static_bytes = A_MALLOC(8, NULL);
@@ -2463,7 +2469,7 @@ int64_t PrsDecl(CCmpCtrl* ccmp, CHashClass* base, CHashClass* add_to,
 						goto static_array;
 				}
 			} else {
-			static_array: //Also applies to classes
+			static_array: // Also applies to classes
 				lst->static_bytes = A_CALLOC(lst->dim.total_cnt * lst->member_class->sz, NULL);
 				PrsArray(ccmp, lst->member_class, lst->dim.next, lst->static_bytes);
 			}
@@ -2551,7 +2557,7 @@ int64_t PrsWhile(CCmpCtrl* ccmp)
 	CRPN* ic;
 	CCodeMisc *old_break_to, *break_to, *enter_label;
 	if (PrsKw(ccmp, TK_KW_WHILE)) {
-		old_break_to = ccmp->code_ctrl->break_to; //Restored
+		old_break_to = ccmp->code_ctrl->break_to; // Restored
 		break_to = ccmp->code_ctrl->break_to = CodeMiscNew(ccmp, CMT_LABEL);
 		enter_label = CodeMiscNew(ccmp, CMT_LABEL);
 		ic = A_CALLOC(sizeof(CRPN), NULL);
@@ -2596,7 +2602,7 @@ int64_t PrsDo(CCmpCtrl* ccmp)
 	CCodeMisc *old_break_to, *enter_label;
 	if (PrsKw(ccmp, TK_KW_DO)) {
 		enter_label = CodeMiscNew(ccmp, CMT_LABEL);
-		old_break_to = ccmp->code_ctrl->break_to; //Restored
+		old_break_to = ccmp->code_ctrl->break_to; // Restored
 		ic = A_CALLOC(sizeof(CRPN), NULL);
 		ic->type = IC_LABEL;
 		ic->code_misc = enter_label;
@@ -2645,7 +2651,7 @@ int64_t PrsFor(CCmpCtrl* ccmp)
 			ParseErr(ccmp, "Expected a '('.");
 		Lex(ccmp->lex);
 		if (!ParseExpr(ccmp, 0)) {
-			//Do nothing
+			// Do nothing
 		}
 		if (ccmp->lex->cur_tok != ';')
 			ParseErr(ccmp, "Expected a ';'.");
@@ -2753,11 +2759,11 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 	if (rpn->raw_type)
 		return rpn->raw_type;
 	switch (rpn->type) {
-    break;
-  case IC_SHORT_ADDR:
-  case IC_RELOC:
-    rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
-    rpn->ic_class++;
+		break;
+	case IC_SHORT_ADDR:
+	case IC_RELOC:
+		rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
+		rpn->ic_class++;
 		return rpn->raw_type = RT_PTR;
 		break;
 	case __IC_VARGS:
@@ -2775,14 +2781,14 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 	case IC_TYPECAST:
 		return rpn->raw_type = rpn->ic_class->raw_type;
 		break;
-  case __IC_CALL:
-    rpn = orig_rpn->base.next;
-		for (arg = 0; arg != orig_rpn->length+1; arg++) {
+	case __IC_CALL:
+		rpn = orig_rpn->base.next;
+		for (arg = 0; arg != orig_rpn->length + 1; arg++) {
 			if (rpn->type != IC_NOP)
 				AssignRawTypeToNode(ccmp, rpn);
 			rpn = ICFwd(rpn);
 		}
-    return rpn->raw_type=rpn->ic_class;
+		return rpn->raw_type = rpn->ic_class;
 	case IC_CALL:
 		rpn = orig_rpn->base.next;
 		for (arg = 0; arg != orig_rpn->length; arg++) {
@@ -2906,7 +2912,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			// Promote to I64i
 			a = RT_I64i;
 		}
-    rpn->raw_type = (a > b) ? a : b;
+		rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_EQ:
@@ -2926,7 +2932,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			// Promote to I64i
 			a = RT_I64i;
 		}
-    rpn->raw_type = (a > b) ? a : b;
+		rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_DIV:
@@ -2937,7 +2943,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			// Promote to I64i
 			a = RT_I64i;
 		}
-    rpn->raw_type = (a > b) ? a : b;
+		rpn->raw_type = (a > b) ? a : b;
 		goto ret;
 		break;
 	case IC_MUL:
@@ -3160,11 +3166,11 @@ ret:
 	case RT_F64:
 		name = "F64";
 		break;
-  case RT_PTR:
-    if(rpn->ic_class)
-      return rpn->raw_type;
-    else
-      name="U8i";
+	case RT_PTR:
+		if (rpn->ic_class)
+			return rpn->raw_type;
+		else
+			name = "U8i";
 		break;
 	default:
 		return 0;
@@ -3219,6 +3225,24 @@ static void PrsMembers(CCmpCtrl* cctrl, CHashClass* bungis, int64_t flags,
 				do {
 					Lex(cctrl->lex);
 					PrsDecl(cctrl, base_class, bungis, &is_func, PRSF_CLASS, NULL);
+next_meta:
+					if(cctrl->lex->cur_tok==TK_NAME) {
+						//Nroot will parse the meta data but do nothing with it
+						switch(Lex(cctrl->lex)) {
+							case TK_STR:
+							while(Lex(cctrl->lex)==TK_STR)
+								;
+							if(cctrl->lex->cur_tok==',') break;
+							else goto next_meta;
+							case TK_I64:
+							case TK_CHR:
+							
+							Lex(cctrl->lex);
+							if(cctrl->lex->cur_tok==',') break;
+							else goto next_meta;
+							break;default: ParseErr(cctrl,"Unexpected meta-data!!!");
+						}
+					}
 				} while (cctrl->lex->cur_tok == ',');
 				if (last_m)
 					last_m = last_m->next;
@@ -3263,7 +3287,7 @@ CHashClass* PrsClass(CCmpCtrl* cctrl, int64_t _flags)
 	if (cctrl->lex->cur_tok == TK_NAME) {
 		if (bungis = HashSingleTableFind(cctrl->lex->string, Fs->hash_table, HTT_CLASS, 1)) {
 			if (bungis->base.type & HTF_EXTERN) {
-				//We can fill in the extern class
+				// We can fill in the extern class
 			} else {
 				bungis = NULL;
 			}
@@ -3296,7 +3320,7 @@ CHashClass* PrsClass(CCmpCtrl* cctrl, int64_t _flags)
 		Lex(cctrl->lex);
 	}
 	if (bungis && add)
-		if (bungis->base.str && !bungis->base.next) //If we dont have  a next item in the chain,I would suppose we arent in a hashtable
+		if (bungis->base.str && !bungis->base.next) // If we dont have  a next item in the chain,I would suppose we arent in a hashtable
 			HashAdd(bungis, Fs->hash_table);
 	PrsMembers(cctrl, bungis, flags, &off); // This consumes '{'
 	// Compute size
@@ -3334,7 +3358,7 @@ int64_t PrsReturn(CCmpCtrl* ccmp)
 		return 1;
 	}
 	ParseExpr(ccmp, 0);
-	if ((ccmp->cur_fun->return_class->raw_type == RT_F64) //Check if they are not the same
+	if ((ccmp->cur_fun->return_class->raw_type == RT_F64) // Check if they are not the same
 		^ (AssignRawTypeToNode(ccmp, ccmp->code_ctrl->ir_code->next) == RT_F64)) {
 		if (ccmp->cur_fun->return_class->raw_type == RT_F64) {
 			ic = A_CALLOC(sizeof(CRPN), 0);
@@ -3630,7 +3654,7 @@ void PrsBindCSymbol(char* name, void* ptr)
 {
 	CHashFun* fun;
 	CHashGlblVar* glbl;
-  CHashExport *exp;
+	CHashExport* exp;
 	if (fun = glbl = HashFind(name, Fs->hash_table, HTT_FUN | HTT_GLBL_VAR, 1)) {
 		if (glbl->base.type & HTT_GLBL_VAR) {
 			glbl->base.type &= ~HTF_EXTERN;
@@ -3641,15 +3665,14 @@ void PrsBindCSymbol(char* name, void* ptr)
 		}
 		SysSymImportsResolve(name, 0);
 	}
-  if(!HashFind(name,Fs->hash_table,HTT_EXPORT_SYS_SYM,1)) {
-    //Here's the deal,for Load(in arm_loader.c),we can use HTT_EXPORT_SYS_SYM
-    exp=A_CALLOC(sizeof(CHashExport),NULL);
-    exp->base.str=A_STRDUP(name,NULL);
-    exp->base.type=HTT_EXPORT_SYS_SYM;
-    exp->val=ptr;
-    HashAdd(exp,Fs->hash_table);
-  }
-  
+	if (!HashFind(name, Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+		// Here's the deal,for Load(in arm_loader.c),we can use HTT_EXPORT_SYS_SYM
+		exp = A_CALLOC(sizeof(CHashExport), NULL);
+		exp->base.str = A_STRDUP(name, NULL);
+		exp->base.type = HTT_EXPORT_SYS_SYM;
+		exp->val = ptr;
+		HashAdd(exp, Fs->hash_table);
+	}
 }
 int64_t PrsTry(CCmpCtrl* cctrl)
 {
@@ -3678,7 +3701,7 @@ int64_t PrsTry(CCmpCtrl* cctrl)
 	rpn->type = IC_GOTO_IF;
 	rpn->code_misc = catch_misc;
 	QueIns(rpn, cctrl->code_ctrl->ir_code);
-	//See below note
+	// See below note
 	PrsStmt(cctrl);
 	// We will call SysUntry if we succesful got through the try block
 	rpn = A_CALLOC(sizeof(CRPN), NULL);
@@ -3695,14 +3718,14 @@ int64_t PrsTry(CCmpCtrl* cctrl)
 	//
 	if (!PrsKw(cctrl, TK_KW_CATCH))
 		ParseErr(cctrl, "Expected 'catch'.");
-	//Catch label is here
+	// Catch label is here
 	rpn = A_CALLOC(sizeof(CRPN), NULL);
 	rpn->type = IC_LABEL;
 	rpn->code_misc = catch_misc;
 	QueIns(rpn, cctrl->code_ctrl->ir_code);
-	//Our catch block
+	// Our catch block
 	PrsStmt(cctrl);
-	//Call EndCatch
+	// Call EndCatch
 	rpn = A_CALLOC(sizeof(CRPN), NULL);
 	rpn->type = IC_GLOBAL;
 	rpn->global_var = HashFind("EndCatch", Fs->hash_table, HTT_FUN, 1);
@@ -3710,7 +3733,7 @@ int64_t PrsTry(CCmpCtrl* cctrl)
 	rpn = A_CALLOC(sizeof(CRPN), NULL);
 	rpn->type = IC_CALL;
 	QueIns(rpn, cctrl->code_ctrl->ir_code);
-	//Exit label is here
+	// Exit label is here
 	rpn = A_CALLOC(sizeof(CRPN), NULL);
 	rpn->type = IC_LABEL;
 	rpn->code_misc = exit_misc;
@@ -3814,13 +3837,13 @@ void PrsTests()
 //
 // Nroot here,im about to make bindings for the IR stuff
 //
-#define HC_IC_BINDING(name, op)                  \
-	CRPN* __##name(CCodeCtrl* cc) \
-	{                                            \
-		CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);  \
-		rpn->type = op;                          \
-		QueIns(rpn, cc->ir_code);                \
-		return rpn;                              \
+#define HC_IC_BINDING(name, op)                     \
+	CRPN* __##name(CCodeCtrl* cc)                   \
+	{                                               \
+		CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc); \
+		rpn->type = op;                             \
+		QueIns(rpn, cc->ir_code);                   \
+		return rpn;                                 \
 	}
 HC_IC_BINDING(HC_ICAdd_Pow, IC_POW);
 HC_IC_BINDING(HC_ICAdd_Eq, IC_EQ);
@@ -3926,12 +3949,12 @@ CRPN* __HC_ICAdd_F64(CCodeCtrl* cc, double f)
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN* __HC_ICAdd_Switch(CCodeCtrl* cc, CCodeMisc* misc,CCodeMisc* dft)
+CRPN* __HC_ICAdd_Switch(CCodeCtrl* cc, CCodeMisc* misc, CCodeMisc* dft)
 {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_BOUNDED_SWITCH;
 	rpn->code_misc = misc;
-  rpn->code_misc->dft_lab=dft;
+	rpn->code_misc->dft_lab = dft;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
@@ -4000,29 +4023,32 @@ static CHashClass* rt2cls(int64_t rt, int64_t ptr_cnt)
 		break;
 	case 14:
 		ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
-    break;
-  default:
+		break;
+	default:
 		ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
 	}
 	return ic_class + ptr_cnt;
 }
-CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc,CCodeCtrl* cc,char *name,char **ptr) {
+CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, char** ptr)
+{
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SHORT_ADDR;
-	rpn->code_misc=CodeMiscNew(acc,CMT_SHORT_ADDR);
-  rpn->code_misc->str=A_STRDUP(name,acc->hc);
-  rpn->code_misc->patch_addr=ptr;
-  rpn->ic_class=HashFind("U8i",Fs->hash_table,HTT_CLASS,1);
-  rpn->ic_class++;
-  rpn->raw_type=RT_PTR;
+	rpn->code_misc = CodeMiscNew(acc, CMT_SHORT_ADDR);
+	rpn->code_misc->str = A_STRDUP(name, acc->hc);
+	rpn->code_misc->patch_addr = ptr;
+	*rpn->code_misc->patch_addr=INVALID_PTR;
+	rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
+	rpn->ic_class++;
+	rpn->raw_type = RT_PTR;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
-CRPN *__HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt) {
+CRPN* __HC_ICAdd_Deref(CCodeCtrl* cc, int64_t rt, int64_t ptr_cnt)
+{
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_DEREF;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
-  rpn->raw_type=rpn->ic_class->raw_type;
+	rpn->raw_type = rpn->ic_class->raw_type;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
@@ -4033,7 +4059,7 @@ CRPN* __HC_ICAdd_Call(CCodeCtrl* cc, int64_t arity, int64_t rt, int64_t ptr_cnt)
 	rpn->type = __IC_CALL;
 	rpn->length = arity;
 	rpn->ic_class = rt2cls(rt, ptr_cnt);
-  rpn->raw_type=rpn->ic_class->raw_type;
+	rpn->raw_type = rpn->ic_class->raw_type;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
@@ -4042,7 +4068,7 @@ CRPN* __HC_ICAdd_FReg(CCodeCtrl* cc, int64_t r)
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_FREG;
 	rpn->integer = r;
-	rpn->ic_class = HashFind("F64",Fs->hash_table,HTT_CLASS,1);
+	rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
 	rpn->raw_type = RT_F64;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
@@ -4096,9 +4122,9 @@ CCodeCtrl* __HC_CodeCtrlPop(CCmpCtrl* ccmp)
 {
 	CodeCtrlPop(ccmp);
 }
-char* __HC_Compile(CCmpCtrl* ccmp,int64_t *sz,char **dbg_info)
+char* __HC_Compile(CCmpCtrl* ccmp, int64_t* sz, char** dbg_info)
 {
-	return Compile(ccmp,sz,dbg_info);
+	return Compile(ccmp, sz, dbg_info);
 }
 CCodeMisc* __HC_CodeMiscLabelNew(CCmpCtrl* ccmp)
 {
@@ -4117,7 +4143,7 @@ CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, int64_t l
 	CCodeMisc* misc = CodeMiscNew(ccmp, CMT_JMP_TAB);
 	misc->jmp_tab = A_MALLOC((hi - lo) * sizeof(CCodeMisc*), NULL);
 	memcpy(misc->jmp_tab, labels, (hi - lo) * sizeof(CCodeMisc*));
-	misc->hi = hi-1;
+	misc->hi = hi - 1;
 	misc->lo = lo;
 	return misc;
 }
@@ -4126,7 +4152,7 @@ CRPN* __HC_ICAdd_Label(CCodeCtrl* cc, CCodeMisc* misc)
 {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_NOP;
-	//Label must consume something
+	// Label must consume something
 	QueIns(rpn, cc->ir_code);
 	rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_LABEL;
@@ -4184,63 +4210,70 @@ CCodeMisc* AddRelocMisc(CCmpCtrl* cctrl, char* name)
 	reloc->str = A_STRDUP(name, cctrl->hc);
 	return reloc;
 }
-void __HC_ICSetLine(CRPN *r,int64_t ln) {
-  r->ic_line=ln;
+void __HC_ICSetLine(CRPN* r, int64_t ln)
+{
+	r->ic_line = ln;
 }
 
-
-CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc,CCodeCtrl* cc, int64_t *pat_addr,char *sym,int64_t rt,int64_t ptrs) {
+CRPN* __HC_ICAdd_Reloc(CCmpCtrl* cmpc, CCodeCtrl* cc, int64_t* pat_addr, char* sym, int64_t rt, int64_t ptrs)
+{
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_RELOC;
-  rpn->ic_class=rt2cls(rt,ptrs);
-  rpn->code_misc=AddRelocMisc(cmpc,sym);
-  rpn->code_misc->patch_addr=pat_addr;
+	rpn->ic_class = rt2cls(rt, ptrs);
+	rpn->code_misc = AddRelocMisc(cmpc, sym);
+	rpn->code_misc->patch_addr = pat_addr;
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
 
-//Sets how many bytes before function start a symbol starts at
-//Symbol    <=====RIP-off
-//some...code
-//Fun Start <==== RIP
-void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off) {
-  r->code_misc->aot_before_hint=off;
+// Sets how many bytes before function start a symbol starts at
+// Symbol    <=====RIP-off
+// some...code
+// Fun Start <==== RIP
+void __HC_SetAOTRelocBeforeRIP(CRPN* r, int64_t off)
+{
+	r->code_misc->aot_before_hint = off;
 }
 
-void __HC_CodeMiscIsUsed(CCodeMisc *cm) {
-  return cm->use_cnt!=0;
+void __HC_CodeMiscIsUsed(CCodeMisc* cm)
+{
+	return cm->use_cnt != 0;
 }
 
-CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64_t len) {
-  CCodeMisc *misc=CodeMiscNew(cmp,CMT_STATIC_DATA);
-  misc->integer=at;
-  misc->str_len=len;
-  memcpy(misc->str=A_MALLOC(len,cmp->hc),d,len);
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
-  rpn->type=__IC_SET_STATIC_DATA;
-  rpn->code_misc=misc;
-  QueIns(rpn,cc->ir_code);
-  return rpn;
+CRPN* __HC_ICAdd_StaticData(CCmpCtrl* cmp, CCodeCtrl* cc, int64_t at, char* d, int64_t len)
+{
+	CCodeMisc* misc = CodeMiscNew(cmp, CMT_STATIC_DATA);
+	misc->integer = at;
+	misc->str_len = len;
+	memcpy(misc->str = A_MALLOC(len, cmp->hc), d, len);
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = __IC_SET_STATIC_DATA;
+	rpn->code_misc = misc;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
 }
 
-CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len) {
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
-  rpn->type=__IC_STATICS_SIZE;
-  rpn->integer=len;
-  QueIns(rpn,cc->ir_code);
-  return rpn;
+CRPN* __HC_ICAdd_SetStaticsSize(CCodeCtrl* cc, int64_t len)
+{
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = __IC_STATICS_SIZE;
+	rpn->integer = len;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
 }
 
-CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs) {
-  CRPN *rpn=A_CALLOC(sizeof(CRPN),cc->hc);
-  rpn->type=__IC_STATIC_REF;
-  rpn->integer=off;
-  rpn->ic_class=rt2cls(rt,ptrs);
-  rpn->raw_type=rpn->ic_class->raw_type;
-  QueIns(rpn,cc->ir_code);
-  return rpn;
+CRPN* __HC_ICAdd_StaticRef(CCodeCtrl* cc, int64_t off, int64_t rt, int64_t ptrs)
+{
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = __IC_STATIC_REF;
+	rpn->integer = off;
+	rpn->ic_class = rt2cls(rt, ptrs);
+	rpn->raw_type = rpn->ic_class->raw_type;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
 }
 
-void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
-  cc->flags|=CCF_AOT_COMPILE;
-} 
+void __HC_CmpCtrl_SetAOT(CCmpCtrl* cc)
+{
+	cc->flags |= CCF_AOT_COMPILE;
+}

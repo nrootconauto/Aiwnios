@@ -9,15 +9,15 @@ case IC_NOP2:
 break;
 case IC_LABEL:
 break;
-case IC_CALL_START: //NOT used by AIWNIOS
+case IC_CALL_START: // NOT used by AIWNIOS
 break;
-case IC_CALL_END: //NOT used by AIWNIOS
+case IC_CALL_END: // NOT used by AIWNIOS
 break;
-case IC_CALL_END2: //NOT used by AIWNIOS
+case IC_CALL_END2: // NOT used by AIWNIOS
 break;
-case IC_RETURN_VAL: //NOT used by AIWNIOS
+case IC_RETURN_VAL: // NOT used by AIWNIOS
 break;
-case IC_RETURN_VAL2: //NOT used by AIWNIOS
+case IC_RETURN_VAL2: // NOT used by AIWNIOS
 break;
 case IC_IMM_I64:
 break;

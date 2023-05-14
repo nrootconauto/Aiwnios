@@ -239,7 +239,7 @@ to avoid this.
   }
   _dst=&dst;
   while (ch = *fmt++) {
-    if (ch=='%') {      
+    if (ch=='%') {     
       flags=0;
       if (*fmt=='-') {
 	flags|=PRTF_LEFT_JUSTIFY;
@@ -665,6 +665,8 @@ sp_out_e:
 	    if (flags&PRTF_NEG_E)
 	      tmp_buf[k++]='-';
 	    tmp_buf[k++]='e';
+	    DbgPutS(tmp_buf);
+	    DbgPutS("\n");
 	    dec_len=len-k-2;
 	    if (flags&PRTF_NEG)
 	      dec_len--;
@@ -676,7 +678,7 @@ sp_out_e:
 		n=n0-1;
 		k=k0;
 	      } else if (d1>=10) {
-		d/=10;
+	    d/=10;
 		n=n0+1;
 		k=k0;
 	      } else
@@ -684,7 +686,6 @@ sp_out_e:
 	    } else
 	      break;
 	  }
-
 	  goto sp_out_f;
 	case 'g':
 	  if (!len) len=12;
@@ -793,7 +794,7 @@ sp_out_eng: //Engineering notation
 	case 'X':
     if (cur_arg>=argc)
 	    throw('StrPrint');
-    m=argv[cur_arg++];
+        m=argv[cur_arg++];
 	  if (flags&PRTF_COMMA) {
 	    comma_fmt_cnt=comma_cnt=4;
 	    do {

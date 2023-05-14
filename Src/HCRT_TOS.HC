@@ -8,4 +8,6 @@ I64i Main() {
   return 123+Poogle;
 }
 */
+#define IMPORT_AIWNIOS_SYMS 1
+#define COMPONET_GR 1
 #include "FULL_PACKAGE.HC";;

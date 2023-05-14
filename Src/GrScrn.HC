@@ -72,7 +72,6 @@ U0 GrUpdateTasks()
       if (!TaskValidate(task)) 
         break;
       task=task->next_task;
-      Print("task",task);
     } while (task!=task1);
 
     for (i=0;i<mp_cnt;i++) { //Loop through all cores.
