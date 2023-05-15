@@ -1,0 +1,52 @@
+# Welcome to the shitty-est codegen on earth Motherfucker.
+
+This `X86-64` is a peice of shit code generator for this compiler.
+At the core of this backend is is `CICArg`s. They contain information about 
+what an `CRPN` is going to do. What is a fucking `CRPN`,ill explain below:
+
+## What the Fuck is a `CRPN`
+
+A `CRPN` means **R**everse **P**olish **N**otation. If you are too lazy to read
+this look at this pretty picture
+
+![rpn.jpg]
+
+Basically the `CRPN` is a linked list of stack items. These motherfuckers each
+take a fixed length of arguments,so constructing a "tree" is pretty easy.
+
+`(1 +a 2)+(2+4)` would look like this in `CRPN`:
+
+```
+                 ((1+2)+(2+4))
+(1+2)     (2+4)   |
+1 2 +     2 4 +   +
+```
+As you can see the operators come after the operands. They `CRPN`s are not
+stored as a tree but a list. Let's continue to the intricaices of the `CICArg`s
+
+## `CICArg`s and Shit
+Im going to cut the the chase,im assuming you know stuff about assembly. All of the 
+`CICArg.mode`s are basically addressing modes. These are stored in the `CRPN.res` member.
+The arguments are stored in the `ICArgN(rpn,n)->res` member of a `CRPN`.
+**ICArgN TAKES REVERSE POLISH NOTATION SO THE LAST ARGUMENT IS THE "FIRST"**
+
+Luckily for you,a function called `PushTmpDepthFirst`. The reason this is called
+`PushTmpDepthFirst` is becuase of the stack like nature of the `CRPN`s. This function keeps a 
+"virtual" stack that is translated into registers and stack addresses
+
+This works in a **DEPTH FIRST** manner so that the leaves on the "tree" get the registers
+(There are a lot more leaves on the tree than registers)
+
+Internally used by  `PushTmpDepthFirst` are `PushTmp` and `PushSpilledTmp`.
+ - `PushTmp` will automatically push registers or if none are avialbe,it will spill to the stack frame
+ - `PushSpilledTmp` will spill the value to the stack always,even if registers are avaible(sometimes function calls will destroy registers)
+
+There are pesky things about some of the `CRPN`s that may get in the,such as function calls spilling the temporary registers
+You can check if a RPN spills temporary registers with `SpillsTmpRegs`. And you can trigger spilling with
+`PushTmpDepthFirst(CCmpCtrl *,CRPN *,spill_regs,unused)`(argument 3).
+
+Always const the `__OptPassFinal` implementation of the `IC_xxx` as the canonical way to
+assign ICArgs
+
+### `CICArg`  RULES
+**FUCKING READ THIS SECTION IF ANYTHING**. During `__OptPassFinal`. Sometimes you need to assign
