@@ -1706,7 +1706,7 @@ int64_t ParseWarn(CCmpCtrl* ctrl, char* fmt, ...)
 	char buf[STR_LEN];
 	vsprintf(buf, fmt, lst);
 	va_end(lst);
-	fprintf(stderr, "WARN:%s:%d:%d %s\n", ctrl->lex->file->filename,
+	fprintf(AIWNIOS_OSTREAM, "WARN:%s:%d:%d %s\n", ctrl->lex->file->filename,
 		ctrl->lex->file->ln + 1, ctrl->lex->file->col + 1, buf);
 }
 
@@ -1717,7 +1717,7 @@ int64_t ParseErr(CCmpCtrl* ctrl, char* fmt, ...)
 	char buf[STR_LEN];
 	vsprintf(buf, fmt, lst);
 	va_end(lst);
-	fprintf(stderr, "ERR:%s:%d:%d %s\n", ctrl->lex->file->filename,
+	fprintf(AIWNIOS_OSTREAM, "ERR:%s:%d:%d %s\n", ctrl->lex->file->filename,
 		ctrl->lex->file->ln + 1, ctrl->lex->file->col + 1, buf);
 	throw(*(int64_t*)"Prs\0\0\0\0\0");
 }
@@ -2998,7 +2998,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 			rpn->ic_class++;
 		}
 		rpn->ic_fun = ((CRPN*)rpn->base.next)->ic_fun;
-		return rpn->raw_type = rpn->ic_class->raw_type;
+		return rpn->raw_type = RT_PTR;
 		break;
 	case IC_XOR:
 		goto binop;

@@ -30,13 +30,7 @@ static void _DrawWindowNew()
 	screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
 	SDL_SetWindowMinimumSize(window, 640, 480);
 	SDL_ShowCursor(SDL_DISABLE);
-	rends = SDL_GetNumRenderDrivers();
-	while (--rends >= 0) {
-		SDL_GetRenderDriverInfo(rends, &info);
-		if (info.flags & SDL_RENDERER_ACCELERATED)
-			break;
-	}
-	renderer = SDL_CreateRenderer(window, rends, SDL_RENDERER_ACCELERATED);
+	renderer = SDL_CreateRenderer(window ,-1, SDL_RENDERER_ACCELERATED);
 	SDL_UnlockMutex(screen_mutex);
 	Misc_LBts(&screen_ready,0);
 }
@@ -124,11 +118,11 @@ void GrPaletteColorSet(int64_t i, uint64_t bgr48)
 	int64_t g = ((bgr48 >> 16) & 0xffff) / (double)0xffff * 0xff;
 	int64_t r = ((bgr48 >> 32) & 0xffff) / (double)0xffff * 0xff;
 	palette[i] = r | (g << 8) | (b << 16);
-	SDL_Color c = { r,g,b, 0xff };
+	SDL_Color c = { r,g,b, 0x0 };
 	SDL_LockSurface(screen);
 	// I will repeat the color to simulate ignoring the upper 4 bits
 	for (i2 = 0; i2 != repeat; i2++)
-		screen->format->palette->colors[16*i2+i]=c;
+		SDL_SetPaletteColors(screen->format->palette,&c,i2*16+i,1);
 	SDL_UnlockSurface(screen);
 }
 

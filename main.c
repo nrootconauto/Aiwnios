@@ -4,10 +4,8 @@
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
-#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/ucontext.h>
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char* str, int64_t i) { printf("%s:%ld\n", str, i); }
@@ -17,9 +15,9 @@ static void FuzzTest1()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
+	strcpy(tf,"FUZZ1.HC");
 	char buf[TMP_MAX + 64];
-	tmpnam(tf);
-	FILE* f = fopen(tf, "w");
+	FILE* f = fopen(tf,"w");
 	fprintf(f, "extern U0 PrintI(U8i *,I64i);\n");
 	// Do complicated expr to dirty some temp registers
 	fprintf(f, "I64i Fa() {I64i a,b,c;a=50,b=2,c=1; return c+(10*b)+(a*(1+!!c))+b;}\n");
@@ -117,9 +115,9 @@ static void FuzzTest2()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
+	strcpy(tf,"FUZZ2.HC");
 	char buf[TMP_MAX + 64];
-	tmpnam(tf);
-	FILE* f = fopen(tf, "w");
+	FILE* f = fopen(tf,"w");
 	fprintf(f, "extern U0 PrintF(U8i *,F64);\n");
 	// Do complicated expr to dirty some temp registers
 	fprintf(f, "F64 Fa() {F64 a=50,b=2,c=1; return c+(10*b)+(a*(1+!!c))+b;}\n");
@@ -195,8 +193,8 @@ static void FuzzTest3()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
+	strcpy(tf,"FUZZ3.HC");
 	char buf[TMP_MAX + 64];
-	tmpnam(tf);
 	FILE* f = fopen(tf, "w");
 	fprintf(f, "extern U0 PrintPtr(U8i *,I64i);\n");
 	// Do complicated expr to dirty some temp registers
@@ -359,9 +357,6 @@ static int64_t MemCmp(char* a, char* b, int64_t s)
 {
 	return memcmp(a, b, s);
 }
-extern void AIWNIOS_setcontext(void*);
-extern int64_t AIWNIOS_getcontext(void*);
-extern int64_t AIWNIOS_makecontext(void*,void*,void*);
 int64_t UnixNow()
 {
 	return (int64_t)time(NULL);
@@ -402,7 +397,7 @@ static int64_t StrCmp(char *a,char *b) {
 void BootAiwnios()
 {
 	// WIP
-	CLexer* lex = LexerNew("None", "1+1;//#include\"STAGE1.HC\";");
+	CLexer* lex = LexerNew("None", "1+1;//#include\"STAGE0.HC\";");
 	CCmpCtrl* ccmp = CmpCtrlNew(lex);
 	void (*to_run)();
 	CodeCtrlPush(ccmp);
@@ -598,16 +593,16 @@ static void Boot()
 	Fs = calloc(sizeof(CTask), 1);
 	InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
+	VFsMountDrive('T', "./");
 	FuzzTest1();
 	FuzzTest2();
 	FuzzTest3();
-	VFsMountDrive('T', "./");
 	BootAiwnios();
 	glbl_table = Fs->hash_table;
 	if (bin)
 		Load(bin);
 }
-int main()
+int main(int argc,char *argv[])
 {
 	int64_t quit = 0;
 	SDL_Init(SDL_INIT_EVERYTHING);

@@ -1,7 +1,6 @@
 #pragma once
 #include "aiwn.h"
 #include <setjmp.h>
-#include <ucontext.h>
 // See AIWNIOS_enter_try t in except_*.s
 jmp_buf* __enter_try()
 {

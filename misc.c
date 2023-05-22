@@ -13,13 +13,21 @@ uint64_t ToUpper(uint64_t ch)
 }
 int64_t Bsf(int64_t v)
 {
+	#if defined(_WIN32) || defined(WIN32)
+	return __builtin_ffsll(v) - 1;
+	#else
 	return __builtin_ffsl(v) - 1;
+	#endif
 }
 int64_t Bsr(int64_t v)
 {
 	if (!v)
 		return -1;
+	#if defined(_WIN32) || defined(WIN32)
+	return 63 - __builtin_clzll(v);
+	#else
 	return 63 - __builtin_clzl(v);
+	#endif
 }
 char* WhichFun(char* fptr)
 {

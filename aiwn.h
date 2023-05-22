@@ -7,7 +7,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <assert.h>
-#include <ucontext.h>
 #include <SDL2/SDL.h>
 #define ERR 0x7fFFffFFffFFffFF
 #define INVALID_PTR ERR
@@ -115,7 +114,6 @@ typedef struct CQue {
 #define MEM_PAG_BITS (12)
 #define MEM_PAG_SIZE (1 << MEM_PAG_BITS)
 struct CHashTable;
-#include <ucontext.h>
 #include <setjmp.h>
 typedef struct CExceptPad {
 	int64_t gp[30-18+1];
@@ -132,8 +130,7 @@ typedef struct CTask {
 	int64_t catch_except;
 	struct CHashTable* hash_table;
 	void* stack;
-	ucontext_t ctx;
-	ucontext_t exit_ctx;
+	char ctx[2048];
 	jmp_buf throw_pad;
 	struct CHeapCtrl* heap;
 } CTask;
@@ -364,6 +361,10 @@ typedef struct CCodeCtrl {
   int64_t statics_offset;
   CHeapCtrl *hc;
 } CCodeCtrl;
+typedef struct CCodeMiscRef {
+	struct CCodeMiscRef *next;
+	int32_t *add_to;
+} CCodeMiscRef;
 typedef struct CCodeMisc {
 	CQue base;
 #define CMT_LABEL 1
@@ -390,8 +391,10 @@ typedef struct CCodeMisc {
 		double flt;
 		int64_t integer;
 	};
+  
   int32_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
+  CCodeMiscRef *refs;
 } CCodeMisc;
 typedef struct CCmpCtrl {
 	CLexer* lex;
@@ -401,6 +404,7 @@ typedef struct CCmpCtrl {
 #define CCF_IN_SUBSWITCH_START_BLOCK 0x1
 #define CCF_STRINGS_ON_HEAP 0x2
 #define CCF_AOT_COMPILE 0x4
+#define CCF_ICMOV_NO_USE_RAX 0x8
 	int64_t flags;
 	CHashFun* cur_fun;
 	CCodeCtrl* code_ctrl;
@@ -410,7 +414,7 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data3;
 	int64_t backend_user_data4;
   //Used for returns
-  int64_t epilog_offset;
+  CCodeMisc *epilog_label;
   CHeapCtrl *hc;
 } CCmpCtrl;
 #define PRSF_CLASS 1
@@ -513,7 +517,7 @@ enum {
 };
 typedef struct CICArg {
 	// Feel free to define more in backend
-#define MD_NULL 0
+#define MD_NULL -1
 #define MD_REG 1 // raw_type==RT_F64 for flt register
 #define MD_FRAME 2 // ditto
 #define MD_PTR 3 // ditto
@@ -531,26 +535,34 @@ typedef struct CICArg {
 // X86_64 SIB
 //
 #define __MD_X86_64_SIB 9
+//Like X86_64 but uses LEA
+#define __MD_X86_64_LEA_SIB 10
 	int32_t mode;
 	int32_t raw_type;
-	int32_t reg,reg2;
+	int8_t reg,reg2,fallback_reg;
   //True on enter of things that want to set the flags
   //True/False if the result of the thing set the flags or not
 	char set_flags;
+	//keep the value in a temp location,good for removing reundant stores
+	char keep_in_tmp;
 	union {
 		int64_t integer;
 		int64_t off;
 		double flt;
 	};
- 	int64_t __SIB_scale;
+ 	int8_t __SIB_scale,pop_n_tmp_regs;
+ 	CRPN *__sib_base_rpn,*__sib_idx_rpn;
 } CICArg;
+enum {
+	ICF_SPILLED=1, // See PushSpilledTmp in XXX_backend.c
+	ICF_DEAD_CODE=2,
+	ICF_TMP_NO_UNDO=4,
+	ICF_PRECOMPUTED=8, //Doesnt re-compile a node,useful for putting in "dummy" values
+	ICF_SIB=16, //Has 2 registers (base and idnex)
+	ICF_INDIR_REG=32 //Has 1 registers (idnex)
+};
 struct CRPN {
 	CQue base;
-#define ICF_SPILLED 1 // See PushSpilledTmp in XXX_backend.c
-#define ICF_DEAD_CODE 2
-#define ICF_TMP_NO_UNDO 4
-#define ICF_PRECOMPUTED 8 //Doesnt re-compile a node,useful for putting in "dummy" values
-
 
 	int32_t type, length, raw_type, flags,ic_line;
 	CHashClass* ic_class;
@@ -693,7 +705,7 @@ int64_t LBtc(char*,int64_t);
 //
 // These are used by optpass
 //
-#if defined(TARGET_X86V)
+#if defined(__x86_64__)
 enum {
 	RAX = 0,
 	RCX = 1,
@@ -713,6 +725,7 @@ enum {
 	R15 = 15,
 	RIP = 16
 };
+#if defined(__linux__)
 #define AIWNIOS_IREG_START 12
 #define AIWNIOS_IREG_CNT (15 - AIWNIOS_IREG_START + 1 -1 +1) //-1 for R13 as it is wierd,+1 for RBX TODO
 #define AIWNIOS_REG_FP RBP
@@ -724,7 +737,29 @@ enum {
 #define AIWNIOS_FREG_START 0
 #define AIWNIOS_FREG_CNT 0
 #define AIWNIOS_TMP_FREG_START 3
-#define AIWNIOS_TMP_FREG_CNT (16-AIWNIOS_TMP_FREG_START+1)
+#define AIWNIOS_TMP_FREG_CNT (15-AIWNIOS_TMP_FREG_START+1)
+#endif
+
+#if  defined(_WIN32)||defined(WIN32) 
+#define AIWNIOS_OSTREAM stdout
+#else
+#define AIWNIOS_OSTREAM stderr
+#endif
+
+#if  defined(_WIN32)||defined(WIN32) 
+#define AIWNIOS_IREG_START 9
+#define AIWNIOS_IREG_CNT 6
+#define AIWNIOS_REG_FP RBP
+#define AIWNIOS_REG_SP RSP
+#define AIWNIOS_TMP_IREG_POOP R8
+#define AIWNIOS_TMP_IREG_POOP2 RCX
+#define AIWNIOS_TMP_IREG_START 0
+#define AIWNIOS_TMP_IREG_CNT 3
+#define AIWNIOS_FREG_START 6
+#define AIWNIOS_FREG_CNT (15-6+1)
+#define AIWNIOS_TMP_FREG_START 3
+#define AIWNIOS_TMP_FREG_CNT (5-AIWNIOS_TMP_FREG_START+1)
+#endif
 #elif defined(TARGET_ARM64V)
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
@@ -1030,3 +1065,7 @@ extern CHashTable *glbl_table;
 //Fun Start <==== RIP
 void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off);
 void __HC_CodeMiscIsUsed(CCodeMisc *cm);
+
+extern void AIWNIOS_setcontext(void*);
+extern int64_t AIWNIOS_getcontext(void*);
+extern int64_t AIWNIOS_makecontext(void*,void*,void*);

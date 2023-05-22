@@ -1,6 +1,7 @@
 #include "aiwn.h"
 static void UnblockSignals()
 {
+#if defined(__linux__)
 	sigset_t set;
 	sigemptyset(&set);
 	sigaddset(&set, SIGSEGV);
@@ -8,11 +9,13 @@ static void UnblockSignals()
 	sigaddset(&set, SIGTRAP);
 	sigaddset(&set, SIGFPE);
 	sigprocmask(SIG_UNBLOCK, &set, NULL);
+#endif
 }
+#if defined (__linux__)
 static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 {
-	#ifdef TARGET_X86
-	#elif defined(TARGET_ARM64)
+	#if defined(__x86_64__)
+	#elif defined(_ARM64_)
 	mcontext_t* ctx = &_ctx->uc_mcontext;
 	CHashExport* exp;
 	int64_t is_single_step;
@@ -68,8 +71,10 @@ static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 	setcontext(_ctx);
 	#endif
 }
+#endif
 void InstallDbgSignalsForThread()
 {
+	#if defined(__linux__)
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
@@ -79,4 +84,5 @@ void InstallDbgSignalsForThread()
 	sigaction(SIGBUS, &sa, NULL);
 	sigaction(SIGTRAP, &sa, NULL);
 	sigaction(SIGFPE, &sa, NULL);
+	#endif
 }

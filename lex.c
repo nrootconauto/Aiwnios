@@ -34,6 +34,8 @@ enter:;
 	// We terminate the silly sauces with 0 as per ASCII nul character
 	if (ret = lex->file->text[lex->file->pos]) {
 		lex->file->pos++;
+		if(ret==5||ret=='\r') //TempleOS cursor charactor
+			goto enter;
 		if (ret == '\n')
 			lex->file->ln++, lex->file->col = 0;
 		else
@@ -64,10 +66,10 @@ static void LexErr(CLexer* lex, char* fmt, ...)
 	vsprintf(buffer, fmt, lst);
 	va_end(lst);
 	if (lex->file) {
-		fprintf(stderr, "ERR %s:%d:%d %s", lex->file->filename, lex->file->ln + 1,
+		fprintf(AIWNIOS_OSTREAM, "ERR %s:%d:%d %s", lex->file->filename, lex->file->ln + 1,
 			lex->file->col + 1, buffer);
 	} else {
-		fprintf(stderr, "ERR ???:?:? %s", buffer);
+		fprintf(AIWNIOS_OSTREAM, "ERR ???:?:? %s", buffer);
 	}
 	throw(*(int64_t*)"Lex\0\0\0\0\0");
 }
@@ -80,10 +82,10 @@ static void LexWarn(CLexer* lex, char* fmt, ...)
 	vsprintf(buffer, fmt, lst);
 	va_end(lst);
 	if (lex->file) {
-		fprintf(stderr, "WARN %s:%d:%d %s\n", lex->file->filename,
+		fprintf(AIWNIOS_OSTREAM, "WARN %s:%d:%d %s\n", lex->file->filename,
 			lex->file->ln + 1, lex->file->col + 1, buffer);
 	} else {
-		fprintf(stderr, "WARN ???:?:? %s\n", buffer);
+		fprintf(AIWNIOS_OSTREAM, "WARN ???:?:? %s\n", buffer);
 	}
 }
 
@@ -627,7 +629,13 @@ re_enter:;
 		break;
 	case '#':
 		if (TK_NAME == Lex(lex)) {
-			if (!strcmp(lex->string, "assert")) {
+			if (!strcmp(lex->string, "help_file")) {
+				LexWarn(lex, "AIWN ignore's #help_file's ignored by the C side");
+				goto re_enter;
+			} else if (!strcmp(lex->string, "help_index")) {
+				LexWarn(lex, "AIWN ignore's #help_index's ignored by the C side");
+				goto re_enter;
+			} else if (!strcmp(lex->string, "assert")) {
 				LexWarn(lex, "AIWN ignore's #assert's and other JIT shennangins");
 				goto re_enter;
 			} else if (!strcmp(lex->string, "if")) {

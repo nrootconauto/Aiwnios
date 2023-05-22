@@ -96,6 +96,7 @@ static void FixFunArgs(CCmpCtrl* cctrl, CRPN* rpn)
 		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
 		ic->type = __IC_VARGS;
 		ic->length = vargc;
+		ic->raw_type=RT_I64i;
 		QueIns(ic, last);
 		// Pass argc
 		ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
@@ -185,14 +186,25 @@ void OptPassExpandPtrs(CCmpCtrl* cctrl)
 			b = rpn->base.next;
 			a = ICFwd(b);
 			if (a->ic_class->ptr_star_cnt || a->ic_dim) {
-				new = A_CALLOC(sizeof(CRPN), cctrl->hc);
-				new->type = IC_MUL;
-				QueIns(new, b->base.last);
-				lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
-				lit->type = IC_I64;
-				lit->integer = PtrWidthOfRPN(a);
-				QueIns(lit, new);
-				AssignRawTypeToNode(cctrl, new);
+				if(b->ic_class->ptr_star_cnt || b->ic_dim) {
+					new = A_CALLOC(sizeof(CRPN), cctrl->hc);
+					new->type = IC_DIV;
+					QueIns(new, rpn->base.last);
+					lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+					lit->type = IC_I64;
+					lit->integer = PtrWidthOfRPN(a);
+					QueIns(lit, new);
+					AssignRawTypeToNode(cctrl, new);					
+				} else {
+					new = A_CALLOC(sizeof(CRPN), cctrl->hc);
+					new->type = IC_MUL;
+					QueIns(new, b->base.last);
+					lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+					lit->type = IC_I64;
+					lit->integer = PtrWidthOfRPN(a);
+					QueIns(lit, new);
+					AssignRawTypeToNode(cctrl, new);
+				}
 			}
 			break;
 		case IC_ADD_EQ:
@@ -1212,7 +1224,7 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 					mv[i].m->reg = REG_NONE;
 			} else if (RT_I8i <= mv[i].m->member_class->raw_type && mv[i].m->member_class->raw_type <= RT_PTR && !mv[i].m->dim.next) {
 				if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
-					#ifdef TARGET_X86V
+					#if defined(__x86_64__) && defined(__linux__)
 					switch (ireg++-AIWNIOS_IREG_START) {
 						break;case 0: mv[i].m->reg=RBX;
 						break;case 1: mv[i].m->reg=R12;
@@ -1221,7 +1233,20 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 						break;case 3: mv[i].m->reg=R15;
 						break;default:abort();
 					}
-					#else
+					#endif
+					#if defined(__x86_64__) && defined(_WIN32) && defined(WIN32)
+					switch (ireg++-AIWNIOS_IREG_START) {
+						break;case 0: mv[i].m->reg=RBX;
+						break;case 1: mv[i].m->reg=R12;
+						//break;case 1: res->reg=R13; R13 is weird with dereferences
+						break;case 2: mv[i].m->reg=R14;
+						break;case 3: mv[i].m->reg=R15;
+						break;case 4: mv[i].m->reg=RSI;
+						break;case 5: mv[i].m->reg=RDI;
+						break;default:abort();
+					}
+					#endif
+					#if defined(_ARM64_)
 					mv[i].m->reg = ireg++;
 					#endif
 				} else
@@ -1265,7 +1290,7 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 			sz = mv[i].m->member_class->sz;
 			sz *= mv[i].m->dim.total_cnt;
 			mv[i].m->off = off;
-			#ifdef TARGET_X86V
+			#if defined(__x86_64__)
 				//In X86_64 the base pointer above of the  stack's bottom,
 				//I will move the items down by thier size so they are at the bottom
 				//
@@ -1404,8 +1429,9 @@ char* Compile(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	CRPN* r;
 	int64_t old_flags = cctrl->flags;
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
-		 r = r->base.next)
+		 r = r->base.next) {
 		AssignRawTypeToNode(cctrl, r);
+	}
 	OptPassFixFunArgs(cctrl);
 	OptPassExpandPtrs(cctrl);
 	OptPassConstFold(cctrl);
