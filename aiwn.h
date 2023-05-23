@@ -413,6 +413,8 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data2;
 	int64_t backend_user_data3;
 	int64_t backend_user_data4;
+	int64_t backend_user_data5;
+	int64_t backend_user_data6;
   //Used for returns
   CCodeMisc *epilog_label;
   CHeapCtrl *hc;
@@ -564,7 +566,7 @@ enum {
 struct CRPN {
 	CQue base;
 
-	int32_t type, length, raw_type, flags,ic_line;
+	int16_t type, length, raw_type, flags,ic_line;
 	CHashClass* ic_class;
 	CHashFun* ic_fun;
 	CArrayDim* ic_dim;
@@ -577,7 +579,8 @@ struct CRPN {
 		CCodeMisc* code_misc;
 		CCodeMisc* break_to;
 	};
-	CICArg arg, arg2, res;
+	CCodeMisc *code_misc2,*code_misc3,*code_misc4;
+	CICArg res;
 };
 extern char *Compile(struct CCmpCtrl *cctrl,int64_t *sz,char **dbg_info);
 extern __thread struct CTask *Fs;

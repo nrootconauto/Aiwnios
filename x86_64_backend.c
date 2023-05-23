@@ -1,11 +1,15 @@
 // X86_64 assembly generator
 #include "aiwn.h"
+
+//backend_user_data5 is the "fail" codemisc for IC_LT/GT etc
+//backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
+
 //
 // I called CrunkLord420's stuff Voluptous - April 30,2024
 // I found a duck statue while voluentering - May 3,2024
 // I got bored and played with a color chooser May 7,2024
 // I am going to get off my ass and document this file May 14,2024
-
+//
 static int64_t RawTypeIs64(int64_t r) {
 	switch(r) {
 		case RT_U64i:
@@ -3502,7 +3506,6 @@ static int64_t IsCompoundCompare(CRPN* r)
 	}
 	return 0;
 }
-
 //
 // ALWAYS ASSUME WORST CASE if we dont have a ALLOC'ed peice of RAM
 //
@@ -3511,11 +3514,14 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 {
 	if (rpn->flags & ICF_PRECOMPUTED)
 		return code_off;
-	CCodeMisc* misc;
+	CCodeMisc* misc,*misc2;
 	CRPN *next, *next2, **range, **range_args, *next3, *a, *b;
 	CICArg tmp = { 0 }, orig_dst = { 0 }, tmp2 = { 0 }, derefed = { 0 };
 	int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse, is_typecast;
 	int64_t *range_cmp_types, use_flags = rpn->res.set_flags;
+	int64_t old_fail_misc=cctrl->backend_user_data5,old_pass_misc=cctrl->backend_user_data6;
+	cctrl->backend_user_data5=0;
+	cctrl->backend_user_data6=0;
 	rpn->res.set_flags = 0;
 	char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr, ***range_fail_addrs;
 	if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass == 2 && rpn->ic_line) { // Final run
@@ -3630,8 +3636,25 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 					CMP_AND_JMP(X86_COND_GE);
 				}
 				goto ret;
+			case IC_OR_OR:
+			case IC_AND_AND:
+			PushTmpDepthFirst(cctrl,next,0,1);
+			PopTmp(cctrl,next);
+			if(!rpn->code_misc2) rpn->code_misc2=CodeMiscNew(cctrl,CMT_LABEL);
+			if(!reverse) {
+				cctrl->backend_user_data5=rpn->code_misc2;
+				cctrl->backend_user_data6=rpn->code_misc;
+				code_off = __OptPassFinal(cctrl, next, bin, code_off);
+				rpn->code_misc2->addr=bin+code_off;
+				goto ret;
+			} else {
+				cctrl->backend_user_data5=rpn->code_misc;
+				cctrl->backend_user_data6=rpn->code_misc2;
+				code_off = __OptPassFinal(cctrl, next, bin, code_off);
+				rpn->code_misc2->addr=bin+code_off;
+				goto ret;
 			}
-
+		}
 		next->res.set_flags = 1;
 		PushTmpDepthFirst(cctrl,next,0,1);
 		PopTmp(cctrl,next);
@@ -4402,25 +4425,32 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			}
 			range_fail_addrs[i] = bin + code_off;
 			AIWNIOS_ADD_CODE(X86Jcc, range_cmp_types[i], 0); // WILL BE FILLED IN LATER
+			if(old_fail_misc)
+				CodeMiscAddRef(old_fail_misc,bin+code_off-4);
 			next = next2;
 		}
-		tmp.mode = MD_I64;
-		tmp.integer = 1;
-		tmp.raw_type = RT_I64i;
-		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-		exit_addr = bin + code_off;
-		AIWNIOS_ADD_CODE(X86Jmp, 0);
-		if (bin)
-			for (i = 0; i != cnt; i++) {
-				X86Jcc(range_fail_addrs[i], range_cmp_types[i],
-					(bin + code_off) - (char*)range_fail_addrs[i]); // TODO unsigned
-			}
-		tmp.mode = MD_I64;
-		tmp.integer = 0;
-		tmp.raw_type = RT_I64i;
-		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-		if (bin)
-			X86Jmp(exit_addr, (bin + code_off) - exit_addr);
+		if(!(old_fail_misc&&old_pass_misc)) {
+			tmp.mode = MD_I64;
+			tmp.integer = 1;
+			tmp.raw_type = RT_I64i;
+			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+			exit_addr = bin + code_off;
+			AIWNIOS_ADD_CODE(X86Jmp, 0);
+			if (bin)
+				for (i = 0; i != cnt; i++) {
+					X86Jcc(range_fail_addrs[i], range_cmp_types[i],
+						(bin + code_off) - (char*)range_fail_addrs[i]); // TODO unsigned
+				}
+			tmp.mode = MD_I64;
+			tmp.integer = 0;
+			tmp.raw_type = RT_I64i;
+			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+			if (bin)
+				X86Jmp(exit_addr, (bin + code_off) - exit_addr);
+		} else {
+			AIWNIOS_ADD_CODE(X86Jmp, 0);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+		}
 		A_FREE(range);
 		A_FREE(range_args);
 		A_FREE(range_fail_addrs);
@@ -4474,6 +4504,33 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		code_off = __SexyPreOp(cctrl, rpn, X86SubImm32, X86SubReg, X86SubSDReg, X86DecReg,X86DecSIB64, bin, code_off);
 		break;
 	case IC_AND_AND:
+#define BACKEND_TEST(_res)                        \
+	{ \
+		int64_t rt=(_res)->raw_type; \
+		if((_res)->mode!=MD_REG)  code_off=PutICArgIntoReg(cctrl,(_res),rt,0,bin,code_off); \
+		int64_t reg=(_res)->reg; \
+		if ((rt) != RT_F64) {                                   \
+			AIWNIOS_ADD_CODE(X86Test, reg, reg);                \
+		} else {                                                \
+			code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off); \
+			AIWNIOS_ADD_CODE(X86COMISDRegReg, reg, 2);          \
+		} \
+	} 
+		if(old_pass_misc&&old_fail_misc) {
+			a=ICArgN(rpn,1);
+			b=ICArgN(rpn,0);
+			code_off=__OptPassFinal(cctrl,a,bin,code_off);
+			BACKEND_TEST(&a->res);
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z,6);
+			CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+			code_off=__OptPassFinal(cctrl,b,bin,code_off);
+			BACKEND_TEST(&b->res);
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z,6);
+			CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+			AIWNIOS_ADD_CODE(X86Jmp,0);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			goto ret;
+		}
 #define BACKEND_BOOLIFY(to, reg, rt)                        \
 	if ((rt) != RT_F64) {                                   \
 		AIWNIOS_ADD_CODE(X86Test, reg, reg);                \
@@ -4485,71 +4542,84 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	}
 		if (!rpn->code_misc)
 			rpn->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc2)
+			rpn->code_misc2 = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc3)
+			rpn->code_misc3 = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc4)
+			rpn->code_misc4 = CodeMiscNew(cctrl, CMT_LABEL);
 		a = ICArgN(rpn, 1);
 		b = ICArgN(rpn, 0);
-		code_off = __OptPassFinal(cctrl, a, bin, code_off);
-		if (a->res.raw_type != RT_F64) {
-			code_off = PutICArgIntoReg(cctrl, &a->res, RT_I64i, 0, bin, code_off);
-		} else {
-			code_off = PutICArgIntoReg(cctrl, &a->res, RT_F64, 0, bin, code_off);
-			//
-			// avoid messing up a's reg
-			//
-			BACKEND_BOOLIFY(0, a->res.reg, RT_F64);
-			a->res.reg = 0;
-			a->res.raw_type = RT_I64i;
-			a->res.mode=MD_REG;
-		}
-		code_off = ICMov(cctrl, &rpn->res, &a->res, bin, code_off);
-		AIWNIOS_ADD_CODE(X86Test, a->res.reg, a->res.reg);
-		AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z, 0);
-		CodeMiscAddRef(rpn->code_misc,bin+code_off-4);
-		code_off = __OptPassFinal(cctrl, b, bin, code_off);
-		code_off = PutICArgIntoReg(cctrl, &b->res, b->raw_type, 0, bin, code_off);
-		//
-		// avoid messing up b's reg
-		//
-		BACKEND_BOOLIFY(0, b->res.reg, b->raw_type);
-		b->res.reg = 0;
-		b->res.raw_type = RT_I64i;
-		b->res.mode=MD_REG;
-		code_off = ICMov(cctrl, &rpn->res, &b->res, bin, code_off);
-		if (cctrl->code_ctrl->final_pass) {
-			rpn->code_misc->addr = bin + code_off;
-		}
+		cctrl->backend_user_data5=rpn->code_misc;
+		cctrl->backend_user_data6=rpn->code_misc2;
+		code_off=__OptPassFinal(cctrl,a,bin,code_off);
+		cctrl->backend_user_data6=rpn->code_misc3;
+		rpn->code_misc2->addr=bin+code_off;
+		code_off=__OptPassFinal(cctrl,b,bin,code_off);
+		rpn->code_misc->addr=bin+code_off;
+		tmp.mode=MD_I64;
+		tmp.raw_type=RT_I64i;
+		tmp.integer=0;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+		AIWNIOS_ADD_CODE(X86Jmp,0);
+		CodeMiscAddRef(rpn->code_misc4,bin+code_off-4);
+		rpn->code_misc3->addr=bin+code_off;
+		tmp.integer=1;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+		rpn->code_misc4->addr=bin+code_off;
 		break;
 	case IC_OR_OR:
+		if(old_pass_misc||old_fail_misc) {
+			a=ICArgN(rpn,1);
+			b=ICArgN(rpn,0);
+			code_off=__OptPassFinal(cctrl,a,bin,code_off);
+			BACKEND_TEST(&a->res);
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z^1,6);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			code_off=__OptPassFinal(cctrl,b,bin,code_off);
+			BACKEND_TEST(&b->res);
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z^1,6);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			AIWNIOS_ADD_CODE(X86Jmp,0);
+			CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+			goto ret;
+		}
+		// A
+		// rpn->code_misc3:
+		// B
+		// rpn->code_misc4:
+		// res=0;
+		// JMP rpn->code_misc2
+		// rpn->code_misc:
+		// res=1
+		// rpn->code_misc2:
 		if (!rpn->code_misc)
 			rpn->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc2)
+			rpn->code_misc2 = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc3)
+			rpn->code_misc3 = CodeMiscNew(cctrl, CMT_LABEL);
+		if (!rpn->code_misc4)
+			rpn->code_misc4 = CodeMiscNew(cctrl, CMT_LABEL);
 		a = ICArgN(rpn, 1);
 		b = ICArgN(rpn, 0);
+		cctrl->backend_user_data5=rpn->code_misc3;
+		cctrl->backend_user_data6=rpn->code_misc;
 		code_off = __OptPassFinal(cctrl, a, bin, code_off);
-		code_off = PutICArgIntoReg(cctrl, &a->res, a->raw_type, 0, bin, code_off);
-		//
-		// Avoid messing up the value of a's register(use 0 instead)
-		//
-		BACKEND_BOOLIFY(0, a->res.reg, a->raw_type);
-		a->res.reg = 0;
-		a->res.raw_type = RT_I64i;
-		a->res.mode=MD_REG;
-		code_off = ICMov(cctrl, &rpn->res, &a->res, bin, code_off);
-		AIWNIOS_ADD_CODE(X86Test, a->res.reg, a->res.reg);
-		AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z | 1, 0);
-		CodeMiscAddRef(rpn->code_misc,bin+code_off-4);
-
+		rpn->code_misc3->addr=bin+code_off;
+		cctrl->backend_user_data5=rpn->code_misc4;
 		code_off = __OptPassFinal(cctrl, b, bin, code_off);
-		code_off = PutICArgIntoReg(cctrl, &b->res, b->raw_type, 0, bin, code_off);
-		//
-		// Avoid messing up the value of a's register(use 0 instead)
-		//
-		BACKEND_BOOLIFY(0, b->res.reg, b->raw_type);
-		b->res.reg = 0;
-		b->res.raw_type = RT_I64i;
-		b->res.mode=MD_REG;
-		code_off = ICMov(cctrl, &rpn->res, &b->res, bin, code_off);
-		if (cctrl->code_ctrl->final_pass) {
-			rpn->code_misc->addr = bin + code_off;
-		}
+		rpn->code_misc4->addr=bin+code_off;
+		tmp.mode=MD_I64;
+		tmp.integer=0;
+		tmp.raw_type=RT_I64i;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+		AIWNIOS_ADD_CODE(X86Jmp,0);
+		CodeMiscAddRef(rpn->code_misc2,bin+code_off-4);
+		rpn->code_misc->addr=bin+code_off;
+		tmp.integer=1;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+		rpn->code_misc2->addr=bin+code_off;
 		break;
 	case IC_XOR_XOR:
 #define BACKEND_LOGICAL_BINOP(op)                                                    \
@@ -4588,6 +4658,12 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		AIWNIOS_ADD_CODE(X86CmpRegReg, next->res.reg, next2->res.reg);                                   \
 	}
 		BACKEND_CMP;
+		if(old_pass_misc&&old_fail_misc) {
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z,0);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			AIWNIOS_ADD_CODE(X86Jmp,0);
+			CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+		}
 		if (use_flags)
 			goto ret;
 		if (rpn->res.mode == MD_REG && rpn->res.mode != RT_F64) {
@@ -4605,6 +4681,12 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		break;
 	case IC_NE:
 		BACKEND_CMP;
+		if(old_fail_misc&&old_pass_misc) {
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z^1,0);
+			CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			AIWNIOS_ADD_CODE(X86Jmp,0);
+			CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+		}
 		if (use_flags)
 			goto ret;
 		if (rpn->res.mode == MD_REG && rpn->res.mode != RT_F64) {
@@ -4905,6 +4987,38 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 	}
 ret:
+	if(old_fail_misc||old_pass_misc) {
+		misc=old_fail_misc;
+		misc2=old_pass_misc;
+		switch(rpn->type) {
+			case IC_OR_OR:
+			case IC_AND_AND:
+			case IC_LT:
+			case IC_GT:
+			case IC_GE:
+			case IC_LE:
+			case IC_EQ_EQ:
+			case IC_NE:
+			break;default:
+			if (rpn->res.raw_type == RT_F64) {                       
+				code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_F64, 1, bin, code_off);      
+				code_off=__ICMoveF64(cctrl,2,0,bin,code_off);
+				AIWNIOS_ADD_CODE(X86COMISDRegReg, rpn->res.reg, 2);                 
+			} else {  
+				tmp=rpn->res;
+				code_off=PutICArgIntoReg(cctrl,&tmp,RT_I64i,RAX,bin,code_off);
+				AIWNIOS_ADD_CODE(X86Test,tmp.reg,tmp.reg);
+			}
+			//Pass address
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z|1,0);
+			CodeMiscAddRef(misc2,bin+code_off-4);
+			//Fail address
+			AIWNIOS_ADD_CODE(X86Jmp,5);
+			CodeMiscAddRef(misc,bin+code_off-4);
+		}
+	}
+	cctrl->backend_user_data5=old_fail_misc;
+	cctrl->backend_user_data6=old_pass_misc;
 	return code_off;
 }
 
