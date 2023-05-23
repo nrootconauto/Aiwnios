@@ -147,7 +147,7 @@ I64i union I64
   F64	x,y;
 };
 
-/*public */ class CD3 //Three dimensional F64 pt
+/*public */ class CD3 //Three dimensional F64 pt
 {
   F64	x,y,z;
 };
@@ -1751,7 +1751,7 @@ class CInst
 #define OC_JMP_REL8		0xEB
 #define OC_NOP2			(OC_NOP<<8+OC_OP_SIZE_PREFIX)
 
-#define PUSH_C_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH R8 PUSH R9
+#define PUSH_C_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH R8 PUSH R9
 #define POP_C_REGS POP R9 POP R8 POP RBX POP RDX POP RCX POP RAX
 
 #define PUSH_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH RBP PUSH RSI \
@@ -3314,7 +3314,7 @@ class CTSS
 #define CPUf_RAN_A_TASK		0
 #define CPUf_DYING_TASK_QUE	1
 
-/*public */ class CCPU //The Gs segment reg points to current CCPU.
+public class CCPU //The Gs segment reg points to current CCPU.
 {
   CCPU	*addr; //Self-addressed ptr
   I64	num,cpu_flags,
@@ -3330,6 +3330,7 @@ class CTSS
   I64	kill_jiffy;
   CTSS	*tss;
   I64	start_stk[16];
+  I64 ready;
 };
 
 #define MEM_MIN_MEG		512 //512 Meg minimum.

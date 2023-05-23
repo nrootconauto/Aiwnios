@@ -1,3 +1,9 @@
+#ifdef TARGET_X86_SYSV
+#define TARGET_X86
+#endif
+#ifdef TARGET_X86_WIN
+#define TARGET_X86
+#endif
 #include "KernelA.HH"
 #include "CompilerA.HH"
 #include "CExts.HC"
@@ -54,7 +60,6 @@ U8 *AMAllocIdent(U8 *ptr) {
 }
 
 CTask *aiwnios_boot_task=__CAlloc(sizeof CTask);
-SetFs(aiwnios_boot_task);
 extern U0 Print(U8*,...);
 
 U0 SwapU8(U8 *a,U8 *b) {
@@ -102,6 +107,7 @@ U0 SwapI64(I64 *a,I64 *b) {
 #include "StrScan.HC"
 #include "KMisc.HC"
 adam_task=aiwnios_boot_task;
+SetFs(adam_task);
 TaskInit(adam_task,0);
 #include "QSort.HC"
 #include "MakeBlkDev.HC"
@@ -123,10 +129,10 @@ U0 SCRoutine() {
   TaskInit(Fs,0);
   Fs->task_signature=TASK_SIGNATURE_VAL;
   Gs->seth_task=Fs;
+  LBts(&(Gs->ready),0);
   CoreAPSethTask;
 }
 MakeContext(adam_task->context_save_area,NULL,adam_task->stk);
-
 U0 InitCPUs() {
   I64 idx;
   MemSet(&cpu_structs,0,sizeof(CCPU) *64);
@@ -148,8 +154,11 @@ U0 InitCPUs() {
     c->idle_factor=0.01;
     QueInit(&c->next_dying);
     SpawnCore(&SCRoutine,c,idx);
+    do 
+	  __SleepHP(2000);
+	while(!Bt(&c->ready,0));
   }
-}
+ }
 InitCPUs;
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
