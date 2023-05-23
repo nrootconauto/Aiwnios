@@ -34,7 +34,6 @@ static int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 //
 
 //
-// December 5,2022 Sachi tried to call me like 3 times in the morning
 // December 5,2022 I need to make a base class set the raw_type
 // December 9,2022 I thought about Tucker Carlson while walking to get tea
 // Decemeber 16,2022 Im stuck at home because of a snow storm
