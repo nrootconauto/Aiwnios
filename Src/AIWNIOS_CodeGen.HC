@@ -3,6 +3,12 @@
 //  you write a backend,HolyC will use it too,that way you dont have to re-port
 //  your backend again when you port to another arch
 //
+#ifdef TARGET_X86_SYSV
+#define TARGET_X86 1
+#endif
+#ifdef TARGET_X86_WIN
+#define TARGET_X86 1
+#endif
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
@@ -86,6 +92,15 @@ import U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 szctrl);
 import U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrsctrl);
 import U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**);
 import U0 __HC_CmpCtrlSetRip(U8*,I64);
+import U8 * __HC_ICAdd_BT(U8*);
+import U8 * __HC_ICAdd_BTC(U8*);
+import U8 * __HC_ICAdd_BTR(U8*);
+import U8 * __HC_ICAdd_BTS(U8*);
+import U8 * __HC_ICAdd_LBTC(U8*);
+import U8 * __HC_ICAdd_LBTR(U8*);
+import U8 * __HC_ICAdd_LBTS(U8*);
+
+
 #else
 extern U8 * __HC_ICAdd_ToF64(U8 *);
 extern U8 * __HC_ICAdd_ToI64(U8 *);
@@ -178,7 +193,7 @@ extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #endif
 
-#ifdef TARGET_X86_SYSV
+#ifdef TARGET_X86
 #define	REG_RAX 0
 #define	REG_RCX 1
 #define	REG_RDX 2
@@ -196,6 +211,22 @@ extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 #define	REG_R14 14
 #define	REG_R15 15
 #define	REG_RIP 16
+#endif
+#ifdef TARGET_X86_WIN
+#define AIWNIOS_IREG_START 9
+#define AIWNIOS_IREG_CNT 6
+#define AIWNIOS_REG_FP RBP
+#define AIWNIOS_REG_SP RSP
+#define AIWNIOS_TMP_IREG_POOP R8
+#define AIWNIOS_TMP_IREG_POOP2 RCX
+#define AIWNIOS_TMP_IREG_START 0
+#define AIWNIOS_TMP_IREG_CNT 3
+#define AIWNIOS_FREG_START 6
+#define AIWNIOS_FREG_CNT (15-6+1)
+#define AIWNIOS_TMP_FREG_START 3
+#define AIWNIOS_TMP_FREG_CNT (5-AIWNIOS_TMP_FREG_START+1)
+#endif
+#ifdef TARGET_X86_SYSV
 #define AIWNIOS_IREG_START 12
 #define AIWNIOS_IREG_CNT 4
 #define AIWNIOS_TMP_IREG_CNT 3
@@ -232,9 +263,13 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc) {
 I64 VarIRegToReg(I64 r)  {
 	switch(r) {
 		break;case 0: return REG_RBX;
-		break;case 1: return REG_R12;
+		break;case 1: return REG_R12;
 		break;case 2: return REG_R14;
 		break;case 3: return REG_R15;
+		#ifdef TARGET_X86_WIN
+		break;case 4: return REG_RDI;
+		break;case 5: return REG_RSI;
+		#endif
 	}
 	throw('Compile');
 }
@@ -351,7 +386,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         if(foff&7)
           foff+=8-(foff&7); //Align to 8#endifg
         #endif
-        #ifdef TARGET_X86_SYSV
+        #ifdef TARGET_X86
         foff_lookup[idx].i32[0]=mlst->offset;
         //In X86_64 the stack grows down and the RBP is above the stack pointer,
         //SO MOVE THE OFFSETS DOWN TO THE BOTTOM
@@ -570,6 +605,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_ABS_ADDR:
     misc=COCMiscNew(cc,CMT_LABEL);
     misc->str=MStrPrint("0x%x",cur->imm_i64);
+    misc->addr=INVALID_PTR;
     new=__HC_ICAdd_Reloc(
           acc,
           cc2,
@@ -693,6 +729,20 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     new=__HC_ICAdd_Or(cc2);
     break;case IC_XOR:
     new=__HC_ICAdd_Xor(cc2);
+    break;case IC_BT:
+    new=__HC_ICAdd_BT(cc2);
+    break;case IC_BTS:
+    new=__HC_ICAdd_BTS(cc2);
+    break;case IC_BTC:
+    new=__HC_ICAdd_BTC(cc2);
+    break;case IC_BTR:
+    new=__HC_ICAdd_BTR(cc2);
+    break;case IC_LBTS:
+    new=__HC_ICAdd_LBTS(cc2);
+    break;case IC_LBTC:
+    new=__HC_ICAdd_LBTC(cc2);
+    break;case IC_LBTR:
+    new=__HC_ICAdd_LBTR(cc2);
     break;case IC_ADD:
     new=__HC_ICAdd_Add(cc2);
     break;case IC_SUB:
@@ -829,11 +879,11 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           HashAdd(h,Fs->hash_table);
         }
       }
-    } else if(misc->type==CMT_LABEL&&misc->str&&!StrNCmp("0x",misc->str,2)) {
+    } else if(misc->addr!=INVALID_PTR&&misc->type==CMT_LABEL&&misc->str&&!StrNCmp("0x",misc->str,2)) {
       tmpabs=CAlloc(sizeof(CAOTAbsAddr));
       tmpabs->next=cc->aotc->abss;
       tmpabs->type=AAT_ADD_U64;
-      tmpabs->rip=cc->aotc->rip+misc->addr(U8*)-machine_code;
+      tmpabs->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
       cc->aotc->abss=tmpabs;	
       idx=misc->addr(U64*)[0]=Str2I64(misc->str);
     }
@@ -882,7 +932,7 @@ I64 __DbgInfoWrite(CHashTable *h,U8 *to) {
   U32 start_ptr,cnt;
   U8 *src_link,buffer[1024],*bptr=&buffer;
   for (i=0;i<=h->mask;i++) {
-    for(tmph=h->body[i];tmph;tmph=tmph->next)
+    for(tmph=h->body[i];tmph;tmph=tmph->next) {
       if (tmph->src_link && !(tmph->type & (HTF_IMPORT | HTF_PRIVATE)) && (dbg_info=tmph->dbg_info)) {
         if((tmph->type&HTT_FUN)&&!(tmph(CHashFun*)->flags&(1<<Cf_EXTERN))) {
 	  if(to) (to+size)(I64*)[0]=tmph->type&(HTT_FUN|HTF_PUBLIC);
@@ -961,6 +1011,7 @@ wrote_help_idx:
         if(to) StrCpy(to+size,tmph->idx);
         size+=StrLen(tmph->idx)+1;
       }
+  }
   }
   return size;
 }

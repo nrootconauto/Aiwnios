@@ -30,7 +30,7 @@ void TaskInit(CTask* task, void* addr, int64_t stk_sz)
 	task->stack = A_MALLOC(stk_sz, task);
 	QueInit(task->except);
 	except = A_MALLOC(sizeof(CExcept), task);
-	AIWNIOS_makecontext(&task->ctx, addr, -0x10&(int64_t)(task->stack+MSize(task->stack)));
+	AIWNIOS_makecontext(&task->ctx, addr, -0x10 & (int64_t)(task->stack + MSize(task->stack)));
 	QueIns(except, task->except);
 	task->hash_table = HashTableNew(1 << 10, task);
 	if (Fs && Fs != task)

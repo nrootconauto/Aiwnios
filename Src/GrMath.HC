@@ -394,7 +394,7 @@ public Bool RegPoly(U8 *aux_data,I64 cx,I64 cy,I64 cz,
 	F64 rot_angle=0,I64 step=1,F64 start_radians=0,F64 len_radians=2*pi)
 {//Step through regular polygon calling callback.
   I64 i,n,x,y,x1,y1,x2,y2,
-	xx1,yy1,xx2,yy2,
+	xx1,yy1,xx2,yy2,
 	s1,s2,c, s12,s22,c2;
   F64 angle_step;
 

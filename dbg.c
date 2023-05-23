@@ -11,11 +11,11 @@ static void UnblockSignals()
 	sigprocmask(SIG_UNBLOCK, &set, NULL);
 #endif
 }
-#if defined (__linux__)
+#if defined(__linux__)
 static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 {
-	#if defined(__x86_64__)
-	#elif defined(_ARM64_)
+#if defined(__x86_64__)
+#elif defined(_ARM64_)
 	mcontext_t* ctx = &_ctx->uc_mcontext;
 	CHashExport* exp;
 	int64_t is_single_step;
@@ -69,12 +69,12 @@ static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 		abort();
 	__builtin___clear_cache(ctx->pc, 1024);
 	setcontext(_ctx);
-	#endif
+#endif
 }
 #endif
 void InstallDbgSignalsForThread()
 {
-	#if defined(__linux__)
+#if defined(__linux__)
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
@@ -84,5 +84,5 @@ void InstallDbgSignalsForThread()
 	sigaction(SIGBUS, &sa, NULL);
 	sigaction(SIGTRAP, &sa, NULL);
 	sigaction(SIGFPE, &sa, NULL);
-	#endif
+#endif
 }

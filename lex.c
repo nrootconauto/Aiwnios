@@ -34,7 +34,7 @@ enter:;
 	// We terminate the silly sauces with 0 as per ASCII nul character
 	if (ret = lex->file->text[lex->file->pos]) {
 		lex->file->pos++;
-		if(ret==5||ret=='\r') //TempleOS cursor charactor
+		if (ret == 5 || ret == '\r') // TempleOS cursor charactor
 			goto enter;
 		if (ret == '\n')
 			lex->file->ln++, lex->file->col = 0;

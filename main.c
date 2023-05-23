@@ -15,9 +15,9 @@ static void FuzzTest1()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
-	strcpy(tf,"FUZZ1.HC");
+	strcpy(tf, "FUZZ1.HC");
 	char buf[TMP_MAX + 64];
-	FILE* f = fopen(tf,"w");
+	FILE* f = fopen(tf, "w");
 	fprintf(f, "extern U0 PrintI(U8i *,I64i);\n");
 	// Do complicated expr to dirty some temp registers
 	fprintf(f, "I64i Fa() {I64i a,b,c;a=50,b=2,c=1; return c+(10*b)+(a*(1+!!c))+b;}\n");
@@ -115,9 +115,9 @@ static void FuzzTest2()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
-	strcpy(tf,"FUZZ2.HC");
+	strcpy(tf, "FUZZ2.HC");
 	char buf[TMP_MAX + 64];
-	FILE* f = fopen(tf,"w");
+	FILE* f = fopen(tf, "w");
 	fprintf(f, "extern U0 PrintF(U8i *,F64);\n");
 	// Do complicated expr to dirty some temp registers
 	fprintf(f, "F64 Fa() {F64 a=50,b=2,c=1; return c+(10*b)+(a*(1+!!c))+b;}\n");
@@ -193,7 +193,7 @@ static void FuzzTest3()
 {
 	int64_t i, i2, o;
 	char tf[TMP_MAX];
-	strcpy(tf,"FUZZ3.HC");
+	strcpy(tf, "FUZZ3.HC");
 	char buf[TMP_MAX + 64];
 	FILE* f = fopen(tf, "w");
 	fprintf(f, "extern U0 PrintPtr(U8i *,I64i);\n");
@@ -385,14 +385,16 @@ static void AiwniosSetClipboard(char* c)
 		SDL_SetClipboardText(c);
 }
 
-static void TaskContextSetRIP(int64_t *ctx,void *p) {
-	ctx[0]=p;
+static void TaskContextSetRIP(int64_t* ctx, void* p)
+{
+	ctx[0] = p;
 }
 
-//strcmp returns int(32 bit on some platforms)
-static int64_t StrCmp(char *a,char *b) {
-	return strcmp(a,b);
-} 
+// strcmp returns int(32 bit on some platforms)
+static int64_t StrCmp(char* a, char* b)
+{
+	return strcmp(a, b);
+}
 
 void BootAiwnios()
 {
@@ -409,8 +411,8 @@ void BootAiwnios()
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
-		PrsBindCSymbol("TaskContextSetRIP",TaskContextSetRIP);
-		PrsBindCSymbol("MakeContext",AIWNIOS_makecontext);
+		PrsBindCSymbol("TaskContextSetRIP", TaskContextSetRIP);
+		PrsBindCSymbol("MakeContext", AIWNIOS_makecontext);
 		PrsBindCSymbol("__HC_SetAOTRelocBeforeRIP", __HC_SetAOTRelocBeforeRIP);
 		PrsBindCSymbol("__HC_CodeMiscIsUsed", __HC_CodeMiscIsUsed);
 		PrsBindCSymbol("AiwniosSetClipboard", AiwniosSetClipboard);
@@ -530,6 +532,13 @@ void BootAiwnios()
 		PrsBindCSymbol("__HC_ICAdd_FReg", __HC_ICAdd_FReg);
 		PrsBindCSymbol("__HC_ICAdd_IReg", __HC_ICAdd_IReg);
 		PrsBindCSymbol("__HC_ICAdd_Frame", __HC_ICAdd_Frame);
+		PrsBindCSymbol("__HC_ICAdd_BT", __HC_ICAdd_BT);
+		PrsBindCSymbol("__HC_ICAdd_BTR", __HC_ICAdd_BTR);
+		PrsBindCSymbol("__HC_ICAdd_BTS", __HC_ICAdd_BTS);
+		PrsBindCSymbol("__HC_ICAdd_BTC", __HC_ICAdd_BTC);
+		PrsBindCSymbol("__HC_ICAdd_LBTR", __HC_ICAdd_BTR);
+		PrsBindCSymbol("__HC_ICAdd_LBTS", __HC_ICAdd_BTS);
+		PrsBindCSymbol("__HC_ICAdd_LBTC", __HC_ICAdd_BTC);
 		PrsBindCSymbol("__HC_CodeMiscStrNew", __HC_CodeMiscStrNew);
 		PrsBindCSymbol("__HC_CodeMiscLabelNew", __HC_CodeMiscLabelNew);
 		PrsBindCSymbol("__HC_CmpCtrlNew", __HC_CmpCtrlNew);
@@ -602,7 +611,7 @@ static void Boot()
 	if (bin)
 		Load(bin);
 }
-int main(int argc,char *argv[])
+int main(int argc, char* argv[])
 {
 	int64_t quit = 0;
 	SDL_Init(SDL_INIT_EVERYTHING);

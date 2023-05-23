@@ -62,7 +62,7 @@ I64 DirEntryCompareName(CDirEntry *e1,CDirEntry *e2)
 {
   U8 buf1[CDIR_FILENAME_LEN],buf2[CDIR_FILENAME_LEN],
 	buf3[CDIR_FILENAME_LEN],buf4[CDIR_FILENAME_LEN];
-  I64 d1=0,d2=0;
+  I64 d1=0,d2=0;
   if (e1->attr & RS_ATTR_DIR)
     d1=1;
   if (e2->attr & RS_ATTR_DIR)

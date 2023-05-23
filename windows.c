@@ -13,7 +13,7 @@ static SDL_Thread* sdl_main_thread;
 int64_t user_ev_num;
 static SDL_mutex *screen_mutex, *screen_mutex2;
 static SDL_cond* screen_done_cond;
-static int64_t screen_ready=0;
+static int64_t screen_ready = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE 2
 
@@ -30,9 +30,9 @@ static void _DrawWindowNew()
 	screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
 	SDL_SetWindowMinimumSize(window, 640, 480);
 	SDL_ShowCursor(SDL_DISABLE);
-	renderer = SDL_CreateRenderer(window ,-1, SDL_RENDERER_ACCELERATED);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_UnlockMutex(screen_mutex);
-	Misc_LBts(&screen_ready,0);
+	Misc_LBts(&screen_ready, 0);
 }
 
 static void UpdateViewPort()
@@ -66,7 +66,7 @@ void DrawWindowNew()
 	event.user.code = USER_CODE_DRAW_WIN_NEW;
 	event.type = user_ev_num;
 	SDL_PushEvent(&event);
-	while(!Misc_Bt(&screen_ready,0))
+	while (!Misc_Bt(&screen_ready, 0))
 		SDL_Delay(1);
 	return;
 }
@@ -82,7 +82,7 @@ void UpdateScreen(char* px, int64_t w, int64_t h, int64_t w_internal)
 	SDL_PushEvent(&event);
 	SDL_UnlockMutex(screen_mutex);
 	SDL_LockMutex(screen_mutex2);
-	SDL_CondWaitTimeout(screen_done_cond, screen_mutex2,33);
+	SDL_CondWaitTimeout(screen_done_cond, screen_mutex2, 33);
 	SDL_UnlockMutex(screen_mutex2);
 	return;
 }
@@ -111,18 +111,19 @@ static void _UpdateScreen(char* px, int64_t w, int64_t h, int64_t w_internal)
 
 void GrPaletteColorSet(int64_t i, uint64_t bgr48)
 {
-	if(!screen) return;
+	if (!screen)
+		return;
 	int64_t repeat = 256 / 16;
 	int64_t i2;
 	int64_t b = (bgr48 & 0xffff) / (double)0xffff * 0xff;
 	int64_t g = ((bgr48 >> 16) & 0xffff) / (double)0xffff * 0xff;
 	int64_t r = ((bgr48 >> 32) & 0xffff) / (double)0xffff * 0xff;
 	palette[i] = r | (g << 8) | (b << 16);
-	SDL_Color c = { r,g,b, 0x0 };
+	SDL_Color c = { r, g, b, 0x0 };
 	SDL_LockSurface(screen);
 	// I will repeat the color to simulate ignoring the upper 4 bits
 	for (i2 = 0; i2 != repeat; i2++)
-		SDL_SetPaletteColors(screen->format->palette,&c,i2*16+i,1);
+		SDL_SetPaletteColors(screen->format->palette, &c, i2 * 16 + i, 1);
 	SDL_UnlockSurface(screen);
 }
 

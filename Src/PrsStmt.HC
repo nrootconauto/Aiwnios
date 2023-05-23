@@ -252,13 +252,12 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
     }
     if (cc->token=='(') {
       switch (mode&255) {
-	/*case PRS0__INTERN: TODO RESTORE? Nroot doesn't like it
+ 	case PRS0__INTERN:
 	  tmpf=PrsFunJoin(cc,tmpc,st,fsp_flags);
 	  tmpf->exe_addr=val;
 	  Bts(&tmpf->flags,Ff_INTERNAL);
 	  LBtr(&tmpf->flags,Cf_EXTERN);
 	  return;
-  */
 	case PRS0__EXTERN:
 	  if (!(fsp_flags&FSF__) && !(mode&PRS1_NOT_REALLY__EXTERN))
 	    LexExcept(cc,"Expecting label with underscore at ");

@@ -320,6 +320,13 @@ CRPN* ICFwd(CRPN* rpn)
 	case IC_ADD:
 		goto binop;
 		break;
+	case IC_BT:
+	case IC_BTR:
+	case IC_BTS:
+	case IC_BTC:
+	case IC_LBTR:
+	case IC_LBTS:
+	case IC_LBTC:
 	case IC_EQ:
 		goto binop;
 		break;
@@ -646,6 +653,27 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 		DumpRPNType(orig_rpn);
 		goto binop;
 		break;
+	case IC_BT:
+		printf("BT");
+		goto binop;
+	case IC_BTR:
+		printf("BTR");
+		goto binop;
+	case IC_BTS:
+		printf("BTS");
+		goto binop;
+	case IC_BTC:
+		printf("BTC");
+		goto binop;
+	case IC_LBTR:
+		printf("LBTR");
+		goto binop;
+	case IC_LBTS:
+		printf("LBTS");
+		goto binop;
+	case IC_LBTC:
+		printf("LBTC");
+		goto binop;
 	case IC_BASE_PTR:
 		printf("FRAME(%ld)", rpn->integer);
 		DumpRPNType(orig_rpn);
@@ -1423,7 +1451,7 @@ next:
 					ic->global_var = global_var;
 					if (ccmp->lex->cur_tok != '(') {
 						// If IC_ADDR_OF comes before,dont do an implicit call
-						if (stk_ptr&&ic_stk[stk_ptr - 1] == IC_ADDR_OF) {
+						if (stk_ptr && ic_stk[stk_ptr - 1] == IC_ADDR_OF) {
 							// Do nothing
 							if (ic->global_var->base.type & HTF_EXTERN)
 								ParseWarn(ccmp, "Can't address of extern symbol");
@@ -2171,7 +2199,7 @@ int64_t PrsFunArgs(CCmpCtrl* ccmp, CHashFun* fun)
 		} else if (ccmp->lex->cur_tok == TK_DOT_DOT_DOT) {
 			fun->base.flags |= CLSF_VARGS;
 			bungis = A_CALLOC(sizeof(CMemberLst), NULL);
-			bungis->dim.total_cnt=1; //MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
+			bungis->dim.total_cnt = 1; // MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
 			bungis->reg = REG_MAYBE;
 			bungis->member_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
 			assert(bungis->member_class);
@@ -2184,7 +2212,7 @@ int64_t PrsFunArgs(CCmpCtrl* ccmp, CHashFun* fun)
 			bungis->member_class++;
 			bungis->str = A_STRDUP("argv", NULL);
 			MemberAdd(ccmp, bungis, fun);
-			bungis->dim.total_cnt=1; //MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
+			bungis->dim.total_cnt = 1; // MUST HAVE A DIM OF 1 TO NOT BE ZERO(Nroot was here)
 			Lex(ccmp->lex);
 			fun->argc += 2;
 			if (ccmp->lex->cur_tok == ')') {
@@ -2760,6 +2788,18 @@ int64_t AssignRawTypeToNode(CCmpCtrl* ccmp, CRPN* rpn)
 		return rpn->raw_type;
 	switch (rpn->type) {
 		break;
+	case IC_BT:
+	case IC_BTR:
+	case IC_BTS:
+	case IC_BTC:
+	case IC_LBTR:
+	case IC_LBTS:
+	case IC_LBTC:
+		AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
+		AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+		rpn->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
+		return rpn->raw_type = RT_I64i;
+		break;
 	case IC_SHORT_ADDR:
 	case IC_RELOC:
 		rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
@@ -3225,22 +3265,28 @@ static void PrsMembers(CCmpCtrl* cctrl, CHashClass* bungis, int64_t flags,
 				do {
 					Lex(cctrl->lex);
 					PrsDecl(cctrl, base_class, bungis, &is_func, PRSF_CLASS, NULL);
-next_meta:
-					if(cctrl->lex->cur_tok==TK_NAME) {
-						//Nroot will parse the meta data but do nothing with it
-						switch(Lex(cctrl->lex)) {
-							case TK_STR:
-							while(Lex(cctrl->lex)==TK_STR)
+				next_meta:
+					if (cctrl->lex->cur_tok == TK_NAME) {
+						// Nroot will parse the meta data but do nothing with it
+						switch (Lex(cctrl->lex)) {
+						case TK_STR:
+							while (Lex(cctrl->lex) == TK_STR)
 								;
-							if(cctrl->lex->cur_tok==',') break;
-							else goto next_meta;
-							case TK_I64:
-							case TK_CHR:
-							
+							if (cctrl->lex->cur_tok == ',')
+								break;
+							else
+								goto next_meta;
+						case TK_I64:
+						case TK_CHR:
+
 							Lex(cctrl->lex);
-							if(cctrl->lex->cur_tok==',') break;
-							else goto next_meta;
-							break;default: ParseErr(cctrl,"Unexpected meta-data!!!");
+							if (cctrl->lex->cur_tok == ',')
+								break;
+							else
+								goto next_meta;
+							break;
+						default:
+							ParseErr(cctrl, "Unexpected meta-data!!!");
 						}
 					}
 				} while (cctrl->lex->cur_tok == ',');
@@ -4036,7 +4082,7 @@ CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, char** ptr)
 	rpn->code_misc = CodeMiscNew(acc, CMT_SHORT_ADDR);
 	rpn->code_misc->str = A_STRDUP(name, acc->hc);
 	rpn->code_misc->patch_addr = ptr;
-	*rpn->code_misc->patch_addr=INVALID_PTR;
+	*rpn->code_misc->patch_addr = INVALID_PTR;
 	rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
 	rpn->ic_class++;
 	rpn->raw_type = RT_PTR;
@@ -4277,3 +4323,11 @@ void __HC_CmpCtrl_SetAOT(CCmpCtrl* cc)
 {
 	cc->flags |= CCF_AOT_COMPILE;
 }
+
+HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
+HC_IC_BINDING(HC_ICAdd_BTC, IC_BTC);
+HC_IC_BINDING(HC_ICAdd_BTS, IC_BTS);
+HC_IC_BINDING(HC_ICAdd_BTR, IC_BTR);
+HC_IC_BINDING(HC_ICAdd_LBTC, IC_LBTC);
+HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
+HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);

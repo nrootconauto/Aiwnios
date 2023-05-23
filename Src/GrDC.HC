@@ -71,7 +71,7 @@ public U0 DCLighting(CDC *dc,
   //V1 and V2 are vects along two sides
   //of the tri joined at p2.
 
-  vn_x=v1.y*v2.z-v1.z*v2.y;
+  vn_x=v1.y*v2.z-v1.z*v2.y;
   vn_y=v1.z*v2.x-v1.x*v2.z;
   vn_z=v1.x*v2.y-v1.y*v2.x;
   if (d=Sqrt(SqrI64(vn_x)+SqrI64(vn_y)+SqrI64(vn_z)))

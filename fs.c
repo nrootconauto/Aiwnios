@@ -3,28 +3,29 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#if defined(_WIN32) ||defined(WIN32)
-#include <windows.h>
+#if defined(_WIN32) || defined(WIN32)
 #include <processthreadsapi.h>
 #include <synchapi.h>
-static void MakePathSane(char *ptr) {
-	char *ptr2=ptr;
+#include <windows.h>
+static void MakePathSane(char* ptr)
+{
+	char* ptr2 = ptr;
 enter:
-	while(*ptr) {
-		if(*ptr=='/'&&ptr[1]=='/') {
-			*ptr2++=*ptr++;
-			while(*ptr=='/')
+	while (*ptr) {
+		if (*ptr == '/' && ptr[1] == '/') {
+			*ptr2++ = *ptr++;
+			while (*ptr == '/')
 				ptr++;
 			goto enter;
 		}
-		if(ptr!=ptr2)
-			*ptr2++=*ptr;
-		else 
+		if (ptr != ptr2)
+			*ptr2++ = *ptr;
+		else
 			ptr2++;
-		if(*ptr)
+		if (*ptr)
 			ptr++;
 	}
-	*ptr2=0;
+	*ptr2 = 0;
 }
 #endif
 static int __FExists(char* path)
@@ -33,13 +34,13 @@ static int __FExists(char* path)
 }
 static int __FIsDir(char* path)
 {
-	#if defined(_WIN32) || defined(WIN32)
+#if defined(_WIN32) || defined(WIN32)
 	return PathIsDirectoryA(path);
-	#else
+#else
 	struct stat s;
 	stat(path, &s);
 	return (s.st_mode & S_IFMT) == S_IFDIR;
-	#endif
+#endif
 }
 
 int64_t FileExists(char* name) { return access(name, F_OK) == 0; }
@@ -92,11 +93,11 @@ int VFsCd(char* to, int make)
 		A_FREE(to);
 		return 1;
 	} else if (make) {
-		#if defined(_WIN32) || defined(WIN32)
+#if defined(_WIN32) || defined(WIN32)
 		mkdir(to);
-		#else
+#else
 		mkdir(to, 0700);
-		#endif
+#endif
 		A_FREE(to);
 		return 1;
 	}
@@ -149,105 +150,108 @@ char* __VFsFileNameAbs(char* name)
 	computed[strlen(computed)] = '/';
 	strcat(computed, thrd_pwd);
 	computed[strlen(computed) + 1] = 0;
-	if(!name) return A_STRDUP(computed,NULL);
-	if(strlen(name)) {
+	if (!name)
+		return A_STRDUP(computed, NULL);
+	if (strlen(name)) {
 		computed[strlen(computed)] = '/';
 		strcat(computed, name);
 	}
 	return A_STRDUP(computed, NULL);
 }
-#if defined(_WIN32) ||defined(WIN32)
-static int64_t FILETIME2Unix(FILETIME *t) {
-  // https://www.frenk.com/2009/12/convert-filetime-to-unix-timestamp/
-  int64_t time = t->dwLowDateTime | ((int64_t)t->dwHighDateTime << 32), adj;
-  adj = 10000 * (int64_t)11644473600000ll;
-  time -= adj;
-  return time / 10000000ll;
+#if defined(_WIN32) || defined(WIN32)
+static int64_t FILETIME2Unix(FILETIME* t)
+{
+	// https://www.frenk.com/2009/12/convert-filetime-to-unix-timestamp/
+	int64_t time = t->dwLowDateTime | ((int64_t)t->dwHighDateTime << 32), adj;
+	adj = 10000 * (int64_t)11644473600000ll;
+	time -= adj;
+	return time / 10000000ll;
 }
-int64_t VFsUnixTime(char *name) {
-  char *fn = __VFsFileNameAbs(name);
-  FILETIME t;
-  if (!fn)
-    return 0;
-  if (!__FExists(fn))
-    return 0;
-  HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  GetFileTime(fh, NULL, NULL, &t);
-  A_FREE(fn);
-  CloseHandle(fh);
-  return FILETIME2Unix(&t);
+int64_t VFsUnixTime(char* name)
+{
+	char* fn = __VFsFileNameAbs(name);
+	FILETIME t;
+	if (!fn)
+		return 0;
+	if (!__FExists(fn))
+		return 0;
+	HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
+		OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	GetFileTime(fh, NULL, NULL, &t);
+	A_FREE(fn);
+	CloseHandle(fh);
+	return FILETIME2Unix(&t);
 }
 
 int64_t VFsFSize(char* name)
 {
-  char *fn = __VFsFileNameAbs(name),*delim;
-  int64_t s64;
-  int32_t h32;
-  if (!fn)
-    return 0;
-  if (!__FExists(fn)) {
-    A_FREE(fn);
-    return 0;
-  }
-  if (__FIsDir(fn)) {
-    WIN32_FIND_DATAA data;
-    HANDLE dh;
-    char buffer[strlen(fn) + 4];
-    strcpy(buffer, fn);
-    strcat(buffer, "/*");
-    MakePathSane(buffer);
-    while(delim=strchr(buffer,'/'))
-		*delim='\\';
-    s64 = 0;
-    dh = FindFirstFileA(buffer, &data);
-    while (FindNextFileA(dh, &data))
-      s64++;
-    A_FREE(fn);
-    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
-    if (dh != INVALID_HANDLE_VALUE)
-      FindClose(dh);
-    return s64;
-  }
-  HANDLE fh = CreateFileA(fn, GENERIC_READ, 0, NULL, OPEN_EXISTING,
-                          FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  s64 = GetFileSize(fh, &h32);
-  s64 |= (int64_t)h32 << 32;
-  A_FREE(fn);
-  CloseHandle(fh);
-  return s64;
+	char *fn = __VFsFileNameAbs(name), *delim;
+	int64_t s64;
+	int32_t h32;
+	if (!fn)
+		return 0;
+	if (!__FExists(fn)) {
+		A_FREE(fn);
+		return 0;
+	}
+	if (__FIsDir(fn)) {
+		WIN32_FIND_DATAA data;
+		HANDLE dh;
+		char buffer[strlen(fn) + 4];
+		strcpy(buffer, fn);
+		strcat(buffer, "/*");
+		MakePathSane(buffer);
+		while (delim = strchr(buffer, '/'))
+			*delim = '\\';
+		s64 = 0;
+		dh = FindFirstFileA(buffer, &data);
+		while (FindNextFileA(dh, &data))
+			s64++;
+		A_FREE(fn);
+		// https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
+		if (dh != INVALID_HANDLE_VALUE)
+			FindClose(dh);
+		return s64;
+	}
+	HANDLE fh = CreateFileA(fn, GENERIC_READ, 0, NULL, OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	s64 = GetFileSize(fh, &h32);
+	s64 |= (int64_t)h32 << 32;
+	A_FREE(fn);
+	CloseHandle(fh);
+	return s64;
 }
 
-char **VFsDir(char* name)
+char** VFsDir(char* name)
 {
-  char *fn = __VFsFileNameAbs(""),**ret=NULL,*delim;
-  if (!fn)
-    return 0;
-  if (!__FExists(fn)||!__FIsDir(fn)) {
-    A_FREE(fn);
-    return 0;
-  }
-  int64_t sz=VFsFSize("");
-  if (sz) {
-	ret=A_CALLOC((sz+1)*8,NULL);
-    WIN32_FIND_DATAA data;
-    HANDLE dh;
-    char buffer[strlen(fn) + 4];
-    strcpy(buffer, fn);
-    strcat(buffer, "/*");
-    MakePathSane(buffer);
-    while(delim=strchr(buffer,'/'))
-		*delim='\\';
-    int64_t s64 = 0;
-    dh = FindFirstFileA(buffer, &data);
-    while (FindNextFileA(dh, &data))
-      ret[s64++]=A_STRDUP(data.cFileName,NULL);
-    A_FREE(fn);
-    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
-    if (dh != INVALID_HANDLE_VALUE)
-      FindClose(dh);
-  }
-  return ret;
+	char *fn = __VFsFileNameAbs(""), **ret = NULL, *delim;
+	if (!fn)
+		return 0;
+	if (!__FExists(fn) || !__FIsDir(fn)) {
+		A_FREE(fn);
+		return 0;
+	}
+	int64_t sz = VFsFSize("");
+	if (sz) {
+		ret = A_CALLOC((sz + 1) * 8, NULL);
+		WIN32_FIND_DATAA data;
+		HANDLE dh;
+		char buffer[strlen(fn) + 4];
+		strcpy(buffer, fn);
+		strcat(buffer, "/*");
+		MakePathSane(buffer);
+		while (delim = strchr(buffer, '/'))
+			*delim = '\\';
+		int64_t s64 = 0;
+		dh = FindFirstFileA(buffer, &data);
+		while (FindNextFileA(dh, &data))
+			ret[s64++] = A_STRDUP(data.cFileName, NULL);
+		A_FREE(fn);
+		// https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
+		if (dh != INVALID_HANDLE_VALUE)
+			FindClose(dh);
+	}
+	return ret;
 }
 
 #else
@@ -257,8 +261,8 @@ char** VFsDir(char* fn)
 	int64_t sz;
 	char** ret;
 	fn = __VFsFileNameAbs("");
-	while(strlen(fn)&&fn[strlen(fn)-1]=='/')
-		fn[strlen(fn)-1]=0;
+	while (strlen(fn) && fn[strlen(fn) - 1] == '/')
+		fn[strlen(fn) - 1] = 0;
 	DIR* dir = opendir(fn);
 	if (!dir) {
 		A_FREE(fn);
@@ -370,7 +374,8 @@ end:
 }
 int VFsFileExists(char* path)
 {
-	if(!path) return 0;
+	if (!path)
+		return 0;
 	path = __VFsFileNameAbs(path);
 	int e = __FExists(path);
 	A_FREE(path);

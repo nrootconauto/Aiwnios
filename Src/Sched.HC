@@ -110,7 +110,7 @@ U0 Yield() {
         LBts(&task->task_flags,TASKf_PENDING_BREAK);
         goto restore;
       }
-      TaskContextSetRIP(task->context_save_area,&Break);
+      TaskContextSetRIP(task->context_save_area,&Break);
       if(Bt(&task->task_flags,TASKf_BREAK_TO_SHIFT_ESC)) {
         goto restore;
       }

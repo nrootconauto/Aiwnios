@@ -2,8 +2,8 @@
 #include "aiwn.h"
 #include <stdint.h>
 #if defined(_WIN32) || defined(WIN32)
-#include <sysinfoapi.h>
 #include <memoryapi.h>
+#include <sysinfoapi.h>
 #else
 #include <sys/mman.h>
 #endif
@@ -17,51 +17,54 @@ static void MemPagTaskFree(CMemBlk* blk, CHeapCtrl* hc)
 {
 	QueRem(blk);
 	hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
-	#if defined(_WIN32) || defined(WIN32)
-	VirtualFree(blk,blk->pags*MEM_PAG_SIZE,MEM_RELEASE);
-	#else
+#if defined(_WIN32) || defined(WIN32)
+	VirtualFree(blk, blk->pags * MEM_PAG_SIZE, MEM_RELEASE);
+#else
 	static int64_t ps;
 	int64_t b;
-	if(!ps)
-		ps=sysconf(_SC_PAGE_SIZE);
-	b=blk->pags*MEM_PAG_SIZE;
-	if(b%ps) b+=ps;
-	b/=ps;
-	b*=ps;
+	if (!ps)
+		ps = sysconf(_SC_PAGE_SIZE);
+	b = blk->pags * MEM_PAG_SIZE;
+	if (b % ps)
+		b += ps;
+	b /= ps;
+	b *= ps;
 	munmap(blk, b);
-	#endif
+#endif
 }
 static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 {
 	if (!hc)
 		hc = Fs->heap;
-	#if defined(_WIN32) || defined(WIN32)
+#if defined(_WIN32) || defined(WIN32)
 	static int64_t dwAllocationGranularity;
-    if (!dwAllocationGranularity) {
-      SYSTEM_INFO si;
-      GetSystemInfo(&si);
-      dwAllocationGranularity = si.dwAllocationGranularity;
-    }
-    int64_t b=(pags*MEM_PAG_SIZE)/dwAllocationGranularity*dwAllocationGranularity;
-    if((pags*MEM_PAG_SIZE)%dwAllocationGranularity)
-		b+=dwAllocationGranularity;
-	CMemBlk *ret=VirtualAlloc(NULL,b,MEM_COMMIT|MEM_RESERVE,PAGE_EXECUTE_READWRITE);
-	if(!ret) return NULL;
-	#else
+	if (!dwAllocationGranularity) {
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+		dwAllocationGranularity = si.dwAllocationGranularity;
+	}
+	int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity * dwAllocationGranularity;
+	if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
+		b += dwAllocationGranularity;
+	CMemBlk* ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (!ret)
+		return NULL;
+#else
 	static int64_t ps;
 	int64_t b;
-	if(!ps) {
-		ps=sysconf(_SC_PAGE_SIZE);
+	if (!ps) {
+		ps = sysconf(_SC_PAGE_SIZE);
 	}
-	b=pags*MEM_PAG_SIZE;
-	if(b%ps) b+=ps;
-	b/=ps;
-	b*=ps;
+	b = pags * MEM_PAG_SIZE;
+	if (b % ps)
+		b += ps;
+	b /= ps;
+	b *= ps;
 	CMemBlk* ret = mmap(NULL, b, PROT_EXEC | PROT_READ | PROT_WRITE,
 		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (!ret || ret == MAP_FAILED)
 		return NULL;
-	#endif
+#endif
 	int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
 	CMemUnused **unm, *tmp, *tmp2;
 	QueIns(&ret->base, hc->mem_blks.last);
@@ -86,13 +89,15 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	return ret;
 }
 
-void *GetFs() {
+void* GetFs()
+{
 	return Fs;
 }
 void* __AIWNIOS_MAlloc(int64_t cnt, void* t)
 {
-	if(!cnt) return NULL;
-	cnt+=16;
+	if (!cnt)
+		return NULL;
+	cnt += 16;
 	if (!t)
 		t = Fs->heap;
 	CHeapCtrl* hc = t;
@@ -222,19 +227,20 @@ void HeapCtrlDel(CHeapCtrl* ct)
 		;
 	for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
 		next = m->base.next;
-		#if defined(_WIN32) || defined(WIN32)
-		VirtualFree(m,m->pags*MEM_PAG_SIZE,MEM_RELEASE);
-		#else
+#if defined(_WIN32) || defined(WIN32)
+		VirtualFree(m, m->pags * MEM_PAG_SIZE, MEM_RELEASE);
+#else
 		static int64_t ps;
 		int64_t b;
-		if(!ps)
-			ps=sysconf(_SC_PAGE_SIZE);
-		b=m->pags*MEM_PAG_SIZE;
-		if(b%ps) b+=ps;
-		b/=ps;
-		b*=ps;
+		if (!ps)
+			ps = sysconf(_SC_PAGE_SIZE);
+		b = m->pags * MEM_PAG_SIZE;
+		if (b % ps)
+			b += ps;
+		b /= ps;
+		b *= ps;
 		munmap(m, b);
-		#endif
+#endif
 	}
 	free(ct);
 }
@@ -249,18 +255,17 @@ char* __AIWNIOS_StrDup(char* str, void* t)
 	return ret;
 }
 #if defined(_WIN32) || defined(WIN32)
-int64_t IsValidPtr(char *chk) {
-  MEMORY_BASIC_INFORMATION mbi;
-  memset(&mbi, 0, sizeof mbi);
-  if (VirtualQuery(chk, &mbi, sizeof(mbi))) {
-    // https://stackoverflow.com/questions/496034/most-efficient-replacement-for-isbadreadptr
-    DWORD mask =
-        (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
-         PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
-    int64_t b = !!(mbi.Protect & mask);
-    return b;
-  }
-  return 0;
+int64_t IsValidPtr(char* chk)
+{
+	MEMORY_BASIC_INFORMATION mbi;
+	memset(&mbi, 0, sizeof mbi);
+	if (VirtualQuery(chk, &mbi, sizeof(mbi))) {
+		// https://stackoverflow.com/questions/496034/most-efficient-replacement-for-isbadreadptr
+		DWORD mask = (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
+		int64_t b = !!(mbi.Protect & mask);
+		return b;
+	}
+	return 0;
 }
 #else
 static int64_t Hex2I64(char* s, char** end)
@@ -278,16 +283,16 @@ static int64_t Hex2I64(char* s, char** end)
 		*end = s;
 	return ret;
 }
-int64_t IsValidPtr(char *chk)
+int64_t IsValidPtr(char* chk)
 {
-	  static int64_t ps;
-	  int64_t mptr=chk;
-	  if (!ps)
+	static int64_t ps;
+	int64_t mptr = chk;
+	if (!ps)
 		ps = getpagesize();
-	  mptr /= ps;
-	  mptr *= ps;
-	  // https://renatocunha.com/2015/12/msync-pointer-validity/
-	  return -1 != msync(mptr, ps, MS_ASYNC);
+	mptr /= ps;
+	mptr *= ps;
+	// https://renatocunha.com/2015/12/msync-pointer-validity/
+	return -1 != msync(mptr, ps, MS_ASYNC);
 	int64_t ok = 0, sz = 0x1000;
 	char buffer[0x1000];
 	char* ptr = buffer;

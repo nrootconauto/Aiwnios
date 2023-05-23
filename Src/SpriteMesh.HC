@@ -445,7 +445,7 @@ U0 MeshScaleZoom(CMeshFrame *e,F64 scale)
   MeshCurSnap(e);
 }
 
-U0 MPDrawIt(CMeshFrame *e)
+U0 MPDrawIt(CMeshFrame *e)
 {//Multiprocessing draw it, called by each core.
 
   //Makes a copy of e->dc so we can change dc->color member and stuff.

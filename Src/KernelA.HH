@@ -1751,7 +1751,7 @@ class CInst
 #define OC_JMP_REL8		0xEB
 #define OC_NOP2			(OC_NOP<<8+OC_OP_SIZE_PREFIX)
 
-#define PUSH_C_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH R8 PUSH R9
+#define PUSH_C_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH R8 PUSH R9
 #define POP_C_REGS POP R9 POP R8 POP RBX POP RDX POP RCX POP RAX
 
 #define PUSH_REGS PUSH RAX PUSH RCX PUSH RDX PUSH RBX PUSH RBP PUSH RSI \
@@ -6467,3 +6467,21 @@ class CSpritePtMeshU8s : CSpriteBase
 
 extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #include "Headers.HH";
+
+
+#ifdef TARGET_X86
+#define IC_BT			0x77
+#define IC_BTS			0x78
+#define IC_BTR			0x79
+#define IC_BTC			0x7A
+#define IC_LBTS			0x7B
+#define IC_LBTR			0x7C
+#define IC_LBTC			0x7D
+_intern IC_BT Bool Bt(U8*,I64);
+_intern IC_BTS Bool Bts(U8*,I64);
+_intern IC_BTC Bool Btc(U8*,I64);
+_intern IC_BTR Bool Btr(U8*,I64);
+_intern IC_LBTS Bool LBts(U8*,I64);
+_intern IC_LBTC Bool LBtc(U8*,I64);
+_intern IC_LBTR Bool LBtr(U8*,I64);
+#endif

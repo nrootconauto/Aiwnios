@@ -147,6 +147,16 @@ binop_dft:
         return r->ic_class=r->t.arg2_class;
       goto binop_dft;
     }
+    break;
+    case IC_BT:
+    case IC_BTS:
+    case IC_BTR:
+    case IC_BTC:
+    case IC_LBTS:
+    case IC_LBTR:
+    case IC_LBTC:
+    r->ic_class=cmp.internal_types[RT_I64];
+    break;
     break;case IC_SHR:
     goto binop;
     break;case IC_SHL_CONST:
@@ -777,6 +787,7 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
   I64 cur_prec,stk_ptr,tok=cc->token,idx,arity,v,mode,str_len;
   CRPN *orig_next=cc->coc.coc_head.next,*argc,*argv,*next;
   CCodeMisc *misc;
+  I64 intern_code;
   Bool finish=FALSE;
   CPrsStk *old=cc->ps;
   CArrayDim tmpad,*ic_dim;
@@ -1119,12 +1130,24 @@ vargs:
           LexExcept(cc,"Expected a ')'.");
         Lex(cc);
         arity++; //Include the function in the arity
-        RPNAddNew(
-          cc,
-          IC_CALL_INDIRECT,
-          arity,
-          ic_fun->return_class
-        );
+        //Check for _intern functions 
+        if(!(ic_fun->flags&(1<<Ff_INTERNAL))) {
+			RPNAddNew(
+			  cc,
+			  IC_CALL_INDIRECT,
+			  arity,
+			  ic_fun->return_class
+			);
+        } else {
+          arity--;
+          RPNDel(next); //Remove function
+          RPNAddNew(
+			  cc,
+			  ic_fun->exe_addr,
+			  arity,
+			  ic_fun->return_class
+			);
+		}
       } else {
         if(tok==TK_IDENT&&cc->hash_entry) {
           if(cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE))

@@ -9,14 +9,14 @@ jmp_buf* __enter_try()
 	Fs->catch_except = 0;
 	return &ex->ctx;
 }
-jmp_buf *__throw(uint64_t code)
+jmp_buf* __throw(uint64_t code)
 {
 	Fs->except_ch = code;
 	CExcept* ex;
 	Fs->catch_except = 0;
 	Fs->except_ch = code;
 	QueRem(ex = Fs->except->last);
-	memcpy(Fs->throw_pad, ex->ctx,sizeof(ex->ctx));
+	memcpy(Fs->throw_pad, ex->ctx, sizeof(ex->ctx));
 	A_FREE(ex);
 	return &(Fs->throw_pad);
 }
@@ -28,10 +28,12 @@ void AIWNIOS_ExitCatch()
 		throw(Fs->except_ch);
 }
 
-int64_t AIWNIOS_enter_try() {
+int64_t AIWNIOS_enter_try()
+{
 	return !setjmp(*__enter_try());
 }
 
-void AIWNIOS_throw(uint64_t c) {
-	longjmp(*__throw(c),1);
+void AIWNIOS_throw(uint64_t c)
+{
+	longjmp(*__throw(c), 1);
 }
