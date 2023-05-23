@@ -10,6 +10,7 @@
 // I got bored and played with a color chooser May 7,2024
 // I am going to get off my ass and document this file May 14,2024
 //
+static int64_t IsCompoundCompare(CRPN* r);
 static int64_t RawTypeIs64(int64_t r)
 {
 	switch (r) {
@@ -2006,8 +2007,15 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled, int6
 	cmp_binop:
 		arg = ICArgN(r, 1);
 		arg2 = ICArgN(r, 0);
-		PushTmpDepthFirst(cctrl, arg2, 1, 0);
+		if(!IsCompoundCompare(r)) {
+			PushTmpDepthFirst(cctrl, arg, SpillsTmpRegs(arg2), !SpillsTmpRegs(arg2));
+			PushTmpDepthFirst(cctrl, arg2, 1, 1);
+			PopTmp(cctrl, arg);
+			PopTmp(cctrl, arg2);
+			goto fin;
+		}
 		PushTmpDepthFirst(cctrl, arg, 1, 0);
+		PushTmpDepthFirst(cctrl, arg2, 1, 0);
 		PopTmp(cctrl, arg);
 		PopTmp(cctrl, arg2);
 		goto fin;
@@ -4219,17 +4227,10 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		AIWNIOS_ADD_CODE(X86Jcc, X86_COND_G, 6);
 		CodeMiscAddRef(rpn->code_misc->dft_lab, bin + code_off - 4);
 	jmp_tab_sexy:
-		//
-		// See LAMA snail
-		//
-		// The jump table offsets are relative to the start of the function
-		//   to make it so the code is Position-Independant
-		AIWNIOS_ADD_CODE(X86SubReg, tmp.reg, R8); // R8 has low bound
-		AIWNIOS_ADD_CODE(X86LeaSIB, R9, -1, -1, RIP, -code_off);
 		AIWNIOS_ADD_CODE(X86LeaSIB, RDX, -1, -1, RIP, 0);
 		CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-		AIWNIOS_ADD_CODE(X86AddSIB64, R9, 8, tmp.reg, RDX, 0);
-		AIWNIOS_ADD_CODE(X86JmpReg, R9);
+		//-8*rpn->code_misc->lo offsets our tmp.reg by lo
+		AIWNIOS_ADD_CODE(X86JmpSIB, 8, tmp.reg, RDX, -8*rpn->code_misc->lo);
 		break;
 	case IC_SUB_RET:
 		AIWNIOS_ADD_CODE(X86Ret, 0);
@@ -5335,7 +5336,6 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	case IC_STORE:
 		abort();
 		break;
-		break;
 	case IC_BT:
 #define BTX_OP(lock, f_imm_sib, f_imm_reg, f_sib, f_reg)                                                       \
 	a = ICArgN(rpn, 1);                                                                                        \
@@ -5376,6 +5376,13 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			AIWNIOS_ADD_CODE(f_sib, b->res.reg, -1, -1, a->res.reg, 0);                                        \
 		}                                                                                                      \
 	}                                                                                                          \
+	if(old_fail_misc&&old_pass_misc)  { \
+		AIWNIOS_ADD_CODE(X86Jcc, X86_COND_C, 0);                                                      \
+		CodeMiscAddRef(old_pass_misc,bin+code_off-4); \
+		AIWNIOS_ADD_CODE(X86Jmp,0);                                                      \
+		CodeMiscAddRef(old_fail_misc,bin+code_off-4); \
+		goto ret; \
+	} \
 	if (rpn->res.mode != MD_NULL) {                                                                            \
 		into_reg = 0;                                                                                          \
 		if (rpn->res.mode == MD_REG)                                                                           \
@@ -5585,9 +5592,10 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 				if (code_off % 8)
 					code_off += 8 - code_off % 8;
 				misc->addr = bin + code_off;
+				if(misc->patch_addr) *misc->patch_addr=misc->addr;
 				if (bin) {
 					for (idx = 0; idx <= misc->hi - misc->lo; idx++)
-						*(void**)(bin + code_off + idx * 8) = (char*)misc->jmp_tab[idx]->addr - bin;
+						*(void**)(bin + code_off + idx * 8) = (char*)misc->jmp_tab[idx]->addr;
 				}
 				code_off += (misc->hi - misc->lo + 1) * 8;
 				goto fill_in_refs;

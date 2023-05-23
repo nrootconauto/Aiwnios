@@ -40,6 +40,7 @@ I64 CeilI64(I64 num,I64 to)
   }
 }
 
+#ifdef BOOTSTRAP
 F64 ToF64(I64 i) {
   return i;
 }
@@ -47,6 +48,7 @@ F64 ToF64(I64 i) {
 I64 ToI64(F64 i) {
   return i;
 }
+#endif
 
 I64 ClampI64(I64 i,I64 lo,I64 hi) {
   if(i<lo) return lo;

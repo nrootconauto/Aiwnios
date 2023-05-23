@@ -4184,13 +4184,14 @@ CCodeMisc* __HC_CodeMiscStrNew(CCmpCtrl* ccmp, char* str, int64_t sz)
 	misc->str_len = sz;
 	return misc;
 }
-CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, int64_t lo, int64_t hi)
+CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, void **table_address, int64_t hi)
 {
 	CCodeMisc* misc = CodeMiscNew(ccmp, CMT_JMP_TAB);
-	misc->jmp_tab = A_MALLOC((hi - lo) * sizeof(CCodeMisc*), NULL);
-	memcpy(misc->jmp_tab, labels, (hi - lo) * sizeof(CCodeMisc*));
+	misc->jmp_tab = A_MALLOC((hi - 0) * sizeof(CCodeMisc*), NULL);
+	memcpy(misc->jmp_tab, labels, (hi - 0) * sizeof(CCodeMisc*));
 	misc->hi = hi - 1;
-	misc->lo = lo;
+	misc->lo = 0;
+	misc->patch_addr=table_address;
 	return misc;
 }
 

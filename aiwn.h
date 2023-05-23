@@ -384,8 +384,8 @@ typedef struct CCodeMisc {
 	union {
 		struct CCodeMisc* dft_lab;
 		int64_t str_len;
-    void **patch_addr;
-	};
+    };
+	void **patch_addr;
 	union {
 		struct CCodeMisc** jmp_tab;
 		double flt;
@@ -1020,7 +1020,7 @@ HC_IC_BINDINGH(HC_ICAdd_ATAN)
 CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc,int64_t r);
 CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc,int64_t r,int64_t rt,int64_t ptr_cnt);
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc,int64_t off,int64_t rt,int64_t ptr_cnt);
-CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp,CCodeMisc *labels,int64_t lo,int64_t hi);
+CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp,CCodeMisc *labels,void **table_address,int64_t hi);
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp,char *str,int64_t sz);
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp);
 CCmpCtrl *__HC_CmpCtrlNew();

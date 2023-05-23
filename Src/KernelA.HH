@@ -1697,7 +1697,7 @@ class CCodeMisc
   //
   // Currently aiwnios will start out using the C code generator so you can
   //   port it to other archs easily
-  U8	*addr; 
+  U8	*addr,*addr2; 
   union {
     I64 st_len;		//STR_CONST
     I64 num_consts;	//FLOAT_CONSTS
@@ -6468,8 +6468,7 @@ class CSpritePtMeshU8s : CSpriteBase
 extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #include "Headers.HH";
 
-
-#ifdef TARGET_X86
+#ifndef BOOTSTRAP
 #define IC_BT			0x77
 #define IC_BTS			0x78
 #define IC_BTR			0x79
@@ -6477,6 +6476,10 @@ extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #define IC_LBTS			0x7B
 #define IC_LBTR			0x7C
 #define IC_LBTC			0x7D
+#define IC_TO_I64		0x1B
+#define IC_TO_F64		0x1C
+_intern IC_TO_I64 I64 ToI64(F64);
+_intern IC_TO_F64 F64 ToF64(I64);
 _intern IC_BT Bool Bt(U8*,I64);
 _intern IC_BTS Bool Bts(U8*,I64);
 _intern IC_BTC Bool Btc(U8*,I64);

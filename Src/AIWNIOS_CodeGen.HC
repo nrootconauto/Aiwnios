@@ -289,6 +289,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
+  I64 *table_ptr;
   U8 *cc2=__HC_CodeCtrlPush(acc);
   if(cc->flags&CCF_AOT_COMPILE)
     __HC_CmpCtrl_SetAOT(acc);
@@ -474,7 +475,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       table=CAlloc(misc->range*8);
       for(idx=0;idx!=misc->range;idx++)
         table[idx]=misc->jmp_table[idx]->addr;
-      misc->addr=__HC_CodeMiscJmpTableNew(acc,table,0,misc->range);
+      misc->addr=__HC_CodeMiscJmpTableNew(acc,table,&misc->addr2,misc->range);
       Free(table);
     }
   }
@@ -885,7 +886,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       tmpabs->type=AAT_ADD_U64;
       tmpabs->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
       cc->aotc->abss=tmpabs;	
-      idx=misc->addr(U64*)[0]=Str2I64(misc->str);
+      misc->addr(U64*)[0]=Str2I64(misc->str);
+    } else if(misc->addr!=INVALID_PTR&&misc->type==CMT_JMP_TABLE&&cc->flags&CCF_AOT_COMPILE) {
+      for(idx=0;idx<misc->range;idx++) {
+        tmpabs=CAlloc(sizeof(CAOTAbsAddr));
+        tmpabs->next=cc->aotc->abss;
+        tmpabs->type=AAT_ADD_U64;
+        table_ptr=misc->addr2+8*idx;
+        *table_ptr=cc->aotc->rip+(*table_ptr-machine_code(I64));
+        tmpabs->rip=cc->aotc->rip+((misc->addr2(U8*)+8*idx)-machine_code);
+        cc->aotc->abss=tmpabs;	
+      }
     }
   }
   __HC_CmpCtrlDel(acc);
