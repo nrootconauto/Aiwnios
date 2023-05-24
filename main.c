@@ -536,9 +536,9 @@ void BootAiwnios()
 		PrsBindCSymbol("__HC_ICAdd_BTR", __HC_ICAdd_BTR);
 		PrsBindCSymbol("__HC_ICAdd_BTS", __HC_ICAdd_BTS);
 		PrsBindCSymbol("__HC_ICAdd_BTC", __HC_ICAdd_BTC);
-		PrsBindCSymbol("__HC_ICAdd_LBTR", __HC_ICAdd_BTR);
-		PrsBindCSymbol("__HC_ICAdd_LBTS", __HC_ICAdd_BTS);
-		PrsBindCSymbol("__HC_ICAdd_LBTC", __HC_ICAdd_BTC);
+		PrsBindCSymbol("__HC_ICAdd_LBTR", __HC_ICAdd_LBTR);
+		PrsBindCSymbol("__HC_ICAdd_LBTS", __HC_ICAdd_LBTS);
+		PrsBindCSymbol("__HC_ICAdd_LBTC", __HC_ICAdd_LBTC);
 		PrsBindCSymbol("__HC_CodeMiscStrNew", __HC_CodeMiscStrNew);
 		PrsBindCSymbol("__HC_CodeMiscLabelNew", __HC_CodeMiscLabelNew);
 		PrsBindCSymbol("__HC_CmpCtrlNew", __HC_CmpCtrlNew);

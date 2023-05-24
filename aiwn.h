@@ -394,6 +394,8 @@ typedef struct CCodeMisc {
   
   int32_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
+  //The bit is set if the floating point register is alive at this inst
+  int64_t freg_alive_bmp;
   CCodeMiscRef *refs;
 } CCodeMisc;
 typedef struct CCmpCtrl {
@@ -415,6 +417,10 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data4;
 	int64_t backend_user_data5;
 	int64_t backend_user_data6;
+	int64_t backend_user_data7;
+	int64_t backend_user_data8;
+	int64_t backend_user_data9;
+	int64_t backend_user_data10;
   //Used for returns
   CCodeMisc *epilog_label;
   CHeapCtrl *hc;
@@ -759,10 +765,10 @@ enum {
 #define AIWNIOS_TMP_IREG_POOP2 RCX
 #define AIWNIOS_TMP_IREG_START 0
 #define AIWNIOS_TMP_IREG_CNT 5
-#define AIWNIOS_FREG_START 0
-#define AIWNIOS_FREG_CNT 0
+#define AIWNIOS_FREG_START 6
+#define AIWNIOS_FREG_CNT (15-6+1)
 #define AIWNIOS_TMP_FREG_START 3
-#define AIWNIOS_TMP_FREG_CNT (15-AIWNIOS_TMP_FREG_START+1)
+#define AIWNIOS_TMP_FREG_CNT (5-3+1)
 #endif
 
 #if  defined(_WIN32)||defined(WIN32) 

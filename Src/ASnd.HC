@@ -106,7 +106,7 @@ public F64 Beat()
     res+=(cur_tM-music.last_tM)*music.tempo;
   music.last_tM=cur_tM;
   music.last_Beat=res;
-  //LBtr(&sys_semas[SEMA_TMBEAT],0); TODO RESTORE
+  Btr(&sys_semas[SEMA_TMBEAT],0);
   if(bl) BreakUnlock;
   return res;
 }
