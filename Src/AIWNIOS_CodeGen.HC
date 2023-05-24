@@ -182,6 +182,13 @@ extern U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 szctrl);
 extern U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrsctrl);
 extern U8 *__HC_ICAdd_ShortAddr(U8 *cc,U8*cctrl,U8*,U8**);
 extern U0 __HC_CmpCtrlSetRip(U8*,I64);
+extern U8 * __HC_ICAdd_BT(U8*);
+extern U8 * __HC_ICAdd_BTC(U8*);
+extern U8 * __HC_ICAdd_BTR(U8*);
+extern U8 * __HC_ICAdd_BTS(U8*);
+extern U8 * __HC_ICAdd_LBTC(U8*);
+extern U8 * __HC_ICAdd_LBTR(U8*);
+extern U8 * __HC_ICAdd_LBTS(U8*);
 #endif
 //
 // See arm_backend.c

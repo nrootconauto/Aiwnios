@@ -5543,7 +5543,10 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 			r = forwards[cnt];
 			if (PushTmpDepthFirst(cctrl, r, 0, 1))
 				PopTmp(cctrl, r);
-			r->res.mode = MD_NULL;
+			//These modes expect you run ->__sib_base_rpn/__sib_index_rpn
+			if(r->res.mode!=__MD_X86_64_LEA_SIB&&r->res.mode!=__MD_X86_64_SIB) {
+				r->res.mode = MD_NULL;
+			}
 			assert(cctrl->backend_user_data1 == 0);
 			assert(cctrl->backend_user_data2 == 0);
 			assert(cctrl->backend_user_data3 == 0);

@@ -526,7 +526,7 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
         i=((fun->exe_addr-tmpaotie->rip)>>2)&(1<<26-1);
         AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
         #endif
-        #ifdef TARGET_X86_SYSV
+        #ifdef TARGET_X86
         //Call 32 is e8 imm32
         i=fun->exe_addr-tmpaotie->rip-5;
         AOTOrBytesU8At(cc,tmpaotie->rip+1,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
