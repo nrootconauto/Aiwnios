@@ -242,20 +242,18 @@ extern U0 __HC_CmpCtrlSetRip(U8*,I64);
 // Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
 //
 U0 AiwniosMakeShortJmps(CCmpCtrl *cc) {
-  CRPN *head=&cc->coc.coc_head,*cur,*next;
+  CRPN *head=&cc->coc.coc_head,*cur;
   CCodeMisc *misc;
   for(cur=head->next;cur!=head;cur=cur->next) {
-    if(cur->type==IC_CALL_INDIRECT) {
-      if((next=RPNArgN(cur,cur->length-1))->type==IC_ADDR_IMPORT) {
-        misc=next->ic_data;
-        if((misc->h->type&HTT_FUN)&&!(misc->h->type&HTF_IMPORT)) {
-          next->misc=COCMiscNew(cc,CMT_HASH_ENTRY);
-          next->misc->str=StrNew(misc->h->str);
-          next->misc->flags|=CMF_SHORT_ADDR;
-          next->misc->h=misc->h;
-          next->ic_data=next->misc;
-          next->ic_flags|=ICF_SHORT_JMP;
-        }
+    if(cur->type==IC_ADDR_IMPORT) {
+      misc=cur->ic_data;
+      if(!(misc->h->type&HTF_IMPORT)) {
+        cur->misc=COCMiscNew(cc,CMT_HASH_ENTRY);
+        cur->misc->str=StrNew(misc->h->str);
+        cur->misc->flags|=CMF_SHORT_ADDR;
+        cur->misc->h=misc->h;
+        cur->ic_data=cur->misc;
+        cur->ic_flags|=ICF_SHORT_JMP;
       }
     }
   }
@@ -277,8 +275,10 @@ I64 VarIRegToReg(I64 r)  {
 // Turns my CRPN from the parser into the IC for the C side
 //
 U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
+  #ifdef TARGET_X86
   if(cc->flags&CCF_AOT_COMPILE)
     AiwniosMakeShortJmps(cc);
+  #endif
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
   CMemberLst *mlst;
@@ -527,7 +527,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       cur->ic_class=OptClassFwd(cur->ic_class);
   }
   //
-  // Step 5,convert the CRPN's into AIWNIOS rpns
+  // Step 6,convert the CRPN's into AIWNIOS rpns
   //
   for(cur=head->last;cur!=head;cur=cur->last) {
     switch(cur->type) {
@@ -859,8 +859,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           tmpaie->type=IET_IMM_I64;
           tmpaie->str=StrNew(misc->h->str);
           tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
+          tmpaie->offset=misc->offset;
 		  //All non-imported functions are short calls
           if(misc->flags&CMF_SHORT_ADDR) {
+			tmpaie->type=IET_IMM_U0;
             tmpaie->short_jmp=TRUE;
           }
           QueIns(tmpaie,cc->aot->last_ie);

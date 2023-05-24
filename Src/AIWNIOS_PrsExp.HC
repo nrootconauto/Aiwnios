@@ -451,6 +451,20 @@ mul:
       case IC_SUB_EQU:
       a=rpn->t.arg1_tree;
       b=rpn->t.arg2_tree;
+      if(a->type==IC_ABS_ADDR&&b->type==IC_IMM_I64) {
+        a->misc->offset+=b->imm_i64;
+        RPNDel(rpn);
+        RPNDel(b);
+		PrsPush3(cc->ps,a); //Put back on the stack
+		return;
+      }
+      if(b->type==IC_ABS_ADDR&&a->type==IC_IMM_I64) {
+        b->misc->offset+=a->imm_i64;
+        RPNDel(rpn);
+        RPNDel(a);
+		PrsPush3(cc->ps,b); //Put back on the stack
+		return;
+      }
       if(a->ic_dim) {
         width=a->ic_class->size*a->ic_dim->total_cnt;
         rpn2=CAlloc(sizeof CRPN);
@@ -639,6 +653,17 @@ next:
 
 CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
   CCodeMisc *head=&cc->coc.coc_next_misc,*cur;
+  #ifdef TARGET_X86
+  //In X86_64,I will do every relocation as a short one that isnt an import
+  if(cc->flags&CCF_AOT_COMPILE) {
+    if(!(h->type&HTF_IMPORT)) {
+      cur=COCMiscNew(cc,CMT_HASH_ENTRY);
+      cur->flags|=CMF_SHORT_ADDR;
+      cur->h=h;
+      return cur;
+    }
+  }
+  #endif
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->h==h)
       return cur;

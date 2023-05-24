@@ -1946,6 +1946,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled, int6
 	switch (r->type) {
 		break;
 		break;
+	case IC_SHORT_ADDR: goto fin;
 	case IC_CALL:
 	case __IC_CALL:
 		for (i = r->length; i >= 0; i--) {
@@ -2541,9 +2542,9 @@ aloop:
 #endif
 	rpn2 = ICArgN(rpn, rpn->length);
 	if (rpn2->type == IC_SHORT_ADDR) {
-		AIWNIOS_ADD_CODE(X86Call32, 5); //+5 is the end of the instuction and will be RIP+0
+		AIWNIOS_ADD_CODE(X86Call32, 0); //+5 is the end of the instuction and will be RIP+0
 		// We want RIP+0 so we can OR it later
-		rpn2->code_misc->addr = bin + code_off - 5;
+		rpn2->code_misc->addr = bin + code_off;
 		goto after_call;
 	}
 	if (rpn2->type == IC_GLOBAL) {
@@ -2970,7 +2971,7 @@ static int64_t DerefToICArg(CCmpCtrl* cctrl, CICArg* res, CRPN* rpn,
 		*res = rpn->res;
 		return code_off;
 	}
-	int64_t r = rpn->raw_type, rsz, off, mul, lea = 0;
+	int64_t r = rpn->raw_type, rsz, off, mul, lea = 0,reg;
 	rpn = rpn->base.next;
 	CRPN *next = rpn->base.next, *next2, *next3, *next4, *tmp;
 	switch (r) {
@@ -2996,7 +2997,6 @@ static int64_t DerefToICArg(CCmpCtrl* cctrl, CICArg* res, CRPN* rpn,
 	default:
 		rsz = 8;
 	}
-exit:
 	code_off = __OptPassFinal(cctrl, rpn, bin, code_off);
 	code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_PTR, base_reg_fallback, bin,
 		code_off);
@@ -3861,8 +3861,25 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	switch (rpn->type) {
 		break;
 	case IC_SHORT_ADDR:
-		// This is used for function calls only!!!
-		abort();
+		if (rpn->res.mode == MD_REG)
+			into_reg = rpn->res.reg;
+		else
+			into_reg = 0;
+		tmp.mode=__MD_X86_64_SIB;
+		tmp.raw_type = RT_I64i;
+		tmp.reg=RIP;
+		tmp.__SIB_scale=-1;
+		tmp.reg2=-1;
+		//CCF_AOT_COMPILE will trigger a IET_REL_I32 on this location
+		tmp.off=rpn->integer;
+		AIWNIOS_ADD_CODE(X86LeaSIB,into_reg,-1,-1,RIP,tmp.off);
+		rpn->code_misc->addr=bin+code_off;
+		if (rpn->res.mode != MD_REG) {
+			tmp.mode = MD_REG;
+			tmp.raw_type = RT_I64i;
+			tmp.reg = 0;
+			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+		}
 		break;
 	case IC_RELOC:
 		if (rpn->res.mode == MD_REG)

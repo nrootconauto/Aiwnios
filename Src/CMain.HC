@@ -520,21 +520,33 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
   for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
     tmpaotie1=tmpaotie->next;
     if(tmpaotie->short_jmp) {
-      fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,HTT_FUN);
-      if(fun&&(fun->type&HTF_RESOLVE)) {
-		#ifdef TARGET_AARCH64
-        i=((fun->exe_addr-tmpaotie->rip)>>2)&(1<<26-1);
-        AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
-        #endif
-        #ifdef TARGET_X86_SYSV
-        //Call 32 is e8 imm32
-        i=fun->exe_addr-tmpaotie->rip-5;
-        AOTOrBytesU8At(cc,tmpaotie->rip+1,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
-        #endif
-        QueRem(tmpaotie);
-        Free(tmpaotie->str);
-        Free(tmpaotie);
-      }
+      fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,HTT_FUN|HTT_GLBL_VAR);
+      if(fun&&fun->type&HTT_FUN) {
+		if(fun->type&HTF_RESOLVE) {
+		  #ifdef TARGET_AARCH64
+          i=((fun->exe_addr-tmpaotie->rip)>>2)&(1<<26-1);
+          AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+          #endif
+          #ifdef TARGET_X86
+          i=fun->exe_addr-tmpaotie->rip+tmpaotie->offset;
+          AOTStoreCodeU8At(cc,tmpaotie->rip-4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+          #endif
+          QueRem(tmpaotie);
+          Free(tmpaotie->str);
+          Free(tmpaotie);
+        }
+      } else if(fun&&fun->type&HTT_GLBL_VAR) {
+		if(fun->type&HTF_EXPORT) {
+			#ifdef TARGET_X86
+			i=fun(CHashGlblVar*)->data_addr_rip-tmpaotie->rip+tmpaotie->offset;
+			AOTStoreCodeU8At(cc,tmpaotie->rip-4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+			#endif
+			QueRem(tmpaotie);
+			Free(tmpaotie->str);
+			Free(tmpaotie);
+        }
+      } else
+		throw('Compiler');
     }
   }
 }

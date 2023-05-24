@@ -314,14 +314,21 @@ U0 GrUpdateTextFG()
 
 U0 DCBlotColor8(CDC *dc,CDC *img)
 {
-  U8  *src=img->body,*b0=dc->body;
-  I64 j,k,d0=img->width_internal*img->height;
+  U64  *src=img->body,*b0=dc->body;
+  U64 j,k,d0=img->width_internal*img->height/8;
+  U64 mask;
   for (k=0;k<d0;k++) {
     j=*src++;
-    if (j!=TRANSPARENT)
-      *b0++=j;
-    else
-      b0++;
+    //Transparent is 0xff,if we take the upper 4 bits and invert them we
+    //get a mask
+    mask=(j&0xf0f0f0f0F0F0F0F0)>>4;
+    //num^0 == num (upper 4 is 0 if regular COLOR)
+    //0xf^0xf == 0  (upper 4 is 0xf if TRANSPARENT)
+    j=j^mask;
+    //Discard(&0) the things from our dest image
+    //Keep(&15) the items from our *img*
+    *b0=(j&~mask)|(*b0&mask);
+    b0++;
   }
 }
 

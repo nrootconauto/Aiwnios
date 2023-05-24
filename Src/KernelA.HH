@@ -1696,13 +1696,16 @@ class CCodeMisc
   //Nroot uses this to point to the CCodeMisc's from parser.c
   //
   // Currently aiwnios will start out using the C code generator so you can
-  //   port it to other archs easily
+  //   port it to other archs easily(->addr)
+  
+  //addr2 is used for CMT_JMP_TABLE for pointing to the actual table in memory
   U8	*addr,*addr2; 
   union {
     I64 st_len;		//STR_CONST
     I64 num_consts;	//FLOAT_CONSTS
     I64 range;
     I64 rip;		//ASM_LABEL
+    I64 offset; //Added by nroot,used for short label's members(CD3.y has an offset of 8)
   }
   union {
     CCodeMisc **jmp_table;
@@ -1945,7 +1948,7 @@ class CAsmUnresolvedRef
 class CAOTImportExport
 {
   CAOTImportExport *next,*last;
-  I64	rip,flags;
+  I64	rip,flags,offset; //offset added by nroot(CD3.y has offset of 8)
   CAOT	*aot;
   U8	*str,
 	*src_link,
