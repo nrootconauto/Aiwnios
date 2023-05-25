@@ -4331,12 +4331,13 @@ HC_IC_BINDING(HC_ICAdd_LBTC, IC_LBTC);
 HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
 HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
 
-void CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
+CCodeMiscRef *CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 {
-	CCodeMiscRef* ref = A_MALLOC(sizeof(CCodeMiscRef), NULL);
+	CCodeMiscRef* ref = A_CALLOC(sizeof(CCodeMiscRef), NULL);
 	ref->add_to = addr;
 	ref->next = misc->refs;
 	misc->refs = ref;
+	return ref;
 }
 
 void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) {

@@ -363,7 +363,7 @@ typedef struct CCodeCtrl {
 } CCodeCtrl;
 typedef struct CCodeMiscRef {
 	struct CCodeMiscRef *next;
-	int32_t *add_to;
+	int32_t *add_to,offset;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
 	CQue base;
@@ -422,7 +422,7 @@ typedef struct CCmpCtrl {
 	int64_t backend_user_data9;
 	int64_t backend_user_data10;
   //Used for returns
-  CCodeMisc *epilog_label;
+  CCodeMisc *epilog_label,*statics_label;
   CHeapCtrl *hc;
 } CCmpCtrl;
 #define PRSF_CLASS 1
@@ -1126,5 +1126,5 @@ void __HC_CodeMiscIsUsed(CCodeMisc *cm);
 extern void AIWNIOS_setcontext(void*);
 extern int64_t AIWNIOS_getcontext(void*);
 extern int64_t AIWNIOS_makecontext(void*,void*,void*);
-extern void CodeMiscAddRef(CCodeMisc* misc, int32_t* addr);
+extern CCodeMiscRef *CodeMiscAddRef(CCodeMisc* misc, int32_t* addr);
 extern void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) ;

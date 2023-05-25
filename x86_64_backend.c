@@ -2740,13 +2740,38 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		goto dft;
 		break;
 	case MD_STATIC:
-		use_reg2 = (cctrl->flags & CCF_ICMOV_NO_USE_RAX) ? AIWNIOS_TMP_IREG_POOP2 : RAX;
-		indir_off = 0;
-		if (cctrl->code_ctrl->final_pass >= 2) {
-			AIWNIOS_ADD_CODE(X86LeaSIB, use_reg2, -1, -1, RIP, dst->off - code_off + cctrl->code_ctrl->statics_offset);
-		} else
-			AIWNIOS_ADD_CODE(X86LeaSIB, use_reg2, -1, -1, RIP, 0xffeeff);
-		goto indir_r2;
+		if(src->mode==MD_REG&&(dst->raw_type==RT_F64)==(src->raw_type==RT_F64)) {
+			switch (dst->raw_type) {
+				break;
+			case RT_U8i:
+			case RT_I8i:
+				AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 0);
+				break;
+			case RT_U16i:
+			case RT_I16i:
+				AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 0);
+				break;
+			case RT_U32i:
+			case RT_I32i:
+				AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 0);
+				break;
+			case RT_PTR:
+			case RT_U64i:
+			case RT_I64i:
+			case RT_FUNC:
+				AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 0);
+				break;
+			case RT_F64:
+				UNSPILL_FREG(src->reg);
+				AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, -1, -1, RIP, 0);
+				break;
+			default:
+				abort();
+			}
+			CodeMiscAddRef(cctrl->statics_label,bin+code_off-4)->offset=dst->off;
+			return code_off;
+		}
+		goto dft;
 		break;
 	case MD_INDIR_REG:
 		use_reg2 = dst->reg;
@@ -3063,14 +3088,41 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		} else if (src->mode == MD_F64 && dst->raw_type != RT_F64) {
 			code_off = __ICMoveI64(cctrl, dst->reg, src->flt, bin, code_off);
 		} else if (src->mode == MD_STATIC) {
-			use_reg2 = (cctrl->flags & CCF_ICMOV_NO_USE_RAX) ? AIWNIOS_TMP_IREG_POOP2 : RAX;
-			indir_off = 0;
-			AIWNIOS_ADD_CODE(X86LeaSIB, use_reg2, -1, -1, RIP, src->off - code_off + cctrl->code_ctrl->statics_offset);
-			if (src->raw_type == RT_F64 && src->raw_type == dst->raw_type) {
-			} else if ((src->raw_type == RT_F64) ^ (RT_F64 == dst->raw_type)) {
-				goto dft;
+			if(dst->mode==MD_REG&&(dst->raw_type==RT_F64)==(src->raw_type==RT_F64)) {
+				switch (src->raw_type) {
+				case RT_U0:
+					break;
+				case RT_U8i:
+					AIWNIOS_ADD_CODE(X86MovZXRegIndirI8, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_I8i:
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI8, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_U16i:
+					AIWNIOS_ADD_CODE(X86MovZXRegIndirI16, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_I16i:
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI16, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_U32i:
+					AIWNIOS_ADD_CODE(X86MovRegIndirI32, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_I32i:
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI32, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_U64i:
+				case RT_PTR:
+				case RT_FUNC:
+				case RT_I64i:
+					AIWNIOS_ADD_CODE(X86MovRegIndirI64, dst->reg, -1,-1,RIP,0);
+					break;
+				case RT_F64:
+					AIWNIOS_ADD_CODE(X86MovRegIndirF64, dst->reg, -1,-1,RIP,0);
+					Misc_Bts(&cctrl->backend_user_data9, dst->reg);
+				}				
+				CodeMiscAddRef(cctrl->statics_label,bin+code_off-4)->offset=dst->off;
 			}
-			goto load_r2;
+			return code_off;
 		} else
 			goto dft;
 		break;
@@ -4787,7 +4839,8 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				into_reg = rpn->res.reg;
 			else
 				into_reg = 0;
-			AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, (rpn->integer + cctrl->code_ctrl->statics_offset) - code_off);
+			AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, 0);
+			CodeMiscAddRef(cctrl->statics_label,bin+code_off-4)->offset=rpn->integer;
 			goto restore_reg;
 			break;
 		case IC_DEREF:
@@ -5714,6 +5767,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	CHashImport* import;
 	CRPN* r;
 	cctrl->epilog_label = CodeMiscNew(cctrl, CMT_LABEL);
+	cctrl->statics_label = CodeMiscNew(cctrl, CMT_LABEL);
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code; r = r->base.next) {
 		if (r->ic_line) {
 			if (!min_ln)
@@ -5798,7 +5852,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 				for (cm_ref = misc->refs; cm_ref; cm_ref = cm_ref_tmp) {
 					cm_ref_tmp = cm_ref->next;
 					if (run)
-						*cm_ref->add_to = (char*)misc->addr - (char*)cm_ref->add_to - 4;
+						*cm_ref->add_to = (char*)misc->addr - (char*)cm_ref->add_to - 4+cm_ref->offset;
 					A_FREE(cm_ref);
 				}
 				misc->refs = NULL;
@@ -5872,6 +5926,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 		if (code_off % 8) // Align to 8
 			code_off += 8 - code_off % 8;
 		cctrl->code_ctrl->statics_offset = code_off;
+		cctrl->statics_label->addr=bin+code_off;
 		if (statics_sz)
 			code_off += statics_sz + 8;
 		final_size = code_off;
