@@ -566,6 +566,7 @@ void BootAiwnios()
 		PrsBindCSymbol("__HC_ICAdd_ToI64", __HC_ICAdd_ToI64);
 		PrsBindCSymbol("__HC_ICAdd_ToF64", __HC_ICAdd_ToF64);
 		PrsBindCSymbol("__HC_ICAdd_ShortAddr", __HC_ICAdd_ShortAddr);
+		PrsBindCSymbol("__HC_CodeMiscInterateThroughRefs",__HC_CodeMiscInterateThroughRefs);
 		PrsBindCSymbol("Caller", Misc_Caller);
 		PrsBindCSymbol("VFsSetPwd", VFsSetPwd);
 		PrsBindCSymbol("VFsExists", VFsFileExists);

@@ -528,8 +528,9 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
           AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
           #endif
           #ifdef TARGET_X86
-          i=fun->exe_addr-tmpaotie->rip+tmpaotie->offset;
-          AOTStoreCodeU8At(cc,tmpaotie->rip-4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+          i=fun->exe_addr-(tmpaotie->rip+4)+tmpaotie->offset;
+          PrintI(fun->str,tmpaotie->offset);
+          AOTStoreCodeU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
           #endif
           QueRem(tmpaotie);
           Free(tmpaotie->str);
@@ -538,8 +539,9 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
       } else if(fun&&fun->type&HTT_GLBL_VAR) {
 		if(fun->type&HTF_EXPORT) {
 			#ifdef TARGET_X86
-			i=fun(CHashGlblVar*)->data_addr_rip-tmpaotie->rip+tmpaotie->offset;
-			AOTStoreCodeU8At(cc,tmpaotie->rip-4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+			PrintI(fun->str,tmpaotie->offset);
+			i=fun(CHashGlblVar*)->data_addr_rip-(tmpaotie->rip+4)+tmpaotie->offset;
+			AOTStoreCodeU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
 			#endif
 			QueRem(tmpaotie);
 			Free(tmpaotie->str);

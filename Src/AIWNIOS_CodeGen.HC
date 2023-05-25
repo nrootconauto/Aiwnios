@@ -99,9 +99,9 @@ import U8 * __HC_ICAdd_BTS(U8*);
 import U8 * __HC_ICAdd_LBTC(U8*);
 import U8 * __HC_ICAdd_LBTR(U8*);
 import U8 * __HC_ICAdd_LBTS(U8*);
-
-
+import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 #else
+extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 extern U8 * __HC_ICAdd_ToF64(U8 *);
 extern U8 * __HC_ICAdd_ToI64(U8 *);
 extern U0 __HC_ICSetLine(U8*,I64);
@@ -240,26 +240,24 @@ extern U8 * __HC_ICAdd_LBTS(U8*);
 #define AIWNIOS_REG_FP REG_RBP
 #define AIWNIOS_REG_SP REG_RSP
 #define AIWNIOS_TMP_IREG_START 0
-#define AIWNIOS_FREG_START 0
-#define AIWNIOS_FREG_CNT 0
+#define AIWNIOS_FREG_START 6
+#define AIWNIOS_FREG_CNT (16-6+1)
 #define AIWNIOS_TMP_FREG_START 2
 #define AIWNIOS_TMP_FREG_CNT 14
 #endif
 //
 // Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
 //
-U0 AiwniosMakeShortJmps(CCmpCtrl *cc) {
+U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
   CRPN *head=&cc->coc.coc_head,*cur;
   CCodeMisc *misc;
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
       if(!(misc->h->type&HTF_IMPORT)) {
-        cur->misc=COCMiscNew(cc,CMT_HASH_ENTRY);
-        cur->misc->str=StrNew(misc->h->str);
+		cur->misc=misc;
         cur->misc->flags|=CMF_SHORT_ADDR;
-        cur->misc->h=misc->h;
-        cur->ic_data=cur->misc;
+        cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       }
     }
@@ -278,14 +276,24 @@ I64 VarIRegToReg(I64 r)  {
 	}
 	throw('Compile');
 }
+class CAddShortRelocData {
+	CCmpCtrl *cc;
+	CCodeMisc *cm;
+	U8 *machine_code;
+};
+U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
+  CAOTImportExport *tmpaie=CAlloc(sizeof(CAOTImportExport));
+  tmpaie->type=IET_REL_I32;
+  tmpaie->str=StrNew(data->cm->h->str);
+  tmpaie->rip=data->cc->aotc->rip+(addr-data->machine_code);
+  tmpaie->offset=data->cm->offset;
+  tmpaie->short_jmp=TRUE;
+  QueIns(tmpaie,data->cc->aot->last_ie);
+}
 //
 // Turns my CRPN from the parser into the IC for the C side
 //
 U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
-  #ifdef TARGET_X86
-  if(cc->flags&CCF_AOT_COMPILE)
-    AiwniosMakeShortJmps(cc);
-  #endif
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
   CMemberLst *mlst;
@@ -293,11 +301,16 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CHashImport *h;
   CAOTImportExport *tmpaie;
   CAOTAbsAddr *tmpabs;
+  CAddShortRelocData fill_user_data;
   I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
   U8 *cc2=__HC_CodeCtrlPush(acc);
+  #ifdef TARGET_X86
+  if(cc->flags&CCF_AOT_COMPILE)
+    AiwniosMakeShortJmps(cc,acc);
+  #endif
   if(cc->flags&CCF_AOT_COMPILE)
     __HC_CmpCtrl_SetAOT(acc);
   if(info) {
@@ -635,7 +648,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //
     h=cur->ic_data(CCodeMisc*)->h;
     if(cur->ic_flags&ICF_SHORT_JMP) {
-      new=__HC_ICAdd_ShortAddr(acc,cc2,h->str,&cur->ic_data(CCodeMisc*)->addr);
+      new=__HC_ICAdd_ShortAddr(acc,cc2,h->str,cur->ic_data(CCodeMisc*)->addr);
       break;
     }
     if(h->type&HTT_GLBL_VAR) {
@@ -862,17 +875,20 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       //
       if(cc->flags&CCF_AOT_COMPILE) {
 		if(misc->addr!=INVALID_PTR) {
-          tmpaie=CAlloc(sizeof(CAOTImportExport));
-          tmpaie->type=IET_IMM_I64;
-          tmpaie->str=StrNew(misc->h->str);
-          tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
-          tmpaie->offset=misc->offset;
-		  //All non-imported functions are short calls
+          //All non-imported functions are short calls
           if(misc->flags&CMF_SHORT_ADDR) {
-			tmpaie->type=IET_IMM_U0;
-            tmpaie->short_jmp=TRUE;
+            fill_user_data.cc=cc;
+			fill_user_data.cm=misc;
+			fill_user_data.machine_code=machine_code;
+			__HC_CodeMiscInterateThroughRefs(misc->addr,&AddShortReloc,&fill_user_data);
+          } else {
+            tmpaie=CAlloc(sizeof(CAOTImportExport));
+            tmpaie->type=IET_IMM_I64;
+            tmpaie->str=StrNew(misc->h->str);
+            tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
+            tmpaie->offset=misc->offset;
+            QueIns(tmpaie,cc->aot->last_ie);
           }
-          QueIns(tmpaie,cc->aot->last_ie);
         }
       } else {
         if(misc->addr!=INVALID_PTR) {

@@ -4075,14 +4075,12 @@ static CHashClass* rt2cls(int64_t rt, int64_t ptr_cnt)
 	}
 	return ic_class + ptr_cnt;
 }
-CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, char** ptr)
+CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, CCodeMisc *ptr)
 {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SHORT_ADDR;
-	rpn->code_misc = CodeMiscNew(acc, CMT_SHORT_ADDR);
-	rpn->code_misc->str = A_STRDUP(name, acc->hc);
-	rpn->code_misc->patch_addr = ptr;
-	*rpn->code_misc->patch_addr = INVALID_PTR;
+	rpn->code_misc = ptr;
+	ptr->type=CMT_SHORT_ADDR;
 	rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
 	rpn->ic_class++;
 	rpn->raw_type = RT_PTR;
@@ -4332,3 +4330,19 @@ HC_IC_BINDING(HC_ICAdd_BTR, IC_BTR);
 HC_IC_BINDING(HC_ICAdd_LBTC, IC_LBTC);
 HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
 HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
+
+void CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
+{
+	CCodeMiscRef* ref = A_MALLOC(sizeof(CCodeMiscRef), NULL);
+	ref->add_to = addr;
+	ref->next = misc->refs;
+	misc->refs = ref;
+}
+
+void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) {
+	CCodeMiscRef *refs=cm->refs;
+	while(refs) {
+		fptr(refs->add_to,user_data);
+		refs=refs->next;
+	}
+}

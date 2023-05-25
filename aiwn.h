@@ -376,6 +376,7 @@ typedef struct CCodeMisc {
 #define CMT_STATIC_DATA 7 //integer is the offset(in the statics data) str/str_len is the data
 #define CMT_SHORT_ADDR 8
 #define CMF_DEFINED 1 // Used with Labels to tell if already defined
+#define CMF_JMP_TABLE_TAINTED 2 // Used with jump tables to tell if we tained the floating point registers
 	int32_t type, flags;
 	// These are used for jump tables
 	int64_t lo, hi;
@@ -391,7 +392,6 @@ typedef struct CCodeMisc {
 		double flt;
 		int64_t integer;
 	};
-  
   int32_t aot_before_hint; //See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
   //The bit is set if the floating point register is alive at this inst
@@ -567,6 +567,7 @@ typedef struct CICArg {
 #define __MD_X86_64_SIB 9
 //Like X86_64 but uses LEA
 #define __MD_X86_64_LEA_SIB 10
+#define MD_CODE_MISC_PTR 11
 	int32_t mode;
 	int32_t raw_type;
 	int8_t reg,reg2,fallback_reg;
@@ -576,6 +577,7 @@ typedef struct CICArg {
 	//keep the value in a temp location,good for removing reundant stores
 	char keep_in_tmp;
 	union {
+		CCodeMisc *code_misc;
 		int64_t integer;
 		int64_t off;
 		double flt;
@@ -589,7 +591,8 @@ enum {
 	ICF_TMP_NO_UNDO=4,
 	ICF_PRECOMPUTED=8, //Doesnt re-compile a node,useful for putting in "dummy" values
 	ICF_SIB=16, //Has 2 registers (base and idnex)
-	ICF_INDIR_REG=32 //Has 1 registers (idnex)
+	ICF_INDIR_REG=32, //Has 1 registers (idnex)
+	ICF_STUFF_IN_REG=64, //Will stuff the result into a register(.stuff_in_reg) once result is computed
 };
 struct CRPN {
 	CQue base;
@@ -609,6 +612,8 @@ struct CRPN {
 	};
 	CCodeMisc *code_misc2,*code_misc3,*code_misc4;
 	CICArg res;
+	//Will be stored into this reg if ICF_STUFF_IN_REG is set
+	char stuff_in_reg;
 };
 extern char *Compile(struct CCmpCtrl *cctrl,int64_t *sz,char **dbg_info);
 extern __thread struct CTask *Fs;
@@ -1049,7 +1054,7 @@ CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp,CCodeCtrl* cc,int64_t at,char *d,int64
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl* cc,int64_t off,int64_t rt,int64_t ptrs);
 CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl* cc,int64_t len);
 char* Load(char* filename);
-CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *,CCodeCtrl* cc,char *name,char **ptr);
+CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *,CCodeCtrl* cc,char *name,CCodeMisc *ptr);
 //TODO remove
 char *FileRead(char *fn,int64_t *sz);
 void FileWrite(char *fn,char *data,int64_t sz);
@@ -1121,3 +1126,5 @@ void __HC_CodeMiscIsUsed(CCodeMisc *cm);
 extern void AIWNIOS_setcontext(void*);
 extern int64_t AIWNIOS_getcontext(void*);
 extern int64_t AIWNIOS_makecontext(void*,void*,void*);
+extern void CodeMiscAddRef(CCodeMisc* misc, int32_t* addr);
+extern void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) ;
