@@ -3696,7 +3696,7 @@ ret:
 	cctrl->flags = old_flags;
 	return 1;
 }
-void PrsBindCSymbol(char* name, void* ptr)
+static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 {
 	CHashFun* fun;
 	CHashGlblVar* glbl;
@@ -3707,7 +3707,10 @@ void PrsBindCSymbol(char* name, void* ptr)
 			glbl->data_addr = ptr;
 		} else if (glbl->base.type & HTT_FUN) {
 			fun->base.base.type &= ~HTF_EXTERN;
-			fun->fun_ptr = ptr;
+			if(naked)
+				fun->fun_ptr = ptr;
+			else
+				fun->fun_ptr = GenFFIBinding(ptr,0);
 		}
 		SysSymImportsResolve(name, 0);
 	}
@@ -3716,10 +3719,23 @@ void PrsBindCSymbol(char* name, void* ptr)
 		exp = A_CALLOC(sizeof(CHashExport), NULL);
 		exp->base.str = A_STRDUP(name, NULL);
 		exp->base.type = HTT_EXPORT_SYS_SYM;
-		exp->val = ptr;
+		if(naked)
+			exp->val= ptr;
+		else
+			exp->val = GenFFIBinding(ptr,0);
 		HashAdd(exp, Fs->hash_table);
 	}
 }
+
+void PrsBindCSymbol(char *name,void *ptr) {
+	__PrsBindCSymbol(name,ptr,0);
+}
+
+void PrsBindCSymbolNaked(char *name,void *ptr) {
+	__PrsBindCSymbol(name,ptr,1);
+}
+
+
 int64_t PrsTry(CCmpCtrl* cctrl)
 {
 	CRPN* rpn;
@@ -4343,7 +4359,11 @@ CCodeMiscRef *CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) {
 	CCodeMiscRef *refs=cm->refs;
 	while(refs) {
+		#ifdef USE_TEMPLEOS_ABI
+		FFI_CALL_TOS_2(fptr,refs->add_to,user_data);
+		#else
 		fptr(refs->add_to,user_data);
+		#endif
 		refs=refs->next;
 	}
 }

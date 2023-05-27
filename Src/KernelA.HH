@@ -3231,7 +3231,7 @@ class CTaskDying
 
   //These must be in this order
   //for $LK,"TASK_CONTEXT_SAVE",A="FF:::/Kernel/Sched.HC,TASK_CONTEXT_SAVE"$ and $LK,"_TASK_CONTEXT_RESTORE",A="FF:::/Kernel/Sched.HC,_TASK_CONTEXT_RESTORE"$
-  U8	context_save_area[2048];
+  I64	context_save_area[2048/8];
   CCPU	*gs;
   CFPU	*fpu_mmx;
   I64	swap_cnter;
@@ -5023,7 +5023,7 @@ extern I64 DelTreeDirs(CDirEntry *tmpde1);
 extern I64 DelTreeFiles(CDirEntry *tmpde1);
 extern I64 DelTree(U8 *files_find_mask,U8 *fu_flags=NULL);
 extern U0 AiwniosMakeShortJmps(CCmpCtrl *cc) ;
-extern U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) ;
+extern U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info=NULL) ;
 extern U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) ;
 extern U0 PrsBindCSymbol(U8 *as,U8 *fptr) ;
 extern CTask *PolyFillFs() ;

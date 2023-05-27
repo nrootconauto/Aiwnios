@@ -391,7 +391,6 @@ I64 TaskEnd()
     } while (tmpt!=tmpt1);
     return task->next_task;
   }
-  
   if (LBtr(&task->display_flags,DISPLAYf_SHOW))
     LBts(&sys_semas[SEMA_UPDATE_WIN_Z_BUF],0);
   

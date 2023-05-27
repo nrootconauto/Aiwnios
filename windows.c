@@ -1,3 +1,4 @@
+#include "aiwn.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
@@ -467,7 +468,11 @@ static int SDLCALL KBCallback(void* d, SDL_Event* e)
 {
 	int64_t c, s;
 	if (kb_cb && (-1 != __ScanKey(&c, &s, e)))
+	#ifdef USE_TEMPLEOS_ABI
+		FFI_CALL_TOS_2(kb_cb,c,s);
+	#else
 		(*kb_cb)(c, s);
+	#endif
 	return 0;
 }
 void SetKBCallback(void* fptr)
@@ -521,7 +526,11 @@ static int SDLCALL MSCallback(void* d, SDL_Event* e)
 				y2 = 479;
 			else
 				y2 = (y - view_port.y) * 480. / view_port.h;
+			#ifdef USE_TEMPLEOS_ABI
+			FFI_CALL_TOS_4(ms_cb,x2,y2,z,state);
+			#else
 			(*ms_cb)(x2, y2, z, state);
+			#endif
 		}
 	return 0;
 }

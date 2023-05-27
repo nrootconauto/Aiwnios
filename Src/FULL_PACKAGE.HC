@@ -163,6 +163,9 @@ InitCPUs;
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
+#ifdef BOOTSTRAP
+CMP_AIWN;
+#endif
 #ifdef COMPONET_GR
 #include "ADskA.HC"
 #include "ADskB.HC"
