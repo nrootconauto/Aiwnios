@@ -1129,12 +1129,12 @@ void BootAiwnios()
 		PrsAddSymbol("DbgPutS", STK_PutS,1);
 		PrsAddSymbol("PutS", STK_PutS,1);
 		PrsAddSymbol("SetFs", STK_SetHolyFs,1);
-		PrsAddSymbolNaked("Fs", GetHolyFs,0);  //Gs just calls Thread local storage on linux(not mutations in saved registers)
+		PrsAddSymbol("Fs", GetHolyFs,0);  //Gs just calls Thread local storage on linux(not mutations in saved registers)
 		PrsAddSymbol("SpawnCore", STK_SpawnCore,1);
 		PrsAddSymbol("MPSleepHP", STK_MPSleepHP,1);
 		PrsAddSymbol("MPAwake", STK_MPAwake,1);
 		PrsAddSymbol("mp_cnt", STK_mp_cnt,0);
-		PrsAddSymbolNaked("Gs", GetHolyGs,0); //Gs just calls Thread local storage on linux(not mutations in saved registers)
+		PrsAddSymbol("Gs", GetHolyGs,0); //Gs just calls Thread local storage on linux(not mutations in saved registers)
 		PrsAddSymbol("SetGs", STK_SetHolyGs,1);
 		PrsAddSymbol("__GetTicks", STK___GetTicks,1);
 		PrsAddSymbol("__Sleep", STK___Sleep,1);

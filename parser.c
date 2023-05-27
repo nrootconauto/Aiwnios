@@ -1000,6 +1000,7 @@ void SysSymImportsResolve(char* sym, int64_t flags)
 		with = ((CHashGlblVar*)thing)->data_addr;
 	} else
 		throw(*(int64_t*)"Resolve");
+	if(!with) return;
 	while (imp = HashSingleTableFind(sym, Fs->hash_table, HTT_IMPORT_SYS_SYM, 1)) {
 		*imp->address = with; // TODO make TempleOS like
 		imp->base.type = HTT_INVALID;
@@ -3706,11 +3707,13 @@ static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 			glbl->base.type &= ~HTF_EXTERN;
 			glbl->data_addr = ptr;
 		} else if (glbl->base.type & HTT_FUN) {
-			fun->base.base.type &= ~HTF_EXTERN;
-			if(naked)
-				fun->fun_ptr = GenFFIBindingNaked(ptr,0);
-			else
-				fun->fun_ptr = GenFFIBinding(ptr,0);
+			if(!fun->fun_ptr) {
+				fun->base.base.type &= ~HTF_EXTERN;
+				if(naked)
+					fun->fun_ptr = GenFFIBindingNaked(ptr,0);
+				else
+					fun->fun_ptr = GenFFIBinding(ptr,0);
+			}
 		}
 		SysSymImportsResolve(name, 0);
 	}

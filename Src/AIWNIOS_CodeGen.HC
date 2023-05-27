@@ -3,12 +3,6 @@
 //  you write a backend,HolyC will use it too,that way you dont have to re-port
 //  your backend again when you port to another arch
 //
-#ifdef TARGET_X86_SYSV
-#define TARGET_X86 1
-#endif
-#ifdef TARGET_X86_WIN
-#define TARGET_X86 1
-#endif
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
@@ -218,22 +212,6 @@ extern U8 * __HC_ICAdd_LBTS(U8*);
 #define	REG_R14 14
 #define	REG_R15 15
 #define	REG_RIP 16
-#endif
-#ifdef TARGET_X86_WIN
-#define AIWNIOS_IREG_START 9
-#define AIWNIOS_IREG_CNT 6
-#define AIWNIOS_REG_FP RBP
-#define AIWNIOS_REG_SP RSP
-#define AIWNIOS_TMP_IREG_POOP R8
-#define AIWNIOS_TMP_IREG_POOP2 RCX
-#define AIWNIOS_TMP_IREG_START 0
-#define AIWNIOS_TMP_IREG_CNT 3
-#define AIWNIOS_FREG_START 6
-#define AIWNIOS_FREG_CNT (15-6+1)
-#define AIWNIOS_TMP_FREG_START 3
-#define AIWNIOS_TMP_FREG_CNT (5-AIWNIOS_TMP_FREG_START+1)
-#endif
-#ifdef TARGET_X86_SYSV
 #define AIWNIOS_IREG_START 12
 #define AIWNIOS_IREG_CNT 4
 #define AIWNIOS_TMP_IREG_CNT 3
@@ -261,10 +239,12 @@ force:
         cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       } else {
+		/* Nroot removed this as not all platforms have easy access to lower 32bits
         #ifdef TARGET_X86
         //In X86_64,i will put all functions in low 32bits to avoid viener functions.
         goto force;
         #endif
+        */
       }
     }
   }
@@ -275,10 +255,6 @@ I64 VarIRegToReg(I64 r)  {
 		break;case 1: return REG_R12;
 		break;case 2: return REG_R14;
 		break;case 3: return REG_R15;
-		#ifdef TARGET_X86_WIN
-		break;case 4: return REG_RDI;
-		break;case 5: return REG_RSI;
-		#endif
 	}
 	throw('Compile');
 }

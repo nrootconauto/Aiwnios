@@ -38,20 +38,39 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	if (!hc)
 		hc = Fs->heap;
 #if defined(_WIN32) || defined(WIN32)
+	CMemBlk *ret=NULL;
 	static int64_t dwAllocationGranularity;
 	if (!dwAllocationGranularity) {
 		SYSTEM_INFO si;
 		GetSystemInfo(&si);
 		dwAllocationGranularity = si.dwAllocationGranularity;
 	}
-	int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity * dwAllocationGranularity;
-	if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
+	int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity * dwAllocationGranularity,_try,addr;
+		if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
 		b += dwAllocationGranularity;
-	CMemBlk* ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    /*
+    // https://stackoverflow.com/questions/54729401/allocating-memory-within-a-2gb-range
+    MEMORY_BASIC_INFORMATION ent;
+    _try=dwAllocationGranularity;
+    for (; (_try & 0xFFffFFff) == _try;) {
+      if (!VirtualQuery((void *)_try, &ent, sizeof(ent)))
+        return NULL;
+      _try = (int64_t)ent.BaseAddress + ent.RegionSize;
+      // Fancy code to round up because
+      // address is rounded down with
+      // VirtualAlloc
+      addr = ((int64_t)ent.BaseAddress + dwAllocationGranularity - 1) &
+             ~(dwAllocationGranularity - 1);
+      if ((ent.State == MEM_FREE) && (b <= (_try - addr))) {
+        ret=VirtualAlloc((void *)addr, b, MEM_COMMIT | MEM_RESERVE,
+                            PAGE_EXECUTE_READWRITE);
+      }
+    }*/
+    	ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	if (!ret)
 		return NULL;
 #else
-	static int64_t ps;
+	stat 	ic int64_t ps;
 	int64_t b;
 	if (!ps) {
 		ps = sysconf(_SC_PAGE_SIZE);
@@ -99,7 +118,7 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
       fclose(map), free(ptr);
       ret = mmap(
           down, b, PROT_EXEC | PROT_WRITE | PROT_READ,
-          MAP_PRIVATE | MAP_ANON | MAP_FIXED | MAP_32BIT, -1, 0
+          MAP_PRIVATE | MAP_ANON | MAP_FIXED , -1, 0
       );
     }
 #endif

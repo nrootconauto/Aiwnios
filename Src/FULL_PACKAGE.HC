@@ -1,9 +1,3 @@
-#ifdef TARGET_X86_SYSV
-#define TARGET_X86
-#endif
-#ifdef TARGET_X86_WIN
-#define TARGET_X86
-#endif
 #include "KernelA.HH"
 #include "CompilerA.HH"
 #include "CExts.HC"

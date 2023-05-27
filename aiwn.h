@@ -761,7 +761,6 @@ enum {
 	R15 = 15,
 	RIP = 16
 };
-#if defined(__linux__)
 #define AIWNIOS_IREG_START 12
 #define AIWNIOS_IREG_CNT (15 - AIWNIOS_IREG_START + 1 -1 +1) //-1 for R13 as it is wierd,+1 for RBX TODO
 #define AIWNIOS_REG_FP RBP
@@ -774,7 +773,6 @@ enum {
 #define AIWNIOS_FREG_CNT (15-6+1)
 #define AIWNIOS_TMP_FREG_START 3
 #define AIWNIOS_TMP_FREG_CNT (5-3+1)
-#endif
 
 #if  defined(_WIN32)||defined(WIN32) 
 #define AIWNIOS_OSTREAM stdout
@@ -782,20 +780,6 @@ enum {
 #define AIWNIOS_OSTREAM stderr
 #endif
 
-#if  defined(_WIN32)||defined(WIN32) 
-#define AIWNIOS_IREG_START 9
-#define AIWNIOS_IREG_CNT 6
-#define AIWNIOS_REG_FP RBP
-#define AIWNIOS_REG_SP RSP
-#define AIWNIOS_TMP_IREG_POOP R8
-#define AIWNIOS_TMP_IREG_POOP2 RCX
-#define AIWNIOS_TMP_IREG_START 0
-#define AIWNIOS_TMP_IREG_CNT 3
-#define AIWNIOS_FREG_START 6
-#define AIWNIOS_FREG_CNT (15-6+1)
-#define AIWNIOS_TMP_FREG_START 3
-#define AIWNIOS_TMP_FREG_CNT (5-AIWNIOS_TMP_FREG_START+1)
-#endif
 #elif defined(TARGET_ARM64V)
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)

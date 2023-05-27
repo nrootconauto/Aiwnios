@@ -1,4 +1,50 @@
 #include "aiwn.h"
+#if defined(_WIN32) || defined (WIN32) 
+void *GenFFIBinding(void *fptr,int64_t arity) {
+	#ifdef USE_TEMPLEOS_ABI
+	/*
+0:  55                      push   rbp
+1:  48 89 e5                mov    rbp,rsp
+4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
+8:  48 83 ec 20             sub    rsp,0x20
+c:  41 51                   push   r9
+e:  41 50                   push   r8
+10: 52                      push   rdx
+11: 51                      push   rcx
+12: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
+19: 00 00 00
+1c: 48 8d 4d 10             lea    rcx,[rbp+0x10]
+20: ff d0                   call   rax
+22: c9                      leave
+23: c3                      ret
+*/
+	char *ffi_binding="\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x20\x41\x51\x41\x50\x52\x51\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\xC9\xC3";
+	char *ret=A_MALLOC(0x24,NULL);
+	memcpy(ret,ffi_binding,0x224);
+	*(int64_t*)(ret+0x14)=fptr;
+	return ret;
+	#else
+	return fptr;
+	#endif
+}
+void *GenFFIBindingNaked(void *fptr,int64_t arity) {
+/*
+0:  \x48\x8D\x4C\x24\x08          lea    rcx,[rsp+0x8]
+5:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
+c:  00 00 00
+f:  ff e0 					jmp rax
+*/
+	const char  *ffi_binding="\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
+	#ifdef USE_TEMPLEOS_ABI
+	char *ret=A_MALLOC(0x12,NULL);
+	memcpy(ret,ffi_binding,0x12);
+	*(int64_t*)(ret+0x7)=fptr;
+	return ret;
+	#else
+	return fptr;
+	#endif
+}
+#else
 void *GenFFIBinding(void *fptr,int64_t arity) {
 	#ifdef USE_TEMPLEOS_ABI
 	//Here's the deal,i will save RDI/RSI on windows and SYSTEMV 
@@ -69,3 +115,4 @@ f:  ff e0 					jmp rax
 	return fptr;
 	#endif
 }
+#endif

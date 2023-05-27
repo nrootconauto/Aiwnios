@@ -43,20 +43,6 @@ static int64_t RawTypeIs64(int64_t r)
 // Assembly section
 //
 
-#if defined(USE_TEMPLEOS_ABI)
-static int64_t call_iregs[0];
-static int64_t call_fregs[0];
-#else
-// https://cs61.seas.harvard.edu/site/pdf/x86-64-abi-20210928.pdf
-#if defined(__linux__)
-static int64_t call_iregs[6] = { RDI, RSI, RDX, RCX, R8, R9 };
-static int64_t call_fregs[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-#endif
-#if defined(_WIN32) || defined(WIN32)
-static int64_t call_iregs[4] = { RCX, RDX, R8, R9 };
-static int64_t call_fregs[4] = { 0, 1, 2, 3 };
-#endif
-#endif
 extern int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 	int64_t code_off);
 extern int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
@@ -1729,7 +1715,6 @@ static void PushSpilledTmp(CCmpCtrl* cctrl, CRPN* rpn)
 			res->off += 16;
 	}
 }
-#if defined(__linux__)
 int64_t TmpRegToReg(int64_t r)
 {
 	switch (r) {
@@ -1748,23 +1733,6 @@ int64_t TmpRegToReg(int64_t r)
 		abort();
 	}
 }
-#endif
-#if defined(_WIN32) || defined(WIN32)
-int64_t TmpRegToReg(int64_t r)
-{
-	switch (r) {
-		break;
-	case 0:
-		return R9;
-	case 1:
-		return R10;
-	case 2:
-		return R11;
-	default:
-		abort();
-	}
-}
-#endif
 
 //
 // Takes an argument called inher. We can use the parent's destination
@@ -1978,48 +1946,11 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled)
 		goto fin;
 	case IC_CALL:
 	case __IC_CALL:
-	#ifdef USE_TEMPLEOS_ABI
 	for (i = 0; i < r->length+1; i++) {
 		PushTmpDepthFirst(cctrl, ICArgN(r, i), 0);
 		PopTmp(cctrl,ICArgN(r,i));
 	}
 	goto fin;
-	#else
-		for (i = r->length; i >= 0; i--) {
-			if (i == r->length)
-				if (ICArgN(r, i)->type == IC_SHORT_ADDR)
-					continue;
-			// R9 is a Poop register in SystemV X86,and it is also a call register too
-			// Replace any argument referencing poop with a stack argumen
-		check_for_poop:
-			if (cctrl->backend_user_data2 < AIWNIOS_TMP_IREG_CNT)
-				for (i2 = 0; i2 != sizeof(call_iregs) / sizeof(*call_iregs); i2++) {
-					if (i2 >= r->length)
-						break;
-					if (TmpRegToReg(cctrl->backend_user_data2) == call_iregs[i2]) {
-						cctrl->backend_user_data2++;
-						goto check_for_poop;
-					}
-				}
-			if (i < sizeof(call_iregs) / sizeof(*call_iregs))
-				if (call_iregs[i] == AIWNIOS_TMP_IREG_POOP || call_iregs[i] == AIWNIOS_TMP_IREG_POOP2) {
-					PushTmpDepthFirst(cctrl, ICArgN(r, i), 1);
-					goto pass;
-				}
-			for (i2 = 0; i2 < i; i2++)
-				if (SpillsTmpRegs(ICArgN(r, i2))) { // REVERSE polish notation
-					PushTmpDepthFirst(cctrl, ICArgN(r, i), 1);
-					goto pass;
-				}
-				
-			PushTmpDepthFirst(cctrl, ICArgN(r, i), 0);
-		pass:;
-		}
-		cctrl->backend_user_data2 = old_icnt;
-		cctrl->backend_user_data3 = old_fcnt;
-		cctrl->backend_user_data1 = old_scnt;
-		goto fin;
-	#endif
 		break;
 	case IC_TO_I64:
 	unop:
@@ -2566,142 +2497,6 @@ after_call:
 	}
 	return code_off;
 } 
-// See __IC_CALL
-static int64_t __ICFCall(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
-	int64_t code_off)
-{
-	CRPN *rpn2 = rpn->base.next, *rpn3;
-	CICArg *arg_dsts = NULL, tmp = { 0 }, stack = { 0 };
-	CCodeMisc* reloc;
-	char* fptr;
-
-	//
-	// argv_stki is the stack location of the first varg
-	//
-	int64_t i2, i = rpn->length, to, ii = 0, fi = 0, stki = 0, vargs_sz = 0, orig_wiggle_room = cctrl->backend_user_data1;
-	while (--i >= 0)
-		rpn2 = ICFwd(rpn2);
-	AssignRawTypeToNode(cctrl, rpn2);
-	to = rpn->length;
-	arg_dsts = A_MALLOC(to * sizeof(CICArg),
-		cctrl->hc);
-	rpn2 = ICArgN(rpn, rpn->length);
-	if (rpn2->type != IC_SHORT_ADDR) {
-		rpn2->raw_type = RT_PTR;
-		rpn2->res.raw_type = RT_PTR;
-		code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-	}
-	rpn2 = rpn->base.next;
-	for (i = 0; i != to;) {
-#if defined(WIN32) || defined(_WIN32)
-		ii = i;
-		fi = i;
-#endif
-		rpn2 = ICArgN(rpn, rpn->length - i - 1);
-		if (rpn2->type == __IC_VARGS) { // Will pop off the vargs for you
-			vargs_sz = 8 * rpn2->length;
-			if (rpn2->length & 1) // Align to 16
-				vargs_sz += 8;
-		}
-		arg_dsts[i].raw_type = rpn2->raw_type;
-		if (rpn2->raw_type == RT_F64) {
-			if (fi < sizeof(call_fregs) / sizeof(*call_fregs) && i < to) {
-				arg_dsts[i].mode = MD_REG;
-				arg_dsts[i].reg = call_fregs[fi++];
-			} else {
-				arg_dsts[i].mode = MD_INDIR_REG;
-				arg_dsts[i].reg = X86_64_STACK_REG;
-				arg_dsts[i].off = stki++ * 8;
-			}
-		} else {
-			if (ii < sizeof(call_iregs) / sizeof(*call_iregs) && i < to) {
-				arg_dsts[i].raw_type = RT_I64i;
-				arg_dsts[i].mode = MD_REG;
-				arg_dsts[i].reg = call_iregs[ii++];
-			} else {
-				arg_dsts[i].raw_type = RT_I64i;
-				arg_dsts[i].mode = MD_INDIR_REG;
-				arg_dsts[i].reg = X86_64_STACK_REG;
-				arg_dsts[i].off = stki++ * 8;
-			}
-		}
-	pass:
-		code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-		rpn2 = ICFwd(rpn2);
-		i++;
-	}
-#if defined(_WIN32) || defined(WIN32)
-	if (stki < 4)
-		stki = 4;
-#endif
-	// Keep stack aligned to 16 bytes(8 bytes per item)
-	if (stki % 2)
-		stki++;
-	if (stki)
-		AIWNIOS_ADD_CODE(X86SubImm32, X86_64_STACK_REG, stki * 8);
-	i = rpn->length - 1;
-
-aloop:
-	while (i >= 0) {
-		i2 = i;
-		// IC_CALL
-		// ARGn <===rpn->length -1
-		// FUN
-		rpn2 = ICArgN(rpn, rpn->length - i - 1);
-		code_off = ICMov(cctrl, &arg_dsts[i2], &rpn2->res, bin, code_off);
-		i--;
-	next:;
-	}
-#if defined(_WIN32) || defined(WIN32)
-	// https://learn.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-170
-	stki += 4; // Home registers zone
-	AIWNIOS_ADD_CODE(X86PushReg, R9);
-	AIWNIOS_ADD_CODE(X86PushReg, R8);
-	AIWNIOS_ADD_CODE(X86PushReg, RDX);
-	AIWNIOS_ADD_CODE(X86PushReg, RCX);
-#endif
-	rpn2 = ICArgN(rpn, rpn->length);
-	if (rpn2->type == IC_SHORT_ADDR) {
-		AIWNIOS_ADD_CODE(X86Call32, 0)
-		if(bin)
-			CodeMiscAddRef(rpn2->code_misc,bin + code_off-4);
-		goto after_call;
-	}
-	if (rpn2->type == IC_GLOBAL) {
-		if (rpn2->global_var->base.type & HTT_FUN) {
-			fptr = ((CHashFun*)rpn2->global_var)->fun_ptr;
-use_fptr:
-			if (!((CHashFun*)rpn2->global_var)->fun_ptr)
-				goto defacto;
-			if (!Is32Bit((int64_t)fptr - (int64_t)(bin + code_off)))
-				goto defacto;
-			if (cctrl->code_ctrl->final_pass) {
-				AIWNIOS_ADD_CODE(X86Call32, (int64_t)fptr - (int64_t)(bin + code_off));
-			} else
-				goto defacto;
-		} else
-			goto defacto;
-	} else {
-	defacto:
-		rpn2->res.raw_type = RT_PTR; // Not set for some reason
-		code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, R10, bin, code_off);
-		AIWNIOS_ADD_CODE(X86CallReg, rpn2->res.reg);
-	}
-after_call:
-	if (stki || vargs_sz)
-		AIWNIOS_ADD_CODE(X86AddImm32, RSP, stki * 8 + vargs_sz);
-	if (rpn->raw_type != RT_U0 && rpn->res.mode != MD_NULL) {
-		tmp.reg = 0;
-		tmp.mode = MD_REG;
-		tmp.raw_type = rpn->raw_type == RT_F64 ? RT_F64 : RT_I64i; // Promote to 64bits
-		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-	}
-	A_FREE(arg_dsts);
-	rpn2 = ICArgN(rpn, rpn->length);
-	cctrl->backend_user_data1 = orig_wiggle_room;
-	return code_off;
-}
-
 int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 	int64_t code_off)
 {
@@ -3481,10 +3276,6 @@ static int64_t IsSavedIReg(int64_t r)
 	case R13:
 	case R14:
 	case R15:
-#if defined(_WIN32) || defined(WIN32)
-	case RSI:
-	case RDI:
-#endif
 	}
 	return 1;
 }
@@ -3743,7 +3534,7 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	// ALIGN TO 8
 	if (fsz % 8)
 		fsz += 8 - fsz % 8;
-	int64_t to_push = (i2 = __FindPushedIRegs(cctrl, push_ireg)) * 8 + (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 + cctrl->backend_user_data0 + fsz, old_regs_start;
+	int64_t to_push = (i2 = __FindPushedIRegs(cctrl, push_ireg)) * 8 + (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 + cctrl->backend_user_data0 + fsz+16, old_regs_start;
 	if (i2 % 2)
 		to_push += 8; // We push a dummy register in a pair if not aligned to 2
 	if (i3 % 2)
@@ -3783,42 +3574,10 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	if (cctrl->cur_fun) {
 		lst = cctrl->cur_fun->base.members_lst;
 		for (i = 0; i != cctrl->cur_fun->argc; i++) {
-#ifdef USE_TEMPLEOS_ABI
 			fun_arg.mode = MD_INDIR_REG;
 			fun_arg.raw_type = lst->member_class->raw_type;
 			fun_arg.reg = RBP;
 			fun_arg.off = 16 + stk_arg_cnt++ * 8;
-#else
-#if defined(_WIN32) || defined(WIN32)
-			freg_arg_cnt = i;
-			ireg_arg_cnt = i;
-#endif
-			if (lst->member_class->raw_type == RT_F64) {
-				if (freg_arg_cnt < sizeof(call_fregs) / sizeof(*call_fregs)) {
-					fun_arg.mode = MD_REG;
-					fun_arg.raw_type = RT_F64;
-					fun_arg.reg = call_fregs[freg_arg_cnt++];
-				} else {
-				stk:
-					fun_arg.mode = MD_INDIR_REG;
-					fun_arg.raw_type = lst->member_class->raw_type;
-					fun_arg.reg = RBP;
-#if defined(_WIN32) || defined(WIN32)
-					// 4*8 accounts for home registers
-					fun_arg.off = 4 * 8 + 16 + stk_arg_cnt++ * 8;
-#else
-					fun_arg.off = 16 + stk_arg_cnt++ * 8;
-#endif
-				}
-			} else {
-				if (ireg_arg_cnt < sizeof(call_iregs) / sizeof(*call_iregs)) {
-					fun_arg.mode = MD_REG;
-					fun_arg.raw_type = RT_I64i;
-					fun_arg.reg = call_iregs[ireg_arg_cnt++];
-				} else
-					goto stk;
-			}
-#endif
 			// This *shoudlnt* mutate any of the argument registers
 			if (lst->reg >= 0 && lst->reg != REG_NONE) {
 				write_to.mode = MD_REG;
@@ -3846,47 +3605,10 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 		// We go backwards as this is REVERSE polish notation
 		for (i = 0, rpn = cctrl->code_ctrl->ir_code->last; rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.last) {
 			if (rpn->type == __IC_ARG) {
-#ifdef USE_TEMPLEOS_ABI
-			fun_arg.mode = MD_INDIR_REG;
-			fun_arg.raw_type = (arg = ICArgN(rpn, 0))->raw_type==RT_F64?RT_F64:RT_I64i;
-			fun_arg.reg = RBP;
-			fun_arg.off = 16 + stk_arg_cnt++ * 8;
-#else
-#if defined(_WIN32) || defined(WIN32)
-				freg_arg_cnt = i, ireg_arg_cnt = i;
-#endif
-				if ((arg = ICArgN(rpn, 0))->raw_type == RT_F64) {
-					if (freg_arg_cnt < sizeof(call_fregs) / sizeof(*call_fregs)) {
-						fun_arg.mode = MD_REG;
-						fun_arg.raw_type = RT_F64;
-						fun_arg.reg = call_fregs[freg_arg_cnt++];
-					} else {
-					stk2:
-						fun_arg.mode = MD_INDIR_REG;
-						fun_arg.raw_type = arg->raw_type;
-						if (arg->raw_type < RT_I64i)
-							arg->raw_type = RT_I64i;
-						fun_arg.reg = RBP;
-#if defined(_WIN32) || defined(WIN32)
-						// 4*8 accounts for home registers
-						fun_arg.off = 4 * 8 + 16 + stk_arg_cnt++ * 8;
-#else
-						fun_arg.off = 16 + stk_arg_cnt++ * 8;
-#endif
-					}
-				} else {
-					if (ireg_arg_cnt < sizeof(call_iregs) / sizeof(*call_iregs)) {
-						fun_arg.mode = MD_REG;
-						fun_arg.raw_type = RT_I64i;
-						fun_arg.reg = call_iregs[ireg_arg_cnt++];
-					} else
-						goto stk2;
-				}
-
-#if defined(_WIN32) || defined(WIN32)
-				i++;
-#endif
-#endif
+				fun_arg.mode = MD_INDIR_REG;
+				fun_arg.raw_type = (arg = ICArgN(rpn, 0))->raw_type==RT_F64?RT_F64:RT_I64i;
+				fun_arg.reg = RBP;
+				fun_arg.off = 16 + stk_arg_cnt++ * 8;
 				PushTmp(cctrl, arg, NULL);
 				PopTmp(cctrl, arg);
 				if (fun_arg.mode == MD_FRAME && write_to.mode == MD_FRAME) {
@@ -4048,7 +3770,6 @@ static int64_t __SexyPostOp(CCmpCtrl* cctrl, CRPN* rpn, int64_t (*i_imm)(char*, 
 
 static void DoNothing()
 {
-	puts("undefined extern");
 }
 
 static int64_t IsCompoundCompare(CRPN* r)
@@ -5497,11 +5218,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		i2 = cctrl->backend_user_data3;
 		cctrl->backend_user_data2 = 0;
 		cctrl->backend_user_data3 = 0;
-		#ifdef USE_TEMPLEOS_ABI
 		code_off=__ICFCallTOS(cctrl,rpn,bin,code_off);
-		#else
-		code_off = __ICFCall(cctrl, rpn, bin, code_off);
-		#endif
 		cctrl->backend_user_data2 = i;
 		cctrl->backend_user_data3 = i2;
 		break;
@@ -5513,11 +5230,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		//   \  <>  | <==| Will unwind for you| //TODO validate for X86_64
 		//    \    /      \__________________/
 		//      \_/
-		// Align to 16
-		if (rpn->length & 1)
-			AIWNIOS_ADD_CODE(X86SubImm32, X86_64_STACK_REG, 8 + 8 * rpn->length)
-		else
-			AIWNIOS_ADD_CODE(X86SubImm32, X86_64_STACK_REG, 8 * rpn->length)
+		AIWNIOS_ADD_CODE(X86SubImm32, X86_64_STACK_REG, 8 * rpn->length)
 		for (i = 0; i != rpn->length; i++) {
 			next = ICArgN(rpn, rpn->length - i - 1);
 			code_off = __OptPassFinal(cctrl, next, bin, code_off);
