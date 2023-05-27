@@ -1448,6 +1448,20 @@ void OptPassRemoveUselessArith(CCmpCtrl* cctrl)
 		}
 	}
 }
+static void OptPassRemoveUselessTypecasts(CCmpCtrl* cctrl) {
+	CRPN* r,*next;
+	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+		 r = next) {
+		next=r->base.next;
+		if(r->type==IC_TYPECAST) {
+			if((r->raw_type==RT_F64)==(next->raw_type==RT_F64)) {
+				next->raw_type=r->raw_type;
+				next->ic_class=r->ic_class;
+				ICFree(r);
+			}
+		}
+	}
+}
 static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl) {
 	CRPN* r,*arg,*next,*off;
 	int64_t run;
@@ -1474,8 +1488,8 @@ static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl) {
 		}
 nxt:
 	}
-	
 }
+
 char* Compile(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 {
 	CRPN* r;
@@ -1491,6 +1505,7 @@ char* Compile(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	// OptPassDeadCodeElim(cctrl);
 	OptPassRegAlloc(cctrl);
 	OptPassRemoveUselessArith(cctrl);
+	OptPassRemoveUselessTypecasts(cctrl);
 	OptPassMergeAddressOffsets(cctrl);
 	cctrl->flags = old_flags;
 	return OptPassFinal(cctrl, res_sz, dbg_info);

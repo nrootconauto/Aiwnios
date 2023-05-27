@@ -100,7 +100,7 @@ U16 RandU16()
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
     res^=__GetTicks;
   Fs->rand_seed=res;
-  return res.u16[0];
+  return res&0xffff;
 }
 
 I32 RandI32()
@@ -120,7 +120,7 @@ U32 RandU32()
   if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
     res^=__GetTicks;
   Fs->rand_seed=res;
-  return res.u32[0];
+  return res&0xffffFFFF;
 }
 
 I64 RandI64()

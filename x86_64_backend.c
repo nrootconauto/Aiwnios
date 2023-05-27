@@ -885,6 +885,15 @@ int64_t X86CallReg(char* to, int64_t reg)
 	return len;
 }
 
+int64_t X86CallSIB64(char* to, int64_t s,int64_t i,int64_t b,int64_t o)
+{
+	int64_t len = 0;
+	SIB_BEGIN(1,2,s,i,b,o);
+	ADD_U8(0xff);
+	SIB_END();
+	return len;
+}
+
 int64_t X86PushReg(char* to, int64_t reg)
 {
 	int64_t len = 0;
@@ -1484,7 +1493,6 @@ static int64_t SpillsTmpRegs(CRPN* rpn)
 		break;
 	case IC_AND_AND:
 		goto binop;
-		break;
 	case IC_OR_OR:
 		goto binop;
 		break;
@@ -2361,13 +2369,20 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled)
 		goto post_op;
 		break;
 	case IC_AND_AND:
-		goto binop;
+	logical_binop:
+		arg=ICArgN(r,1);
+		arg2=ICArgN(r,0);
+		PushTmpDepthFirst(cctrl,arg,SpillsTmpRegs(arg2));
+		PushTmpDepthFirst(cctrl,arg2,0);
+		PopTmp(cctrl,arg2);
+		PopTmp(cctrl,arg);
+		goto fin;
 		break;
 	case IC_OR_OR:
-		goto binop;
+		goto logical_binop;
 		break;
 	case IC_XOR_XOR:
-		goto binop;
+		goto logical_binop;
 		break;
 	case IC_EQ_EQ:
 		goto binop;
@@ -2529,9 +2544,16 @@ use_fptr:
 	} else {
 	defacto:
 		rpn2->res.raw_type = RT_PTR; // Not set for some reason
-		code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
-		code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, R10, bin, code_off);
-		AIWNIOS_ADD_CODE(X86CallReg, rpn2->res.reg);
+		if(rpn2->type==IC_RELOC) {
+			AIWNIOS_ADD_CODE(X86CallSIB64, -1,-1,RIP,0);
+			if(bin) CodeMiscAddRef(rpn2->code_misc,bin+code_off-4);
+		} else if(rpn2->type==IC_I64&&Is32Bit(rpn2->integer-(int64_t)(bin+code_off))) {
+			AIWNIOS_ADD_CODE(X86Call32, rpn2->integer-(int64_t)(bin+code_off));
+		} else {
+			code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
+			code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, R10, bin, code_off);
+			AIWNIOS_ADD_CODE(X86CallReg, rpn2->res.reg);
+		}
 	}
 after_call:
 	if (to_pop)
@@ -4218,6 +4240,30 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 					CMP_AND_JMP(X86_COND_GE);
 				}
 				goto ret;
+			case IC_BT:
+			case IC_BTC:
+			case IC_BTS:
+			case IC_BTR:
+			case IC_LBTC:
+			case IC_LBTS:
+			case IC_LBTR:
+				PushTmpDepthFirst(cctrl, next, 0);
+				PopTmp(cctrl, next);
+				if (!rpn->code_misc2)
+					rpn->code_misc2 = CodeMiscNew(cctrl, CMT_LABEL);
+				if (!reverse) {
+					cctrl->backend_user_data5 = rpn->code_misc2;
+					cctrl->backend_user_data6 = rpn->code_misc;
+					code_off = __OptPassFinal(cctrl, next, bin, code_off);
+					rpn->code_misc2->addr = bin + code_off;
+					goto ret;
+				} else {
+					cctrl->backend_user_data5 = rpn->code_misc;
+					cctrl->backend_user_data6 = rpn->code_misc2;
+					code_off = __OptPassFinal(cctrl, next, bin, code_off);
+					rpn->code_misc2->addr = bin + code_off;
+					goto ret;
+				}
 			case IC_OR_OR:
 			case IC_AND_AND:
 				PushTmpDepthFirst(cctrl, next, 0);
@@ -5076,6 +5122,13 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			code_off = __ICMoveF64(cctrl, 1, 0, bin, code_off);
 			AIWNIOS_ADD_CODE(X86COMISDRegReg, 1, 0);
 		}
+		if(old_pass_misc&&old_fail_misc) {
+			AIWNIOS_ADD_CODE(X86Jcc,X86_COND_Z,0);
+			if(bin) CodeMiscAddRef(old_pass_misc,bin+code_off-4);
+			AIWNIOS_ADD_CODE(X86Jmp,0);
+			if(bin) CodeMiscAddRef(old_fail_misc,bin+code_off-4);
+			goto ret;
+		}
 		if (rpn->res.mode == MD_REG && rpn->res.mode != RT_F64) {
 			into_reg = rpn->res.reg;
 		} else
@@ -5709,6 +5762,14 @@ ret:
 		case IC_LE:
 		case IC_EQ_EQ:
 		case IC_NE:
+		case IC_LNOT:
+		case IC_BT:
+		case IC_BTS:
+		case IC_BTR:
+		case IC_BTC:
+		case IC_LBTS:
+		case IC_LBTR:
+		case IC_LBTC:
 			break;
 		default:
 			if (rpn->res.raw_type == RT_F64) {
