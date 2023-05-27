@@ -255,10 +255,16 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
       if(!(misc->h->type&HTF_IMPORT)) {
+force:
 		cur->misc=misc;
         cur->misc->flags|=CMF_SHORT_ADDR;
         cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
+      } else {
+        #ifdef TARGET_X86
+        //In X86_64,i will put all functions in low 32bits to avoid viener functions.
+        goto force;
+        #endif
       }
     }
   }

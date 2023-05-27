@@ -3708,7 +3708,7 @@ static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 		} else if (glbl->base.type & HTT_FUN) {
 			fun->base.base.type &= ~HTF_EXTERN;
 			if(naked)
-				fun->fun_ptr = ptr;
+				fun->fun_ptr = GenFFIBindingNaked(ptr,0);
 			else
 				fun->fun_ptr = GenFFIBinding(ptr,0);
 		}
@@ -3720,7 +3720,7 @@ static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 		exp->base.str = A_STRDUP(name, NULL);
 		exp->base.type = HTT_EXPORT_SYS_SYM;
 		if(naked)
-			exp->val= ptr;
+			exp->val= GenFFIBindingNaked(ptr,0);
 		else
 			exp->val = GenFFIBinding(ptr,0);
 		HashAdd(exp, Fs->hash_table);

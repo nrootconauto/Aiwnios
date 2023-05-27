@@ -32,6 +32,7 @@ static void MemPagTaskFree(CMemBlk* blk, CHeapCtrl* hc)
 	munmap(blk, b);
 #endif
 }
+static int64_t Hex2I64(char *ptr, char **_res);
 static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 {
 	if (!hc)
@@ -61,9 +62,46 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	b /= ps;
 	b *= ps;
 	CMemBlk* ret = mmap(NULL, b, PROT_EXEC | PROT_READ | PROT_WRITE,
-		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		MAP_PRIVATE | MAP_ANONYMOUS|MAP_32BIT, -1, 0);
 	if (!ret || ret == MAP_FAILED)
 		return NULL;
+	//
+	// Copied from 3days originally writen by nroot
+	//
+	
+    // Ok Linus Torvalds,im going to have to look at the /proc/self/maps to find
+    // some of that 32bit jazz
+    char *buffer = malloc(1 << 16);
+    char *ptr;
+    // I hear that poo poo linux doesn't like addresses within the first 16bits
+    void *down = (void *)0x11000;
+    FILE *map;
+    if (ret == MAP_FAILED) {
+      map = fopen("/proc/self/maps", "r");
+      int64_t len;
+      buffer[fread(buffer, 1, 1 << 16, map)] = 0;
+      ptr = buffer;
+      while (1) {
+        void *lower = (void *)Hex2I64(ptr, &ptr);
+        if ((lower - down) >= b && lower > down) {
+          goto found;
+        }
+        // Ignore '-'
+        ptr++;
+        void *upper = (void *)Hex2I64(ptr, &ptr);
+        down = upper;
+        ptr = strchr(ptr, '\n');
+        if (!ptr)
+          break;
+        ptr++;
+      }
+    found:
+      fclose(map), free(ptr);
+      ret = mmap(
+          down, b, PROT_EXEC | PROT_WRITE | PROT_READ,
+          MAP_PRIVATE | MAP_ANON | MAP_FIXED | MAP_32BIT, -1, 0
+      );
+    }
 #endif
 	int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
 	CMemUnused **unm, *tmp, *tmp2;
