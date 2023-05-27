@@ -11,6 +11,6 @@ all: aiwnios
 .yasm.o:
 	${AS} ${.IMPSRC} -o ${.TARGET}
 .c.o: ${C_HEADERS}
-	gcc -w -Wno-implicit-function-declaration  -Os  -g -DTARGET_X86V -c ${.IMPSRC} -o ${.TARGET}
+	gcc -w -Wno-implicit-function-declaration  -O0  -g -DTARGET_X86V -c ${.IMPSRC} -o ${.TARGET}
 aiwnios: ${C_OBJS} ${YASM_OBJS}
 	gcc ${.ALLSRC} -lm ${LIBS} -o ${.TARGET}

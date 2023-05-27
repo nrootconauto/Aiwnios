@@ -74,7 +74,7 @@ public U0 DCLighting(CDC *dc,
   vn_x=v1.y*v2.z-v1.z*v2.y;
   vn_y=v1.z*v2.x-v1.x*v2.z;
   vn_z=v1.x*v2.y-v1.y*v2.x;
-  if (d=Sqrt(SqrI64(vn_x)+SqrI64(vn_y)+SqrI64(vn_z)))
+  if (d=Sqrt(vn_x*vn_x+vn_y*vn_y+vn_z*vn_z))
     d=1<<16/d;
   vn_x*=d;
   vn_y*=d;
@@ -97,7 +97,10 @@ public U0 DCLighting(CDC *dc,
   //Probability dithering does not work with thick>1 at this time.
   if (color.c0.rop&ROPBF_TWO_SIDED) {
     color.c0.rop&=~ROPBF_TWO_SIDED;
-    i=AbsI64(i)<<1;
+    if(i>=0)
+	  i=i<<1;
+    else
+      i=-i<<1;
   } else
     i+=65536;
   if (color.c0.rop&ROPBF_HALF_RANGE_COLOR) {
