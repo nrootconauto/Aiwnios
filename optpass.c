@@ -1474,19 +1474,29 @@ static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl)
 			for (run = 0; run != 2; run++) {
 				arg = ICArgN(r, run);
 				off = ICArgN(r, 1 - run);
-				if (arg != IC_ADDR_OF)
+				if (arg->type != IC_ADDR_OF)
 					continue;
 				if (off->type != IC_I64)
 					continue;
-				arg = arg->base.next;
-				switch (arg->type) {
+				base = arg->base.next;
+				switch (base->type) {
 				case IC_SHORT_ADDR:
 				case __IC_STATIC_REF:
-				case IC_BASE_PTR:
+					//Stack grows down
+					base->integer += off->integer;
+					goto fin;
+				break;case IC_BASE_PTR:
+					//Stack grows down
+					#if defined (__x86_64__)
+					base->integer -= off->integer;
+					#else
+					base->integer += off->integer;
+					#endif
+fin:
+					arg->raw_type=r->raw_type;
 					ICFree(r);
 					ICFree(off);
-					next=arg;
-					arg->integer += off->integer;
+					next=base;
 					goto nxt;
 				}
 			}
