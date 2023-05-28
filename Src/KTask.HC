@@ -103,7 +103,8 @@ Bool IsSuspended(CTask *task=NULL)
 
 I64 TaskInit(CTask *task,I64 stk_size)
 {//Returns Fs of task
-  task->code_heap=task->data_heap=HeapCtrlInit(NULL,task);
+  task->data_heap=HeapCtrlInit(NULL,task,0);
+  task->code_heap=HeapCtrlInit(NULL,task,1);
   task->addr=task->next_task=task->last_task=
 	task->next_input_filter_task=task->last_input_filter_task=
 	task;

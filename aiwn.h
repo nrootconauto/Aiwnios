@@ -136,6 +136,7 @@ typedef struct CTask {
 } CTask;
 typedef struct CHeapCtrl {
 	int32_t hc_signature;
+	char is_code_heap;
 	int64_t locked_flags, alloced_u8s, used_u8s;
 	struct CTask* mem_task;
 	struct CMemUnused *malloc_free_lst, *heap_hash[MEM_HEAP_HASH_SIZE / 8+1];
@@ -693,7 +694,7 @@ CHashClass *PrsType(CCmpCtrl *ccmp,CHashClass *base,char **name,CHashFun **fun,C
 void PrsTests();
 
 void TaskInit(CTask *task,void *addr,int64_t stk_sz);
-struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct,CTask *task);
+struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct,CTask *task,int64_t is_code_heap);
 void TaskExit();
 extern __thread struct CTask *HolyFs;
 extern __thread struct CTask *Fs;
@@ -716,7 +717,7 @@ char *LexSrcLink(CLexer *lex,void *task);
 
 char *__AIWNIOS_StrDup(char *str,void *t);
 void HeapCtrlDel(CHeapCtrl *ct);
-CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct,CTask *task);
+CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct,CTask *task,int64_t code_heap);
 void *__AIWNIOS_CAlloc(int64_t cnt,void *t);
 int64_t MSize(void *ptr);
 void __AIWNIOS_Free(void *ptr);

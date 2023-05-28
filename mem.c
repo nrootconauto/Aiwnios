@@ -48,7 +48,7 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity * dwAllocationGranularity, _try, addr;
 	if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
 		b += dwAllocationGranularity;
-	ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, hc->is_code_heap?PAGE_EXECUTE_READWRITE:PAGE_READWRITE);
 	if (!ret)
 		return NULL;
 #else
@@ -62,7 +62,7 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 		b += ps;
 	b /= ps;
 	b *= ps;
-	CMemBlk* ret = mmap(NULL, b, PROT_EXEC | PROT_READ | PROT_WRITE,
+	CMemBlk* ret = mmap(NULL, b, (hc->is_code_heap?PROT_EXEC:0) | PROT_READ | PROT_WRITE,
 		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
 	int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
@@ -206,12 +206,13 @@ void* __AIWNIOS_CAlloc(int64_t cnt, void* t)
 	return memset(__AIWNIOS_MAlloc(cnt, t), 0, cnt);
 }
 
-CHeapCtrl* HeapCtrlInit(CHeapCtrl* ct, CTask* task)
+CHeapCtrl* HeapCtrlInit(CHeapCtrl* ct, CTask* task,int64_t is_code_heap)
 {
 	if (!ct)
 		ct = calloc(sizeof(CHeapCtrl), 1);
 	if (!task)
 		task = Fs;
+	ct->is_code_heap=is_code_heap;
 	ct->hc_signature = 'H';
 	ct->mem_task = task;
 	ct->malloc_free_lst = NULL;

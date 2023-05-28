@@ -517,7 +517,7 @@ static int64_t STK_Misc_Bts(int64_t* stk)
 
 static int64_t STK_HeapCtrlInit(int64_t* stk)
 {
-	return HeapCtrlInit(stk[0], stk[1]);
+	return HeapCtrlInit(stk[0], stk[1],stk[2]);
 }
 
 static int64_t STK_HeapCtrlDel(int64_t* stk)
@@ -1279,7 +1279,7 @@ void BootAiwnios()
 		PrsAddSymbol("ATan", STK_atan, 1);
 		PrsAddSymbol("Exp", STK_exp, 1);
 		PrsAddSymbol("Btc", STK_Misc_Btc, 2);
-		PrsAddSymbol("HeapCtrlInit", STK_HeapCtrlInit, 2);
+		PrsAddSymbol("HeapCtrlInit", STK_HeapCtrlInit, 3);
 		PrsAddSymbol("HeapCtrlDel", STK_HeapCtrlDel, 1);
 		PrsAddSymbol("__MAlloc", STK___AIWNIOS_MAlloc, 2);
 		PrsAddSymbol("__CAlloc", STK___AIWNIOS_CAlloc, 2);

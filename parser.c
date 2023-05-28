@@ -147,7 +147,7 @@ CCmpCtrl* CmpCtrlNew(CLexer* lex)
 	CHashClass* cls;
 	CCmpCtrl* ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL);
 	ccmp->lex = lex;
-	ccmp->hc = HeapCtrlInit(NULL, Fs);
+	ccmp->hc = HeapCtrlInit(NULL, Fs,1);
 	struct {
 		char* name;
 		int64_t rt;
