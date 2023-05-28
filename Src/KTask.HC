@@ -140,7 +140,10 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->win_right	=text.cols-2;
   task->win_top		=13;
   task->win_bottom	=text.rows-2;
-  if (blkdev.home_dir) {//Beware Adam $LK,"TaskInit",A="FF:::/Kernel/KStart64.HC,TaskInit"$. I guess ok until $LK,"DskChg",A="FF:::/Kernel/KMain.HC,DskChg"$().
+  if(Fs->cur_dir) { //This is added by nroot for compfy living
+    task->cur_dv=Fs->cur_dv;
+	task->cur_dir=StrNew(Fs->cur_dir,task);
+  } else if (blkdev.home_dir) {//Beware Adam $LK,"TaskInit",A="FF:::/Kernel/KStart64.HC,TaskInit"$. I guess ok until $LK,"DskChg",A="FF:::/Kernel/KMain.HC,DskChg"$().
     task->cur_dv=blkdev.let_to_drv[*blkdev.home_dir-'A'];
     task->cur_dir=StrNew(blkdev.home_dir+2,task);
   } else
@@ -157,7 +160,7 @@ U0 CallPooPoo() {
   Exit;
 }
 
-CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
+CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
 	I64 target_cpu=-1,	//-1 for current CPU. See $LK,"multi-core",A="FI:::/Demo/MultiCore/LoadTest.HC"$.
 	CTask *parent=NULL,	//NULL means adam
 	I64 stk_size=0,		//0=default

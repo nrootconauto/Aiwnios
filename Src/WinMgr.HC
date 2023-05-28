@@ -513,10 +513,8 @@ wmt_start:
 	    x=ms.pos.x-task->scroll_x;
 	    y=ms.pos.y-task->scroll_y;
 	    z=ms.pos.z-task->scroll_z;
-	    PrintI("x",x);
 	    while (ms.lb && kbd.scan_code&SCF_CTRL && TaskValidate(task)) {
 	      task->scroll_x=(ms.pos.x-x)&~7;
-	      PrintI("gsu",task->scroll_x);
 	      task->scroll_y=(ms.pos.y-y)&~7;
 	      task->scroll_z=ms.pos.z-z;
 	      WinMgrSleep(TRUE);
@@ -658,8 +656,6 @@ wmt_start:
 	    (!TaskValidate(sys_focus_task)||
 	    !Bt(&sys_focus_task->win_inhibit,WIf_FOCUS_TASK_MS_L))) {
 	if (!old_ms.lb && ms.lb) {
-	PrintI("old_ms.lb",old_ms.lb);
-	PrintI("ms.lb",ms.lb);
 	  if (doc=WinCursorPosSet(task,ms.pos.x,ms.pos.y)) {
 	    DocLock(doc);
 	    if (doc->doc_signature==DOC_SIGNATURE_VAL) {
@@ -679,8 +675,6 @@ wmt_start:
 	    (!TaskValidate(sys_focus_task)||
 	    !Bt(&sys_focus_task->win_inhibit,WIf_FOCUS_TASK_MS_R))) {
 	if (!old_ms.rb && ms.rb) {
-	PrintI("old_ms.rb",old_ms.rb);
-	PrintI("ms.rb",ms.rb);
 	
 	  if (WinCursorPosSet(task,ms.pos.x,ms.pos.y)) {
 	    old_ms.rb=TRUE;
@@ -712,8 +706,6 @@ wmt_start:
 	    (!TaskValidate(sys_focus_task)||
 	    !Bt(&sys_focus_task->win_inhibit,WIf_FOCUS_TASK_MS_L))) {
 	if (old_ms.lb && !ms.lb) {
-	PrintI("2old_ms.lb",old_ms.lb);
-	PrintI("2ms.lb",ms.lb);
 	  if (doc=WinCursorPosSet(task,ms.pos.x,ms.pos.y,FALSE)) {
 	    do msg_code=WinMgrSleep;
 	    while (TaskValidate(task) && (ms.lb || ms.left_dbl_time));
@@ -750,8 +742,6 @@ wmt_start:
 	    (!TaskValidate(sys_focus_task)||
 	    !Bt(&sys_focus_task->win_inhibit,WIf_FOCUS_TASK_MS_R))) {
 	if (old_ms.rb && !ms.rb) {
-	PrintI("2old_ms.rb",old_ms.rb);
-	PrintI("2ms.rb",ms.rb);
 	  if (doc=WinCursorPosSet(task,ms.pos.x,ms.pos.y,FALSE)) {
 	    do msg_code=WinMgrSleep;
 	    while (TaskValidate(task) && (ms.rb || ms.right_dbl_time));
