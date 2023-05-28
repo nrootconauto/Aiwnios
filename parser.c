@@ -202,6 +202,7 @@ CRPN* ICFwd(CRPN* rpn)
 {
 	CRPN* orig_rpn = rpn;
 	int64_t idx;
+	if(rpn->ic_fwd) return rpn->ic_fwd;
 	switch (rpn->type) {
 		break;
 	case __IC_STATICS_SIZE:
@@ -480,6 +481,8 @@ static char* PrsString(CCmpCtrl* ccmp, int64_t* sz)
 
 CRPN* ICArgN(CRPN* rpn, int64_t n)
 {
+	if(n==0&&rpn->tree1) return  rpn->tree1;
+	if(n==1&&rpn->tree2) return  rpn->tree2;
 	rpn = rpn->base.next;
 	while (--n >= 0)
 		rpn = ICFwd(rpn);
@@ -1000,7 +1003,8 @@ void SysSymImportsResolve(char* sym, int64_t flags)
 		with = ((CHashGlblVar*)thing)->data_addr;
 	} else
 		throw(*(int64_t*)"Resolve");
-	if(!with) return;
+	if (!with)
+		return;
 	while (imp = HashSingleTableFind(sym, Fs->hash_table, HTT_IMPORT_SYS_SYM, 1)) {
 		*imp->address = with; // TODO make TempleOS like
 		imp->base.type = HTT_INVALID;
@@ -3697,7 +3701,7 @@ ret:
 	cctrl->flags = old_flags;
 	return 1;
 }
-static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
+static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
 {
 	CHashFun* fun;
 	CHashGlblVar* glbl;
@@ -3707,12 +3711,12 @@ static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 			glbl->base.type &= ~HTF_EXTERN;
 			glbl->data_addr = ptr;
 		} else if (glbl->base.type & HTT_FUN) {
-			if(!fun->fun_ptr) {
+			if (!fun->fun_ptr) {
 				fun->base.base.type &= ~HTF_EXTERN;
-				if(naked)
-					fun->fun_ptr = GenFFIBindingNaked(ptr,0);
+				if (naked)
+					fun->fun_ptr = GenFFIBindingNaked(ptr, 0);
 				else
-					fun->fun_ptr = GenFFIBinding(ptr,0);
+					fun->fun_ptr = GenFFIBinding(ptr, 0);
 			}
 		}
 		SysSymImportsResolve(name, 0);
@@ -3722,22 +3726,23 @@ static void __PrsBindCSymbol(char* name, void* ptr,int64_t naked)
 		exp = A_CALLOC(sizeof(CHashExport), NULL);
 		exp->base.str = A_STRDUP(name, NULL);
 		exp->base.type = HTT_EXPORT_SYS_SYM;
-		if(naked)
-			exp->val= GenFFIBindingNaked(ptr,0);
+		if (naked)
+			exp->val = GenFFIBindingNaked(ptr, 0);
 		else
-			exp->val = GenFFIBinding(ptr,0);
+			exp->val = GenFFIBinding(ptr, 0);
 		HashAdd(exp, Fs->hash_table);
 	}
 }
 
-void PrsBindCSymbol(char *name,void *ptr) {
-	__PrsBindCSymbol(name,ptr,0);
+void PrsBindCSymbol(char* name, void* ptr)
+{
+	__PrsBindCSymbol(name, ptr, 0);
 }
 
-void PrsBindCSymbolNaked(char *name,void *ptr) {
-	__PrsBindCSymbol(name,ptr,1);
+void PrsBindCSymbolNaked(char* name, void* ptr)
+{
+	__PrsBindCSymbol(name, ptr, 1);
 }
-
 
 int64_t PrsTry(CCmpCtrl* cctrl)
 {
@@ -4094,12 +4099,12 @@ static CHashClass* rt2cls(int64_t rt, int64_t ptr_cnt)
 	}
 	return ic_class + ptr_cnt;
 }
-CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, CCodeMisc *ptr)
+CRPN* __HC_ICAdd_ShortAddr(CCmpCtrl* acc, CCodeCtrl* cc, char* name, CCodeMisc* ptr)
 {
 	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
 	rpn->type = IC_SHORT_ADDR;
 	rpn->code_misc = ptr;
-	ptr->type=CMT_SHORT_ADDR;
+	ptr->type = CMT_SHORT_ADDR;
 	rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
 	rpn->ic_class++;
 	rpn->raw_type = RT_PTR;
@@ -4201,14 +4206,14 @@ CCodeMisc* __HC_CodeMiscStrNew(CCmpCtrl* ccmp, char* str, int64_t sz)
 	misc->str_len = sz;
 	return misc;
 }
-CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, void **table_address, int64_t hi)
+CCodeMisc* __HC_CodeMiscJmpTableNew(CCmpCtrl* ccmp, CCodeMisc* labels, void** table_address, int64_t hi)
 {
 	CCodeMisc* misc = CodeMiscNew(ccmp, CMT_JMP_TAB);
 	misc->jmp_tab = A_MALLOC((hi - 0) * sizeof(CCodeMisc*), NULL);
 	memcpy(misc->jmp_tab, labels, (hi - 0) * sizeof(CCodeMisc*));
 	misc->hi = hi - 1;
 	misc->lo = 0;
-	misc->patch_addr=table_address;
+	misc->patch_addr = table_address;
 	return misc;
 }
 
@@ -4350,7 +4355,7 @@ HC_IC_BINDING(HC_ICAdd_LBTC, IC_LBTC);
 HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
 HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
 
-CCodeMiscRef *CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
+CCodeMiscRef* CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 {
 	CCodeMiscRef* ref = A_CALLOC(sizeof(CCodeMiscRef), NULL);
 	ref->add_to = addr;
@@ -4359,14 +4364,102 @@ CCodeMiscRef *CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 	return ref;
 }
 
-void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,void(*fptr)(void *addr,void *user_data), void *user_data) {
-	CCodeMiscRef *refs=cm->refs;
-	while(refs) {
-		#ifdef USE_TEMPLEOS_ABI
-		FFI_CALL_TOS_2(fptr,refs->add_to,user_data);
-		#else
-		fptr(refs->add_to,user_data);
-		#endif
-		refs=refs->next;
+void __HC_CodeMiscInterateThroughRefs(CCodeMisc* cm, void (*fptr)(void* addr, void* user_data), void* user_data)
+{
+	CCodeMiscRef* refs = cm->refs;
+	while (refs) {
+#ifdef USE_TEMPLEOS_ABI
+		FFI_CALL_TOS_2(fptr, refs->add_to, user_data);
+#else
+		fptr(refs->add_to, user_data);
+#endif
+		refs = refs->next;
+	}
+}
+void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl) {
+	CRPN *rpn;
+	for(rpn=cctrl->code_ctrl->ir_code->next;rpn!=cctrl->code_ctrl->ir_code;rpn=rpn->base.next) {
+		rpn->ic_fwd=ICFwd(rpn);
+		switch(rpn->type) {
+		break;case IC_GOTO:
+		unop:
+		rpn->tree1=rpn->base.next;
+		continue;
+		break;case IC_GOTO_IF: goto unop;
+		break;case IC_TO_I64: goto unop;
+		break;case IC_TO_F64: goto unop;
+		break;case IC_PAREN: goto unop;
+		break;case IC_NEG: goto unop;
+		break;case IC_POS: goto unop;
+	break;case IC_POW:
+	binop:
+	rpn->tree1=rpn->base.next;
+	rpn->tree2=ICFwd(rpn->tree1);
+	continue;
+	break;case IC_ADD: goto binop;
+	break;case IC_EQ: goto binop;
+	break;case IC_SUB: goto binop;
+	break;case IC_DIV: goto binop;
+	break;case IC_MUL: goto binop;
+	break;case IC_DEREF: goto binop;
+	break;case IC_AND: goto binop;
+	break;case IC_ADDR_OF: goto unop;
+	break;case IC_XOR: goto binop;
+	break;case IC_MOD: goto binop;
+	break;case IC_OR: goto binop;
+	break;case IC_LT: goto binop;
+	break;case IC_GT: goto binop;
+	break;case IC_LNOT: goto unop;
+	break;case IC_BNOT: goto unop;
+	break;case IC_POST_INC:goto unop;
+	break;case IC_POST_DEC: goto unop;
+	break;case IC_PRE_INC: goto unop;
+	break;case IC_PRE_DEC: goto unop;
+	break;case IC_AND_AND: goto binop;
+	break;case IC_OR_OR: goto binop;
+	break;case IC_XOR_XOR: goto binop;
+	break;case IC_EQ_EQ: goto binop;
+	break;case IC_NE: goto binop;
+	break;case IC_LE: goto binop;
+	break;case IC_GE: goto binop;
+	break;case IC_LSH: goto binop;
+	break;case IC_RSH: goto binop;
+	break;case IC_ADD_EQ: goto binop;
+	break;case IC_SUB_EQ: goto binop;
+	break;case IC_MUL_EQ: goto binop;
+	break;case IC_DIV_EQ: goto binop;
+	break;case IC_LSH_EQ: goto binop;
+	break;case IC_RSH_EQ: goto binop;
+	break;case IC_AND_EQ: goto binop;
+	break;case IC_OR_EQ: goto binop;
+	break;case IC_XOR_EQ: goto binop;
+	break;case IC_MOD_EQ: goto binop;
+	break;case IC_RET: goto unop;
+	break;case IC_COMMA: goto binop;
+	break;case IC_UNBOUNDED_SWITCH: goto unop;
+	break;case IC_BOUNDED_SWITCH: goto unop;
+	break;case IC_TYPECAST: goto unop;
+	break;case IC_BT: goto binop;
+	break;case IC_BTC: goto binop;
+	break;case IC_BTS: goto binop;
+	break;case IC_BTR: goto binop;
+	break;case IC_LBTC: goto binop;
+	break;case IC_LBTS: goto binop;
+	break;case IC_LBTR: goto binop;
+	break;case IC_MAX_I64: goto binop;
+	break;case IC_MIN_I64: goto binop;
+	break;case IC_MAX_U64: goto binop;
+	break;case IC_MIN_U64: goto binop;
+	break;case IC_SIGN_I64: goto unop;
+	break;case IC_SQR_I64: goto unop;
+	break;case IC_SQR_U64: goto unop;
+	break;case IC_SQR: goto unop;
+	break;case IC_ABS: goto unop;
+	break;case IC_SQRT: goto unop;
+	break;case IC_SIN: goto unop;
+	break;case IC_COS: goto unop;
+	break;case IC_TAN: goto unop;
+	break;case IC_ATAN: goto unop;
+	}
 	}
 }

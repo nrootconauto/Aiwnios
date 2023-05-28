@@ -544,6 +544,7 @@ enum {
 	IC_COS,
 	IC_TAN,
 	IC_ATAN,
+	IC_CNT, //MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
 	// Feel free to define more in backend
@@ -612,6 +613,7 @@ struct CRPN {
 	};
 	CCodeMisc *code_misc2,*code_misc3,*code_misc4;
 	CICArg res;
+	CRPN *tree1,*tree2,*ic_fwd;
 	//Will be stored into this reg if ICF_STUFF_IN_REG is set
 	char stuff_in_reg;
 };
@@ -1122,3 +1124,4 @@ extern int64_t FFI_CALL_TOS_4(void *fptr,int64_t,int64_t,int64_t,int64_t);
 extern void *GenFFIBinding(void *fptr,int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr,int64_t arity);
 extern void PrsBindCSymbolNaked(char *name,void *ptr);
+void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);

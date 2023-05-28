@@ -219,11 +219,11 @@ static void LoadPass2(char* src, char* module_base)
 		switch (etype) {
 		case IET_MAIN:
 			fptr = (i + module_base);
-			#ifdef USE_TEMPLEOS_ABI
+#ifdef USE_TEMPLEOS_ABI
 			FFI_CALL_TOS_0(fptr);
-			#else
+#else
 			(*fptr)();
-			#endif
+#endif
 			break;
 		case IET_ABS_ADDR:
 			src += sizeof(int32_t) * i;
@@ -294,11 +294,11 @@ void ImportSymbolsToHolyC(void (*cb)(char* name, void* addr))
 	for (idx = 0; idx <= Fs->hash_table->mask; idx++) {
 		for (h = Fs->hash_table->body[idx]; h; h = h->base.next) {
 			if (h->base.type & HTT_EXPORT_SYS_SYM) {
-				#ifdef USE_TEMPLEOS_ABI
-				FFI_CALL_TOS_2(cb,h->base.str,h->val);
-				#else
+#ifdef USE_TEMPLEOS_ABI
+				FFI_CALL_TOS_2(cb, h->base.str, h->val);
+#else
 				cb(h->base.str, h->val);
-				#endif
+#endif
 			}
 		}
 	}

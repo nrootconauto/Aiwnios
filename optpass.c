@@ -1448,45 +1448,49 @@ void OptPassRemoveUselessArith(CCmpCtrl* cctrl)
 		}
 	}
 }
-static void OptPassRemoveUselessTypecasts(CCmpCtrl* cctrl) {
-	CRPN* r,*next;
+static void OptPassRemoveUselessTypecasts(CCmpCtrl* cctrl)
+{
+	CRPN *r, *next;
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
 		 r = next) {
-		next=r->base.next;
-		if(r->type==IC_TYPECAST) {
-			if((r->raw_type==RT_F64)==(next->raw_type==RT_F64)) {
-				next->raw_type=r->raw_type;
-				next->ic_class=r->ic_class;
+		next = r->base.next;
+		if (r->type == IC_TYPECAST) {
+			if ((r->raw_type == RT_F64) == (next->raw_type == RT_F64)) {
+				next->raw_type = r->raw_type;
+				next->ic_class = r->ic_class;
 				ICFree(r);
 			}
 		}
 	}
 }
-static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl) {
-	CRPN* r,*arg,*next,*off;
+static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl)
+{
+	CRPN *r, *arg, *next, *off;
 	int64_t run;
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
 		 r = next) {
-		next=r->base.next;
-		if(r->type==IC_ADD) {
-			for(run=0;run!=2;run++) {
-				arg=ICArgN(r,run);
-				off=ICArgN(r,1-run);
-				if(arg!=IC_ADDR_OF) continue;
-				if(off->type!=IC_I64) continue;
-				arg=arg->base.next;
-				switch(arg->type) {
-					case IC_SHORT_ADDR:
-					case __IC_STATIC_REF:
-					case IC_BASE_PTR:
+		next = r->base.next;
+		if (r->type == IC_ADD) {
+			for (run = 0; run != 2; run++) {
+				arg = ICArgN(r, run);
+				off = ICArgN(r, 1 - run);
+				if (arg != IC_ADDR_OF)
+					continue;
+				if (off->type != IC_I64)
+					continue;
+				arg = arg->base.next;
+				switch (arg->type) {
+				case IC_SHORT_ADDR:
+				case __IC_STATIC_REF:
+				case IC_BASE_PTR:
 					ICFree(r);
 					ICFree(off);
-					arg->integer+=off->integer;
+					arg->integer += off->integer;
 					goto nxt;
 				}
 			}
 		}
-nxt:
+	nxt:
 	}
 }
 
@@ -1507,6 +1511,7 @@ char* Compile(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 	OptPassRemoveUselessArith(cctrl);
 	OptPassRemoveUselessTypecasts(cctrl);
 	OptPassMergeAddressOffsets(cctrl);
+	CmpCtrlCacheArgTrees(cctrl);
 	cctrl->flags = old_flags;
 	return OptPassFinal(cctrl, res_sz, dbg_info);
 }
