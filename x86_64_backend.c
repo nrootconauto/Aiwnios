@@ -2882,9 +2882,9 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				tmp.raw_type = RT_F64;
 				if (src->mode == MD_REG) {
 					AIWNIOS_ADD_CODE(X86CVTTSI2SDRegReg, use_reg, src->reg);
-				} else if (src->mode == MD_INDIR_REG) {
+				} else if (src->mode == MD_INDIR_REG&&RawTypeIs64(src->raw_type)) {
 					AIWNIOS_ADD_CODE(X86CVTTSI2SDRegSIB64, use_reg, -1, -1, src->reg, src->off);
-				} else if (src->mode == MD_FRAME) {
+				} else if (src->mode == MD_FRAME&&RawTypeIs64(src->raw_type)) {
 					AIWNIOS_ADD_CODE(X86CVTTSI2SDRegSIB64, use_reg, -1, -1, RBP, -src->off);
 				} /*else if(src->mode==__MD_X86_64_SIB) {
 					AIWNIOS_ADD_CODE(X86CVTTSI2SDRegSIB64, use_reg, src->__SIB_scale, src->reg2, src->reg, src->off);
@@ -2901,9 +2901,9 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				tmp.raw_type = RT_I64i;
 				if (src->mode == MD_REG) {
 					AIWNIOS_ADD_CODE(X86CVTTSD2SIRegReg, use_reg, src->reg);
-				} else if (src->mode == MD_INDIR_REG) {
+				} else if (src->mode == MD_INDIR_REG&&RawTypeIs64(src->raw_type)) {
 					AIWNIOS_ADD_CODE(X86CVTTSD2SIRegSIB64, use_reg, -1, -1, src->reg, src->off);
-				} else if (src->mode == MD_FRAME) {
+				} else if (src->mode == MD_FRAME&&RawTypeIs64(src->raw_type)) {
 					AIWNIOS_ADD_CODE(X86CVTTSD2SIRegSIB64, use_reg, -1, -1, RBP, -src->off);
 				} /*else if(src->mode==__MD_X86_64_SIB) {
 					AIWNIOS_ADD_CODE(X86CVTTSD2SIRegSIB64, use_reg, src->__SIB_scale, src->reg2, src->reg, src->off);
