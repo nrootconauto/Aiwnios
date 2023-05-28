@@ -4501,7 +4501,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			//
 			code_off = __ICMoveI64(cctrl, into_reg, rpn->code_misc->str, bin, code_off);
 		} else {
-			AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, X86LeaSIB(NULL, into_reg, -1, -1, RIP, 0)); // X86LeaSIB will return inst size
+			AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, 0); // X86LeaSIB will return inst size
 			CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
 		}
 		if (rpn->res.mode != MD_REG) {
