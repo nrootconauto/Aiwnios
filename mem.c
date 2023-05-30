@@ -18,7 +18,7 @@ static void MemPagTaskFree(CMemBlk* blk, CHeapCtrl* hc)
 	QueRem(blk);
 	hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
 #if defined(_WIN32) || defined(WIN32)
-	VirtualFree(blk, blk->pags * MEM_PAG_SIZE, MEM_RELEASE);
+	VirtualFree(blk, 0, MEM_RELEASE);
 #else
 	static int64_t ps;
 	int64_t b;
@@ -229,7 +229,7 @@ void HeapCtrlDel(CHeapCtrl* ct)
 	for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
 		next = m->base.next;
 #if defined(_WIN32) || defined(WIN32)
-		VirtualFree(m, m->pags * MEM_PAG_SIZE, MEM_RELEASE);
+		VirtualFree(m, 0, MEM_RELEASE);
 #else
 		static int64_t ps;
 		int64_t b;
