@@ -1,4 +1,8 @@
 #include "aiwn.h"
+#include <signal.h>
+//Look at your vendor's ucontext.h
+#define __USE_GNU 
+#include <ucontext.h>
 static void UnblockSignals()
 {
 #if defined(__linux__)
@@ -15,6 +19,50 @@ static void UnblockSignals()
 static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 {
 #if defined(__x86_64__)
+	//See /usr/include/x86_64-linux-gnu/sys/ucontext.h
+enum
+{
+  REG_R8 = 0,
+  REG_R9,
+  REG_R10,
+  REG_R11,
+  REG_R12,
+  REG_R13,
+  REG_R14,
+  REG_R15,
+  REG_RDI,
+  REG_RSI,
+  REG_RBP,
+  REG_RBX,
+  REG_RDX,
+  REG_RAX,
+  REG_RCX,
+  REG_RSP,
+  REG_RIP,
+};
+	#if defined(__linux__)
+	UnblockSignals();
+	mcontext_t* ctx = &_ctx->uc_mcontext;
+	int64_t actx[32];
+	actx[0]=ctx->gregs[REG_RIP];
+	actx[1]=ctx->gregs[REG_RSP];
+	actx[2]=ctx->gregs[REG_RBP];
+	actx[3]=ctx->gregs[REG_RBX];
+	actx[4]=ctx->gregs[REG_R12];
+	actx[5]=ctx->gregs[REG_R13];
+	actx[7]=ctx->gregs[REG_R14];
+	actx[8]=ctx->gregs[REG_R15];
+	CHashExport* exp;
+	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+		FFI_CALL_TOS_2(exp->val,sig, actx);
+	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+		ctx->gregs[15] = exp->val;
+	} else
+		abort();
+	setcontext(_ctx);
+	#else
+	
+	#endif
 #elif defined(_ARM64_)
 	mcontext_t* ctx = &_ctx->uc_mcontext;
 	CHashExport* exp;

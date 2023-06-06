@@ -15,9 +15,9 @@ something saucier if you want to be comfy expirience(I plan on getting a BananaP
 will need
 - `gcc`
 - `libsdl2-dev`
-- `bmake` the BSD make utility(I test on linux dont worry)
+- `cmake`
 
-Building is as easy as typing `bmake -f Makefile.BSD`,and to run it,use `./aiwnios`
+Building is as easy as typing `cmake .` then `make`,and to run it,use `./aiwnios`
 
 ## Future
 

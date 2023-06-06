@@ -4014,7 +4014,7 @@ static int64_t IsCompoundCompare(CRPN* r)
 			return 1;
 		}
 		return 0;
-	case IC_NE:
+	/*case IC_NE:
 	case IC_EQ_EQ:
 		next = ICFwd(next);
 		switch (next->type) {
@@ -4023,6 +4023,7 @@ static int64_t IsCompoundCompare(CRPN* r)
 			return 1;
 		}
 		return 0;
+		*/
 	}
 	return 0;
 }
@@ -4044,7 +4045,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	if (rpn->flags & ICF_PRECOMPUTED)
 		goto ret;
 	char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr, ***range_fail_addrs;
-	if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass == 2 && rpn->ic_line) { // Final run
+	if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass && rpn->ic_line) { // Final run
 		if (MSize(cctrl->code_ctrl->dbg_info) / 8 > rpn->ic_line - cctrl->code_ctrl->min_ln) {
 			i = cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln];
 			if (!i)
@@ -6038,8 +6039,8 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 		}
 		if (statics_sz)
 			code_off += statics_sz + 8;
-		final_size = code_off;
 	}
+	final_size = code_off;
 	if (dbg_info) {
 		cnt = MSize(dbg_info) / 8;
 		ptr = dbg_info[0] = bin;

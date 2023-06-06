@@ -831,12 +831,14 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     }
     __HC_ICSetLine(new,cur->ic_line);
   }
-  aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+1));
-  machine_code=__HC_Compile(acc,res_sz,aiwnios_dbg_info);
+  aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+2));
+  machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
+  if(res_sz) *res_sz=idx;
   __HC_CodeCtrlPop(acc);
   if(info) {
-    info[0]->body[0]=machine_code;
-    MemCpy(&info[0]->body[1],aiwnios_dbg_info,8*(cc->max_line-cc->min_line+1));
+    aiwnios_dbg_info[0]=machine_code;
+    aiwnios_dbg_info[cc->max_line-cc->min_line+1]=machine_code+idx;
+    MemCpy(info[0]->body,aiwnios_dbg_info,8*(cc->max_line-cc->min_line+2));
   }
   Free(aiwnios_dbg_info);
   
@@ -1037,7 +1039,7 @@ U0 DbgInfoWrite(CHashTable *h,U8 *name) {
 	I64 len=__DbgInfoWrite(h,NULL);
 	U8 *buf=MAlloc(len);
 	__DbgInfoWrite(h,buf);
-	FileWrite(name,buf,len);
+	FileWrite(name,buf,len);
 	Free(buf);
 }
 U0 DbgInfoRead(U8 *name) {

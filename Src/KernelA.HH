@@ -1773,7 +1773,7 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_R8		8
 #define REG_REGS_NUM	31
 
-#define REG_RIP		16	//Used by compiler, not really it's num
+#define REG_RIP		16	//Used by compiler, not really it's num
 //Be careful: RBPu8, RSPu8, RSIu8, RDIu8 are 20-24
 #define REG_NONE	32	//noreg flag sets it to this
 #define REG_ALLOC	33	//reg flag sets it to this
@@ -6491,3 +6491,6 @@ _intern IC_LBTS Bool LBts(U8*,I64);
 _intern IC_LBTC Bool LBtc(U8*,I64);
 _intern IC_LBTR Bool LBtr(U8*,I64);
 #endif
+//Added bt Mr nrootconauto
+extern U8 *DisasOpc(CDoc *doc,U8 *data);
+extern U0 Uf(U8 *st); 

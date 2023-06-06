@@ -72,7 +72,7 @@ int64_t mp_cnt()
 {
 	static int64_t ret = 0;
 	if (!ret)
-		ret = sysconf(_SC_NPROCESSORS_CONF);
+		ret = sysconf(_SC_NPROCESSORS_ONLN);
 	return ret;
 }
 

@@ -54,12 +54,21 @@ U0 CallerRep(U8 **x29=NULL,CTask *task=NULL)
 {//Prints a report of calling routines.
   I64 **ptr;
   if (!task) task=GetDebuggedProcess;
+  #ifdef TARGET_X86
+  if (!x29) {
+    if (task==Fs)
+      x29=Fs->context_save_area[2];
+    else
+      x29=task->context_save_area[2];
+  }
+  #else
   if (!x29) {
     if (task==Fs)
       x29=Fs->context_save_area[11];
     else
       x29=task->context_save_area[11];
   }
+  #endif
   "CallerRep:\n";
   while (ChkOnStk(x29,task)) {
     ptr=x29+1;
@@ -76,7 +85,11 @@ U0 DebuggerSpawn(CTask *debugee) {
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
   "$$BK,1$$Debugging DFs(0x%X)$$BK,0$$\n",debugee->addr;
   "Type 'DbgHelp;' for help,it's a bit different than TempleOS.\n";
+  #ifdef TARGET_X86
+  "Oh,and welcome to %P(%s)\n",debugee->context_save_area[0],src_link=SrcEdLink(debugee->context_save_area[0]);
+  #else
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[12],src_link=SrcEdLink(debugee->context_save_area[12]);
+  #endif
   "\n";
   Free(src_link);
   ExePrint("CTask *DFs=0x%X;;\n",debugee);
@@ -88,9 +101,12 @@ U0 DebuggerSpawn(CTask *debugee) {
 I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   CBpt *bp;
   CTask clone;
+  #ifdef TARGET_X86
   I64 oip=gps[12]; 
+  #else
+  I64 oip=gps[0]; 
+  #endif
   Fs->is_single_step=FALSE;
-  DbgPrint("%p,%p,%p,%p\n",Caller(0),Caller(1),Caller(2),Caller(3));
   if(Fs==sys_winmgr_task) {
     //Oh no,you crashed the window manager
     DbgPutS("You crashed the window manager,aborting\n");

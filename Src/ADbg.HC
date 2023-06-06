@@ -264,23 +264,25 @@ public U0 FunRep(U8 *st,U8 *rbp=NULL,I64 max_depth=2,CTask *task=NULL)
   }
 }
 
-/*
+#ifdef TARGET_X86
+//Ask nroot to write an AARCH64 disasembler motherfucker
 #help_index "Debugging/Unassemble"
 public U0 Uf(U8 *st)
 {//Unassembles a named fun
-  I64 i;
+  U8 *ptr,*i;
   CHashSrcSym *tmpf;
   CDbgInfo *dbg_info;
   if (tmpf=HashFind(st,Fs->hash_table,HTT_FUN|HTT_EXPORT_SYS_SYM)) {
     if (tmpf->type&HTT_FUN)
       FunRep(st);
     if (dbg_info=tmpf->dbg_info) {
-      i=dbg_info->body[dbg_info->max_line+1-dbg_info->min_line]
-	    -dbg_info->body[0];
-      Un(dbg_info->body[0],i);
-      "Code Size:%04X\n",i;
+      i=dbg_info->body[dbg_info->max_line+1-dbg_info->min_line];
+      ptr=dbg_info->body[0];
+      while(ptr<i)
+        ptr=DisasOpc(DocPut,ptr);
+      "Code Size:%04X\n",i-dbg_info->body[0](U8*);
     } else
-      U(HashVal(tmpf));
+      ;//U(HashVal(tmpf));
   }
 }
-*/
+#endif

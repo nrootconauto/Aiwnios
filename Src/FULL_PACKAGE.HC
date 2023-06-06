@@ -116,6 +116,9 @@ TaskInit(adam_task,0);
 #include "Message.HC"
 #include "Mouse.HC"
 #include "EdLite.HC"
+#ifdef TARGET_X86
+#include "UAsmX64.HC"
+#endif
 #include "KMain.HC"
 U0 SCRoutine() {
   CTask *self=CAlloc(sizeof CTask,adam_task);
