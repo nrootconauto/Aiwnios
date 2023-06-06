@@ -1450,17 +1450,19 @@ void BootAiwnios()
 		PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
 	}
 }
+static const char *t_drive;
 static void Boot()
 {
-	char* bin = "HCRT2.BIN";
+	char bin[strlen("HCRT2.BIN")+strlen(t_drive)+1+1];
+	strcpy(bin,t_drive);
+	strcat(bin,"/HCRT2.BIN");
 	Fs = calloc(sizeof(CTask), 1);
 	InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
-	VFsMountDrive('T', "./");
-	FuzzTest1();
+	VFsMountDrive('T', t_drive);
+	/*FuzzTest1();
 	FuzzTest2();
-	FuzzTest3();
-
+	FuzzTest3();*/
 	BootAiwnios();
 	glbl_table = Fs->hash_table;
 	if (bin)
@@ -1468,7 +1470,25 @@ static void Boot()
 }
 int main(int argc, char* argv[])
 {
-	int64_t quit = 0;
+	t_drive=NULL;
+	int64_t quit = 0,i,overwrite=0;
+	for(i=1;i<argc;i++) {
+		if(!strcmp(argv[i],"-h")||!strcmp(argv[i],"--help")) {
+help:
+			fprintf(AIWNIOS_OSTREAM,"\t-h(--help)\tShow this help message.\n");
+			fprintf(AIWNIOS_OSTREAM,"\t-t folder(--tdrive folder)\tSet the T drive(One will be created if HCRT2.BIN doesnt exist in current dir).\n");
+			fprintf(AIWNIOS_OSTREAM,"\t-o(--overwrite) overwrite the T drive with a fresh installation.\n");
+		} else if(!strcmp(argv[i],"-t")||!strcmp(argv[i],"--tdrive")) {
+			t_drive=argv[++i];
+		} else if(!strcmp(argv[i],"-o")||!strcmp(argv[i],"--overwrite")) {
+			overwrite=1;
+		} else {
+			fprintf(AIWNIOS_OSTREAM,"Unknown option \"%s\".\n",argv[i]);
+			goto help;
+		}
+	}
+	if(!t_drive||overwrite)
+		t_drive=ResolveBootDir(!t_drive?"T":t_drive,overwrite);
 	SDL_Init(SDL_INIT_EVERYTHING);
 	InitSound();
 	user_ev_num = SDL_RegisterEvents(1);

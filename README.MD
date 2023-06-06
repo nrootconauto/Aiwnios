@@ -19,6 +19,7 @@ will need
 
 Building is as easy as typing `cmake .` then `make`,and to run it,use `./aiwnios`
 
+If you want to make a cool package for your system,use [ESP Package Manager](https://github.com/jimjag/epm/) You can do this via: `epm aiwnios`
 ## Future
 
 Me(nrootconauto@gmail.com) is planning on adding an AARCH64 assembler that is accessable through HolyC,but 

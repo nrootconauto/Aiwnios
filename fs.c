@@ -387,8 +387,9 @@ int VFsMountDrive(char let, char* path)
 	int idx = toupper(let) - 'A';
 	if (mount_points[idx])
 		A_FREE(mount_points[idx]);
-	mount_points[idx] = A_MALLOC(strlen(path) + 1, NULL);
+	mount_points[idx] = A_MALLOC(strlen(path) + 2, NULL);
 	strcpy(mount_points[idx], path);
+	strcat(mount_points[idx],"/");
 }
 FILE* VFsFOpen(char* path, char* m)
 {
@@ -452,4 +453,145 @@ FILE* VFsFOpenR(char* f)
 int64_t VFsDirMk(char* f)
 {
 	return VFsCd(f, 1);
+}
+
+// Creates a virtual drive by a template
+static void CopyDir(char *dst, char *src) {
+#ifdef TARGET_WIN32
+	char delim='\\';
+#else
+	char delim='/';
+#endif
+  if (!__FExists(dst)) {
+#ifdef TARGET_WIN32
+    mkdir(dst);
+#else
+    mkdir(dst, 0700);
+#endif
+  }
+  char buf[1024], sbuf[1024], *s, buffer[0x10000];
+  int64_t root, sz, sroot, r;
+  strcpy(buf, dst);
+  buf[root = strlen(buf)] = delim;
+  buf[++root] = 0;
+
+  strcpy(sbuf, src);
+  sbuf[sroot = strlen(sbuf)] = delim;
+  sbuf[++sroot] = 0;
+
+  DIR *d = opendir(src);
+  struct dirent *ent;
+  while (ent = readdir(d)) {
+    if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+      continue;
+    buf[root] = 0;
+    sbuf[sroot] = 0;
+    strcat(buf, ent->d_name);
+    strcat(sbuf, ent->d_name);
+    if (__FIsDir(sbuf)) {
+      CopyDir(buf, sbuf);
+    } else {
+      FILE *read = fopen(sbuf, "rb"), *write = fopen(buf, "wb");
+      while (r = fread(buffer, 1, sizeof(buffer), read)) {
+        if (r < 0)
+          break;
+        fwrite(buffer, 1, r, write);
+      }
+      fclose(read);
+      fclose(write);
+    }
+  }
+}
+
+static int __FIsNewer(char *fn, char *fn2) {
+#ifndef TARGET_WIN32
+  struct stat s, s2;
+  stat(fn, &s), stat(fn2, &s2);
+  int64_t r = mktime(localtime(&s.st_ctime)),
+          r2 = mktime(localtime(&s2.st_ctime));
+  if (r > r2)
+    return 1;
+  else
+    return 0;
+#else
+  int32_t h32;
+  int64_t s64, s64_2;
+  FILETIME t;
+  HANDLE fh = CreateFileA(
+             fn, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+             FILE_FLAG_BACKUP_SEMANTICS, NULL
+         ),
+         fh2 = CreateFileA(
+             fn2, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+             FILE_FLAG_BACKUP_SEMANTICS, NULL
+         );
+  GetFileTime(fh, NULL, NULL, &t);
+  s64 = t.dwLowDateTime | ((int64_t)t.dwHighDateTime << 32);
+  GetFileTime(fh2, NULL, NULL, &t);
+  s64_2 = t.dwLowDateTime | ((int64_t)t.dwHighDateTime << 32);
+  CloseHandle(fh), CloseHandle(fh2);
+  return s64 > s64_2;
+#endif
+}
+
+int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
+  char buffer[1024], drvl[16], buffer2[1024];
+  if(!__FExists(template)) {
+	fprintf(AIWNIOS_OSTREAM,"Template directory %s doesn't exist. You probably didnt install Aiwnios",template);
+	return 0;
+  }
+  if (!overwrite)
+    if (__FExists(to)) {
+      if (!__FExists(template)) {
+        return 1;
+      } else if (!__FIsNewer(template, to)) {
+        return 1;
+      }
+    }
+  if (__FExists(to)) {
+    int64_t _try;
+    for (_try = 0; _try != 0x10000; _try++) {
+      sprintf(buffer, "%s_BAKCUP.%ld", to, _try);
+      if (!__FExists(buffer)) {
+        printf(
+            "Newer Template drive found,backing up old drive to \"%s\".\n",
+            buffer
+        );
+// Rename the old boot drive to something else
+#ifdef TARGET_WIN32
+        MoveFile(to, buffer);
+#else
+        rename(to, buffer);
+#endif
+        break;
+      }
+    }
+    return 0;
+  }
+  #ifdef TARGET_WIN32
+  strcpy(buffer2, template);
+  strcat(buffer2, "\\");
+#else
+  strcpy(buffer2, template);
+#endif
+  if (!__FExists(buffer2)) {
+    fprintf(AIWNIOS_OSTREAM, "Use \"./aiwnios -t T\" to specify the T drive.\n");
+    return 0;
+  }
+  CopyDir(to, buffer2);
+  return 1;
+}
+
+const char *ResolveBootDir(char *use,int overwrite) {
+	if(__FExists("HCRT2.BIN")) {
+		return ".";
+	}
+	if(__FExists("T/HCRT2.BIN")) {
+		return "T";
+	}
+	if(!CreateTemplateBootDrv(use,AIWNIOS_TEMPLATE_DIR,overwrite)) {
+		fprintf(AIWNIOS_OSTREAM,"I don't know where to boot!!!\n");
+		exit(-1);
+	}
+	return use;
 }

@@ -779,8 +779,10 @@ enum {
 
 #if  defined(_WIN32)||defined(WIN32) 
 #define AIWNIOS_OSTREAM stdout
+#define AIWNIOS_TEMPLATE_DIR "TODO"
 #else
 #define AIWNIOS_OSTREAM stderr
+#define AIWNIOS_TEMPLATE_DIR "/usr/share/aiwnios"
 #endif
 
 #elif defined(TARGET_ARM64V)
@@ -1126,3 +1128,4 @@ extern void *GenFFIBinding(void *fptr,int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr,int64_t arity);
 extern void PrsBindCSymbolNaked(char *name,void *ptr);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
+const char *ResolveBootDir(char *use,int overwrite);
