@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include "argtable3.h"
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char* str, int64_t i) { printf("%s:%ld\n", str, i); }
@@ -1468,31 +1469,37 @@ static void Boot()
 	if (bin)
 		Load(bin);
 }
+struct arg_lit *arg_help,*arg_overwrite;
+struct arg_file *arg_t_dir;
+static struct arg_end *_arg_end;
 int main(int argc, char* argv[])
 {
 	t_drive=NULL;
-	int64_t quit = 0,i,overwrite=0;
-	for(i=1;i<argc;i++) {
-		if(!strcmp(argv[i],"-h")||!strcmp(argv[i],"--help")) {
-help:
-			fprintf(AIWNIOS_OSTREAM,"\t-h(--help)\tShow this help message.\n");
-			fprintf(AIWNIOS_OSTREAM,"\t-t folder(--tdrive folder)\tSet the T drive(One will be created if HCRT2.BIN doesnt exist in current dir).\n");
-			fprintf(AIWNIOS_OSTREAM,"\t-o(--overwrite) overwrite the T drive with a fresh installation.\n");
-		} else if(!strcmp(argv[i],"-t")||!strcmp(argv[i],"--tdrive")) {
-			t_drive=argv[++i];
-		} else if(!strcmp(argv[i],"-o")||!strcmp(argv[i],"--overwrite")) {
-			overwrite=1;
-		} else {
-			fprintf(AIWNIOS_OSTREAM,"Unknown option \"%s\".\n",argv[i]);
-			goto help;
-		}
+	int64_t quit = 0,errors;
+	void *argtable[]={
+		arg_help=arg_lit0("h","help","Show the help message"),
+		arg_overwrite=arg_lit0("o","overwrite","Overwrite the T directory with the installed T template."),
+		arg_t_dir=arg_file0("t",NULL,"Directory","Specify the boot drive(dft is current dir)."),
+		_arg_end=arg_end(20)
+	};
+	errors=arg_parse(argc,argv,argtable);
+	if(errors||arg_help->count) {
+		if(errors)
+			arg_print_errors(stdout,_arg_end,"aiwnios");
+		printf("Usage: aiwnios\n");
+		arg_print_glossary(stdout,argtable,"  %-25s %s\n");
+		exit(1);
 	}
-	if(!t_drive||overwrite)
-		t_drive=ResolveBootDir(!t_drive?"T":t_drive,overwrite);
+	if(arg_t_dir->count)
+		t_drive=arg_t_dir->filename[0];
+	if(!arg_t_dir->count||arg_overwrite->count) {
+		t_drive=ResolveBootDir(!t_drive?"T":t_drive,arg_overwrite->count);
+	}
 	SDL_Init(SDL_INIT_EVERYTHING);
 	InitSound();
 	user_ev_num = SDL_RegisterEvents(1);
 	SpawnCore(&Boot, NULL, 0);
 	InputLoop(&quit);
+	arg_freetable(argtable,sizeof(argtable)/sizeof(*argtable));
 	return EXIT_SUCCESS;
 }

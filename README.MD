@@ -45,3 +45,6 @@ I have gutted out the TempleOS expression parsing code and replaced it with call
 the last statement is at `head->base.next` and the first one ends at `head->base.last`.
 Email *nrootconauto@gmail.com* for more info(I hear my code is unreadable so I will stop
 explaining here). 
+
+## Credits 
+- [argtable3](https://github.com/argtable/argtable3)

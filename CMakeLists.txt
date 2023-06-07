@@ -35,6 +35,7 @@ add_executable(
 	dbg.c
 	multic.c
 	ffi_gen.c
+	argtable3.c
 )
 find_package(PkgConfig)
 pkg_check_modules(SDL2 REQUIRED sdl2)
