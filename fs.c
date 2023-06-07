@@ -590,7 +590,8 @@ const char *ResolveBootDir(char *use,int overwrite) {
 		return "T";
 	}
 	if(!CreateTemplateBootDrv(use,AIWNIOS_TEMPLATE_DIR,overwrite)) {
-		fprintf(AIWNIOS_OSTREAM,"I don't know where to boot!!!\n");
+		fprintf(AIWNIOS_OSTREAM,"I don't know where the HCRT2.BIN is!!!\n");
+		fprintf(AIWNIOS_OSTREAM,"Use \"aiwnios -b\" in the source directory to build a binary from \"Src\".\n");
 		exit(-1);
 	}
 	return use;

@@ -6,6 +6,12 @@ typedef struct {
 } CorePair;
 #if defined(__linux__)
 #include <linux/futex.h>
+#endif
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/umtx.h>
+#endif
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <pthread.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -40,7 +46,7 @@ static void threadrt(CorePair* pair)
 	free(pair);
 	fp();
 }
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
 static CCPU cores[128];
 CHashTable* glbl_table;
 void InteruptCore(int64_t core)
@@ -60,6 +66,10 @@ static void InteruptRt(int ul)
 		(*fp)();
 	}
 }
+static void ExitCoreRt(int s) {
+	pthread_exit(0);
+}
+
 void SpawnCore(void (*fp)(), void* gs, int64_t core)
 {
 	char buf[144];
@@ -67,6 +77,7 @@ void SpawnCore(void (*fp)(), void* gs, int64_t core)
 	*ptr = pair;
 	pthread_create(&cores[core].pt, NULL, threadrt, ptr);
 	signal(SIGUSR1, InteruptRt);
+	signal(SIGUSR2, ExitCoreRt);
 }
 int64_t mp_cnt()
 {
@@ -80,14 +91,30 @@ void MPSleepHP(int64_t ns)
 {
 	struct timespec ts = { 0 };
 	ts.tv_nsec += ns * 1000U;
+	#if defined(__linux__)
 	syscall(SYS_futex, &cores[core_num].wake_futex, 0, FUTEX_WAIT, &ts, NULL, 0);
+	#endif
+	#if defined(__FreeBSD__)
+	_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAIT,0,NULL,&ts);
+	#endif
 	cores[core_num].wake_futex = 0;
+	
 }
 
 void MPAwake(int64_t core)
 {
-	if (!Misc_LBts(&cores[core].wake_futex, 0))
+	
+	if (!Misc_LBts(&cores[core].wake_futex, 0)) {
+		#if defined(__linux__)
 		syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
+		#elif defined(__FreeBSD__)
+		_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAKE,NULL,NULL,NULL);
+		#endif
+	}
+}
+void __ShutdownCore(int core) {
+  pthread_kill(cores[core].pt, SIGUSR2);
+  pthread_join(cores[core].pt, NULL);
 }
 #else
 static CCPU cores[128];
@@ -165,5 +192,8 @@ void MPAwake(int64_t c)
 	cores[c].awake_at = 0;
 	SetEvent(cores[c].event);
 	ReleaseMutex(cores[c].mtx);
+}
+void __ShutdownCore(int core) {
+  TerminateThread(cores[core].thread, 0);
 }
 #endif

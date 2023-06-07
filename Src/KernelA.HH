@@ -810,7 +810,7 @@ class CExternUsage
 #define Cf_EXTERN		0
 #define Cf_INTERNAL_TYPE	1
 
-/*public */ class CHashClass:CHashSrcSym
+/*public */ class CHashClass:CHashSrcSym
 {//See $LK,"PrsClassNew",A="MN:PrsClassNew"$(). base_class of $LK,"CHashFun",A="MN:CHashFun"$
   I64	size,neg_offset;
   U32	member_cnt;
@@ -1773,7 +1773,7 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_R8		8
 #define REG_REGS_NUM	31
 
-#define REG_RIP		16	//Used by compiler, not really it's num
+#define REG_RIP		16	//Used by compiler, not really it's num
 //Be careful: RBPu8, RSPu8, RSIu8, RDIu8 are 20-24
 #define REG_NONE	32	//noreg flag sets it to this
 #define REG_ALLOC	33	//reg flag sets it to this
@@ -3802,6 +3802,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 ExitAiwnios();
 import U0 TaskContextSetRIP(U8 *,U8 *);
 import U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 import U8 *AiwniosGetClipboard();
@@ -3900,6 +3901,7 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern U0 ExitAiwnios();
 extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 extern F64 Ln(F64);
 extern U8 *AiwniosGetClipboard();

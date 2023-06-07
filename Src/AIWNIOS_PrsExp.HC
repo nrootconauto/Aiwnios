@@ -295,7 +295,7 @@ U0 PrsSizeOf(CCmpCtrl *cc)
     if (Lex(cc)=='.')
       goto pu_sizeof_member;
   } else {
-    if (!(tmpc=cc->hash_entry) || !(tmpc->type &
+    if (!(tmpc=cc->hash_entry) || !(tmpc->type &
 	  (HTT_CLASS|HTT_INTERNAL_TYPE|HTT_GLBL_VAR|
 	  HTT_FUN|HTT_EXPORT_SYS_SYM)))
       LexExcept(cc,"Invalid class at ");

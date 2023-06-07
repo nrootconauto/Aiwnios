@@ -170,8 +170,8 @@ typedef struct CLexFile {
 	// last will point to the "old" file we are in
 	//
 	struct CLexFile* last;
-	char *filename, *text;
-	int64_t ln, col, pos;
+	char *filename, *text,*dir;
+	int64_t ln, col, pos,is_file;
 } CLexFile;
 typedef struct CHashDefineStr {
 	struct CHash base;
@@ -1110,7 +1110,7 @@ extern CHashTable *glbl_table;
 //some...code
 //Fun Start <==== RIP
 void __HC_SetAOTRelocBeforeRIP(CRPN *r,int64_t off);
-void __HC_CodeMiscIsUsed(CCodeMisc *cm);
+int64_t __HC_CodeMiscIsUsed(CCodeMisc *cm);
 
 extern void AIWNIOS_setcontext(void*);
 extern int64_t AIWNIOS_getcontext(void*);

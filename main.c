@@ -7,6 +7,9 @@
 #include <time.h>
 #include <unistd.h>
 #include "argtable3.h"
+struct arg_lit *arg_help,*arg_overwrite;
+struct arg_file *arg_t_dir,*arg_bootstrap_bin;
+static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char* str, int64_t i) { printf("%s:%ld\n", str, i); }
@@ -15,6 +18,7 @@ static void PrintPtr(char* str, void* f) { printf("%s:%p\n", str, f); }
 static int64_t STK_PrintI(int64_t*);
 static int64_t STK_PrintF(double*);
 static int64_t STK_PrintPtr(int64_t* stk) { PrintPtr(stk[0], stk[1]); }
+static void ExitAiwnios();
 static void PrsAddSymbol(char* name, void* ptr, int64_t arity)
 {
 	PrsBindCSymbol(name, ptr);
@@ -1249,10 +1253,10 @@ static int64_t STK___HC_CodeMiscJmpTableNew(int64_t* stk)
 {
 	return __HC_CodeMiscJmpTableNew(stk[0], stk[1], stk[2], stk[3]);
 }
-void BootAiwnios()
+void BootAiwnios(char *bootstrap_text)
 {
-	// WIP
-	CLexer* lex = LexerNew("None", "1+1;//#include\"STAGE0.HC\";");
+	//Run a dummy expression to link the functions into the hash table
+	CLexer* lex = LexerNew("None", !bootstrap_text?"1+1;":bootstrap_text);
 	CCmpCtrl* ccmp = CmpCtrlNew(lex);
 	void (*to_run)();
 	CodeCtrlPush(ccmp);
@@ -1449,11 +1453,13 @@ void BootAiwnios()
 		PrsAddSymbol("SndFreq", STK_SndFreq, 1);
 		PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
 		PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
+		PrsAddSymbol("ExitAiwnios",ExitAiwnios,0);
 	}
 }
 static const char *t_drive;
 static void Boot()
 {
+	int64_t len;
 	char bin[strlen("HCRT2.BIN")+strlen(t_drive)+1+1];
 	strcpy(bin,t_drive);
 	strcat(bin,"/HCRT2.BIN");
@@ -1464,22 +1470,48 @@ static void Boot()
 	/*FuzzTest1();
 	FuzzTest2();
 	FuzzTest3();*/
-	BootAiwnios();
+	if(arg_bootstrap_bin->count) {
+		#define BOOTSTRAP_FMT \
+		"#define TARGET_%s \n" \
+		"#define lastclass \"U8\"\n" \
+		"#define public \n" \
+		"#define IMPORT_AIWNIOS_SYMS 1\n" \
+		"#define TEXT_MODE 1\n" \
+		"#define BOOTSTRAP 1\n" \
+		"#include \"Src/FULL_PACKAGE.HC\";\n" 
+		#if defined(_ARM64_)
+		len=snprintf(NULL,0,BOOTSTRAP_FMT,"AARCH64");
+		char buf[len+1];
+		sprintf(buf,BOOTSTRAP_FMT,"AARCH64");
+		#elif defined(__x86_64__)
+		len=snprintf(NULL,0,BOOTSTRAP_FMT,"X86");
+		char buf[len+1];
+		sprintf(buf,BOOTSTRAP_FMT,"X86");
+		#else
+		#error "Arch not supported"
+		#endif
+		BootAiwnios(buf);
+	} else 
+		BootAiwnios(NULL);
 	glbl_table = Fs->hash_table;
 	if (bin)
 		Load(bin);
 }
-struct arg_lit *arg_help,*arg_overwrite;
-struct arg_file *arg_t_dir;
-static struct arg_end *_arg_end;
+static int64_t quit = 0;
+static void ExitAiwnios() {
+	quit=1;
+	while(1)
+		__Sleep(1000);
+}
 int main(int argc, char* argv[])
 {
 	t_drive=NULL;
-	int64_t quit = 0,errors;
+	int64_t errors,idx;
 	void *argtable[]={
 		arg_help=arg_lit0("h","help","Show the help message"),
 		arg_overwrite=arg_lit0("o","overwrite","Overwrite the T directory with the installed T template."),
 		arg_t_dir=arg_file0("t",NULL,"Directory","Specify the boot drive(dft is current dir)."),
+		arg_bootstrap_bin=arg_lit0("b","bootstrap","Build a new binary with the \"slim\" compiler of aiwnios."),
 		_arg_end=arg_end(20)
 	};
 	errors=arg_parse(argc,argv,argtable);
@@ -1492,14 +1524,18 @@ int main(int argc, char* argv[])
 	}
 	if(arg_t_dir->count)
 		t_drive=arg_t_dir->filename[0];
-	if(!arg_t_dir->count||arg_overwrite->count) {
+	else if(arg_bootstrap_bin->count)
+		t_drive="."; //Bootstrap in current directory
+	if(!arg_t_dir->count||arg_overwrite->count)
 		t_drive=ResolveBootDir(!t_drive?"T":t_drive,arg_overwrite->count);
-	}
 	SDL_Init(SDL_INIT_EVERYTHING);
 	InitSound();
 	user_ev_num = SDL_RegisterEvents(1);
 	SpawnCore(&Boot, NULL, 0);
 	InputLoop(&quit);
+	for(idx=0;idx!=mp_cnt();idx++)
+		__ShutdownCore(idx);
+	SDL_Quit();
 	arg_freetable(argtable,sizeof(argtable)/sizeof(*argtable));
 	return EXIT_SUCCESS;
 }

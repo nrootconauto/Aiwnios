@@ -4304,7 +4304,7 @@ void __HC_SetAOTRelocBeforeRIP(CRPN* r, int64_t off)
 	r->code_misc->aot_before_hint = off;
 }
 
-void __HC_CodeMiscIsUsed(CCodeMisc* cm)
+int64_t __HC_CodeMiscIsUsed(CCodeMisc* cm)
 {
 	return cm->use_cnt != 0;
 }

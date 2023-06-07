@@ -1224,7 +1224,7 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 					mv[i].m->reg = REG_NONE;
 			} else if (RT_I8i <= mv[i].m->member_class->raw_type && mv[i].m->member_class->raw_type <= RT_PTR && !mv[i].m->dim.next) {
 				if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
-#if defined(__x86_64__) && defined(__linux__)
+#if defined(__x86_64__) && (defined(__linux__)|| defined(__FreeBSD__))
 					switch (ireg++ - AIWNIOS_IREG_START) {
 						break;
 					case 0:
@@ -1501,7 +1501,7 @@ fin:
 				}
 			}
 		}
-	nxt:
+	nxt:;
 	}
 	//When we do "cd3.z" we have *(base_ptr+16). Turn *(base+16) into a frame ptr
 	for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;

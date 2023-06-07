@@ -45,6 +45,7 @@ enter:;
 		// Free all the assets of the previous file
 		last = file->last;
 		A_FREE(file->text);
+		A_FREE(file->dir);
 		A_FREE(file->filename);
 		A_FREE(file);
 		//
@@ -266,7 +267,8 @@ re_enter:;
 	FILE* f;
 	char macro_name[STR_LEN];
 	CHashDefineStr* define;
-	CLexFile* new_file;
+	CLexFile* new_file,*actual_file;
+	char *dir;
 	switch (chr1) {
 		break;
 	case '`':
@@ -614,6 +616,7 @@ re_enter:;
 						lex->flags &= ~LEXF_USE_LAST_CHAR;
 						//
 						new_file = A_MALLOC(sizeof(CLexFile), NULL);
+						new_file->dir=NULL;
 						new_file->last = lex->file;
 						new_file->filename = A_STRDUP(define->base.str, NULL);
 						new_file->pos = new_file->col = new_file->ln = 0;
@@ -723,11 +726,36 @@ re_enter:;
 					LexErr(lex, "Expected a string for #include.");
 					return lex->cur_tok = ERR;
 				}
-				if (!FileExists(lex->string)) {
+				actual_file=lex->file;
+				while(actual_file) {
+					if(actual_file->is_file) break;
+					actual_file=actual_file->last;
+				}
+				if(actual_file) {
+					if(actual_file->dir) {
+						int64_t len=snprintf(NULL,0,"%s/%s",actual_file->dir,lex->string);
+						char buf[len+1];
+						sprintf(buf,"%s/%s",actual_file->dir,lex->string);
+						dir=__AIWNIOS_StrDup(buf,NULL);
+						*strrchr(dir,'/')=0;
+						f = fopen(buf, "rb");
+					} else
+						goto normal;
+				} else {
+				  normal:
+				  f = fopen(lex->string, "rb");
+				  if(!strrchr(lex->string,'/')) {
+					  dir=__AIWNIOS_StrDup(".",NULL);
+				  } else {
+					  dir=__AIWNIOS_StrDup(lex->string,NULL);
+					  *strrchr(dir,'/')=0;
+				  }
+				}
+				if (!f) {
 					LexErr(lex, "I can't find file '%s'.", lex->string);
 					return lex->cur_tok = ERR;
 				}
-				f = fopen(lex->string, "rb");
+				
 				fseek(f, 0, SEEK_END);
 				idx = ftell(f);
 				fseek(f, 0, SEEK_SET);
@@ -735,8 +763,10 @@ re_enter:;
 				new_file = A_MALLOC(sizeof(CLexFile), NULL);
 				new_file->text = A_MALLOC(idx + 1, NULL);
 				new_file->text[idx] = 0;
+				new_file->dir=dir;
 				fread(new_file->text, 1, idx, f);
 				fclose(f);
+				new_file->is_file=1;
 				new_file->last = lex->file;
 				new_file->filename = A_STRDUP(lex->string, NULL);
 				new_file->pos = new_file->col = new_file->ln = 0;

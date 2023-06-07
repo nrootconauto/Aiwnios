@@ -161,7 +161,25 @@ InitCPUs;
 SetFs(Gs->seth_task);
 #endif
 #ifdef BOOTSTRAP
-CMP_AIWN;
+Cd("Src");
+U8 *body=
+	"#define IMPORT_AIWNIOS_SYMS 1\n"
+	"#define TEXT_MODE 0\n"
+	#ifdef TARGET_X86
+	"#define TARGET_X86 1\n"
+	#endif
+	#ifdef TARGET_AARCH64
+	"#define TARGET_AARCH64 1\n"
+	#endif
+	"#define STAGE1 1\n"
+	"#include \"HCRT_TOS.HC\";;\n"
+;
+//Put this in a scope to do this all at once
+{
+	FileWrite("STAGE1.HC",body,StrLen(body));
+	Cmp("STAGE1.HC","../HCRT2.DBG.Z","../HCRT2.BIN");
+	ExitAiwnios;
+}
 #endif
 #ifdef COMPONET_GR
 #include "ADskA.HC"

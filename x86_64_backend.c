@@ -3496,7 +3496,7 @@ static int64_t IsSavedIReg(int64_t r)
 	case R12:
 	case R13:
 	case R14:
-	case R15:
+	case R15:;
 	}
 	return 1;
 }

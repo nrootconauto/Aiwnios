@@ -5,7 +5,7 @@
 #include <ucontext.h>
 static void UnblockSignals()
 {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
 	sigset_t set;
 	sigemptyset(&set);
 	sigaddset(&set, SIGSEGV);
@@ -15,7 +15,7 @@ static void UnblockSignals()
 	sigprocmask(SIG_UNBLOCK, &set, NULL);
 #endif
 }
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
 static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 {
 #if defined(__x86_64__)
@@ -122,7 +122,7 @@ enum
 #endif
 void InstallDbgSignalsForThread()
 {
-#if defined(__linux__)
+#if defined(__linux__)|| defined(__FreeBSD__)
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
