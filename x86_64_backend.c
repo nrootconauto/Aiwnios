@@ -1008,6 +1008,45 @@ int64_t X86PushReg(char* to, int64_t reg)
 	ADD_U8(0x50 + (reg & 0x7));
 	return len;
 }
+
+int64_t X86PushM16(char* to, int64_t s,int64_t i,int64_t b,int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0,6,s,i,b,off);
+	ADD_U8(0x66);
+	ADD_U8(0xff);
+	SIB_END();
+	return len;
+}
+int64_t X86PushM32(char* to, int64_t s,int64_t i,int64_t b,int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0,6,s,i,b,off);
+	ADD_U8(0xff);
+	SIB_END();
+	return len;
+}
+int64_t X86PushM64(char* to, int64_t s,int64_t i,int64_t b,int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(1,6,s,i,b,off);
+	ADD_U8(0xff);
+	SIB_END();
+	return len;
+}
+int64_t X86PushImm(char* to, int64_t imm)
+{
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	ADD_U8(0x68);
+	ADD_U32(imm);
+	return len;
+}
+
 int64_t X86PopReg(char* to, int64_t reg)
 {
 	int64_t len = 0;
@@ -1791,6 +1830,33 @@ static int64_t PushToStack(CCmpCtrl* cctrl, CICArg* arg, char* bin,
 	int64_t code_off)
 {
 	CICArg tmp = *arg;
+	if(tmp.mode==MD_I64&&tmp.raw_type!=RT_F64&&Is32Bit(tmp.integer)) {
+		AIWNIOS_ADD_CODE(X86PushImm,tmp.integer);
+		return code_off;
+	}
+	switch(tmp.mode) {
+		case __MD_X86_64_SIB:
+		switch(tmp.raw_type) {
+			case RT_I64i:
+			case RT_U64i:
+			case RT_F64:
+			AIWNIOS_ADD_CODE(X86PushM64,tmp.__SIB_scale,tmp.reg2,tmp.reg,tmp.off);
+			break;
+			default: goto defacto;
+		}
+		return code_off;
+		case MD_INDIR_REG:
+		switch(tmp.raw_type) {
+			case RT_I64i:
+			case RT_U64i:
+			case RT_F64:
+			AIWNIOS_ADD_CODE(X86PushM64,-1,-1,tmp.reg,tmp.off);
+			break;
+			default: goto defacto;
+		}
+		return code_off;
+	}
+defacto:
 	code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 0, bin, code_off);
 	if (tmp.raw_type != RT_F64) {
 		AIWNIOS_ADD_CODE(X86PushReg, tmp.reg);
