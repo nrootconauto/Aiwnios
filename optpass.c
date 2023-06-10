@@ -1270,7 +1270,7 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 						abort();
 					}
 #endif
-#if defined(_ARM64_)
+#if defined(__aarch64__) || defined(_M_ARM64)
 					mv[i].m->reg = ireg++;
 #endif
 				} else
@@ -1482,7 +1482,6 @@ static void OptPassMergeAddressOffsets(CCmpCtrl* cctrl)
 				switch (base->type) {
 				case IC_SHORT_ADDR:
 				case __IC_STATIC_REF:
-					//Stack grows down
 					base->integer += off->integer;
 					goto fin;
 				break;case IC_BASE_PTR:

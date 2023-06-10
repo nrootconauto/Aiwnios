@@ -180,7 +180,7 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
   task->parent_task=parent;
   task->gs=parent->gs;
   TaskInit(task,stk_size);
-  MakeContext(task->context_save_area,&CallPooPoo,(task->stk+MSize(task->stk))&-16+8);
+  MakeContext(task->context_save_area,&CallPooPoo,(task->stk+MSize(task->stk))&-16);
   task->user_data=fp_start_addr;
   task->user_data2=data;
   task->hash_table->next=parent->hash_table;

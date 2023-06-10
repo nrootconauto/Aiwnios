@@ -46,7 +46,7 @@ void* GenFFIBindingNaked(void* fptr, int64_t arity)
 	return fptr;
 #endif
 }
-#else
+#elif defined (__linux__) && defined (__x86_64__)
 void* GenFFIBinding(void* fptr, int64_t arity)
 {
 #ifdef USE_TEMPLEOS_ABI
@@ -118,5 +118,34 @@ void* GenFFIBindingNaked(void* fptr, int64_t arity)
 #else
 	return fptr;
 #endif
+}
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+void* GenFFIBinding(void* fptr, int64_t arity) {
+  #ifdef USE_TEMPLEOS_ABI
+  //0:  stp x29,x30[sp,-16]!
+  //4:  add x0,sp,16
+  //8:  ldr x1,label
+  //c:  blr x1
+  //10: ldp x29,x30[sp],16
+  //14: ret
+  //18: label: fptr
+  int32_t *blob=A_MALLOC(0x18+8,NULL);
+  blob[0]=ARM_stpPreImmX(29,30,31,-16);
+  blob[1]=ARM_addImmX(0,31,16);
+  blob[2]=ARM_ldrLabelX(1,0x18-0x8);
+  blob[3]=ARM_blr(1);
+  blob[4]=ARM_ldpPostImmX(29,30,31,16);
+  blob[5]=ARM_ret();
+  *(void**)(blob+6)=fptr;
+  return blob;
+  #else
+  return fptr;
+  #endif
+}
+void* GenFFIBindingNaked(void* fptr, int64_t arity) {
+  //TODO
+  return fptr;
 }
 #endif

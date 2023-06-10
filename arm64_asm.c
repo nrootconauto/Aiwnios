@@ -96,7 +96,7 @@ static int64_t LdStRegPairPostImm(int64_t opc, int64_t l, int64_t r, int64_t r2,
 	int64_t times = (opc == 2) ? 2 : 1;
 	ARM_FORCE_ALIGN(imm, 7, times + 1);
 	int64_t imm7 = MASKn(imm >> (times + 1), 7, 15);
-	return (opc << 30) | (0xf << 27) | (1 << 23) | (l << 22) | imm7 | (r2 << 10) | (pre->n << 5) | r;
+	return (opc << 30) | (0x5 << 27) | (1 << 23) | (l << 22) | imm7 | (r2 << 10) | (pre->n << 5) | r;
 }
 
 static int64_t LdStRegPairPre(int64_t opc, int64_t L, int64_t rt1, int64_t rt2,

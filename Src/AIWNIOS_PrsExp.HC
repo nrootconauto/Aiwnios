@@ -473,6 +473,8 @@ mul:
       break;case IC_ADD:
       a=rpn->t.arg1_tree;
       b=rpn->t.arg2_tree;
+      #ifdef TARGET_X86
+      //I will implement this later for ARM64
       if(cc->flags&CCF_AOT_COMPILE) {
 		if(a->type==IC_ADDR_IMPORT&&b->type==IC_IMM_I64) {
 			width=1;
@@ -499,6 +501,7 @@ mul:
 			return;
         }
       }
+      #endif
       if(a->ic_dim) {
         width=a->ic_class->size*a->ic_dim->total_cnt;
         rpn2=CAlloc(sizeof CRPN);

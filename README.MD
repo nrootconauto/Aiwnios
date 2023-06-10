@@ -59,3 +59,4 @@ explaining here).
 
 ## Credits 
 - [argtable3](https://github.com/argtable/argtable3)
+- [Cmake architecure detector by axr](https://github.com/axr/solar-cmake/blob/master/TargetArch.cmake)

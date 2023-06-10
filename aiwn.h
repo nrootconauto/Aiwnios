@@ -365,6 +365,11 @@ typedef struct CCodeCtrl {
 typedef struct CCodeMiscRef {
 	struct CCodeMiscRef *next;
 	int32_t *add_to,offset;
+  //For arm
+  int32_t (*patch_cond_br)(int64_t,int64_t);
+  int32_t (*patch_uncond_br)(int64_t);
+  int64_t user_data1;
+  int64_t user_data2;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
 	CQue base;
@@ -777,15 +782,7 @@ enum {
 #define AIWNIOS_TMP_FREG_START 3
 #define AIWNIOS_TMP_FREG_CNT (5-3+1)
 
-#if  defined(_WIN32)||defined(WIN32) 
-#define AIWNIOS_OSTREAM stdout
-#define AIWNIOS_TEMPLATE_DIR "TODO"
-#else
-#define AIWNIOS_OSTREAM stderr
-#define AIWNIOS_TEMPLATE_DIR "/usr/share/aiwnios"
-#endif
-
-#elif defined(TARGET_ARM64V)
+#elif defined(__linux__) && (defined (_M_ARM64) || defined(__aarch64__))
 #define AIWNIOS_IREG_START 19
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
 #define AIWNIOS_REG_FP ARM_REG_FP
@@ -798,6 +795,15 @@ enum {
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #define AIWNIOS_TMP_FREG_START 16
 #define AIWNIOS_TMP_FREG_CNT (31 - 16 + 1)
+#endif
+
+
+#if  defined(_WIN32)||defined(WIN32) 
+#define AIWNIOS_OSTREAM stdout
+#define AIWNIOS_TEMPLATE_DIR "TODO"
+#else
+#define AIWNIOS_OSTREAM stderr
+#define AIWNIOS_TEMPLATE_DIR "/usr/share/aiwnios"
 #endif
 
 #define try                                              \

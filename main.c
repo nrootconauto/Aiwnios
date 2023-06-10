@@ -1467,9 +1467,9 @@ static void Boot()
 	InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
 	VFsMountDrive('T', t_drive);
-	/*FuzzTest1();
+	FuzzTest1();
 	FuzzTest2();
-	FuzzTest3();*/
+	FuzzTest3();
 	if(arg_bootstrap_bin->count) {
 		#define BOOTSTRAP_FMT \
 		"#define TARGET_%s \n" \
@@ -1479,7 +1479,7 @@ static void Boot()
 		"#define TEXT_MODE 1\n" \
 		"#define BOOTSTRAP 1\n" \
 		"#include \"Src/FULL_PACKAGE.HC\";\n" 
-		#if defined(_ARM64_)
+		#if defined(__aarch64__) || defined(_M_ARM64)
 		len=snprintf(NULL,0,BOOTSTRAP_FMT,"AARCH64");
 		char buf[len+1];
 		sprintf(buf,BOOTSTRAP_FMT,"AARCH64");
