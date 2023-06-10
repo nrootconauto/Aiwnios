@@ -582,16 +582,19 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
   return 1;
 }
 
-const char *ResolveBootDir(char *use,int overwrite) {
+const char *ResolveBootDir(char *use,int overwrite,int make_new_dir) {
 	if(__FExists("HCRT2.BIN")) {
 		return ".";
 	}
 	if(__FExists("T/HCRT2.BIN")) {
 		return "T";
 	}
+	if(!make_new_dir) goto fail;
 	if(!CreateTemplateBootDrv(use,AIWNIOS_TEMPLATE_DIR,overwrite)) {
+fail:
 		fprintf(AIWNIOS_OSTREAM,"I don't know where the HCRT2.BIN is!!!\n");
-		fprintf(AIWNIOS_OSTREAM,"Use \"aiwnios -b\" in the source directory to build a binary from \"Src\".\n");
+		fprintf(AIWNIOS_OSTREAM,"Use \"aiwnios -b\" in the root of the source directory to build a boot binary.\n");
+		fprintf(AIWNIOS_OSTREAM,"Or Use \"aiwnios -n\" to make a new boot drive(if installed on your system).\n");
 		exit(-1);
 	}
 	return use;

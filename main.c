@@ -7,7 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "argtable3.h"
-struct arg_lit *arg_help,*arg_overwrite;
+struct arg_lit *arg_help,*arg_overwrite,*arg_new_boot_dir;
 struct arg_file *arg_t_dir,*arg_bootstrap_bin;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1500,8 +1500,12 @@ static void Boot()
 static int64_t quit = 0;
 static void ExitAiwnios() {
 	quit=1;
-	while(1)
+	SDL_Event q;
+	memset(&q,0,sizeof q);
+	while(1) {
+		SDL_PushEvent(&q);
 		__Sleep(1000);
+	}
 }
 int main(int argc, char* argv[])
 {
@@ -1512,6 +1516,7 @@ int main(int argc, char* argv[])
 		arg_overwrite=arg_lit0("o","overwrite","Overwrite the T directory with the installed T template."),
 		arg_t_dir=arg_file0("t",NULL,"Directory","Specify the boot drive(dft is current dir)."),
 		arg_bootstrap_bin=arg_lit0("b","bootstrap","Build a new binary with the \"slim\" compiler of aiwnios."),
+		arg_new_boot_dir=arg_lit0("n","new-boot-dir","Create a new boot directory(backs up old boot directory if present)."),
 		_arg_end=arg_end(20)
 	};
 	errors=arg_parse(argc,argv,argtable);
@@ -1526,8 +1531,8 @@ int main(int argc, char* argv[])
 		t_drive=arg_t_dir->filename[0];
 	else if(arg_bootstrap_bin->count)
 		t_drive="."; //Bootstrap in current directory
-	if(!arg_t_dir->count||arg_overwrite->count)
-		t_drive=ResolveBootDir(!t_drive?"T":t_drive,arg_overwrite->count);
+	if((!arg_t_dir->count||arg_overwrite->count)&&!arg_bootstrap_bin->count)
+		t_drive=ResolveBootDir(!t_drive?"T":t_drive,arg_overwrite->count,arg_new_boot_dir->count);
 	SDL_Init(SDL_INIT_EVERYTHING);
 	InitSound();
 	user_ev_num = SDL_RegisterEvents(1);

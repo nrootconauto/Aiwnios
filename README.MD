@@ -1,6 +1,6 @@
 # Welcome to Aiwnios
 
-This is a HolyC Compiler/Runtime written for 64bit ARM machines,although other 
+This is a HolyC Compiler/Runtime written for 64bit ARM and X86 machines,although other 
 aritchecures are planned for the future. This project is a work in progress,so stay
 tuned.
 
@@ -16,8 +16,19 @@ will need
 - `gcc`
 - `libsdl2-dev`
 - `cmake`
+- `yasm` (on x86_64)
 
-Building is as easy as typing `cmake .` then `make`,and to run it,use `./aiwnios`
+Building is as easy once you have the dependencies installed:
+
+```sh
+# Build aiwnios
+cmake .
+make 
+#Bootstrap the HCRT2.BIN to run it
+./aiwnios -b
+#Run the HCRT2.BIN
+./aiwnios
+```
 
 If you want to make a cool package for your system,use [ESP Package Manager](https://github.com/jimjag/epm/) You can do this via: `epm aiwnios`
 ## Future

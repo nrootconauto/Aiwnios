@@ -1128,4 +1128,4 @@ extern void *GenFFIBinding(void *fptr,int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr,int64_t arity);
 extern void PrsBindCSymbolNaked(char *name,void *ptr);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
-const char *ResolveBootDir(char *use,int overwrite);
+const char *ResolveBootDir(char *use,int overwrite,int make_new_dir);
