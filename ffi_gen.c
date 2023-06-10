@@ -46,7 +46,7 @@ void* GenFFIBindingNaked(void* fptr, int64_t arity)
 	return fptr;
 #endif
 }
-#elif defined (__linux__) && defined (__x86_64__)
+#elif (defined (__linux__) ||defined (__FreeBSD__)) && defined (__x86_64__)
 void* GenFFIBinding(void* fptr, int64_t arity)
 {
 #ifdef USE_TEMPLEOS_ABI
