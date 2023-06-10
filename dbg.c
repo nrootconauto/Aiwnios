@@ -63,7 +63,7 @@ enum
 	#else
 	
 	#endif
-#elif defined(_ARM64_)
+#elif defined(__aarch64__) || defined(_M_ARM64)
 	mcontext_t* ctx = &_ctx->uc_mcontext;
 	CHashExport* exp;
 	int64_t is_single_step;

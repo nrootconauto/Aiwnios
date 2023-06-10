@@ -6485,6 +6485,7 @@ extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #define IC_TO_F64		0x1C
 _intern IC_TO_I64 I64 ToI64(F64);
 _intern IC_TO_F64 F64 ToF64(I64);
+#ifdef TARGET_X86
 _intern IC_BT Bool Bt(U8*,I64);
 _intern IC_BTS Bool Bts(U8*,I64);
 _intern IC_BTC Bool Btc(U8*,I64);
@@ -6492,6 +6493,7 @@ _intern IC_BTR Bool Btr(U8*,I64);
 _intern IC_LBTS Bool LBts(U8*,I64);
 _intern IC_LBTC Bool LBtc(U8*,I64);
 _intern IC_LBTR Bool LBtr(U8*,I64);
+#endif
 #endif
 //Added bt Mr nrootconauto
 extern U8 *DisasOpc(CDoc *doc,U8 *data);

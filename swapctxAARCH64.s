@@ -1,8 +1,13 @@
 .global AIWNIOS_getcontext
 .global AIWNIOS_setcontext
+.global AIWNIOS_makecontext
+AIWNIOS_makecontext:
+  str x1,[x0,8*12]
+  str x2,[x0,8*21]
+  ret
 AIWNIOS_getcontext:
-  sub sp,sp,16
-  str x29,[sp]
+  ldr x0,[sp]
+  stp x29,x30,[sp,-16]!
   str x30,[sp,8]
   str x18,[x0]
   str x19,[x0,8]
@@ -27,12 +32,12 @@ AIWNIOS_getcontext:
   str d15,[x0,8*20]
   add x1,sp,16
   str x1,[x0,8*21]
-  ldr x29,[sp]
-  ldr x30,[sp,8]
-  add sp,sp,16
+  ldp x29,x30,[sp],16
   mov x0,0
   ret
 AIWNIOS_setcontext:
+  ldr x0,[sp]
+  mov x8,x0
   ldr x18,[x0]
   ldr x19,[x0,8]
   ldr x20,[x0,8*2]

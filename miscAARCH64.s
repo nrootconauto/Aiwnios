@@ -1,12 +1,12 @@
-.global LBts
-.global LBtr
-.global LBtc
-.global Bt
-.global Btr
-.global Btc
-.global Bts
-.global Caller
-Bt:
+.global Misc_LBts
+.global Misc_LBtr
+.global Misc_LBtc
+.global Misc_Bt
+.global Misc_Btr
+.global Misc_Btc
+.global Misc_Bts
+.global Misc_Caller
+Misc_Bt:
   lsr x3,x1,3
   and x1,x1,0x7
   mov x2,1
@@ -18,7 +18,7 @@ _Bt_0:
   cset x0, ne
   ret
 
-LBts:
+Misc_LBts:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -34,7 +34,7 @@ _Bts_0:
   mov x0,x5
   ret
 
-Btc:
+Misc_Btc:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -48,7 +48,7 @@ Btc:
   mov x0,x5
   ret
 
-Bts:
+Misc_Bts:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -62,7 +62,7 @@ Bts:
   mov x0,x5
   ret
 
-Btr:
+Misc_Btr:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -78,7 +78,7 @@ Btr:
   ret
 
 
-LBtc:
+Misc_LBtc:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -95,7 +95,7 @@ _Btc_0:
   ret
 
 
-LBtr:
+Misc_LBtr:
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -111,7 +111,7 @@ _Btr_0:
   cbnz w4,_Btr_0
   mov x0,x5
   ret
-Caller:
+Misc_Caller:
   add x1,x0,1
   mov x2,x29
 _Caller_0:

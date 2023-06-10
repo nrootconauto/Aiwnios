@@ -249,6 +249,7 @@ force:
     }
   }
 }
+#ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
 	switch(r) {
 		break;case 0: return REG_RBX;
@@ -258,6 +259,7 @@ I64 VarIRegToReg(I64 r)  {
 	}
 	throw('Compile');
 }
+#endif
 class CAddShortRelocData {
 	CCmpCtrl *cc;
 	CCodeMisc *cm;
@@ -345,7 +347,11 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
             mv[idx].m->reg=REG_NONE;
         } else {
           if(AIWNIOS_IREG_START<=ir<AIWNIOS_IREG_START+AIWNIOS_IREG_CNT) {
+            #ifdef TARGET_X86
             mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
+            #else
+            mv[idx].m->reg=ir++;
+            #endif
           } else {
             mv[idx].m->reg=REG_NONE;
           }
