@@ -1467,9 +1467,9 @@ static void Boot()
 	InstallDbgSignalsForThread();
 	TaskInit(Fs, NULL, 0);
 	VFsMountDrive('T', t_drive);
-	FuzzTest1();
+	/*FuzzTest1();
 	FuzzTest2();
-	FuzzTest3();
+	FuzzTest3();*/
 	if(arg_bootstrap_bin->count) {
 		#define BOOTSTRAP_FMT \
 		"#define TARGET_%s \n" \
