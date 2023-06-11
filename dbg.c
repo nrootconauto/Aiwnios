@@ -19,6 +19,7 @@ static void UnblockSignals()
 static void SigHandler(int64_t sig, siginfo_t* info, ucontext_t* _ctx)
 {
 #if defined(__x86_64__)
+	#if defined(__linux__)
 	//See /usr/include/x86_64-linux-gnu/sys/ucontext.h
 enum
 {
@@ -40,7 +41,6 @@ enum
   REG_RSP,
   REG_RIP,
 };
-	#if defined(__linux__)
 	UnblockSignals();
 	mcontext_t* ctx = &_ctx->uc_mcontext;
 	int64_t actx[32];
@@ -56,12 +56,30 @@ enum
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		FFI_CALL_TOS_2(exp->val,sig, actx);
 	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
-		ctx->gregs[15] = exp->val;
+		ctx->gregs[0] = exp->val;
 	} else
 		abort();
 	setcontext(_ctx);
-	#else
-	
+	#elif defined(__FreeBSD__)
+	UnblockSignals();
+	mcontext_t* ctx = &_ctx->uc_mcontext;
+	int64_t actx[32];
+	actx[0]=ctx->mc_rip;
+	actx[1]=ctx->mc_rsp;
+	actx[2]=ctx->mc_rbp;
+	actx[3]=ctx->mc_rbx;
+	actx[4]=ctx->mc_r12;
+	actx[5]=ctx->mc_r13;
+	actx[7]=ctx->mc_r14;
+	actx[8]=ctx->mc_r15;
+	CHashExport* exp;
+	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+		FFI_CALL_TOS_2(exp->val,sig, actx);
+	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+		ctx->mc_rip = exp->val;
+	} else
+		abort();
+	setcontext(_ctx);
 	#endif
 #elif defined(__aarch64__) || defined(_M_ARM64)
 	mcontext_t* ctx = &_ctx->uc_mcontext;
