@@ -725,7 +725,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //break;case IC_SHL_CONST: NOT USED BY AIWNIOS
     //break;case IC_SHR_CONST: NOT USED BY AIWNIOS
     break;case IC_POWER:
-    new=__HC_ICAdd_Pow(cc2);
+    throw("Compiler");
     break;case IC_MUL:
     new=__HC_ICAdd_Mul(cc2);
     break;case IC_DIV:
@@ -1045,7 +1045,7 @@ U0 DbgInfoWrite(CHashTable *h,U8 *name) {
 	I64 len=__DbgInfoWrite(h,NULL);
 	U8 *buf=MAlloc(len);
 	__DbgInfoWrite(h,buf);
-	FileWrite(name,buf,len);
+	FileWrite(name,buf,len);
 	Free(buf);
 }
 U0 DbgInfoRead(U8 *name) {

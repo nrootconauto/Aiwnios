@@ -1,4 +1,3 @@
-#define PRS_STK_SZ 128
 class CRPN:CQue {
   I64 type,ic_line,ic_flags;
   CHashClass *ic_class;
@@ -295,7 +294,7 @@ U0 PrsSizeOf(CCmpCtrl *cc)
     if (Lex(cc)=='.')
       goto pu_sizeof_member;
   } else {
-    if (!(tmpc=cc->hash_entry) || !(tmpc->type &
+    if (!(tmpc=cc->hash_entry) || !(tmpc->type &
 	  (HTT_CLASS|HTT_INTERNAL_TYPE|HTT_GLBL_VAR|
 	  HTT_FUN|HTT_EXPORT_SYS_SYM)))
       LexExcept(cc,"Invalid class at ");
@@ -336,6 +335,26 @@ pu_sizeof_member:
   );
 }
 extern U0 DumpRPN(CRPN*,I64 x=0);
+CRPN *ICNext(CRPN *rpn) {
+  CRPN *next=rpn->next;
+  I64 cnt;
+  switch(intermediate_code_table[rpn->type].arg_cnt) {
+    case IS_V_ARG:
+    cnt=rpn->length;
+    while(cnt--)
+      next=ICNext(next);
+    break;
+    case IS_2_ARG:
+      next=ICNext(next);
+      next=ICNext(next);
+    break;
+    case IS_1_ARG:
+      next=ICNext(next);
+    break;
+    case IS_0_ARG:
+  }
+  return next;
+}
 //
 // add_to_prs_stk will also not assign the tree args
 //
@@ -343,213 +362,250 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
   CRPN *rpn2,*a,*b,*rpn3;
   I64 width;
   CHashClass *ic_class;
+  CHashFun *powh;
   Bool divide=FALSE;
   if(!(cc->lex_include_stk->flags&LFSF_DEFINE))
     rpn->ic_line=cc->lex_include_stk->line_num;
   QueIns(rpn,&cc->coc.coc_head);
   if(add_to_prs_stk) {
     switch(intermediate_code_table[rpn->type].arg_cnt) {
-      break;case IS_V_ARG:
-      width=rpn->length;
-      while(width--) {
-        PrsPop3(cc->ps);
-      }
-      break;case IS_2_ARG:
-      rpn->t.arg2_tree=PrsPop3(cc->ps);
-      rpn->t.arg1_tree=PrsPop3(cc->ps);
-      rpn->t.arg2_class=rpn->t.arg2_tree->ic_class;
-      rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
-      break;case IS_1_ARG:
-      rpn->t.arg1_tree=PrsPop3(cc->ps);
-      rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
-      break;case IS_0_ARG:
+        break;case IS_V_ARG:
+        width=rpn->length;
+        while(width--) {
+	  PrsPop3(cc->ps);
+        }
+        break;case IS_2_ARG:
+        rpn->t.arg2_tree=PrsPop3(cc->ps);
+        rpn->t.arg1_tree=PrsPop3(cc->ps);
+        rpn->t.arg2_class=rpn->t.arg2_tree->ic_class;
+        rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
+        break;case IS_1_ARG:
+        rpn->t.arg1_tree=PrsPop3(cc->ps);
+        rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
+        break;case IS_0_ARG:
     }
     switch(rpn->type) {
-      break;case IC_PP_:
+        break;case IC_POWER:
+	a=ICNext(rpn);
+	if(rpn->t.arg1_class->raw_type!=RT_F64) {
+	  b=CAlloc(sizeof CRPN);
+	  b->type=IC_TO_F64;
+	  b->ic_class=cmp.internal_types[RT_F64];
+	  QueInsRev(b,rpn->t.arg1_tree);
+	  rpn->t.arg1_tree=b;
+	  rpn->t.arg1_class=cmp.internal_types[RT_F64];
+	}
+	if(rpn->t.arg2_class->raw_type!=RT_F64) {
+	  b=CAlloc(sizeof CRPN);
+	  b->type=IC_TO_F64;
+	  b->ic_class=cmp.internal_types[RT_F64];
+	  QueInsRev(b,rpn->t.arg2_tree);
+	  rpn->t.arg2_tree=b;
+	  rpn->t.arg2_class=cmp.internal_types[RT_F64];
+	}
+        rpn->type=IC_CALL_INDIRECT;
+        rpn->length=3;
+        powh=HashFind("Pow",cc->htc.hash_table_lst,HTT_FUN);
+	if(!powh)
+	  throw('Compiler');
+        if(cc->flags&CCF_AOT_COMPILE||Bt(&powh->flags,Cf_EXTERN)) {
+	  b=CAlloc(sizeof CRPN);
+	  b->type=IC_ADDR_IMPORT;
+	  b->ic_data=CodeMiscHashNew(cc,powh);
+	  b->ic_class=powh;
+        } else {
+	  b=CAlloc(sizeof CRPN);
+	  b->type=IC_IMM_I64;
+	  b->ic_data=powh->exe_addr;
+	  b->ic_class=powh;
+        }
+        QueInsRev(b,a);
+	rpn->ic_class=powh->return_class;
+        break;case IC_PP_:
       case IC_MM_:
       case IC__PP:
       case IC__MM:
-      a=rpn->t.arg1_tree;
-      if(a->ic_dim||a->ic_class->ptr_stars_cnt) {
-        rpn->ic_data=RPNPtrWidth(a);
-      } else
-        rpn->ic_data=1;
-      break;case IC_DEREF:
-      //
+        a=rpn->t.arg1_tree;
+        if(a->ic_dim||a->ic_class->ptr_stars_cnt) {
+	  rpn->ic_data=RPNPtrWidth(a);
+        } else
+	  rpn->ic_data=1;
+        break;case IC_DEREF:
+//
       //Dereferencing an array of an array does nothing.
       // Arrays are flat so we only take off a dim,derefence the pointer
       // I64i arr[2][2]={{1,2},{3,4}};
       //   is
       // [1,2,3,4]
       //
-      a=rpn->t.arg1_tree;
-      if(a->ic_dim)
-        if(a->ic_dim->next) {
-          a->ic_dim=a->ic_dim->next;
-          RPNDel(rpn);
-          PrsPush3(cc->ps,a); //Put back on the stack
-          return;
+        a=rpn->t.arg1_tree;
+        if(a->ic_dim)
+	  if(a->ic_dim->next) {
+	    a->ic_dim=a->ic_dim->next;
+	    RPNDel(rpn);
+	    PrsPush3(cc->ps,a); //Put back on the stack
+	    return;
+	  }
+//Can't "Derefence" a function pointer,it is symbolic
+        if(a->ic_class->ptr_stars_cnt==1&&(a->ic_class->type&HTT_FUN)) {
+	  a->ic_class=DerefType(a->ic_class);
+	  RPNDel(rpn);
+	  PrsPush3(cc->ps,a); //Put back on the stack
+	  return;
         }
-      //Can't "Derefence" a function pointer,it is symbolic
-      if(a->ic_class->ptr_stars_cnt==1&&(a->ic_class->type&HTT_FUN)) {
-        a->ic_class=DerefType(a->ic_class);
-        RPNDel(rpn);
-        PrsPush3(cc->ps,a); //Put back on the stack
-        return;
-      }
-      break;case IC_ADDR:
-      //Address of dereference does nothing.
+        break;case IC_ADDR:
+//Address of dereference does nothing.
       //&*a;
-      if(rpn->t.arg1_tree->type==IC_DEREF) {
-        //rpn=='&'
-        //b=='*'
-        //a=='var'
-        b=rpn->t.arg1_tree;
-        a=b->t.arg1_tree;
-        RPNDel(rpn);
-        PrsPush3(cc->ps,a); //Put back on the stack
-        if(b->ic_dim) {
-          a->ic_class=b->ic_class;
-          a->ic_dim=b->ic_dim;
-        } else {
-          a->ic_dim=NULL;
-          a->ic_class=AddrOfType(b->ic_class);
+        if(rpn->t.arg1_tree->type==IC_DEREF) {
+//rpn=='&'
+	  //b=='*'
+	  //a=='var'
+	  b=rpn->t.arg1_tree;
+	  a=b->t.arg1_tree;
+	  RPNDel(rpn);
+	  PrsPush3(cc->ps,a); //Put back on the stack
+	  if(b->ic_dim) {
+	    a->ic_class=b->ic_class;
+	    a->ic_dim=b->ic_dim;
+	  } else {
+	    a->ic_dim=NULL;
+	    a->ic_class=AddrOfType(b->ic_class);
+	  }
+	  RPNDel(b);
+	  return;
         }
-        RPNDel(b);
-        return;
-      }
-      break;case IC_SUB:
-      a=rpn->t.arg1_tree;
-      b=rpn->t.arg2_tree;
-      if(IsPtrNode(a)) {
-        width=RPNPtrWidth(a);
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        rpn2->ic_class=cmp.internal_types[RT_I64];
-        if(IsPtrNode(b)) {
-          divide=TRUE;
-        } else {
-          //Use a's class for rpn
-          rpn->ic_class=a->ic_class;          
+        break;case IC_SUB:
+        a=rpn->t.arg1_tree;
+        b=rpn->t.arg2_tree;
+        if(IsPtrNode(a)) {
+	  width=RPNPtrWidth(a);
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+	  rpn2->ic_class=cmp.internal_types[RT_I64];
+	  if(IsPtrNode(b)) {
+	    divide=TRUE;
+	  } else {
+//Use a's class for rpn
+	    rpn->ic_class=a->ic_class;          
 mul:
-          rpn3=CAlloc(sizeof CRPN);
-          rpn3->type=IC_MUL;
-          rpn3->ic_class=cmp.internal_types[RT_I64];
-          rpn3->t.arg2_tree=rpn2;
-          rpn3->t.arg1_class=cmp.internal_types[RT_I64];
-          rpn3->t.arg2_class=cmp.internal_types[RT_I64];
-          rpn3->t.arg1_tree=b;
-          rpn->t.arg2_tree=rpn3;
-          rpn2->ic_line=rpn->ic_line;
-          rpn3->ic_line=rpn->ic_line;
-          QueIns(rpn3,rpn);
-          QueIns(rpn2,rpn3);
+	    rpn3=CAlloc(sizeof CRPN);
+	    rpn3->type=IC_MUL;
+	    rpn3->ic_class=cmp.internal_types[RT_I64];
+	    rpn3->t.arg2_tree=rpn2;
+	    rpn3->t.arg1_class=cmp.internal_types[RT_I64];
+	    rpn3->t.arg2_class=cmp.internal_types[RT_I64];
+	    rpn3->t.arg1_tree=b;
+	    rpn->t.arg2_tree=rpn3;
+	    rpn2->ic_line=rpn->ic_line;
+	    rpn3->ic_line=rpn->ic_line;
+	    QueIns(rpn3,rpn);
+	    QueIns(rpn2,rpn3);
+	  }
         }
-      }
-      break;case IC_ADD_EQU:
+        break;case IC_ADD_EQU:
       case IC_SUB_EQU:
-      a=rpn->t.arg1_tree;
-      b=rpn->t.arg2_tree;
-      if(a->ic_dim) {
-        width=a->ic_class->size*a->ic_dim->total_cnt;
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        rpn2->ic_class=cmp.internal_types[RT_I64];
-        rpn->ic_dim=a->ic_dim;
-        //Use a's class for rpn
-        rpn->ic_class=a->ic_class;
-        goto mul;
-      } else if(IsPtrNode(a)) {
-        width=RPNPtrWidth(a);
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        //Use a's class for rpn
-        rpn->ic_class=a->ic_class;
-        goto mul;    
-      }
-      break;case IC_ADD:
-      a=rpn->t.arg1_tree;
-      b=rpn->t.arg2_tree;
-      #ifdef TARGET_X86
-      //I will implement this later for ARM64
-      if(cc->flags&CCF_AOT_COMPILE) {
-		if(a->type==IC_ADDR_IMPORT&&b->type==IC_IMM_I64) {
-			width=1;
-			if(a->ic_dim)
-				width=a->ic_class->size*a->ic_dim->total_cnt;
-			else if(IsPtrNode(a))
-				width=RPNPtrWidth(a);
-			a->ic_data(CCodeMisc*)->offset+=b->imm_i64*width;
-			RPNDel(rpn);
-			RPNDel(b);
-			PrsPush3(cc->ps,a); //Put back on the stack
-			return;
-		}
-		if(b->type==IC_ADDR_IMPORT&&a->type==IC_IMM_I64) {
-			width=1;
-			if(b->ic_dim)
-				width=b->ic_class->size*b->ic_dim->total_cnt;
-			else if(IsPtrNode(b))
-				width=RPNPtrWidth(b);
-			b->ic_data(CCodeMisc*)->offset+=a->imm_i64*width;
-			RPNDel(rpn);
-			RPNDel(a);
-			PrsPush3(cc->ps,b); //Put back on the stack
-			return;
+        a=rpn->t.arg1_tree;
+        b=rpn->t.arg2_tree;
+        if(a->ic_dim) {
+	  width=a->ic_class->size*a->ic_dim->total_cnt;
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+	  rpn2->ic_class=cmp.internal_types[RT_I64];
+	  rpn->ic_dim=a->ic_dim;
+//Use a's class for rpn
+	  rpn->ic_class=a->ic_class;
+	  goto mul;
+        } else if(IsPtrNode(a)) {
+	  width=RPNPtrWidth(a);
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+//Use a's class for rpn
+	  rpn->ic_class=a->ic_class;
+	  goto mul;    
         }
-      }
-      #endif
-      if(a->ic_dim) {
-        width=a->ic_class->size*a->ic_dim->total_cnt;
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        rpn2->ic_class=cmp.internal_types[RT_I64];
-        rpn->ic_dim=a->ic_dim;
-        //Use a's class for rpn
-        rpn->ic_class=a->ic_class;
-        goto mul;
-      } else if(IsPtrNode(a)) {
-        width=RPNPtrWidth(a);
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        //Use a's class for rpn
-        rpn->ic_class=a->ic_class;
-        goto mul;    
-      }
-      if(b->ic_dim) {
-        width=b->ic_class->size+b->ic_dim->total_cnt;
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        rpn2->ic_class=cmp.internal_types[RT_PTR];
-        rpn->ic_dim=b->ic_dim;
-        rpn->ic_class=b->ic_class;
+        break;case IC_ADD:
+        a=rpn->t.arg1_tree;
+        b=rpn->t.arg2_tree;
+#ifdef TARGET_X86
+        //I will implement this later for ARM64
+        if(cc->flags&CCF_AOT_COMPILE) {
+	  if(a->type==IC_ADDR_IMPORT&&b->type==IC_IMM_I64) {
+	    width=1;
+	    if(a->ic_dim)
+	      width=a->ic_class->size*a->ic_dim->total_cnt;
+	    else if(IsPtrNode(a))
+	      width=RPNPtrWidth(a);
+	    a->ic_data(CCodeMisc*)->offset+=b->imm_i64*width;
+	    RPNDel(rpn);
+	    RPNDel(b);
+	    PrsPush3(cc->ps,a); //Put back on the stack
+	    return;
+	  }
+	  if(b->type==IC_ADDR_IMPORT&&a->type==IC_IMM_I64) {
+	    width=1;
+	    if(b->ic_dim)
+	      width=b->ic_class->size*b->ic_dim->total_cnt;
+	    else if(IsPtrNode(b))
+	      width=RPNPtrWidth(b);
+	    b->ic_data(CCodeMisc*)->offset+=a->imm_i64*width;
+	    RPNDel(rpn);
+	    RPNDel(a);
+	    PrsPush3(cc->ps,b); //Put back on the stack
+	    return;
+	  }
+        }
+#endif
+        if(a->ic_dim) {
+	  width=a->ic_class->size*a->ic_dim->total_cnt;
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+	  rpn2->ic_class=cmp.internal_types[RT_I64];
+	  rpn->ic_dim=a->ic_dim;
+//Use a's class for rpn
+	  rpn->ic_class=a->ic_class;
+	  goto mul;
+        } else if(IsPtrNode(a)) {
+	  width=RPNPtrWidth(a);
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+//Use a's class for rpn
+	  rpn->ic_class=a->ic_class;
+	  goto mul;    
+        }
+        if(b->ic_dim) {
+	  width=b->ic_class->size+b->ic_dim->total_cnt;
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+	  rpn2->ic_class=cmp.internal_types[RT_PTR];
+	  rpn->ic_dim=b->ic_dim;
+	  rpn->ic_class=b->ic_class;
 mul2:
-        rpn3=CAlloc(sizeof CRPN);
-        rpn3->type=IC_MUL;
-        rpn3->ic_class=cmp.internal_types[RT_I64];
-        rpn3->t.arg2_tree=rpn2;
-        rpn3->t.arg1_class=cmp.internal_types[RT_I64];
-        rpn3->t.arg2_class=cmp.internal_types[RT_I64];
-        rpn3->t.arg1_tree=a;
-        rpn->t.arg1_tree=rpn3;
-        rpn3->ic_line=rpn->ic_line;
-        QueInsRev(rpn3,a);
-        QueIns(rpn2,rpn3);
-      } else if(IsPtrNode(b)) {
-        width=RPNPtrWidth(b);
-        rpn2=CAlloc(sizeof CRPN);
-        rpn2->type=IC_IMM_I64;
-        rpn2->imm_i64=width;
-        //Use b's class for rpn
-        rpn->ic_class=b->ic_class;
-        goto mul2;    
-      }
+	  rpn3=CAlloc(sizeof CRPN);
+	  rpn3->type=IC_MUL;
+	  rpn3->ic_class=cmp.internal_types[RT_I64];
+	  rpn3->t.arg2_tree=rpn2;
+	  rpn3->t.arg1_class=cmp.internal_types[RT_I64];
+	  rpn3->t.arg2_class=cmp.internal_types[RT_I64];
+	  rpn3->t.arg1_tree=a;
+	  rpn->t.arg1_tree=rpn3;
+	  rpn3->ic_line=rpn->ic_line;
+	  QueInsRev(rpn3,a);
+	  QueIns(rpn2,rpn3);
+        } else if(IsPtrNode(b)) {
+	  width=RPNPtrWidth(b);
+	  rpn2=CAlloc(sizeof CRPN);
+	  rpn2->type=IC_IMM_I64;
+	  rpn2->imm_i64=width;
+//Use b's class for rpn
+	  rpn->ic_class=b->ic_class;
+	  goto mul2;    
+        }
     } 
   }
   if(add_to_prs_stk) {
