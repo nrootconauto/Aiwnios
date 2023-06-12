@@ -48,6 +48,7 @@ extern class CTask;
 #define F64_MAX (0x7FEFFFFFFFFFFFFF(F64))
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
 #define inf	(0x7FF0000000000000(F64))
+#define ã	(0x400921FB54442D18(F64))
 #define pi	(0x400921FB54442D18(F64))
 #define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
 #define log2_10 (0x400A934F0979A371(F64))
@@ -810,7 +811,7 @@ class CExternUsage
 #define Cf_EXTERN		0
 #define Cf_INTERNAL_TYPE	1
 
-/*public */ class CHashClass:CHashSrcSym
+/*public */ class CHashClass:CHashSrcSym
 {//See $LK,"PrsClassNew",A="MN:PrsClassNew"$(). base_class of $LK,"CHashFun",A="MN:CHashFun"$
   I64	size,neg_offset;
   U32	member_cnt;
@@ -3802,6 +3803,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import I64 Call(U8 *,I64 argc,I64 *argv);
 import U0 ExitAiwnios();
 import U0 TaskContextSetRIP(U8 *,U8 *);
 import U0 MakeContext(U8 *,U8 *rip,U8*rsp);
@@ -3901,6 +3903,7 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern I64 Call(U8 *,I64 argc,I64 *argv);
 extern U0 ExitAiwnios();
 extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 extern F64 Ln(F64);
@@ -6498,3 +6501,5 @@ _intern IC_LBTR Bool LBtr(U8*,I64);
 //Added bt Mr nrootconauto
 extern U8 *DisasOpc(CDoc *doc,U8 *data);
 extern U0 Uf(U8 *st); 
+extern CCmpGlbls cmp;
+extern I64 CallExtStr(U8 *,...);

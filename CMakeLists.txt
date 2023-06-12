@@ -9,6 +9,7 @@ if("${ARCH}" STREQUAL "x86_64")
 			miscWIN.s
 			swapctxWIN.s
 			ffi_call_tos_WIN.s
+			miscTOSX86.s
 		)
 	else()
 		set(
@@ -16,6 +17,7 @@ if("${ARCH}" STREQUAL "x86_64")
 			miscX86.s
 			swapctxX86.s
 			ffi_call_tos.s
+			miscTOSX86.s
 		)
 	endif()
   set(

@@ -1337,6 +1337,7 @@ void BootAiwnios(char *bootstrap_text)
 		// These dudes will expected to return to a location on the stack,SO DONT MUDDY THE STACK WITH ABI "translations"
 		PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
 		PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
+		PrsAddSymbolNaked("Call", TempleOS_CallN, 3);
 		PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
 		PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);
 		PrsAddSymbol("__HC_ICAdd_Typecast", STK___HC_ICAdd_Typecast, 3);

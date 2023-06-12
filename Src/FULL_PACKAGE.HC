@@ -119,6 +119,7 @@ TaskInit(adam_task,0);
 #ifdef TARGET_X86
 #include "UAsmX64.HC"
 #endif
+#include "KUtils.HC"
 #include "KMain.HC"
 U0 SCRoutine() {
   CTask *self=CAlloc(sizeof CTask,adam_task);

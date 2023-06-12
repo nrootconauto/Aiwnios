@@ -30,7 +30,7 @@
 #define X86_OPERAND_IMM8 21
 #define X86_OPERAND_IMMx 22
 #define X86_OPERAND_CONST_Rx 23
-#define X86_OPERAND_RXMM 24
+#define X86_OPERAND_RXMM 24
 #define X86_OPERAND_RMXMM 25
 #define X86_OPERAND_RMXMM128 26
 #define X86_OPERAND_RMXMM64 27
@@ -64,12 +64,21 @@ class CX86Opcode:CHash {
   CQue asm_hash_que;
 //addi reg is used in conjuntion to X86_OPCF_ADD_REG
 //It is the added reg to the opcode
-  I8 addi_reg,pad[7];
+  I8 addi_reg,arity,pad[6];
 };
+
 CQue asm_hash[0x10000];
+CHashReg *AR(U8 *name,I64 idx,I64 rt) {
+  CHashReg *r=CAlloc(sizeof CHashReg);
+  r->str=StrNew(name);
+  r->type=HTT_REG;
+  r->reg_num=idx;
+  r->reg_type=rt;
+  HashAdd(r,cmp.asm_hash);
+}
 CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
   I64 idx,op=0,at,idx2;
-  CX86Opcode *opc=CAlloc(sizeof CX86Opcode),*opc2;
+  CX86Opcode *opc=CAlloc(sizeof CX86Opcode),*opc2,*test;
   opc->type=HTT_OPCODE;
   if(pf!=-1)
     if(!(0<=pf<=U8_MAX))
@@ -95,6 +104,8 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
   for(idx=0;idx!=argc;) {
     if(idx>argc)
       throw('UAsmInit');
+    if(argv[idx]!=X86_OPERAND_EXT)
+      opc->arity++;
     switch(argv[idx]) {
       start:
         opc->operands[op]=argv[idx];
@@ -120,6 +131,13 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
   for(op=0;idx-1!=op;op++)
     *StrLastOcc(name,",")=0;
   for(op=0;idx!=op;op++) {
+    test=HashFind(LstSub(op,name),cmp.asm_hash,HTT_OPCODE);
+    if(test) {
+      if(test->arity!=opc->arity) {
+	"ARITYMISSAMATCH:%s\n",LstSub(op,name);
+	throw('AsmItrn');
+      }
+    }
     if(flags&X86_OPCF_ADD_REG) {
       idx2=8;
       while(--idx2>=0) {
@@ -144,7 +162,6 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
         QueIns(&opc2->asm_hash_que,&asm_hash[at]);
     }
   }
-//TODO put in cmp.asm_hash
   Free(opc);
   Free(name);
   return opc;
@@ -597,7 +614,7 @@ bad:
     }
     if((cur->_0f==0xf)!=_0f)
       goto next;
-    if(cur->flags&X86_OPCF_REXW)
+    if(cur->flags&X86_OPCF_REXW)
       if(!(rex&0b1000))
 	goto next;
     if(cur->flags&X86_OPCF_MODRM) {
@@ -863,6 +880,115 @@ U0 UAsmInit() {
   I64 cnt=0;
   for(cnt=0;cnt!=0x10000;cnt++) 
     QueInit(&asm_hash[cnt]);
+  AR("AL",0,REGT_R8);
+  AR("CL",1,REGT_R8);
+  AR("DL",2,REGT_R8);
+  AR("BL",3,REGT_R8);
+//With rex
+  AR("SPL",4,REGT_R8);
+  AR("BPL",5,REGT_R8);
+  AR("SIL",6,REGT_R8);
+  AR("DIL",7,REGT_R8);
+//Without rex
+  AR("AH",4,REGT_R8);
+  AR("CH",5,REGT_R8);
+  AR("DH",6,REGT_R8);
+  AR("BH",7,REGT_R8);
+
+  AR("R8L",8,REGT_R8);
+  AR("R9L",9,REGT_R8);
+  AR("R10L",10,REGT_R8);
+  AR("R11L",11,REGT_R8);
+  AR("R12L",12,REGT_R8);
+  AR("R13L",13,REGT_R8);
+  AR("R14L",14,REGT_R8);
+  AR("R15L",15,REGT_R8);
+
+  AR("AX",0,REGT_R16);
+  AR("CX",1,REGT_R16);
+  AR("DX",2,REGT_R16);
+  AR("BX",3,REGT_R16);
+  AR("SP",4,REGT_R16);
+  AR("BP",5,REGT_R16);
+  AR("SI",6,REGT_R16);
+  AR("DI",7,REGT_R16);
+  AR("R8",8,REGT_R16);
+  AR("R9",9,REGT_R16);
+  AR("R10W",10,REGT_R16);
+  AR("R11W",11,REGT_R16);
+  AR("R12W",12,REGT_R16);
+  AR("R13W",13,REGT_R16);
+  AR("R14W",14,REGT_R16);
+  AR("R15W",15,REGT_R16);
+
+  AR("EAX",0,REGT_R32);
+  AR("ECX",1,REGT_R32);
+  AR("EDX",2,REGT_R32);
+  AR("EBX",3,REGT_R32);
+  AR("ESP",4,REGT_R32);
+  AR("EBP",5,REGT_R32);
+  AR("ESI",6,REGT_R32);
+  AR("EDI",7,REGT_R32);
+  AR("R8D",8,REGT_R32);
+  AR("R9D",9,REGT_R32);
+  AR("R10D",10,REGT_R32);
+  AR("R11D",11,REGT_R32);
+  AR("R12D",12,REGT_R32);
+  AR("R13D",13,REGT_R32);
+  AR("R14D",14,REGT_R32);
+  AR("R15D",15,REGT_R32);
+
+  AR("RAX",0,REGT_R64);
+  AR("RCX",1,REGT_R64);
+  AR("RDX",2,REGT_R64);
+  AR("RBX",3,REGT_R64);
+  AR("RSP",4,REGT_R64);
+  AR("RBP",5,REGT_R64);
+  AR("RSI",6,REGT_R64);
+  AR("RDI",7,REGT_R64);
+  AR("R8",8,REGT_R64);
+  AR("R9",9,REGT_R64);
+  AR("R10",10,REGT_R64);
+  AR("R11",11,REGT_R64);
+  AR("R12",12,REGT_R64);
+  AR("R13",13,REGT_R64);
+  AR("R14",14,REGT_R64);
+  AR("R15",15,REGT_R64);
+
+  AR("MM0",0,REGT_MM);
+  AR("MM1",1,REGT_MM);
+  AR("MM2",2,REGT_MM);
+  AR("MM3",3,REGT_MM);
+  AR("MM4",4,REGT_MM);
+  AR("MM5",5,REGT_MM);
+  AR("MM6",6,REGT_MM);
+  AR("MM7",7,REGT_MM);
+
+  AR("XMM0",0,REGT_XMM);
+  AR("XMM1",1,REGT_XMM);
+  AR("XMM2",2,REGT_XMM);
+  AR("XMM3",3,REGT_XMM);
+  AR("XMM4",4,REGT_XMM);
+  AR("XMM5",5,REGT_XMM);
+  AR("XMM6",6,REGT_XMM);
+  AR("XMM7",7,REGT_XMM);
+  AR("XMM8",8,REGT_XMM);
+  AR("XMM9",9,REGT_XMM);
+  AR("XMM10",10,REGT_XMM);
+  AR("XMM11",11,REGT_XMM);
+  AR("XMM12",12,REGT_XMM);
+  AR("XMM13",13,REGT_XMM);
+  AR("XMM14",14,REGT_XMM);
+  AR("XMM15",15,REGT_XMM);
+
+  AR("ES",0,REGT_SEG);
+  AR("CS",1,REGT_SEG);
+  AR("SS",2,REGT_SEG);
+  AR("DS",3,REGT_SEG);
+  AR("FS",4,REGT_SEG);
+  AR("GS",5,REGT_SEG);
+
+
   AO("ADC",-1,-1,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_R8);
   AO("ADC",-1,-1,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_Rx);
   AO("ADC",-1,-1,0x12,-1,X86_OPCF_MODRM,X86_OPERAND_R8,X86_OPERAND_RM8);
@@ -969,8 +1095,8 @@ U0 UAsmInit() {
   AO("CMPSD",-1,-1,0xa7,-1,0);
   AO("CMPSQ",-1,-1,0xa7,-1,X86_OPCF_REX);
 
-  AO("CMPSD",0xf2,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64,X86_OPERAND_IMM8);
-  AO("CMPSS",0xf3,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32,X86_OPERAND_IMM8);
+  AO("CMPSD2",0xf2,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64,X86_OPERAND_IMM8);
+  AO("CMPSS2",0xf3,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32,X86_OPERAND_IMM8);
 
   AO("CMPXCHG",-1,0xf,0xb0,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_CONST_R8,REG_RAX,X86_OPERAND_R8);
   AO("CMPXCHG",-1,0xf,0xb1,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_CONST_Rx,REG_RAX,X86_OPERAND_Rx);
@@ -1100,8 +1226,8 @@ U0 UAsmInit() {
   AO("FLDLN2",-1,-1,0xd9,0xed,0,X86_OPERAND_ST0);
   AO("FLDPI",-1,-1,0xd9,0xeb,0,X86_OPERAND_ST0);
   AO("FLDZ",-1,-1,0xd9,0xee,0,X86_OPERAND_ST0);
-  AO("FMUL",-1,-1,0xd8,-1,X86_OPCF_MODRM,X86_OPERAND_FRM32,X86_OPERAND_EXT,1);
-  AO("FMUL",-1,-1,0xdc,-1,X86_OPCF_MODRM,X86_OPERAND_M64,X86_OPERAND_EXT,1);
+  AO("FMUL",-1,-1,0xd8,-1,X86_OPCF_MODRM,X86_OPERAND_ST0,X86_OPERAND_FRM32,X86_OPERAND_EXT,1);
+  AO("FMUL",-1,-1,0xdc,-1,X86_OPCF_MODRM,X86_OPERAND_ST0,X86_OPERAND_M64,X86_OPERAND_EXT,1);
   AO("FMUL",-1,-1,0xdc,-1,X86_OPCF_MODRM,X86_OPERAND_STi,X86_OPERAND_ST0,X86_OPERAND_EXT,1);
   AO("FMULP",-1,-1,0xde,-1,X86_OPCF_MODRM,X86_OPERAND_STi,X86_OPERAND_ST0,X86_OPERAND_EXT,1);
   AO("FNCLEX",-1,-1,0xdb,0xe2,0);
@@ -1310,8 +1436,8 @@ U0 UAsmInit() {
   AO("MOVSQ",-1,-1,0xa5,-1,X86_OPCF_REXW);
   AO("MOVSS",0xf3,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("MOVSS",0xf3,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM32	,X86_OPERAND_RXMM);
-  AO("MOVSD",0xf2,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
-  AO("MOVSD",0xf2,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM);
+  AO("MOVSD2",0xf2,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
+  AO("MOVSD2",0xf2,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM);
 //  AO("MOVDQA",0x66,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
 //  AO("MOVDQA",0x66,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
   AO("MOVDQU",0xf3,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
@@ -1339,8 +1465,8 @@ U0 UAsmInit() {
   AO("MOVQ",-1,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMMM64,X86_OPERAND_RMM);
   AO("MOVQ",0x66,0xf,0xd6,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RMM);
   AO("MOVQ2DQ",0xf3,0xf,0xd6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM);
-  AO("MOVSD",0xf2,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
-  AO("MOVSD",0xf2,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM);
+  AO("MOVSD2",0xf2,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
+  AO("MOVSD2",0xf2,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM);
   AO("MOVSHDUP",0xf3,0xf,0x16,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MOVSLDUP",0xf3,0xf,0x12,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MOVSX",-1,0xf,0xbe,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM8);
