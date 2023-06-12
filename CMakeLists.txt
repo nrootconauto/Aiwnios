@@ -48,6 +48,7 @@ elseif("${ARCH}" STREQUAL "arm64")
 		miscAARCH64.s
 		swapctxAARCH64.s
 		ffi_call_tos_aarch64.s
+    miscTOSaarch64.s
 	)
   set(
     C_SOURCES
