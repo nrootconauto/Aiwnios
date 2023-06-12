@@ -416,4 +416,4 @@ extern CRPN *RPNAddNew(CCmpCtrl *cc,I64 type,I64 data=0,CHashClass *cls=NULL,Boo
 #define PEF_NO_COMMA 0x20
 extern Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,U8 *prs_stk=NULL);
 extern U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type);
-extern CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,I64 *_code_size,CHash* h);
+extern CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h);

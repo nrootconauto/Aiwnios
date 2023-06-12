@@ -48,7 +48,9 @@ extern class CTask;
 #define F64_MAX (0x7FEFFFFFFFFFFFFF(F64))
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
 #define inf	(0x7FF0000000000000(F64))
-#define ã	(0x400921FB54442D18(F64))
+#ifndef BOOTSTRAP
+#define ã	(0x400921FB54442D18(F64))
+#endif
 #define pi	(0x400921FB54442D18(F64))
 #define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
 #define log2_10 (0x400A934F0979A371(F64))
