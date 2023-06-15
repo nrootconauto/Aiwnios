@@ -41,6 +41,8 @@ __15:
 }
 Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
   U32 *ptr;
+  x+=task->scroll_x>>3;
+  y+=task->scroll_y>>3;
   if(x<0) {
     s+=-x;
     len-= -x;
@@ -70,6 +72,8 @@ Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
 }
 Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
   U32 *ptr;
+  x+=task->scroll_x>>3;
+  y+=task->scroll_y>>3;
   if(x<0) {
     attr_s+=-x;
     len-= -x;
@@ -99,6 +103,8 @@ Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
 }
 Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
   U32 *ptr;
+  x+=task->scroll_x>>3;
+  y+=task->scroll_y>>3;
   if(x<0) {
     len-= -x;
     x=0;
@@ -159,6 +165,8 @@ public U0 TextBorder(CTask *task=NULL,
 public U0 TextRect(I64 l,I64 r,I64 t,I64 b,I64 d)
 {//Fill text rect. 30fps in Fs->draw_it() callback.
   I64 y,w;
+  l+=Fs->scroll_x>>3;
+  t+=Fs->scroll_y>>3;
   if (l>r || t>b) return;
   if (t<0) t=0;
   if (b>=TEXT_ROWS) b=TEXT_ROWS-1;
