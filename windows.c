@@ -22,6 +22,7 @@ static void _DrawWindowNew()
 {
 	int rends;
 	SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear", SDL_HINT_OVERRIDE);
+	SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0", SDL_HINT_OVERRIDE);
 	SDL_RendererInfo info;
 	screen_mutex = SDL_CreateMutex();
 	screen_mutex2 = SDL_CreateMutex();
