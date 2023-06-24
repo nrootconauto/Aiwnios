@@ -72,3 +72,8 @@ Bool HashRemDel(CHash *tmph,CHashTable *table,
   }
   return FALSE;
 }
+U0 HashAddAfter(CHash *tmph,CHash *to,CHashTable *) {
+  CHash *next=to->next;
+  to->next=tmph;
+  tmph->next=next;
+}

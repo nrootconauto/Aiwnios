@@ -1774,7 +1774,15 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_RSI		6
 #define REG_RDI		7
 #define REG_R8		8
+#ifdef TARGET_X86
+#define REG_REGS_NUM	16
+#else
+#ifdef TARGET_AARCH64
 #define REG_REGS_NUM	31
+#endif
+//???
+#define REG_REGS_NUM	31
+#endif
 
 #define REG_RIP		16	//Used by compiler, not really it's num
 //Be careful: RBPu8, RSPu8, RSIu8, RDIu8 are 20-24
@@ -2201,6 +2209,8 @@ class CLexHashTableContext
   CPrsStk *ps;
   CAOTCtrl *aotc;
   I64	aot_depth,pmt_line;
+//Added by nroot,used for @@labels
+  I64 asm_local_scope;
 };
 
 /*public */ class CCmpGlbls
@@ -5491,6 +5501,7 @@ extern I64 HashStr(U8 *str);
 extern CHash *HashFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1);
 extern CHash *HashSingleTableFind(U8 *needle,CHashTable *table,I64 mask,I64 inst=1);
 extern CHash **HashBucketFind(U8 *str,CHashTable *table);
+extern U0 HashAddAfter(CHash *tmph,CHash *to,CHashTable *);
 extern U0 HashAdd(CHash *h,CHashTable *table);
 extern Bool HashRemDel(CHash *tmph,CHashTable *table,	I64 instance=1) ;
 extern I64 HashTypeNum(CHash *tmph);
@@ -6505,3 +6516,6 @@ extern U8 *DisasOpc(CDoc *doc,U8 *data);
 extern U0 Uf(U8 *st); 
 extern CCmpGlbls cmp;
 extern I64 CallExtStr(U8 *,...);
+extern U8 *PrsAsmBlk(CCmpCtrl *cc);
+
+#define __AIWNIOS__

@@ -831,7 +831,8 @@ U0 PrsMembers(CCmpCtrl *cc) {
       }
       needs_flush=TRUE;
       off=0;
-      Lex(cc);     
+      if(Lex(cc)!=TK_IDENT)
+	LexExcept(cc,"Expected an identifier at");
       needs_addr=FALSE; 
       if(ic_dim) {
         ic_dim=ic_dim->next;
@@ -897,9 +898,11 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
   }
   I64 last_consumes_right=1;
   CHashFun *ic_fun=NULL,*last_c=NULL;
+  CHashExport *tmpex;
   CHashClass *tmpc;
   CMemberLst *mlst;
-  //u32[0] is type
+  CAsmUndefHash *tmpauh;
+//u32[0] is type
   //u32[1] is prec
   CRPN *rpn,*rpn2;
   while(!finish) {
@@ -911,167 +914,168 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
       break;
     }
     switch(tok) {
-      break;start:
+        break;start:
         case TK_PLUS_PLUS:
-          if(last_consumes_right) {
-            cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_PP_);
-            last_consumes_right=1;
-          } else {
-            cur_prec=(PREC_UNARY_POST<<32|IC__PP);
-            last_consumes_right=0;
-          }
-        break;case TK_MINUS_MINUS:
-          if(last_consumes_right) {
-            cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_MM_);
-            last_consumes_right=1;
-          } else {
-            cur_prec=(PREC_UNARY_POST<<32|IC__MM);
-            last_consumes_right=0;
-          }
-        break;case '&':
-        if(last_consumes_right) {
-          cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_ADDR);
-        } else {
-          cur_prec=(PREC_AND<<32|IC_AND);
-        }
-        last_consumes_right=1;
-        break;case '*':
-        if(last_consumes_right) {
-          cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_DEREF);
-          last_consumes_right=1;
-        } else {
-          cur_prec=(PREC_MUL<<32|IC_MUL);
-          last_consumes_right=1;
-        }
-        break;case ',':
-        if(last_consumes_right)
-          LexExcept(cc,"Unexpected ',' at ");
-        cur_prec=(PREC_MAX<<32|IC_COMMA);
-        last_consumes_right=1;
-        break;case '+':
-        if(last_consumes_right) {
-          //Positive does nothing
-          cur_prec=-1;
-        } else {
-          cur_prec=(PREC_ADD<<32|IC_ADD);
-          last_consumes_right=1;
-        }
-        break;case '-':
-        if(last_consumes_right) {
-          cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_UNARY_MINUS);
-          last_consumes_right=1;
-        } else {
-          cur_prec=(PREC_ADD<<32|IC_SUB);
-          last_consumes_right=1;
-        }
-        break;case '~':
-        if(last_consumes_right) {
-          cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_COM);
-          last_consumes_right=1;
-        } else
-          LexExcept(cc,"Expected '~'.");
-        break;case '!':
-        if(last_consumes_right) {
-          cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_NOT);
-          last_consumes_right=1;
-        } else
-          LexExcept(cc,"Expected '!'.");
-      break;end:
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_PP_);
+	    last_consumes_right=1;
+	  } else {
+	    cur_prec=(PREC_UNARY_POST<<32|IC__PP);
+	    last_consumes_right=0;
+	  }
+	  break;case TK_MINUS_MINUS:
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_MM_);
+	    last_consumes_right=1;
+	  } else {
+	    cur_prec=(PREC_UNARY_POST<<32|IC__MM);
+	    last_consumes_right=0;
+	  }
+	  break;case '&':
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_ADDR);
+	  } else {
+	    cur_prec=(PREC_AND<<32|IC_AND);
+	  }
+	  last_consumes_right=1;
+	  break;case '*':
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_DEREF);
+	    last_consumes_right=1;
+	  } else {
+	    cur_prec=(PREC_MUL<<32|IC_MUL);
+	    last_consumes_right=1;
+	  }
+	  break;case ',':
+	  if(last_consumes_right)
+	    LexExcept(cc,"Unexpected ',' at ");
+	  cur_prec=(PREC_MAX<<32|IC_COMMA);
+	  last_consumes_right=1;
+	  break;case '+':
+	  if(last_consumes_right) {
+//Positive does nothing
+	    cur_prec=-1;
+	  } else {
+	    cur_prec=(PREC_ADD<<32|IC_ADD);
+	    last_consumes_right=1;
+	  }
+	  break;case '-':
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_UNARY_MINUS);
+	    last_consumes_right=1;
+	  } else {
+	    cur_prec=(PREC_ADD<<32|IC_SUB);
+	    last_consumes_right=1;
+	  }
+	  break;case '~':
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_COM);
+	    last_consumes_right=1;
+	  } else
+	    LexExcept(cc,"Expected '~'.");
+	  break;case '!':
+	  if(last_consumes_right) {
+	    cur_prec=((PREC_UNARY_PRE|ASSOCF_RIGHT)<<32|IC_NOT);
+	    last_consumes_right=1;
+	  } else
+	    LexExcept(cc,"Expected '!'.");
+	  break;end:
         if(cur_prec!=-1) { //See above '+' operator
-          flags&=~PEF_ADDR_OF;
-          PushOpers(cc,cur_prec);
-          rpn=CAlloc(sizeof CRPN);
-          rpn->type=cur_prec.u32[0];
-          PrsPush(cc->ps,cur_prec);
-          PrsPush2(cc->ps,rpn);
+	  flags&=~PEF_ADDR_OF;
+	  PushOpers(cc,cur_prec);
+	  rpn=CAlloc(sizeof CRPN);
+	  rpn->type=cur_prec.u32[0];
+	  PrsPush(cc->ps,cur_prec);
+	  PrsPush2(cc->ps,rpn);
+	  QueInit(rpn);
         }
-        //After getting an operator,we are no longer accepting function calls for now
+//After getting an operator,we are no longer accepting function calls for now
         flags&=~PEF_FUN_BEFORE;
         tok=Lex(cc);
-      break;start:
+        break;start:
         if(last_consumes_right)
-          LexExcept(cc,"Unexpected operator.");
+	  LexExcept(cc,"Unexpected operator.");
         case '`':
-        cur_prec=(PREC_EXP<<32|IC_POWER);
-        last_consumes_right=1;
-        break;case TK_SHL:
-        cur_prec=(PREC_EXP<<32|IC_SHL);
-        last_consumes_right=1;
-        break;case TK_SHR:
-        cur_prec=(PREC_EXP<<32|IC_SHR);
-        last_consumes_right=1;
-        break;case '/':
-        cur_prec=(PREC_MUL<<32|IC_DIV);
-        last_consumes_right=1;
-        break;case '%':
-        cur_prec=(PREC_MUL<<32|IC_MOD);
-        last_consumes_right=1;
-        break;case '|':
-        cur_prec=(PREC_OR<<32|IC_OR);
-        last_consumes_right=1;
-        break;case '^':
-        cur_prec=(PREC_XOR<<32|IC_XOR);
-        last_consumes_right=1;
-        break;case '<':
-        cur_prec=(PREC_CMP<<32|IC_LESS);
-        last_consumes_right=1;
-        break;case '>':
-        cur_prec=(PREC_CMP<<32|IC_GREATER);
-        last_consumes_right=1;
-        break;case TK_GREATER_EQU:
-        cur_prec=(PREC_CMP<<32|IC_GREATER_EQU);
-        last_consumes_right=1;      
-        break;case TK_LESS_EQU:
-        cur_prec=(PREC_CMP<<32|IC_LESS_EQU);
-        last_consumes_right=1;
-        break;case TK_EQU_EQU:
-        cur_prec=(PREC_CMP2<<32|IC_EQU_EQU);
-        last_consumes_right=1;      
-        break;case TK_NOT_EQU:
-        cur_prec=(PREC_CMP2<<32|IC_NOT_EQU);
-        last_consumes_right=1;
-        break;case TK_AND_AND:
-        cur_prec=(PREC_AND_AND<<32|IC_AND_AND);
-        last_consumes_right=1;
-        break;case TK_XOR_XOR:
-        cur_prec=(PREC_XOR_XOR<<32|IC_XOR_XOR);
-        last_consumes_right=1;
-        break;case TK_OR_OR:
-        cur_prec=(PREC_OR_OR<<32|IC_OR_OR);
-        last_consumes_right=1;
-        break;case TK_SUB_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SUB_EQU);
-        last_consumes_right=1;
-        break;case TK_ADD_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_ADD_EQU);
-        last_consumes_right=1;
-        break;case TK_XOR_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_XOR_EQU);
-        last_consumes_right=1;
-        break;case TK_OR_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_OR_EQU);
-        last_consumes_right=1;
-        break;case TK_AND_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_AND_EQU);
-        last_consumes_right=1;
-        break;case TK_DIV_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_DIV_EQU);
-        last_consumes_right=1;
-        break;case TK_MOD_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_MOD_EQU);
-        last_consumes_right=1;
-        break;case TK_MUL_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_MUL_EQU);
-        last_consumes_right=1;
-        break;case TK_SHL_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SHL_EQU);
-        last_consumes_right=1;
-        break;case TK_SHR_EQU:
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SHR_EQU);
-        last_consumes_right=1;
-        break;case '=':
-        cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_ASSIGN);
-        last_consumes_right=1;
+	  cur_prec=(PREC_EXP<<32|IC_POWER);
+	  last_consumes_right=1;
+	  break;case TK_SHL:
+	  cur_prec=(PREC_EXP<<32|IC_SHL);
+	  last_consumes_right=1;
+	  break;case TK_SHR:
+	  cur_prec=(PREC_EXP<<32|IC_SHR);
+	  last_consumes_right=1;
+	  break;case '/':
+	  cur_prec=(PREC_MUL<<32|IC_DIV);
+	  last_consumes_right=1;
+	  break;case '%':
+	  cur_prec=(PREC_MUL<<32|IC_MOD);
+	  last_consumes_right=1;
+	  break;case '|':
+	  cur_prec=(PREC_OR<<32|IC_OR);
+	  last_consumes_right=1;
+	  break;case '^':
+	  cur_prec=(PREC_XOR<<32|IC_XOR);
+	  last_consumes_right=1;
+	  break;case '<':
+	  cur_prec=(PREC_CMP<<32|IC_LESS);
+	  last_consumes_right=1;
+	  break;case '>':
+	  cur_prec=(PREC_CMP<<32|IC_GREATER);
+	  last_consumes_right=1;
+	  break;case TK_GREATER_EQU:
+	  cur_prec=(PREC_CMP<<32|IC_GREATER_EQU);
+	  last_consumes_right=1;      
+	  break;case TK_LESS_EQU:
+	  cur_prec=(PREC_CMP<<32|IC_LESS_EQU);
+	  last_consumes_right=1;
+	  break;case TK_EQU_EQU:
+	  cur_prec=(PREC_CMP2<<32|IC_EQU_EQU);
+	  last_consumes_right=1;      
+	  break;case TK_NOT_EQU:
+	  cur_prec=(PREC_CMP2<<32|IC_NOT_EQU);
+	  last_consumes_right=1;
+	  break;case TK_AND_AND:
+	  cur_prec=(PREC_AND_AND<<32|IC_AND_AND);
+	  last_consumes_right=1;
+	  break;case TK_XOR_XOR:
+	  cur_prec=(PREC_XOR_XOR<<32|IC_XOR_XOR);
+	  last_consumes_right=1;
+	  break;case TK_OR_OR:
+	  cur_prec=(PREC_OR_OR<<32|IC_OR_OR);
+	  last_consumes_right=1;
+	  break;case TK_SUB_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SUB_EQU);
+	  last_consumes_right=1;
+	  break;case TK_ADD_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_ADD_EQU);
+	  last_consumes_right=1;
+	  break;case TK_XOR_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_XOR_EQU);
+	  last_consumes_right=1;
+	  break;case TK_OR_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_OR_EQU);
+	  last_consumes_right=1;
+	  break;case TK_AND_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_AND_EQU);
+	  last_consumes_right=1;
+	  break;case TK_DIV_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_DIV_EQU);
+	  last_consumes_right=1;
+	  break;case TK_MOD_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_MOD_EQU);
+	  last_consumes_right=1;
+	  break;case TK_MUL_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_MUL_EQU);
+	  last_consumes_right=1;
+	  break;case TK_SHL_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SHL_EQU);
+	  last_consumes_right=1;
+	  break;case TK_SHR_EQU:
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_SHR_EQU);
+	  last_consumes_right=1;
+	  break;case '=':
+	  cur_prec=((PREC_ASSIGN|ASSOCF_RIGHT)<<32|IC_ASSIGN);
+	  last_consumes_right=1;
       end:
         PushOpers(cc,cur_prec);
         flags&=~PEF_ADDR_OF;
@@ -1080,411 +1084,479 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
         PrsPush(cc->ps,cur_prec);
         PrsPush2(cc->ps,rpn);
         Lex(cc);
-        //After getting an operator,we are no longer accepting function calls for now
+//After getting an operator,we are no longer accepting function calls for now
         flags&=~PEF_FUN_BEFORE;
-      break;case TK_DEREFERENCE: //->,not *
+        if(cur_prec.u32[0]==IC_ADDR)
+	  flags|=PEF_ADDR_OF;
+        break;case TK_DEREFERENCE: //->,not *
       case '.':
-      PrsMembers(cc);
-      next=cc->coc.coc_head.next;
-      if(next->ic_class->type&HTT_FUN) {
-        flags|=PEF_FUN_BEFORE;
-      } else
-        flags&=~PEF_FUN_BEFORE;
-      break;case '(':
-      tok=Lex(cc);
-      next=cc->coc.coc_head.next;
-      if((flags&PEF_FUN_BEFORE)&&next->ic_class->type&HTT_FUN) {
-        last_consumes_right=0;
-        if(tok==TK_IDENT&&cc->hash_entry) {
-          //Check for typecast 
-          if(cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE)) {
-            //
-            // Heres the Donald Trump deal. If we have a (implicit) function call before a typecast 
-            //  we will first call the function,it makes no sense to typecast a function
-            //
-            ic_fun=cc->ps->stk3[cc->ps->ptr3](CRPN*)->ic_class;
-            if(!ic_fun->ptr_stars_cnt) {
-              arity=ImplicitFunCall(cc,cc->coc.coc_head.next(CRPN*)->ic_class);
-              RPNAddNew(
-                cc,
-                IC_CALL_INDIRECT,
-                arity+1,
-                ic_fun->return_class
-              );
-            }
+        PrsMembers(cc);
+        next=cc->coc.coc_head.next;
+        if(next->ic_class->type&HTT_FUN) {
+	  flags|=PEF_FUN_BEFORE;
+        } else
+	  flags&=~PEF_FUN_BEFORE;
+        break;case '(':
+        tok=Lex(cc);
+        next=cc->coc.coc_head.next;
+        if((flags&PEF_FUN_BEFORE)&&next->ic_class->type&HTT_FUN) {
+	  last_consumes_right=0;
+	  if(tok==TK_IDENT&&cc->hash_entry) {
+//Check for typecast 
+	    if(cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE)) {
+//
+	      // Heres the Donald Trump deal. If we have a (implicit) function call before a typecast 
+	      //  we will first call the function,it makes no sense to typecast a function
+	      //
+	      ic_fun=cc->ps->stk3[cc->ps->ptr3](CRPN*)->ic_class;
+	      if(!ic_fun->ptr_stars_cnt) {
+	        arity=ImplicitFunCall(cc,cc->coc.coc_head.next(CRPN*)->ic_class);
+	        RPNAddNew(
+		      cc,
+		      IC_CALL_INDIRECT,
+		      arity+1,
+		      ic_fun->return_class
+		      );
+	      }
 typecast:
-            tmpc=cc->hash_entry;
-            //TODO release tmpad
-            Lex(cc);
-            mode=PRS0_TYPECAST|PRS1_NULL;
-            tmpc=PrsType(cc,&tmpc,&mode,NULL,NULL,&ic_fun,NULL,&tmpad,0);
-            if(ic_fun) //ic_funs are extensions of CHashClass
-              tmpc=ic_fun;
-            rpn=RPNAddNew(cc,IC_HOLYC_TYPECAST,tmpc,tmpc);
-            rpn->ic_dim=tmpad.next;
-            if(cc->token!=')') {
-              LexExcept(cc,"Expected a ')'.");
-            } else
-              Lex(cc);
-            goto end_paren;
-          }
-        }
-        ic_fun=AssignRawTypeToNode(cc->coc.coc_head.next);
-        if(ic_fun->ptr_stars_cnt)
-          ic_fun=DerefType(ic_fun);
-        if(!(ic_fun->type&HTT_FUN)) {
-          LexExcept(cc,"Invalid type to call at ");
-        }
-        mlst=ic_fun->member_lst_and_root;
-        arity=0;
-        for(idx=0;idx!=ic_fun->arg_cnt;idx++) {
-          if(mlst->flags&MLF_DOT_DOT_DOT) goto vargs;
-          if(cc->token==',') {
-            if(mlst->flags&MLF_LASTCLASS) {
-              while(last_c->ptr_stars_cnt)
-                last_c=DerefType(last_c);
-              misc=COCMiscNew(cc,CMT_STR_CONST);
-              cc->flags|=CCF_HAS_MISC_DATA;
-              misc->str=StrNew(last_c->str);
-              misc->st_len=StrLen(last_c->str)+1;
-              RPNAddNew(
-                  cc,
-                  IC_STR_CONST,
-                  misc,
-                  last_c=cmp.internal_types[RT_U8]+1
-                );
-              arity++;
-            } else if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
-              last_c=mlst->member_class;
-              if(mlst->member_class->raw_type==RT_F64) {
-                RPNAddNew(
-                  cc,
-                  IC_IMM_F64,
-                  mlst->dft_val,
-                  cmp.internal_types[RT_F64]
-                );
-                arity++;
-              } else {
-                RPNAddNew(
-                  cc,
-                  IC_IMM_I64,
-                  mlst->dft_val,
-                  cmp.internal_types[RT_I64]
-                );
-                arity++;
-              }
-            } else
-              LexExcept(cc,"Missing dft argument at:");
-            Lex(cc);
-          } else if(cc->token!=')') {
-            if(!PrsExpression(cc,,PEF_NO_COMMA))
-              LexExcept(cc,"Expected a function argument at:");
-            PrsPush3(cc->ps,cc->coc.coc_head.next);
-            arity++;
-            rpn=cc->coc.coc_head.next;
-            last_c=rpn->ic_class;
-            if(rpn->ic_class->raw_type==RT_F64&&mlst->member_class->raw_type!=RT_F64) {
-              RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
-            } else if(rpn->ic_class->raw_type!=RT_F64&&mlst->member_class->raw_type==RT_F64) {
-              RPNAddNew(cc,IC_TO_F64,,cmp.internal_types[RT_F64],TRUE);
-            }
-            if(cc->token==',') {
-              Lex(cc);
-            }
-            else if(cc->token==')') {
-              goto end_call;
-            } else
-              LexExcept(cc,"Expected a ')'.");
-          } else {
+	      tmpc=cc->hash_entry;
+//TODO release tmpad
+	      Lex(cc);
+	      mode=PRS0_TYPECAST|PRS1_NULL;
+	      tmpc=PrsType(cc,&tmpc,&mode,NULL,NULL,&ic_fun,NULL,&tmpad,0);
+	      if(ic_fun) //ic_funs are extensions of CHashClass
+	        tmpc=ic_fun;
+	      rpn=RPNAddNew(cc,IC_HOLYC_TYPECAST,tmpc,tmpc);
+	      rpn->ic_dim=tmpad.next;
+	      if(cc->token!=')') {
+	        LexExcept(cc,"Expected a ')'.");
+	      } else
+	        Lex(cc);
+	      goto end_paren;
+	    }
+	  }
+	  ic_fun=AssignRawTypeToNode(cc->coc.coc_head.next);
+	  if(ic_fun->ptr_stars_cnt)
+	    ic_fun=DerefType(ic_fun);
+	  if(!(ic_fun->type&HTT_FUN)) {
+	    LexExcept(cc,"Invalid type to call at ");
+	  }
+	  mlst=ic_fun->member_lst_and_root;
+	  arity=0;
+	  for(idx=0;idx!=ic_fun->arg_cnt;idx++) {
+	    if(mlst->flags&MLF_DOT_DOT_DOT) goto vargs;
+	    if(cc->token==',') {
+	      if(mlst->flags&MLF_LASTCLASS) {
+	        while(last_c->ptr_stars_cnt)
+		  last_c=DerefType(last_c);
+	        misc=COCMiscNew(cc,CMT_STR_CONST);
+	        cc->flags|=CCF_HAS_MISC_DATA;
+	        misc->str=StrNew(last_c->str);
+	        misc->st_len=StrLen(last_c->str)+1;
+	        RPNAddNew(
+		      cc,
+		      IC_STR_CONST,
+		      misc,
+		      last_c=cmp.internal_types[RT_U8]+1
+		      );
+	        arity++;
+	      } else if(mlst->flags&(MLF_DFT_AVAILABLE|MLF_STR_DFT_AVAILABLE)) {
+	        last_c=mlst->member_class;
+	        if(mlst->member_class->raw_type==RT_F64) {
+		  RPNAddNew(
+		        cc,
+		        IC_IMM_F64,
+		        mlst->dft_val,
+		        cmp.internal_types[RT_F64]
+		        );
+		  arity++;
+	        } else {
+		  RPNAddNew(
+		        cc,
+		        IC_IMM_I64,
+		        mlst->dft_val,
+		        cmp.internal_types[RT_I64]
+		        );
+		  arity++;
+	        }
+	      } else
+	        LexExcept(cc,"Missing dft argument at:");
+	      Lex(cc);
+	    } else if(cc->token!=')') {
+	      if(!PrsExpression(cc,,PEF_NO_COMMA))
+	        LexExcept(cc,"Expected a function argument at:");
+	      PrsPush3(cc->ps,cc->coc.coc_head.next);
+	      arity++;
+	      rpn=cc->coc.coc_head.next;
+	      last_c=rpn->ic_class;
+	      if(rpn->ic_class->raw_type==RT_F64&&mlst->member_class->raw_type!=RT_F64) {
+	        RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
+	      } else if(rpn->ic_class->raw_type!=RT_F64&&mlst->member_class->raw_type==RT_F64) {
+	        RPNAddNew(cc,IC_TO_F64,,cmp.internal_types[RT_F64],TRUE);
+	      }
+	      if(cc->token==',') {
+	        Lex(cc);
+	      }
+	      else if(cc->token==')') {
+	        goto end_call;
+	      } else
+	        LexExcept(cc,"Expected a ')'.");
+	    } else {
 end_call:
-            break;
-          }
-          mlst=mlst->next;
-        }
-        arity=ImplicitFunCall(cc,ic_fun,arity);
+	      break;
+	    }
+	    mlst=mlst->next;
+	  }
+	  arity=ImplicitFunCall(cc,ic_fun,arity);
 vargs:
-        if(Bt(&ic_fun->flags,Ff_DOT_DOT_DOT)) {
-          arity+=2;
-          argc=RPNAddNew(cc,IC_IMM_I64,0);
-          idx=0;
-          while(cc->token!=')') {
-            if(PrsExpression(cc,NULL,PEF_NO_COMMA)) {
-              PrsPush3(cc->ps,cc->coc.coc_head.next);
-              idx++;
-            }
-            if(cc->token==',')
-              Lex(cc);
-            else if(cc->token==')') {
-              break;
-            } else
-              LexExcept(cc,"Expected a ')'.");
-          }
-          argv=RPNAddNew(cc,IC_VARGS,idx);
-          argc->ic_data=idx;
-        }
-        if(cc->token!=')')
-          LexExcept(cc,"Expected a ')'.");
-        Lex(cc);
-        arity++; //Include the function in the arity
-        //Check for _intern functions 
-        if(!(ic_fun->flags&(1<<Ff_INTERNAL))) {
-			RPNAddNew(
-			  cc,
-			  IC_CALL_INDIRECT,
-			  arity,
-			  ic_fun->return_class
-			);
+	  if(Bt(&ic_fun->flags,Ff_DOT_DOT_DOT)) {
+	    arity+=2;
+	    argc=RPNAddNew(cc,IC_IMM_I64,0);
+	    idx=0;
+	    while(cc->token!=')') {
+	      if(PrsExpression(cc,NULL,PEF_NO_COMMA)) {
+	        PrsPush3(cc->ps,cc->coc.coc_head.next);
+	        idx++;
+	      }
+	      if(cc->token==',')
+	        Lex(cc);
+	      else if(cc->token==')') {
+	        break;
+	      } else
+	        LexExcept(cc,"Expected a ')'.");
+	    }
+	    argv=RPNAddNew(cc,IC_VARGS,idx);
+	    argc->ic_data=idx;
+	  }
+	  if(cc->token!=')')
+	    LexExcept(cc,"Expected a ')'.");
+	  Lex(cc);
+	  arity++; //Include the function in the arity
+//Check for _intern functions 
+	  if(!(ic_fun->flags&(1<<Ff_INTERNAL))) {
+	    RPNAddNew(
+		  cc,
+		  IC_CALL_INDIRECT,
+		  arity,
+		  ic_fun->return_class
+		  );
+	  } else {
+	    arity--;
+	    RPNDel(next); //Remove function
+	    RPNAddNew(
+		  cc,
+		  ic_fun->exe_addr,
+		  arity,
+		  ic_fun->return_class
+		  );
+	  }
         } else {
-          arity--;
-          RPNDel(next); //Remove function
-          RPNAddNew(
-			  cc,
-			  ic_fun->exe_addr,
-			  arity,
-			  ic_fun->return_class
-			);
-		}
-      } else {
-        if(tok==TK_IDENT&&cc->hash_entry) {
-          if(cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE))
-            goto typecast;
+	  if(tok==TK_IDENT&&cc->hash_entry) {
+	    if(cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE))
+	      goto typecast;
+	  }
+	  cur_prec=PREC_NULL<<32;
+	  PrsPush(cc->ps,cur_prec);
+	  PrsPush2(cc->ps,NULL);
+	  last_consumes_right=1;
         }
-        cur_prec=PREC_NULL<<32;
-        PrsPush(cc->ps,cur_prec);
+end_paren:
+        break;case ')':
+        last_consumes_right=0;
+//PrsPush starts at 1,and top is ->ptr
+        for(idx=1;idx<=cc->ps->ptr;idx++) {
+	  if(cc->ps->stk[idx].u32[1]==PREC_NULL) {
+	    goto found_end_paren;
+	  }
+        }
+//LexExcept(cc,"Unexpected ')'.");
+        finish=TRUE;
+        goto paren_unexp;
+found_end_paren:;
+        Lex(cc);
+        PushOpers(cc,PREC_NULL<<32);
+//PushOpers doesnt POP parens
+        PrsPop(cc->ps);
+        PrsPop2(cc->ps);
+        next=cc->coc.coc_head.next;
+        if(next->ic_class->type&HTT_FUN) {
+	  flags|=PEF_FUN_BEFORE;
+        } else
+	  flags&=~PEF_FUN_BEFORE;
+paren_unexp:;
+        break;case '[':
+	if(cc->flags&CCF_ASM_EXPRESSIONS) {
+	  finish=TRUE;
+	  break;
+	}
+        Lex(cc);
+        PrsPush(cc->ps,(PREC_NULL<<32)|'[]');
         PrsPush2(cc->ps,NULL);
         last_consumes_right=1;
-      }
-end_paren:
-      break;case ')':
-      last_consumes_right=0;
-      //PrsPush starts at 1,and top is ->ptr
-      for(idx=1;idx<=cc->ps->ptr;idx++) {
-        if(cc->ps->stk[idx].u32[1]==PREC_NULL) {
-          goto found_end_paren;
+        break;case ']':
+//PrsPush starts at 1,and top is ->ptr
+        for(idx=1;idx<=cc->ps->ptr;idx++) {
+	  if(cc->ps->stk[idx]==(PREC_NULL<<32)|'[]') {
+	    goto found_end_square;
+	  }
         }
-      }
-      //LexExcept(cc,"Unexpected ')'.");
-      finish=TRUE;
-      goto paren_unexp;
-found_end_paren:;
-      Lex(cc);
-      PushOpers(cc,PREC_NULL<<32);
-      //PushOpers doesnt POP parens
-      PrsPop(cc->ps);
-      PrsPop2(cc->ps);
-      next=cc->coc.coc_head.next;
-      if(next->ic_class->type&HTT_FUN) {
-        flags|=PEF_FUN_BEFORE;
-      } else
-        flags&=~PEF_FUN_BEFORE;
-paren_unexp:;
-      break;case '[':
-      Lex(cc);
-      PrsPush(cc->ps,(PREC_NULL<<32)|'[]');
-      PrsPush2(cc->ps,NULL);
-      last_consumes_right=1;
-      break;case ']':
-      //PrsPush starts at 1,and top is ->ptr
-      for(idx=1;idx<=cc->ps->ptr;idx++) {
-        if(cc->ps->stk[idx]==(PREC_NULL<<32)|'[]') {
-          goto found_end_square;
-        }
-      }
-      finish=TRUE;
-      goto paren_unexp;
+        finish=TRUE;
+        goto paren_unexp;
 found_end_square:
-      //[] doesnt pop the (PREC_NULL<<32)|'[]'
-      PushOpers(cc,PREC_NULL);
-      PrsPop(cc->ps);
-      PrsPop2(cc->ps);
-      Lex(cc);
-      next=cc->coc.coc_head.next;
-      if(next->ic_class->raw_type==RT_F64)
-        RPNAddNew(cc,IC_TO_I64);
-      RPNAddNew(cc,IC_ADD);
-      RPNAddNew(cc,IC_DEREF);
-      last_consumes_right=0;
-      next=cc->coc.coc_head.next;
-      if(next->ic_class->type&HTT_FUN) {
-        flags|=PEF_FUN_BEFORE;
-      } else
-        flags&=~PEF_FUN_BEFORE;
-      break;start:
-        if(!last_consumes_right)
-          finish=TRUE;
-        case TK_STR:
-        if(finish) break;
-        cc->flags|=CCF_HAS_MISC_DATA;
-        misc=COCMiscNew(cc,CMT_STR_CONST);
-        misc->str=LexExtStr(cc,&str_len);
-        misc->st_len=str_len;
-        RPNAddNew(cc,IC_STR_CONST,misc);
-        last_consumes_right=0;
-        break;case TK_INS_BIN:
-        if(finish) break;
-        cc->flags|=CCF_HAS_MISC_DATA;
-        misc=COCMiscNew(cc,CMT_STR_CONST);
-        misc->st_len=cc->cur_str_len;
-        misc->str=MAlloc(misc->st_len+1);
-        MemCpy(misc->str,cc->cur_str,cc->cur_str_len);
-        RPNAddNew(cc,IC_STR_CONST,misc);
-        last_consumes_right=0;
+//[] doesnt pop the (PREC_NULL<<32)|'[]'
+        PushOpers(cc,PREC_NULL);
+        PrsPop(cc->ps);
+        PrsPop2(cc->ps);
         Lex(cc);
-        break;case TK_CHAR_CONST:
-        if(finish) break;
-        RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+        next=cc->coc.coc_head.next;
+        if(next->ic_class->raw_type==RT_F64)
+	  RPNAddNew(cc,IC_TO_I64);
+        RPNAddNew(cc,IC_ADD);
+        RPNAddNew(cc,IC_DEREF);
         last_consumes_right=0;
-        Lex(cc);
-        break;case TK_I64:
-        if(finish) break;
-        RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
-        last_consumes_right=0;
-        Lex(cc);
-        break;case TK_F64:
-        if(finish) break;
-        RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64));
-        last_consumes_right=0;
-        Lex(cc);
-        break;case TK_IDENT:
-        if(finish) break;
-        last_consumes_right=0;
-        if(cc->local_var_entry) {
-          if(cc->local_var_entry->flags&MLF_STATIC) {
-            rpn=RPNAddNew(cc,IC_STATIC,
-              cc->local_var_entry->static_data,
-              cc->local_var_entry->member_class
-            );
-          } else {
-            rpn=RPNAddNew(cc,IC_FRAME,
-              cc->local_var_entry->offset,
-              cc->local_var_entry->member_class
-            );
-          }
-          if(cc->local_var_entry->flags&MLF_FUN) {
-            //TempleOS stores Function claass in ->fun_ptr for some reason(when MLF_FUN is set) 
-            rpn->ic_class=cc->local_var_entry->fun_ptr;
-          }
-          rpn->ic_dim=cc->local_var_entry->dim.next;
-          Lex(cc);
-        } else if(cc->hash_entry) {
-          if(cc->hash_entry->type&HTT_FUN) {
-            if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
-              rpn=RPNAddNew(
-                cc,
-                IC_ADDR_IMPORT,
-                CodeMiscHashNew(cc,cc->hash_entry),
-                cc->hash_entry,
-              );
-            else
-              rpn=RPNAddNew(
-                cc,
-                IC_IMM_I64,
-                cc->hash_entry(CHashFun*)->exe_addr,
-                cc->hash_entry,
-              );
-            ic_fun=cc->hash_entry;
-            Lex(cc);
-            if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
-              //Continue as usual
-              rpn->ic_class=AddrOfType(rpn->ic_class); //Emulate a pointer star
-              PrsPop(cc->ps);
-              Free(PrsPop2(cc->ps)); //Free node
-            } else if(cc->token!='(') {
-              //Is an implicit function call
-              arity=ImplicitFunCall(cc,ic_fun,0);
-              if(ic_fun->flags&(1<<Ff_DOT_DOT_DOT)) {
-                RPNAddNew(cc,IC_IMM_I64,0); //Add argc,argv not needed
-                arity++;
-              }
-              arity++;//Include function
-              RPNAddNew(
-                cc,
-                IC_CALL_INDIRECT,
-                arity,
-                ic_fun->return_class
-              );
-              goto fin_ident;
-            }
-          } else if(cc->hash_entry->type&HTT_GLBL_VAR) {
-            if(cc->hash_entry(CHashGlblVar*)->data_addr&&!(cc->flags&CCF_AOT_COMPILE)) {
-              rpn=RPNAddNew(
-                cc,
-                IC_IMM_I64,
-                cc->hash_entry(CHashGlblVar*)->data_addr,
-                cmp.internal_types[RT_I64],
-              );
-            } else {
-              rpn=RPNAddNew(
-                cc,
-                IC_ADDR_IMPORT,
-                CodeMiscHashNew(cc,cc->hash_entry),
-                cc->hash_entry(CHashGlblVar*)->var_class,
-              );
-            }
-            if(cc->hash_entry(CHashGlblVar*)->fun_ptr) {
-              rpn=RPNAddNew(
-                cc,
-                IC_DEREF,
-                0,
-                cc->hash_entry(CHashGlblVar*)->fun_ptr,
-              );
-            } else {
-              rpn=RPNAddNew(
-                cc,
-                IC_DEREF,
-                0,
-                cc->hash_entry(CHashGlblVar*)->var_class,
-              );
-            }
-            rpn->ic_dim=cc->hash_entry(CHashGlblVar*)->dim.next;
-            Lex(cc);
-          } else if(cc->hash_entry->type&HTT_KEYWORD) {
-            switch(cc->hash_entry(CHashGeneric *)->user_data0) {
-              break;case KW_SIZEOF:
-              idx=0;
-              while (Lex(cc)=='(')
-                idx++;
-              PrsSizeOf(cc);
-              while (idx--) {
-                if (cc->token!=')')
-                  LexExcept(cc,"Missing ')' at ");
-                Lex(cc);
-              }
-              break;case KW_OFFSET:
-              idx=0;
-              while (Lex(cc)=='(')
-                idx++;
-              PrsOffsetOf(cc);
-              while (idx--) {
-                if (cc->token!=')')
-                  LexExcept(cc,"Missing ')' at ");
-                Lex(cc);
-              }
-              break;default:
-                LexExcept(cc,"Unexpected keyword at: ");
-            }
-          } else {
-            LexExcept(cc,"Unknown symbol at ");
-          }
-        } else
-            LexExcept(cc,"Unknown symbol at ");
-        rpn=cc->coc.coc_head.next;
-        if(ic_dim=rpn->ic_dim) {
-          RPNAddNew(cc,IC_ADDR,,,TRUE);
-          //IC_ADDR of IC_DEREF will cancel each other out,so re-assign the dim
-          rpn=cc->coc.coc_head.next;
-          rpn->ic_dim=ic_dim;
-        }
-fin_ident:
-		next=cc->coc.coc_head.next;
+        next=cc->coc.coc_head.next;
         if(next->ic_class->type&HTT_FUN) {
-          flags|=PEF_FUN_BEFORE;
+	  flags|=PEF_FUN_BEFORE;
         } else
-          flags&=~PEF_FUN_BEFORE;
-      break;end:
+	  flags&=~PEF_FUN_BEFORE;
+        break;start:
+        if(!last_consumes_right)
+	  finish=TRUE;
+        case TK_STR:
+	  if(finish) break;
+	  cc->flags|=CCF_HAS_MISC_DATA;
+	  misc=COCMiscNew(cc,CMT_STR_CONST);
+	  misc->str=LexExtStr(cc,&str_len);
+	  misc->st_len=str_len;
+	  RPNAddNew(cc,IC_STR_CONST,misc);
+	  last_consumes_right=0;
+	  break;case TK_INS_BIN:
+	  if(finish) break;
+	  cc->flags|=CCF_HAS_MISC_DATA;
+	  misc=COCMiscNew(cc,CMT_STR_CONST);
+	  misc->st_len=cc->cur_str_len;
+	  misc->str=MAlloc(misc->st_len+1);
+	  MemCpy(misc->str,cc->cur_str,cc->cur_str_len);
+	  RPNAddNew(cc,IC_STR_CONST,misc);
+	  last_consumes_right=0;
+	  Lex(cc);
+	  break;case TK_CHAR_CONST:
+	  if(finish) break;
+	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+	  last_consumes_right=0;
+	  Lex(cc);
+	  break;case TK_I64:
+	  if(finish) break;
+	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+	  last_consumes_right=0;
+	  Lex(cc);
+	  break;case TK_F64:
+	  if(finish) break;
+	  RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64));
+	  last_consumes_right=0;
+	  Lex(cc);
+	  break;case TK_IDENT:
+	  if(finish) break;
+	  last_consumes_right=0;
+	  if(cc->flags&CCF_ASM_EXPRESSIONS) {
+	    if(cc->local_var_entry) {
+	      if(cc->flags&PEF_ADDR_OF) {
+	        PrsPop(cc->ps);
+	        RPNDel(PrsPop2(cc->ps));
+	      } else
+	        LexExcept(cc,"Expected a '&' here.");
+	      RPNAddNew(cc,IC_IMM_I64,cc->local_var_entry->offset);
+	      goto fin_ident;
+	    } else if(!cc->hash_entry) {
+new:
+	      tmpex=CAlloc(sizeof(CHashExport));
+	      tmpex->str=StrNew(cc->cur_str);
+	      if (*tmpex->str=='@' && tmpex->str[1]=='@') {
+	        tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED | HTF_LOCAL;
+	        //
+		//Nroot here,I turn local labels into scope.@@local
+		//
+		Free(tmpex->str);
+		tmpex->str=MStrPrint("%d.%s",cc->asm_local_scope,cc->cur_str);
+	        //HashAdd(tmpex,cc->htc.local_hash_table);
+	        cc->flags|=CCF_LOCAL;
+	        goto ins_label;
+	      } else {
+	        tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
+ins_label:
+		tmpc=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_EXPORT_SYS_SYM);
+	        if (tmpc)
+		  HashAddAfter(tmpex,tmpc,cc->htc.glbl_hash_table);
+	        else
+		  HashAdd(tmpex,cc->htc.glbl_hash_table);
+	      }
+	      cc->flags|=CCF_UNRESOLVED;
+	      rpn=RPNAddNew(
+		    cc,
+		    IC_ADDR_IMPORT,
+		    CodeMiscHashNew(cc,tmpex),
+		    cmp.internal_types[RT_I64],
+		    );
+	      Lex(cc);
+	      tmpauh=CAlloc(sizeof CAsmUndefHash);
+	      tmpauh->hash=tmpex;
+	      tmpauh->next=cc->asm_undef_hash;
+	      cc->asm_undef_hash=tmpauh;
+	      goto fin_ident;
+	    } else if(cc->hash_entry->type&HTT_EXPORT_SYS_SYM&&cc->hash_entry->type&HTF_RESOLVE) {
+	      rpn=RPNAddNew(
+		    cc,
+		    IC_ADDR_IMPORT,
+		    CodeMiscHashNew(cc,cc->hash_entry),
+		    cmp.internal_types[RT_I64],
+		    );
+	      Lex(cc);
+	      goto fin_ident;
+	    } else if(cc->hash_entry->type&HTT_EXPORT_SYS_SYM) {
+	      goto new;
+	    }
+	  }
+	  if(cc->local_var_entry) {
+	    if(cc->local_var_entry->flags&MLF_STATIC) {
+	      rpn=RPNAddNew(cc,IC_STATIC,
+		    cc->local_var_entry->static_data,
+		    cc->local_var_entry->member_class
+		    );
+	    } else {
+	      rpn=RPNAddNew(cc,IC_FRAME,
+		    cc->local_var_entry->offset,
+		    cc->local_var_entry->member_class
+		    );
+	    }
+	    if(cc->local_var_entry->flags&MLF_FUN) {
+//TempleOS stores Function claass in ->fun_ptr for some reason(when MLF_FUN is set) 
+	      rpn->ic_class=cc->local_var_entry->fun_ptr;
+	    }
+	    rpn->ic_dim=cc->local_var_entry->dim.next;
+	    Lex(cc);
+	  } else if(cc->hash_entry) {
+	    if(cc->hash_entry->type&HTT_OPCODE||cc->hash_entry->type&HTT_REG) {
+	      finish=TRUE;
+	      goto fin_ident;
+	    }
+	    if(cc->hash_entry->type&HTT_FUN) {
+	      if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_ADDR_IMPORT,
+		      CodeMiscHashNew(cc,cc->hash_entry),
+		      cc->hash_entry,
+		      );
+	      else
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_IMM_I64,
+		      cc->hash_entry(CHashFun*)->exe_addr,
+		      cc->hash_entry,
+		      );
+	      ic_fun=cc->hash_entry;
+	      Lex(cc);
+	      if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
+//Continue as usual
+	        rpn->ic_class=AddrOfType(rpn->ic_class); //Emulate a pointer star
+	        PrsPop(cc->ps);
+	        Free(PrsPop2(cc->ps)); //Free node
+	      } else if(cc->token!='(') {
+//Is an implicit function call
+	        arity=ImplicitFunCall(cc,ic_fun,0);
+	        if(ic_fun->flags&(1<<Ff_DOT_DOT_DOT)) {
+		  RPNAddNew(cc,IC_IMM_I64,0); //Add argc,argv not needed
+		  arity++;
+	        }
+	        arity++;//Include function
+	        RPNAddNew(
+		      cc,
+		      IC_CALL_INDIRECT,
+		      arity,
+		      ic_fun->return_class
+		      );
+	        goto fin_ident;
+	      }
+	    } else if(cc->hash_entry->type&HTT_GLBL_VAR) {
+	      if(cc->hash_entry(CHashGlblVar*)->data_addr&&!(cc->flags&CCF_AOT_COMPILE)) {
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_IMM_I64,
+		      cc->hash_entry(CHashGlblVar*)->data_addr,
+		      cmp.internal_types[RT_I64],
+		      );
+	      } else {
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_ADDR_IMPORT,
+		      CodeMiscHashNew(cc,cc->hash_entry),
+		      cc->hash_entry(CHashGlblVar*)->var_class,
+		      );
+	      }
+	      if(cc->hash_entry(CHashGlblVar*)->fun_ptr) {
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_DEREF,
+		      0,
+		      cc->hash_entry(CHashGlblVar*)->fun_ptr,
+		      );
+	      } else {
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_DEREF,
+		      0,
+		      cc->hash_entry(CHashGlblVar*)->var_class,
+		      );
+	      }
+	      rpn->ic_dim=cc->hash_entry(CHashGlblVar*)->dim.next;
+	      Lex(cc);
+	    } else if(cc->hash_entry->type&HTT_KEYWORD) {
+	      switch(cc->hash_entry(CHashGeneric *)->user_data0) {
+		  break;case KW_SIZEOF:
+		  idx=0;
+		  while (Lex(cc)=='(')
+		    idx++;
+		  PrsSizeOf(cc);
+		  while (idx--) {
+		    if (cc->token!=')')
+		      LexExcept(cc,"Missing ')' at ");
+		    Lex(cc);
+		  }
+		  break;case KW_OFFSET:
+		  idx=0;
+		  while (Lex(cc)=='(')
+		    idx++;
+		  PrsOffsetOf(cc);
+		  while (idx--) {
+		    if (cc->token!=')')
+		      LexExcept(cc,"Missing ')' at ");
+		    Lex(cc);
+		  }
+		  break;default:
+		  LexExcept(cc,"Unexpected keyword at: ");
+	      }
+	    } else {
+	      LexExcept(cc,"Unknown symbol at ");
+	    }
+	  } else
+	    LexExcept(cc,"Unknown symbol at ");
+	  rpn=cc->coc.coc_head.next;
+	  if(ic_dim=rpn->ic_dim) {
+	    RPNAddNew(cc,IC_ADDR,,,TRUE);
+//IC_ADDR of IC_DEREF will cancel each other out,so re-assign the dim
+	    rpn=cc->coc.coc_head.next;
+	    rpn->ic_dim=ic_dim;
+	  }
+fin_ident:
+	  next=cc->coc.coc_head.next;
+	  if(next!=&cc->coc.coc_head&&next->ic_class->type&HTT_FUN) {
+	    flags|=PEF_FUN_BEFORE;
+	  } else
+	    flags&=~PEF_FUN_BEFORE;
+	  break;end:
         flags&=~PEF_ADDR_OF;
-      break;default:
-      goto fin;
+        break;default:
+        goto fin;
     }
   }
 fin:
