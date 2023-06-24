@@ -114,6 +114,17 @@ else()
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m pthread)
 endif()
 
+#Build HCRT2.BIN
+set_target_properties(${PROJ_NAME}
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+add_custom_target(
+	"HCRT2.BIN"
+	ALL
+	COMMAND aiwnios -b
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
+)
 #
 # Install section
 #

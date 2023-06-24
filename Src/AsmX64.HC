@@ -28,6 +28,14 @@ class CX86AddrMode {
   CAsmUndefHash *glbl_asm_undef_hash;
   I64 (*machine_code)();
 };
+U0 X86AddrModeDel(CX86AddrMode *md) {
+  if(md->local_asm_undef_hash)
+    LinkedLstDel(md->local_asm_undef_hash);
+  if(md->glbl_asm_undef_hash)
+    LinkedLstDel(md->glbl_asm_undef_hash);
+  Free(md->machine_code);
+  Free(md);
+}
 class CAsmPatch:CQue  {
   CX86AddrMode *imm;
   I64 sz;
@@ -1015,6 +1023,7 @@ rex|=0x40;
 	  len+=EncodeSib(to,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
 	        indir_mode->off,&patch->sz);
 	  patch->rip=rip+len-patch->sz;
+	  MemSet(modes[indir_mode_idx],0,sizeof(CX86AddrMode));  //"Steal" the machine code by NULLing
         }
       } else {
         len+=EncodeSib(to+len,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
@@ -1056,6 +1065,7 @@ rex|=0x40;
 	        patch->sz=sz;
 	        MemCpy(patch->imm,modes[a],sizeof CX86AddrMode);
 	        QueIns(patch,asm_patches);
+ 	        MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
 	      }
 	      len+=sz;
 	    } else {
@@ -1102,6 +1112,7 @@ rex|=0x40;
 	  patch->sz=rel_sz;
 	  MemCpy(patch->imm,modes[a],sizeof CX86AddrMode);
 	  QueIns(patch,asm_patches);
+          MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
 	  len+=rel_sz;
         } else {
 	  len+=rel_sz;
@@ -1119,6 +1130,7 @@ rex|=0x40;
 	  patch->sz=8;
 	  MemCpy(patch->imm,indir_mode,sizeof CX86AddrMode);
 	  QueIns(patch,asm_patches);
+	  MemSet(indir_mode,0,sizeof(CX86AddrMode));  //"Steal" the machine code by NULLing
 	  len+=8;
         } else {
 	  to[len](I64)=indir_mode->off;
@@ -1178,7 +1190,9 @@ nxt:
 }
 U8 *PrsAsmBlk(CCmpCtrl *cc) {
   if(cc->flags&CCF_AOT_COMPILE)
-    LexExcept(cc,"AOT assembler not implemented yet");
+    LexExcept(cc,"AOT assembler not implemented yet");
+  if(cc->htc.fun)
+    LexExcept(cc,"asm blocks in functions not implemented yet.");
   Bool one_ins=TRUE;
   if(cc->token==TK_IDENT&&cc->hash_entry&&!StrCmp(cc->hash_entry->str,"asm")) {
     if(Lex(cc)!='{')
@@ -1333,6 +1347,12 @@ duxx:
     Free(buf);
     LexExcept(cc,"Expected a '}' at ");
   }
+  for(idx=0;idx!=4;idx++) {
+    if(modes[idx]) {
+      X86AddrModeDel(modes[idx]);
+      modes[idx]=NULL;
+    }
+  }
   if(!one_ins) {
     if(cc->token!='}')
       goto enter;
@@ -1401,9 +1421,8 @@ U8 *AsmTest() {
 
 //Mirrors http://ref.x86asm.net/coder64-abc.html
 "asm {\n"
-"NOTHING0::"
+/*"NOTHING0::"
 "MOV RBX,[RAX]\n"
-/*
 "NOTHING::\n"
 "ADC U8 [RAX],AL\n"
 "ADC U16 [RAX],AX\n"
