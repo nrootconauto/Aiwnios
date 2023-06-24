@@ -286,7 +286,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CAOTImportExport *tmpaie;
   CAOTAbsAddr *tmpabs;
   CAddShortRelocData fill_user_data;
-  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
+  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
@@ -671,6 +671,20 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           h(CHashFun*)->exe_addr
         );
       }
+    } else if(!(h->type&HTF_RESOLVE)) {
+        new=__HC_ICAdd_Reloc(
+            acc,
+            cc2,
+            &cur ->ic_data(CCodeMisc*)->addr,
+            h->str,
+            RT_U8,
+            1
+          );
+    } else {
+        new=__HC_ICAdd_I64(
+          cc2,
+          h(CHashExport*)->val
+	);
     }
     if(cc->flags&CCF_AOT_COMPILE) {
       if(h->type&HTT_GLBL_VAR&&h->type&HTF_EXPORT) {

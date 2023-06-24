@@ -1023,8 +1023,11 @@ Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,
 		  goto sm_not_keyword_afterall;
 		start:
 		  case KW_ASM:
-      /* TODO NO-RESTORE (asm)
-		    if (cc->htc.fun) {
+//TODO gutted by nrootconauto in favor of his own assembler,I will do some investigation here
+#ifdef TARGET_X86
+		    PrsAsmBlk(cc);
+#endif
+/*		    if (cc->htc.fun) {
 		      if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
 			ICAdd(cc,IC_ASM,tmpaot,0);
 		      Lex(cc); //Skip '}' of asm{}
@@ -1040,8 +1043,7 @@ Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,
 			Lex(cc); //Skip '}' of asm{}
 		      }
 		      fsp_flags=FSF_ASM;
-		    }
-      */
+		    }*/
 		    break;
 		  start:
         Lex(cc);

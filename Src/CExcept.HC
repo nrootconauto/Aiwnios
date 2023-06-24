@@ -62,7 +62,7 @@ U0 LexPutPos(CCmpCtrl *cc)
   LexPutLine(cc,cc->lex_include_stk->line_start);
 }
 
-U0 LexWarn(CCmpCtrl *cc,U8 *str=NULL)
+U0 LexWarn(CCmpCtrl *cc,U8 *str=NULL)
 {//Print warn msg, then, $LK,"LexPutPos",A="MN:LexPutPos"$().
   if (str) PrintWarn(str);
   if (cc->htc.fun) {

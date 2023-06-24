@@ -113,3 +113,50 @@ if(WIN32)
 else()
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m pthread)
 endif()
+
+#
+# Install section
+#
+set (CPACK_FREEBSD_PACKAGE_NAME "aiwnios")
+set (CPACK_FREEBSD_PACKAGE_COMMENT "A HolyC Compiler/Runtime for FreeBSD,Linux and Windows.")
+set (CPACK_FREEBSD_PACKAGE_DESCRIPTION "A HolyC Compiler/Runtime for FreeBSD,Linux and Windows.")
+set (CPACK_FREEBSD_PACKAGE_WWW "Coming soon!")
+set (CPACK_FREEBSD_PACKAGE_LICENSE "BSD-3 clause")
+set (CPACK_FREEBSD_PACKAGE_MAINTAINER "nrootconauto@gmail.com")
+set (CPACK_FREEBSD_PACKAGE_ORIGIN "devel/aiwnios")
+set (CPACK_FREEBSD_PACKAGE_DEPS "devel/sdl20")
+
+include (CPack)
+
+install (FILES aiwnios TYPE BIN)
+set(
+  TEMPLATE_FILES
+  HSNotes.DD
+  AfterEgypt
+  Doc
+  Apps
+  Src
+  Psalmody
+  Vocab.DD
+  PersonalMenu.DD
+  HCRT2.BIN
+  HCRT2.DBG.Z
+  Demo
+  Bible.TXT.Z
+  ACDefs.DATA
+  ACWords.DATA
+)
+foreach(F IN LISTS TEMPLATE_FILES)
+  if(IS_DIRECTORY ${F})
+    install(
+      DIRECTORY 
+      DESTINATION share/aiwnios
+    )
+  else()
+    install (
+      TARGETS
+      DESTINATION share/aiwnios
+    )
+  endif()
+endforeach()
+

@@ -114,7 +114,6 @@ U0 Yield() {
       if(Bt(&task->task_flags,TASKf_BREAK_TO_SHIFT_ESC)) {
         goto restore;
       }
-      TaskFocusNext();
       goto restore;
     }
   }
