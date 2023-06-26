@@ -1221,7 +1221,7 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
 	    exp=CAlloc(sizeof CHashExport);
 	    exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
 	    exp->str=StrNew(cur->hash->str);
-//Stack grows down,I should make the offsets be accordingly
+//Stack grows down,I should make the offsets be accordingly
 	    exp->val=-MemberFind(cur->hash->str+i+1,cc->htc.fun)->offset;
 	    HashAdd(exp,Fs->hash_table);
 	    SysSymImportsResolve(cur->hash->str,0);
@@ -1455,6 +1455,8 @@ duxx:
         }
         HashAdd(exp,cc->htc.glbl_hash_table);
     }
+  } else if(cc->token==';') {
+    Lex(cc);
   } else {
     QueDel(to_fill);
     Free(buf);
