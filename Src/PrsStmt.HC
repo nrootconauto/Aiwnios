@@ -1024,10 +1024,18 @@ CmpFixUpJITAsm(cc,tmpaot);
 	        start:
 		  case KW_ASM:
 //TODO gutted by nrootconauto in favor of his own assembler,I will do some investigation here
-		  #ifdef TARGET_X86
+#ifdef TARGET_X86
 		    if (tmpaot=PrsAsmBlk(cc)) {
+		      //If we are not in a function,we will jump past the assembly block
+		      // to avoid running it
+		      if(!cc->htc.fun) {
+		        g_lb=COCMiscNew(cc,CMT_LABEL);
+		        RPNAddNew(cc,IC_JMP,g_lb,NULL,FALSE);
+		      }
 		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
 		      cc->flags|=CCF_HAS_MISC_DATA;
+		      if(!cc->htc.fun)
+		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
 		    }
 #endif
 		    /*		    if (cc->htc.fun) {
