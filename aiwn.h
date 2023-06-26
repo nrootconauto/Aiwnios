@@ -550,6 +550,7 @@ enum {
 	IC_COS,
 	IC_TAN,
 	IC_ATAN,
+	IC_RAW_BYTES,
 	IC_CNT, //MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -610,6 +611,7 @@ struct CRPN {
 	CArrayDim* ic_dim;
 	union {
 		double flt;
+		char *raw_bytes;
 		int64_t integer;
 		char* string;
 		CMemberLst* local_mem;
@@ -1028,7 +1030,7 @@ CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc,int64_t r,int64_t rt,int64_t ptr_cnt);
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc,int64_t off,int64_t rt,int64_t ptr_cnt);
 CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp,CCodeMisc *labels,void **table_address,int64_t hi);
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp,char *str,int64_t sz);
-CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp);
+CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp,void **);
 CCmpCtrl *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
@@ -1138,3 +1140,4 @@ const char *ResolveBootDir(char *use,int overwrite,int make_new_dir);
 
 //Uses TempleOS ABI
 int64_t TempleOS_CallN(void (*fptr),int64_t argc,int64_t *argv);
+CRPN* __HC_ICAdd_RawBytes(CCodeCtrl* cc,char *bytes,int64_t cnt);

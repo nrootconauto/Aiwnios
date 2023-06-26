@@ -6,6 +6,7 @@
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
+import U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
@@ -64,12 +65,11 @@ import U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
 import U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 import U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 import U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
-import U8 *__HC_CodeMiscLabelNew(U8*);
+import U8 *__HC_CodeMiscLabelNew(U8*,U8**patch_addr=NULL);
 import U8 *__HC_CmpCtrlNew();
 import U8 *__HC_CodeCtrlPush(U8*);
 import U0 __HC_CodeCtrlPop(U8*);
 import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
-import U8 *__HC_CodeMiscLabelNew(U8 *);
 import U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 import U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 import U8 *__HC_ICAdd_Label(U8*,U8*);
@@ -95,6 +95,7 @@ import U8 * __HC_ICAdd_LBTR(U8*);
 import U8 * __HC_ICAdd_LBTS(U8*);
 import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 #else
+extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 extern U8 * __HC_ICAdd_ToF64(U8 *);
 extern U8 * __HC_ICAdd_ToI64(U8 *);
@@ -154,12 +155,12 @@ extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
 extern U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 extern U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 extern U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
-extern U8 *__HC_CodeMiscLabelNew(U8*);
+extern U8 *__HC_CodeMiscLabelNew(U8*,U8**);
 extern U8 *__HC_CmpCtrlNew();
 extern U8 *__HC_CodeCtrlPush(U8*);
 extern U0 __HC_CodeCtrlPop(U8*);
 extern U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
-extern U8 *__HC_CodeMiscLabelNew(U8 *);
+extern U8 *__HC_CodeMiscLabelNew(U8 *,U8 **patch_addr=NULL);
 extern U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 extern U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 extern U8 *__HC_ICAdd_Label(U8*,U8*);
@@ -286,7 +287,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CAOTImportExport *tmpaie;
   CAOTAbsAddr *tmpabs;
   CAddShortRelocData fill_user_data;
-  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
+  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
@@ -339,7 +340,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //Sort by score
     QSort(mv,member_cnt,sizeof(COptMemberVar),&OptMVCompare);
     for(idx=0;idx!=member_cnt;idx++) {
-      if(mv[idx].score&&!mv[idx].m->dim.next) {
+      if(mv[idx].m->reg!=REG_NONE&&mv[idx].score&&!mv[idx].m->dim.next) {
         if(mv[idx].m->member_class->raw_type==RT_F64) {
           if(AIWNIOS_FREG_START<=fr<AIWNIOS_FREG_START+AIWNIOS_FREG_CNT) {
             mv[idx].m->reg=fr++;
@@ -464,9 +465,9 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case CMT_HASH_ENTRY:
       //See spider thing for more notes 
     break;case CMT_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc);
+      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_GOTO_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc);
+      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_STR_CONST:
       misc->addr=__HC_CodeMiscStrNew(acc,misc->str,misc->st_len);
     //
@@ -600,7 +601,11 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_NOP2:
     break;case IC_LABEL:
       new=__HC_ICAdd_Label(cc2,cur->ic_data(CCodeMisc*)->addr);
-    //break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
+break;case IC_ASM:
+  __HC_ICAdd_Label(cc2,__HC_CodeMiscLabelNew(acc,&cur->ic_data(CAiwniosAOTBlob*)->final_start_addr));
+   new=__HC_ICAdd_RawBytes(cc2,cur->ic_data(CAiwniosAOTBlob*)->data,cur->ic_data(CAiwniosAOTBlob*)->len);
+            
+//break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
     //break;case IC_CALL_END:
     //break;case IC_CALL_END2:
     //break;case IC_RETURN_VAL:
@@ -926,6 +931,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         tmpabs->rip=cc->aotc->rip+((misc->addr2(U8*)+8*idx)-machine_code);
         cc->aotc->abss=tmpabs;	
       }
+    }
+  }
+
+  //
+  // For CAiwniosAOTBlob,Fill in the relocations
+  //
+  for(cur=head->last;cur!=head;cur=cur->last)  {
+    if(cur->type==IC_ASM) {
+//TODO AOT
+      JITFixupAiwniosAOTBlob(cc,cur->ic_data,cur->ic_data(CAiwniosAOTBlob*)->final_start_addr);
+      AiwniosAOTBlobDel(cur->ic_data);
     }
   }
   __HC_CmpCtrlDel(acc);

@@ -4104,7 +4104,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	CICArg tmp = { 0 }, orig_dst = { 0 }, tmp2 = { 0 }, derefed = { 0 };
 	int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse, is_typecast;
 	int64_t *range_cmp_types, use_flags = rpn->res.set_flags;
-	int64_t old_fail_misc = cctrl->backend_user_data5, old_pass_misc = cctrl->backend_user_data6;
+	CCodeMisc *old_fail_misc = (CCodeMisc*)cctrl->backend_user_data5, *old_pass_misc = (CCodeMisc*)cctrl->backend_user_data6;
 	cctrl->backend_user_data5 = 0;
 	cctrl->backend_user_data6 = 0;
 	rpn->res.set_flags = 0;
@@ -4113,7 +4113,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr, ***range_fail_addrs;
 	if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass && rpn->ic_line) { // Final run
 		if (MSize(cctrl->code_ctrl->dbg_info) / 8 > rpn->ic_line - cctrl->code_ctrl->min_ln) {
-			i = cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln];
+			i = (int64_t)(cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln]);
 			if (!i)
 				cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] = bin + code_off;
 			else if ((int64_t)bin + code_off < i)
@@ -4214,6 +4214,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		[IC_COS] = &&ic_cos,
 		[IC_TAN] = &&ic_tan,
 		[IC_ATAN] = &&ic_atan,
+		[IC_RAW_BYTES]= &&ic_raw_bytes,
 	};
 	if (!poop_ants[rpn->type])
 		goto ret;
@@ -4362,14 +4363,14 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				if (!rpn->code_misc2)
 					rpn->code_misc2 = CodeMiscNew(cctrl, CMT_LABEL);
 				if (!reverse) {
-					cctrl->backend_user_data5 = rpn->code_misc2;
-					cctrl->backend_user_data6 = rpn->code_misc;
+					cctrl->backend_user_data5 = (int64_t)rpn->code_misc2;
+					cctrl->backend_user_data6 = (int64_t)rpn->code_misc;
 					code_off = __OptPassFinal(cctrl, next, bin, code_off);
 					rpn->code_misc2->addr = bin + code_off;
 					goto ret;
 				} else {
-					cctrl->backend_user_data5 = rpn->code_misc;
-					cctrl->backend_user_data6 = rpn->code_misc2;
+					cctrl->backend_user_data5 = (int64_t)rpn->code_misc;
+					cctrl->backend_user_data6 = (int64_t)rpn->code_misc2;
 					code_off = __OptPassFinal(cctrl, next, bin, code_off);
 					rpn->code_misc2->addr = bin + code_off;
 					goto ret;
@@ -4381,14 +4382,14 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				if (!rpn->code_misc2)
 					rpn->code_misc2 = CodeMiscNew(cctrl, CMT_LABEL);
 				if (!reverse) {
-					cctrl->backend_user_data5 = rpn->code_misc2;
-					cctrl->backend_user_data6 = rpn->code_misc;
+					cctrl->backend_user_data5 = (int64_t)rpn->code_misc2;
+					cctrl->backend_user_data6 = (int64_t)rpn->code_misc;
 					code_off = __OptPassFinal(cctrl, next, bin, code_off);
 					rpn->code_misc2->addr = bin + code_off;
 					goto ret;
 				} else {
-					cctrl->backend_user_data5 = rpn->code_misc;
-					cctrl->backend_user_data6 = rpn->code_misc2;
+					cctrl->backend_user_data5 = (int64_t)rpn->code_misc;
+					cctrl->backend_user_data6 = (int64_t)rpn->code_misc2;
 					code_off = __OptPassFinal(cctrl, next, bin, code_off);
 					rpn->code_misc2->addr = bin + code_off;
 					goto ret;
@@ -4498,7 +4499,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		} else {
 			assert(!rpn->global_var->dim.next);
 			tmp.mode = MD_PTR;
-			tmp.off = rpn->global_var->data_addr;
+			tmp.off = (int64_t)rpn->global_var->data_addr;
 			tmp.raw_type = rpn->global_var->var_class->raw_type;
 			if (rpn->res.keep_in_tmp)
 				rpn->res = next->res;
@@ -4566,7 +4567,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			//
 			// README: We will "NULL"ify the rpn->code_misc->str later so we dont free it
 			//
-			code_off = __ICMoveI64(cctrl, into_reg, rpn->code_misc->str, bin, code_off);
+			code_off = __ICMoveI64(cctrl, into_reg, (int64_t)rpn->code_misc->str, bin, code_off);
 		} else {
 			AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, 0); // X86LeaSIB will return inst size
 			CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
@@ -4816,9 +4817,9 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			next->res.mode = MD_PTR;
 			next->res.raw_type = next->raw_type;
 			if (next->global_var->base.type & HTT_GLBL_VAR) {
-				next->res.off = next->global_var->data_addr;
+				next->res.off = (int64_t)next->global_var->data_addr;
 			} else if (next->global_var->base.type & HTT_FUN) {
-				next->res.off = ((CHashFun*)next->global_var)->fun_ptr;
+				next->res.off = (int64_t)((CHashFun*)next->global_var)->fun_ptr;
 			}
 			code_off = __OptPassFinal(cctrl, next, bin, code_off);
 			if (rpn->res.mode != MD_NULL) {
@@ -5030,7 +5031,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, enter_addr - (bin + code_off));
 				goto restore_reg;
 			}
-			code_off = __ICMoveI64(cctrl, into_reg, enter_addr, bin,
+			code_off = __ICMoveI64(cctrl, into_reg, (int64_t)enter_addr, bin,
 				code_off);
 		restore_reg:
 			tmp.mode = MD_REG;
@@ -5324,10 +5325,10 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			rpn->code_misc4 = CodeMiscNew(cctrl, CMT_LABEL);
 		a = ICArgN(rpn, 1);
 		b = ICArgN(rpn, 0);
-		cctrl->backend_user_data5 = rpn->code_misc;
-		cctrl->backend_user_data6 = rpn->code_misc2;
+		cctrl->backend_user_data5 = (int64_t)rpn->code_misc;
+		cctrl->backend_user_data6 = (int64_t)rpn->code_misc2;
 		code_off = __OptPassFinal(cctrl, a, bin, code_off);
-		cctrl->backend_user_data6 = rpn->code_misc3;
+		cctrl->backend_user_data6 = (int64_t)rpn->code_misc3;
 		rpn->code_misc2->addr = bin + code_off;
 		code_off = __OptPassFinal(cctrl, b, bin, code_off);
 		rpn->code_misc->addr = bin + code_off;
@@ -5377,11 +5378,11 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			rpn->code_misc4 = CodeMiscNew(cctrl, CMT_LABEL);
 		a = ICArgN(rpn, 1);
 		b = ICArgN(rpn, 0);
-		cctrl->backend_user_data5 = rpn->code_misc3;
-		cctrl->backend_user_data6 = rpn->code_misc;
+		cctrl->backend_user_data5 = (int64_t)rpn->code_misc3;
+		cctrl->backend_user_data6 = (int64_t)rpn->code_misc;
 		code_off = __OptPassFinal(cctrl, a, bin, code_off);
 		rpn->code_misc3->addr = bin + code_off;
-		cctrl->backend_user_data5 = rpn->code_misc4;
+		cctrl->backend_user_data5 = (int64_t)rpn->code_misc4;
 		code_off = __OptPassFinal(cctrl, b, bin, code_off);
 		rpn->code_misc4->addr = bin + code_off;
 		tmp.mode = MD_I64;
@@ -5859,6 +5860,14 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				rpn->code_misc->str,
 				rpn->code_misc->str_len);
 		}
+	ic_raw_bytes:
+		if (cctrl->code_ctrl->final_pass) {
+			memcpy(
+				bin+code_off,
+				rpn->raw_bytes,
+				rpn->length);
+		}
+		code_off+=rpn->length;
 	} while (0);
 ret:
 	if (old_fail_misc || old_pass_misc) {
@@ -5910,8 +5919,8 @@ ret:
 		rpn->res.reg = rpn->stuff_in_reg;
 		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 	}
-	cctrl->backend_user_data5 = old_fail_misc;
-	cctrl->backend_user_data6 = old_pass_misc;
+	cctrl->backend_user_data5 = (int64_t)old_fail_misc;
+	cctrl->backend_user_data6 = (int64_t)old_pass_misc;
 	return code_off;
 }
 
@@ -6045,6 +6054,8 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 				goto fill_in_refs;
 				break;
 			case CMT_LABEL:
+				if (misc->patch_addr)
+					*misc->patch_addr = misc->addr;
 				// We assign the statics offset later
 				if (misc == cctrl->statics_label)
 					break;
@@ -6059,7 +6070,7 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 					code_off += 8 - code_off % 8;
 				misc->addr = bin + code_off;
 				if (bin)
-					*(int64_t*)(bin + code_off) = &DoNothing;
+					*(void**)(bin + code_off) = &DoNothing;
 				code_off += 8;
 				if (run) {
 					import = A_CALLOC(sizeof(CHashImport), NULL);

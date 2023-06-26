@@ -1776,12 +1776,12 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_R8		8
 #ifdef TARGET_X86
 #define REG_REGS_NUM	16
-#else
+#endif
 #ifdef TARGET_AARCH64
 #define REG_REGS_NUM	31
-#endif
+#else
 //???
-#define REG_REGS_NUM	31
+#define REG_REGS_NUM	31
 #endif
 
 #define REG_RIP		16	//Used by compiler, not really it's num
@@ -6511,11 +6511,22 @@ _intern IC_LBTC Bool LBtc(U8*,I64);
 _intern IC_LBTR Bool LBtr(U8*,I64);
 #endif
 #endif
-//Added bt Mr nrootconauto
+extern CCmpGlbls cmp;
+//Added by Mr nrootconauto
 extern U8 *DisasOpc(CDoc *doc,U8 *data);
 extern U0 Uf(U8 *st); 
-extern CCmpGlbls cmp;
 extern I64 CallExtStr(U8 *,...);
-extern U8 *PrsAsmBlk(CCmpCtrl *cc);
-
+extern U8 *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0);
+class CAiwniosAOTBlob {
+  CQue *asm_patches;
+  CQue *to_fill;
+  I64 len;
+  U8 *data;
+  //private,used when placing ->data into it's final location
+  U8 **final_start_addr;
+};
+extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
+extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
+extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
+extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
 #define __AIWNIOS__

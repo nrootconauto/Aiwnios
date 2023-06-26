@@ -981,7 +981,10 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
 	    LexExcept(cc,"Expected '!'.");
 	  break;end:
         if(cur_prec!=-1) { //See above '+' operator
-	  flags&=~PEF_ADDR_OF;
+	  if(cur_prec.u32[0]==IC_ADDR) {
+	    flags|=PEF_ADDR_OF;
+	  } else
+	    flags&=~PEF_ADDR_OF;
 	  PushOpers(cc,cur_prec);
 	  rpn=CAlloc(sizeof CRPN);
 	  rpn->type=cur_prec.u32[0];
@@ -1086,8 +1089,6 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
         Lex(cc);
 //After getting an operator,we are no longer accepting function calls for now
         flags&=~PEF_FUN_BEFORE;
-        if(cur_prec.u32[0]==IC_ADDR)
-	  flags|=PEF_ADDR_OF;
         break;case TK_DEREFERENCE: //->,not *
       case '.':
         PrsMembers(cc);
@@ -1359,14 +1360,17 @@ found_end_square:
 	  if(finish) break;
 	  last_consumes_right=0;
 	  if(cc->flags&CCF_ASM_EXPRESSIONS) {
-	    if(cc->local_var_entry) {
-	      if(cc->flags&PEF_ADDR_OF) {
+	    if(cc->local_var_entry&&cc->htc.fun) {
+	      if(flags&PEF_ADDR_OF) {
 	        PrsPop(cc->ps);
 	        RPNDel(PrsPop2(cc->ps));
 	      } else
-	        LexExcept(cc,"Expected a '&' here.");
-	      RPNAddNew(cc,IC_IMM_I64,cc->local_var_entry->offset);
-	      goto fin_ident;
+	        LexExcept(cc,"Expected a '&' at ");
+	      cc->local_var_entry->reg=REG_NONE;
+	      tmpex=CAlloc(sizeof(CHashExport));
+	      tmpex->str=MStrPrint("%s.%s",cc->htc.fun->str,cc->cur_str);
+	      tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
+	      goto ins_label;
 	    } else if(!cc->hash_entry) {
 new:
 	      tmpex=CAlloc(sizeof(CHashExport));
@@ -1395,7 +1399,7 @@ ins_label:
 		    cc,
 		    IC_ADDR_IMPORT,
 		    CodeMiscHashNew(cc,tmpex),
-		    cmp.internal_types[RT_I64],
+		    cmp.internal_types[RT_I64],
 		    );
 	      Lex(cc);
 	      tmpauh=CAlloc(sizeof CAsmUndefHash);
