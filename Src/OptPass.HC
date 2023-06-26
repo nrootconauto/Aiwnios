@@ -606,8 +606,3 @@ next:
   break;case IC_CALL_IMPORT:
   break;case IC_CALL_EXTERN:
 }
-U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
-  OptPassConstFold(cc);
-  DumpRPN(cc->coc.coc_head.next,1);
-  
-}

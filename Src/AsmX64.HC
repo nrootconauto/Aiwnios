@@ -3,6 +3,23 @@
 //	TODO
 // * DIL
 // * JMP I8 rel
+
+class CAiwniosAOTBlob {
+  CQue *asm_patches;
+  CQue *to_fill;
+  I64 len;
+  U8 *data;
+  //private,used when placing ->data into it's final location
+  U8 **final_start_addr;
+};
+U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b) {
+  QueDel(b->asm_patches);
+  QueDel(b->to_fill);
+  Free(b->asm_patches);
+  Free(b->to_fill);
+  Free(b->data);
+  Free(b);
+}
 #define X86MT_REG 1
 #define X86MT_INDIR 2
 #define X86MT_IMM 3
@@ -774,7 +791,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
     switch(opc->operands[i].u8[0]) {
       case X86_OPERAND_MOFF8:
       case X86_OPERAND_MOFFx:
-	for(a=0;a!=opc->arity;a++)
+        for(a=0;a!=opc->arity;a++)
 	  if(modes[a]->type==X86MT_INDIR)
 	    indir_mode=modes[a];
     }
@@ -1013,15 +1030,15 @@ rex|=0x40;
     if(indir_mode->type==X86MT_INDIR) {
       if(indir_mode->machine_code) {
         if(!asm_patches)
-	  len+=EncodeSib(to,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
+	  len+=EncodeSib(to+len,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
 	        I32_MAX);
         else {
 	  patch=CAlloc(sizeof CAsmPatch);
 	  patch->imm=MAlloc(sizeof CX86AddrMode);
 	  MemCpy(patch->imm,modes[indir_mode_idx],sizeof CX86AddrMode);
 	  QueIns(patch,asm_patches);
-	  len+=EncodeSib(to,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
-	        indir_mode->off,&patch->sz);
+	  len+=EncodeSib(to+len,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
+	        I32_MAX,&patch->sz);
 	  patch->rip=rip+len-patch->sz;
 	  MemSet(modes[indir_mode_idx],0,sizeof(CX86AddrMode));  //"Steal" the machine code by NULLing
         }
@@ -1039,43 +1056,45 @@ rex|=0x40;
 	  if(opc->operands[i].u8[0]!=X86_OPERAND_EXT) {
 	    if(modes[a]->machine_code) {
 	      switch(opc->operands[i].u8[0]) {
-	        case X86_OPERAND_IMMx:
-		  if(operand_sz==2)
+	        start:
+		  case X86_OPERAND_IMMx:
+		    if(operand_sz==2)
+		      sz=2;
+		    else
+		      sz=4;
+		    break;
+		  case X86_OPERAND_IMM8:
+		    sz=1;
+		    break;
+		  case X86_OPERAND_IMM16:
 		    sz=2;
-		  else
+		    break;
+		  case X86_OPERAND_IMM32:
 		    sz=4;
-		  break;
-	        case X86_OPERAND_IMM8:
-		  sz=1;
-		  break;
-	        case X86_OPERAND_IMM16:
-		  sz=2;
-		  break;
-	        case X86_OPERAND_IMM32:
-		  sz=4;
-		  break;
-	        case X86_OPERAND_IMM64:
-		  sz=8;
-		  break;
+		    break;
+		  case X86_OPERAND_IMM64:
+		    sz=8;
+		    break;
+	        end:
+		  if(asm_patches) {
+		    patch=CAlloc(sizeof CAsmPatch);
+		    patch->imm=MAlloc(sizeof CX86AddrMode);
+		    patch->rip=rip+len;
+		    patch->sz=sz;
+		    MemCpy(patch->imm,modes[a],sizeof CX86AddrMode);
+		    QueIns(patch,asm_patches);
+		    MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
+		  }
+		  len+=sz;
 	      }
-	      if(asm_patches) {
-	        patch=CAlloc(sizeof CAsmPatch);
-	        patch->imm=MAlloc(sizeof CX86AddrMode);
-	        patch->rip=rip+len;
-	        patch->sz=sz;
-	        MemCpy(patch->imm,modes[a],sizeof CX86AddrMode);
-	        QueIns(patch,asm_patches);
- 	        MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
-	      }
-	      len+=sz;
 	    } else {
 	      switch(opc->operands[i].u8[0]) {
 	        case X86_OPERAND_IMMx:
 		  if(operand_sz==2) {
-		    to[len](I16*)=modes[a]->imm;
+		    to[len](I16)=modes[a]->imm;
 		    len+=2;
 		  } else {
-		    to[len](I32*)=modes[a]->imm;
+		    to[len](I32)=modes[a]->imm;
 		    len+=4;
 		  }
 		  break;
@@ -1112,7 +1131,7 @@ rex|=0x40;
 	  patch->sz=rel_sz;
 	  MemCpy(patch->imm,modes[a],sizeof CX86AddrMode);
 	  QueIns(patch,asm_patches);
-          MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
+	  MemSet(modes[a],0,sizeof CX86AddrMode); //"Steal" the machine code by nulling
 	  len+=rel_sz;
         } else {
 	  len+=rel_sz;
@@ -1163,10 +1182,11 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
   CHashImport *h;
   CMemberLst *mlst;
   CHashExport *exp;
+  CCodeMisc *cm;
   Bool local;
-  U8 *ptr,*ptr2,*ptr3;
   patch=patches->next;
   while(patch!=patches) {
+    if(!patch->imm) goto nxt;
     if(!patch->imm->machine_code) goto nxt;
     if(tab=patch->imm->local_asm_undef_hash) {
       local=TRUE;
@@ -1177,7 +1197,41 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
     if(!tab) goto nxt;
     cur=tab;
     while(cur) {
+      if(cc->coc.coc_next_misc)
+        for(cm=cc->coc.coc_next_misc;cm!=&cc->coc.coc_next_misc;cm=cm->next) {
+	  if(cm->addr2!=INVALID_PTR&&
+	        cm->type==CMT_GOTO_LABEL&&cm->str&&
+	        !StrCmp(cm->str,cur->hash->str)) {
+	    exp=CAlloc(sizeof CHashExport);
+	    exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
+	    exp->str=StrNew(cm->str);
+	    exp->val=cm->addr2;
+	    HashAdd(exp,Fs->hash_table);
+	    SysSymImportsResolve(cur->hash->str,0);
+	    HashRemDel(exp,Fs->hash_table);
+	    goto resolved;
+	  }
+        }
+//See AIWNIOS_PrsExp.HC
+      if(cc->htc.fun) {
+	i=StrLen(cc->htc.fun->str);
+        if(!StrNCmp(cur->hash->str,cc->htc.fun->str,i)) {
+	  if(cur->hash->str[i]=='.'&&
+		MemberFind(cur->hash->str+i+1,cc->htc.fun)) {
+	    exp=CAlloc(sizeof CHashExport);
+	    exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
+	    exp->str=StrNew(cur->hash->str);
+//Stack grows down,I should make the offsets be accordingly
+	    exp->val=-MemberFind(cur->hash->str+i+1,cc->htc.fun)->offset;
+	    HashAdd(exp,Fs->hash_table);
+	    SysSymImportsResolve(cur->hash->str,0);
+	    HashRemDel(exp,Fs->hash_table);
+	    goto resolved;
+	  }
+        }
+      }
       SysSymImportsResolve(cur->hash->str,0);
+resolved:
       cur=cur->next;
     }
     patch->imm->off=(*patch->imm->machine_code)();
@@ -1188,27 +1242,86 @@ nxt:
     patch=patch->next;
   }
 }
-U8 *PrsAsmBlk(CCmpCtrl *cc) {
+U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
+  CToFill *to_fill=blob->to_fill,*tmp_to_fill;
+  CAsmPatch *patch,*next_patch;
+  I64 tmp,sz;
+  tmp_to_fill=to_fill->next;
+  while(tmp_to_fill!=to_fill) {
+    tmp_to_fill->h->type&=~HTF_UNRESOLVED;
+    tmp_to_fill->h->type|=HTF_RESOLVE;
+    tmp_to_fill->h->val+=buf;
+    tmp_to_fill=tmp_to_fill->next;
+  }
+  AsmResolvePatches(cc,blob->asm_patches);
+//If our relocations are not realtive,add the ptr to result
+  patch=blob->asm_patches->next;
+  while(patch!=blob->asm_patches) {
+    next_patch=patch->next;
+    if(patch->imm) {
+      tmp=patch->imm->off;
+      switch(sz=patch->sz) {
+        case 1:
+	  if(patch->is_rel)
+	    buf[patch->rip]=tmp-(buf+sz+patch->rip);
+	  else
+	    buf[patch->rip]=tmp;
+	  break;
+        case 2:
+	  if(patch->is_rel)
+	    buf[patch->rip](U16)=tmp-(buf+sz+patch->rip);
+	  else
+	    buf[patch->rip](U16)=tmp;
+	  break;
+        case 4:
+	  if(patch->is_rel)
+	    buf[patch->rip](U32)=tmp-(buf+sz+patch->rip);
+	  else
+	    buf[patch->rip](U32)=tmp;
+	  break;
+        case 8:
+	  if(patch->is_rel)
+	    buf[patch->rip](U64)=tmp-(buf+sz+patch->rip);
+	  else
+	    buf[patch->rip](U64)=tmp;
+	  break;
+      }
+      Free(patch->imm);
+      patch->imm=NULL;
+    }
+    patch=next_patch;
+  }
+  tmp_to_fill=to_fill->next;
+  while(tmp_to_fill!=to_fill) {
+    if(!(tmp_to_fill->h->type&HTF_EXPORT))
+      HashRemDel(tmp_to_fill->h,Fs->hash_table);
+    tmp_to_fill=tmp_to_fill->next;
+  }
+}
+CAiwniosAOTBlob *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0) {
   if(cc->flags&CCF_AOT_COMPILE)
     LexExcept(cc,"AOT assembler not implemented yet");
-  if(cc->htc.fun)
-    LexExcept(cc,"asm blocks in functions not implemented yet.");
-  Bool one_ins=TRUE;
+  Bool one_ins=FALSE;
+  if(flags&CMPF_ONE_ASM_INS) {
+    one_ins=TRUE;
+    goto enter0;
+  }
   if(cc->token==TK_IDENT&&cc->hash_entry&&!StrCmp(cc->hash_entry->str,"asm")) {
     if(Lex(cc)!='{')
       LexExcept(cc,"Expected a '{' at");
     Lex(cc);
-    one_ins=FALSE;
     goto enter0;
   } else if(cc->token==TK_IDENT) {
+    one_ins=TRUE;
     if(cc->hash_entry&&cc->hash_entry->type&HTT_OPCODE)
       goto enter0;
   }
   return NULL;
 enter0:
+  CAiwniosAOTBlob *ret_blob;
   I64 scope=0;
   CX86Opcode *opc,*first_opc,*best;
-  CQue asm_patches,to_fill;
+  CQue *asm_patches=MAlloc(sizeof CQue),*to_fill=MAlloc(sizeof CQue);
   I64 arg_cnt,best_sz,sz,len=0,tmp,idx;
   U8 *buf=MAlloc(64),dummy[STR_LEN],*fbuf;
   CCodeMisc *cm;
@@ -1217,8 +1330,8 @@ enter0:
   CToFill *tmp_to_fill;
   CX86AddrMode *modes[4],*tmp_mode;
   CAsmPatch *patch,*next_patch;
-  QueInit(&asm_patches);
-  QueInit(&to_fill);
+  QueInit(asm_patches);
+  QueInit(to_fill);
 enter:
   MemSetU64(modes,NULL,4);
   if(cc->hash_entry&&cc->hash_entry->type&HTT_OPCODE) {
@@ -1258,7 +1371,7 @@ enter:
       Free(buf);
       throw('Asm');
     }
-    sz=X86EncodeOpcode(len,best,modes,dummy,&asm_patches);
+    sz=X86EncodeOpcode(len,best,modes,dummy,asm_patches);
     AddBytesToBuf(&buf,&len,sz,dummy);
   } else if(cc->hash_entry&&cc->hash_entry->type&HTT_ASM_KEYWORD) {
     if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
@@ -1289,7 +1402,7 @@ duxx:
 	  patch->imm=tmp_mode;
 	  patch->rip=len;
 	  patch->sz=sz;
-	  QueIns(patch,&asm_patches);
+	  QueIns(patch,asm_patches);
 	  tmp=0;
 	  AddBytesToBuf(&buf,&len,sz,&tmp);
         }
@@ -1323,7 +1436,7 @@ duxx:
         exp->str=StrNew(dummy);
         tmp_to_fill=CAlloc(sizeof CToFill);
         tmp_to_fill->h=exp;
-        QueIns(tmp_to_fill,&to_fill);
+        QueIns(tmp_to_fill,to_fill);
         case ':':
 	  break;
         case TK_DBL_COLON:
@@ -1343,7 +1456,7 @@ duxx:
         HashAdd(exp,cc->htc.glbl_hash_table);
     }
   } else {
-    QueDel(&to_fill);
+    QueDel(to_fill);
     Free(buf);
     LexExcept(cc,"Expected a '}' at ");
   }
@@ -1358,70 +1471,28 @@ duxx:
       goto enter;
     if(Lex(cc)!=';') {
       Lex(cc);
-      QueDel(&to_fill);
+      QueDel(to_fill);
       Free(buf);
       LexExcept(cc,"Expected a ';'.");
     }
   }
 fin:
-  fbuf=MAlloc(len,Fs->code_heap);
-  MemCpy(fbuf,buf,len);
-  Free(buf);
-  buf=fbuf;
-  tmp_to_fill=to_fill.next;
-  while(tmp_to_fill!=&to_fill) {
-    tmp_to_fill->h->type&=~HTF_UNRESOLVED;
-    tmp_to_fill->h->type|=HTF_RESOLVE;
-    tmp_to_fill->h->val+=buf;
-    tmp_to_fill=tmp_to_fill->next;
-  }
-  QueDel(&to_fill);
-  AsmResolvePatches(cc,&asm_patches);
-//If our relocations are not realtive,add the ptr to result
-  patch=asm_patches.next;
-  while(patch!=&asm_patches) {
-    next_patch=patch->next;
-    tmp=patch->imm->off;
-    switch(sz=patch->sz) {
-      case 1:
-        if(patch->is_rel)
-	  buf[patch->rip]=tmp-(buf+sz+patch->rip);
-        else
-	  buf[patch->rip]=tmp;
-        break;
-      case 2:
-        if(patch->is_rel)
-	  buf[patch->rip](U16)=tmp-(buf+sz+patch->rip);
-        else
-	  buf[patch->rip](U16)=tmp;
-        break;
-      case 4:
-        if(patch->is_rel)
-	  buf[patch->rip](U32)=tmp-(buf+sz+patch->rip);
-        else
-	  buf[patch->rip](U32)=tmp;
-        break;
-      case 8:
-        if(patch->is_rel)
-	  buf[patch->rip](U64)=tmp-(buf+sz+patch->rip);
-        else
-	  buf[patch->rip](U64)=tmp;
-        break;
-    }
-    Free(patch->imm->machine_code);
-    Free(patch->imm);
-    Free(patch);
-    patch=next_patch;
-  }
-  return fbuf;
+  ret_blob=CAlloc(sizeof CAiwniosAOTBlob);
+  ret_blob->to_fill=QueCopy(to_fill);
+  ret_blob->asm_patches=QueCopy(asm_patches);
+  Free(to_fill);
+  Free(asm_patches);
+  ret_blob->len=len;  
+  ret_blob->data=buf;
+  return ret_blob;
 }
 U8 *AsmTest() {
   U8 *ret,*oret;
+  CAiwniosAOTBlob *blob;
   CCmpCtrl *cctrl=CmpCtrlNew(
-
 //Mirrors http://ref.x86asm.net/coder64-abc.html
 "asm {\n"
-/*"NOTHING0::"
+"NOTHING0::"
 "MOV RBX,[RAX]\n"
 "NOTHING::\n"
 "ADC U8 [RAX],AL\n"
@@ -2006,16 +2077,18 @@ U8 *AsmTest() {
 "MOVRAX,U64 0x10[R8*8]\n"
 "MOVRAX,U64 0x100[R8*8]\n"
 "MOVRAX,U64 [0x1122]\n"
-*/
 "};;",
     CCF_DONT_FREE_BUF,
     "TEST.HC"
   );
   Lex(cctrl);
-  oret=ret=PrsAsmBlk(cctrl);
+  blob=PrsAsmBlk(cctrl);
+  oret=ret=blob->data;
+  JITFixupAiwniosAOTBlob(cctrl,blob,ret);
   CmpCtrlDel(cctrl);
-  while(ret<oret+MSize(oret))
+  while(ret<oret+blob->len)
     ret=DisasOpc(DocPut,ret);
+  AiwniosAOTBlobDel(blob);
   return oret;
 }
 //AsmTest;

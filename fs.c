@@ -352,7 +352,7 @@ int64_t VFsFileRead(char* name, int64_t* len)
 	void* data = NULL;
 	name = __VFsFileNameAbs(name);
 	if (!name)
-		return NULL;
+		return (int64_t)NULL;
 	if (__FExists(name))
 		if (!__FIsDir(name)) {
 			f = fopen(name, "rb");
@@ -370,7 +370,7 @@ int64_t VFsFileRead(char* name, int64_t* len)
 		}
 end:
 	A_FREE(name);
-	return data;
+	return (int64_t)data;
 }
 int VFsFileExists(char* path)
 {

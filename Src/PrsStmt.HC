@@ -991,63 +991,66 @@ Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,
   CHashFun *tmp_untry;
   CAOT *tmpaot;
   if (cmp_flags&CMPF_ONE_ASM_INS) {
-    /*if (cc->flags&CCF_AOT_COMPILE || cc->aot_depth) TODO NO-RESTORE?(ASM)
-      PrsAsmBlk(cc,CMPF_ONE_ASM_INS);
-    else if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK|CMPF_ONE_ASM_INS))
-      CmpFixUpJITAsm(cc,tmpaot);
-    */
+/*if (cc->flags&CCF_AOT_COMPILE || cc->aot_depth) TODO NO-RESTORE?(ASM)
+PrsAsmBlk(cc,CMPF_ONE_ASM_INS);
+else if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK|CMPF_ONE_ASM_INS))
+CmpFixUpJITAsm(cc,tmpaot);
+*/
     fsp_flags=FSF_ASM;
   } else
     while (TRUE) {
       while (cc->token==',')
-	Lex(cc);
+        Lex(cc);
       if (cc->token=='{') {
-	Lex(cc);
-	while (cc->token!='}' && cc->token!=TK_EOF)
+        Lex(cc);
+        while (cc->token!='}' && cc->token!=TK_EOF)
 	  PrsStmt(cc,try_cnt,lb_break);
-	if (cc->lex_include_stk==cc->fun_lex_file)
+        if (cc->lex_include_stk==cc->fun_lex_file)
 	  cc->max_line=cc->lex_include_stk->line_num;
-	if (Lex(cc)!=',') goto sm_done;
+        if (Lex(cc)!=',') goto sm_done;
       } else if (cc->token==';') {
-	if (cmp_flags&CMPF_PRS_SEMICOLON)
+        if (cmp_flags&CMPF_PRS_SEMICOLON)
 	  Lex(cc);
-	if (cc->token!=',') goto sm_done;
+        if (cc->token!=',') goto sm_done;
       } else {
-	if (cc->token==TK_IDENT) {
+        if (cc->token==TK_IDENT) {
 	  if (tmpex=cc->hash_entry) {
 	    if (tmpex->type & HTT_KEYWORD) {
 	      i=tmpex(CHashGeneric *)->user_data0;
 	      switch (i) {
-		case KW_KWS_NUM-1: //nobound switch
-		default: //A keyword that is not valid here is just a symbol.
+	        case KW_KWS_NUM-1: //nobound switch
+	        default: //A keyword that is not valid here is just a symbol.
 		  goto sm_not_keyword_afterall;
-		start:
+	        start:
 		  case KW_ASM:
 //TODO gutted by nrootconauto in favor of his own assembler,I will do some investigation here
-#ifdef TARGET_X86
-		    PrsAsmBlk(cc);
+		  #ifdef TARGET_X86
+		    if (tmpaot=PrsAsmBlk(cc)) {
+		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
+		      cc->flags|=CCF_HAS_MISC_DATA;
+		    }
 #endif
-/*		    if (cc->htc.fun) {
-		      if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
-			ICAdd(cc,IC_ASM,tmpaot,0);
-		      Lex(cc); //Skip '}' of asm{}
-		    } else {
-		      if (cc->flags&CCF_AOT_COMPILE || cc->aot_depth) {
-			Lex(cc);
-			PrsAsmBlk(cc,0);
-			if (cc->flags&CCF_AOT_COMPILE && cc->aot_depth==1)
-			  Lex(cc); //Skip '}' of asm{}
-		      } else {
-			if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
-			  CmpFixUpJITAsm(cc,tmpaot);
-			Lex(cc); //Skip '}' of asm{}
-		      }
-		      fsp_flags=FSF_ASM;
-		    }*/
+		    /*		    if (cc->htc.fun) {
+if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
+ICAdd(cc,IC_ASM,tmpaot,0);
+Lex(cc); //Skip '}' of asm{}
+} else {
+if (cc->flags&CCF_AOT_COMPILE || cc->aot_depth) {
+Lex(cc);
+PrsAsmBlk(cc,0);
+if (cc->flags&CCF_AOT_COMPILE && cc->aot_depth==1)
+Lex(cc); //Skip '}' of asm{}
+} else {
+if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
+CmpFixUpJITAsm(cc,tmpaot);
+Lex(cc); //Skip '}' of asm{}
+}
+fsp_flags=FSF_ASM;
+}*/
 		    break;
 		  start:
-        Lex(cc);
-        case KW_LOCK:
+		    Lex(cc);
+		    case KW_LOCK:
 		      cc->lock_cnt++;
 		      PrsStmt(cc,try_cnt);
 		      cc->lock_cnt--;
@@ -1056,7 +1059,7 @@ Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,
 		      PrsTryBlk(cc,try_cnt);
 		      break;
 		    case KW_IF:
-          PrsIf(cc,try_cnt,lb_break);
+		      PrsIf(cc,try_cnt,lb_break);
 		      break;
 		    case KW_FOR:
 		      PrsFor(cc,try_cnt);
@@ -1071,10 +1074,10 @@ Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,
 		      PrsSwitch(cc,try_cnt);
 		      break;
 		  end:
-		end:
+	        end:
 		  if (cc->token!=',') goto sm_done;
 		  break;
-		start:
+	        start:
 		  if (cc->htc.fun)
 		    LexExcept(cc,"Not allowed in fun");
 		  Lex(cc);
@@ -1145,10 +1148,10 @@ sm_import:
 		    Lex(cc);
 		    PrsGlblVarLst(cc,PRS0__INTERN|PRS1_NULL,tmpex,i,fsp_flags);
 		    break;
-		end:
+	        end:
 		  fsp_flags&=FSF_ASM;
 		  break;
-		start:
+	        start:
 		  case KW_STATIC:
 		    fsp_flags=FSF_STATIC|fsp_flags&FSF_ASM;
 		    break;
@@ -1168,10 +1171,10 @@ sm_import:
 		  case KW_PUBLIC:
 		    fsp_flags=FSF_PUBLIC|fsp_flags&(FSG_FUN_FLAGS2|FSF_ASM);
 		    break;
-		end:
+	        end:
 		  Lex(cc);
 		  break;
-		case KW_RETURN:
+	        case KW_RETURN:
 		  if (!cc->htc.fun)
 		    LexExcept(cc,"Not in fun.  Can't return a val ");
 		  if (try_cnt) {
@@ -1179,23 +1182,23 @@ sm_import:
 			  cc->htc.hash_table_lst,HTT_FUN);
 		    for (i=0;i<try_cnt;i++) {
 		      if (Bt(&tmp_untry->flags,Cf_EXTERN)) {
-			cc->abs_cnts.externs++;
-			if (cc->flags&CCF_AOT_COMPILE) {
-        RPNAddNew(cc,IC_ADDR_IMPORT,
-				tmp_untry,cmp.internal_types[RT_PTR]);
+		        cc->abs_cnts.externs++;
+		        if (cc->flags&CCF_AOT_COMPILE) {
+			  RPNAddNew(cc,IC_ADDR_IMPORT,
+			        tmp_untry,cmp.internal_types[RT_PTR]);
 			  RPNAddNew(cc,IC_CALL,
-				0,cmp.internal_types[RT_PTR]);
-			} else {
+			        0,cmp.internal_types[RT_PTR]);
+		        } else {
 			  RPNAddNew(cc,IC_IMM_I64,&tmp_untry->exe_addr);
-        RPNAddNew(cc,IC_DEREF);
-        RPNAddNew(cc,IC_CALL,
-        0,cmp.internal_types[RT_PTR]);
-      }
+			  RPNAddNew(cc,IC_DEREF);
+			  RPNAddNew(cc,IC_CALL,
+			        0,cmp.internal_types[RT_PTR]);
+		        }
 		      } else {
-          RPNAddNew(cc,IC_IMM_I64,tmp_untry->exe_addr);
-          RPNAddNew(cc,IC_CALL,,
+		        RPNAddNew(cc,IC_IMM_I64,tmp_untry->exe_addr);
+		        RPNAddNew(cc,IC_CALL,,
 			      cmp.internal_types[RT_PTR]);
-          }
+		      }
 		    }
 		  }
 		  if (Lex(cc)!=';') {
@@ -1203,30 +1206,30 @@ sm_import:
 		      LexWarn(cc,"Function should NOT return val ");
 		    if (!PrsExpression(cc,NULL,FALSE))
 		      throw('Compiler');
-        //Lunk added by nroot,we will convert the result to the return type(F64 or not F64)
-        if(cc->coc.coc_head.next(CRPN*)->ic_class->raw_type==RT_F64) {
-          if(cc->htc.fun->return_class->raw_type==RT_F64) {
-            //No need to do anything
-          } else {
-            RPNAddNew(cc,IC_TO_I64,,cc->htc.fun->return_class,FALSE);
-          }
-        } else {
-          //Here is not F64
-          if(cc->htc.fun->return_class->raw_type==RT_F64) {
-            RPNAddNew(cc,IC_TO_F64,,cc->htc.fun->return_class,FALSE);
-          } else {
-            //No need to do anything
-          }
-        }
+//Lunk added by nroot,we will convert the result to the return type(F64 or not F64)
+		    if(cc->coc.coc_head.next(CRPN*)->ic_class->raw_type==RT_F64) {
+		      if(cc->htc.fun->return_class->raw_type==RT_F64) {
+//No need to do anything
+		      } else {
+		        RPNAddNew(cc,IC_TO_I64,,cc->htc.fun->return_class,FALSE);
+		      }
+		    } else {
+//Here is not F64
+		      if(cc->htc.fun->return_class->raw_type==RT_F64) {
+		        RPNAddNew(cc,IC_TO_F64,,cc->htc.fun->return_class,FALSE);
+		      } else {
+//No need to do anything
+		      }
+		    }
 		    RPNAddNew(cc,IC_RET,,cc->htc.fun->return_class,FALSE);
 		    cc->flags|=CCF_HAS_RETURN;
 		  } else if (cc->htc.fun->return_class->size)
 		    LexWarn(cc,"Function should return val ");
-		  //ICAdd(cc,IC_JMP,cc->lb_leave,0); RETURN's  are handled by AIWNIOS as IC_RET,they do housekeeping for you
-        RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
-        RPNAddNew(cc,IC_RET,,cc->htc.fun->return_class,FALSE);
+//ICAdd(cc,IC_JMP,cc->lb_leave,0); RETURN's  are handled by AIWNIOS as IC_RET,they do housekeeping for you
+		  RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
+		  RPNAddNew(cc,IC_RET,,cc->htc.fun->return_class,FALSE);
 		  goto sm_semicolon;
-		case KW_GOTO:
+	        case KW_GOTO:
 		  if (Lex(cc)!=TK_IDENT)
 		    LexExcept(cc,"Expecting identifier at ");
 		  if (!(g_lb=COCGoToLabelFind(cc,cc->cur_str))) {
@@ -1238,18 +1241,18 @@ sm_import:
 		  RPNAddNew(cc,IC_JMP,g_lb,,FALSE);
 		  Lex(cc);
 		  goto sm_semicolon;
-		case KW_BREAK:
+	        case KW_BREAK:
 		  Lex(cc);
 		  if (!lb_break)
 		    LexExcept(cc,"'break' not allowed\n");
 		  RPNAddNew(cc,IC_JMP,lb_break,0,FALSE);
 		  goto sm_semicolon;
-		case KW_NO_WARN:
+	        case KW_NO_WARN:
 		  Lex(cc);
 		  PrsNoWarn(cc);
 		  goto sm_semicolon;
-		case KW_UNION:
-		case KW_CLASS:
+	        case KW_UNION:
+	        case KW_CLASS:
 		  Lex(cc);
 		  tmpex=PrsClass(cc,i,fsp_flags,FALSE);
 		  if (!cc->htc.fun && cc->token!=';') {
@@ -1263,28 +1266,31 @@ sm_import:
 	      }
 	    } else {//Ident, found in hash table, not keyword
 sm_not_keyword_afterall:
+	      if(tmpex->type & (HTT_EXPORT_SYS_SYM|HTF_UNRESOLVED)==(HTT_EXPORT_SYS_SYM|HTF_UNRESOLVED)) {
+//Nroot here,If we have an unresolved label(From AIWNIOS_PrsExp with 
+	        // CCF_ASM_EXPRESSIONS),try a label
+	        goto try_label;
+	      }
 	      if (tmpex->type & (HTT_CLASS|HTT_INTERNAL_TYPE)) {
-		if (cc->htc.fun) {
+	        if (cc->htc.fun) {
 		  if (fsp_flags&FSF_STATIC)
 		    PrsVarLst(cc,cc->htc.fun,PRS0_NULL|PRS1_STATIC_LOCAL_VAR);
 		  else
 		    PrsVarLst(cc,cc->htc.fun,PRS0_NULL|PRS1_LOCAL_VAR);
 		  if (cc->token=='}') goto sm_done;
-		} else {
+	        } else {
 		  Lex(cc);
 		  PrsGlblVarLst(cc,PRS0_NULL|PRS1_NULL,tmpex,0,fsp_flags);
-		}
+	        }
 	      } else {
-		if (tmpex->type & (HTT_OPCODE|HTT_ASM_KEYWORD)) {
-      /* TODO NO-RESTORE (ASM)
+	        if (tmpex->type & (HTT_OPCODE|HTT_ASM_KEYWORD)) {
 		  if (cc->htc.fun) {
-		    if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK|CMPF_ONE_ASM_INS))
-		      ICAdd(cc,IC_ASM,tmpaot,0);
+		    if (tmpaot=PrsAsmBlk(cc,CMPF_ONE_ASM_INS))
+		      RPNAddNew(cc,IC_ASM,tmpaot,0,FALSE);
 		  } else
 		    LexExcept(cc,"Use Asm Blk at ");
 		  if (cc->token!=',') goto sm_done;
-      */
-		} else
+	        } else
 		  goto sm_prs_exp;
 	      }
 	      fsp_flags&=FSF_ASM;
@@ -1292,6 +1298,7 @@ sm_not_keyword_afterall:
 	  } else {//Ident, not in hash table
 	    if (cc->local_var_entry)
 	      goto sm_prs_exp;
+try_label:
 	    if (!(g_lb=COCGoToLabelFind(cc,cc->cur_str))) {
 	      g_lb=COCMiscNew(cc,CMT_GOTO_LABEL);
 	      g_lb->str=cc->cur_str;
@@ -1304,15 +1311,15 @@ sm_not_keyword_afterall:
 	      Lex(cc); //skip colon
 	    else {
 	      LexExcept(cc,"Undefined identifier at ");
-      }
+	    }
 	    if (!cc->htc.fun)
 	      LexExcept(cc,"No global labels at ");
 	    if (cc->token!=',') goto sm_done;
 	  }
-	} else if (cc->token==TK_STR||cc->token==TK_CHAR_CONST) {
+        } else if (cc->token==TK_STR||cc->token==TK_CHAR_CONST) {
 	  PrsPutStr(cc); //Changed by nroot
 	  goto sm_semicolon;
-	}  else if (cc->token!=TK_EOF) {//Non-cur_str symbol, num or something
+        }  else if (cc->token!=TK_EOF) {//Non-cur_str symbol, num or something
 sm_prs_exp:
 	  if (!PrsExpression(cc,NULL,TRUE))
 	    throw('Compiler');
@@ -1324,7 +1331,7 @@ sm_semicolon:
 	      LexExcept(cc,"Missing ';' at");
 	  }
 	  if (cc->token!=',') goto sm_done;
-	} else
+        } else
 	  goto sm_done; //TK_EOF
       }
     }

@@ -17,7 +17,7 @@ static void PrintF(char* str, double f) { printf("%s:%lf\n", str, f); }
 static void PrintPtr(char* str, void* f) { printf("%s:%p\n", str, f); }
 static int64_t STK_PrintI(int64_t*);
 static int64_t STK_PrintF(double*);
-static int64_t STK_PrintPtr(int64_t* stk) { PrintPtr(stk[0], stk[1]); }
+static int64_t STK_PrintPtr(int64_t* stk) { PrintPtr((char*)(stk[0]), (void*)stk[1]); }
 static void ExitAiwnios();
 static void PrsAddSymbol(char* name, void* ptr, int64_t arity)
 {
@@ -399,12 +399,12 @@ static void AiwniosSetClipboard(char* c)
 
 static void TaskContextSetRIP(int64_t* ctx, void* p)
 {
-	ctx[0] = p;
+	ctx[0] = (int64_t)p;
 }
 
 static STK_TaskContextSetRIP(int64_t* stk)
 {
-	TaskContextSetRIP(stk[0], stk[1]);
+	TaskContextSetRIP((int64_t*)(stk[0]), (void*)stk[1]);
 }
 
 // strcmp returns int(32 bit on some platforms)
@@ -415,7 +415,7 @@ static int64_t StrCmp(char* a, char* b)
 
 static int64_t STK_GenerateFFIForFun(void** stk)
 {
-	TaskContextSetRIP(stk[0], stk[1]);
+	TaskContextSetRIP(stk[0], (void*)stk[1]);
 }
 
 static int64_t STK_AIWNIOS_makecontext(void** stk)
@@ -425,27 +425,27 @@ static int64_t STK_AIWNIOS_makecontext(void** stk)
 
 static int64_t STK___HC_SetAOTRelocBeforeRIP(void** stk)
 {
-	__HC_SetAOTRelocBeforeRIP(stk[0], stk[1]);
+	__HC_SetAOTRelocBeforeRIP(stk[0], (int64_t)stk[1]);
 }
 
 static int64_t STK___HC_CodeMiscIsUsed(void** stk)
 {
-	__HC_CodeMiscIsUsed(stk[0]);
+	__HC_CodeMiscIsUsed((CCodeMisc*)stk[0]);
 }
 
 static int64_t STK_AiwniosSetClipboard(void** stk)
 {
-	AiwniosSetClipboard(stk[0]);
+	AiwniosSetClipboard((char*)stk[0]);
 }
 
 static int64_t STK_AiwniosGetClipboard(void** stk)
 {
-	return AiwniosGetClipboard();
+	return (int64_t)AiwniosGetClipboard();
 }
 
 static int64_t STK_CmpCtrlDel(void** stk)
 {
-	CmpCtrlDel(stk[0]);
+	CmpCtrlDel((CCmpCtrl*)stk[0]);
 }
 
 static int64_t STK_cos(double* stk)
@@ -492,61 +492,61 @@ static int64_t STK_atan(double* stk)
 
 static int64_t STK_Misc_Btc(int64_t* stk)
 {
-	return Misc_Btc(stk[0], stk[1]);
+	return Misc_Btc((void*)stk[0], stk[1]);
 }
 
 static int64_t STK_Misc_Btr(int64_t* stk)
 {
-	return Misc_Btr(stk[0], stk[1]);
+	return Misc_Btr((void*)stk[0], stk[1]);
 }
 static int64_t STK_Misc_LBtr(int64_t* stk)
 {
-	return Misc_LBtr(stk[0], stk[1]);
+	return Misc_LBtr((void*)stk[0], stk[1]);
 }
 static int64_t STK_Misc_LBts(int64_t* stk)
 {
-	return Misc_LBts(stk[0], stk[1]);
+	return Misc_LBts((void*)stk[0], stk[1]);
 }
 static int64_t STK_Misc_Bt(int64_t* stk)
 {
-	return Misc_Bt(stk[0], stk[1]);
+	return Misc_Bt((void*)stk[0], stk[1]);
 }
 static int64_t STK_Misc_LBtc(int64_t* stk)
 {
-	return Misc_LBtc(stk[0], stk[1]);
+	return Misc_LBtc((void*)stk[0], stk[1]);
 }
 static int64_t STK_Misc_Bts(int64_t* stk)
 {
-	return Misc_Bts(stk[0], stk[1]);
+	return Misc_Bts((void*)stk[0], stk[1]);
 }
 
 static int64_t STK_HeapCtrlInit(int64_t* stk)
 {
-	return HeapCtrlInit(stk[0], stk[1],stk[2]);
+	return (int64_t)HeapCtrlInit((CHeapCtrl*)stk[0], (CTask*)stk[1],stk[2]);
 }
 
 static int64_t STK_HeapCtrlDel(int64_t* stk)
 {
-	HeapCtrlDel(stk[0]);
+	HeapCtrlDel((CHeapCtrl*)stk[0]);
 }
 
 static int64_t STK___AIWNIOS_MAlloc(int64_t* stk)
 {
-	return __AIWNIOS_MAlloc(stk[0], stk[1]);
+	return (int64_t)__AIWNIOS_MAlloc(stk[0], (CTask*)stk[1]);
 }
 static int64_t STK___AIWNIOS_CAlloc(int64_t* stk)
 {
-	return __AIWNIOS_CAlloc(stk[0], stk[1]);
+	return (int64_t)__AIWNIOS_CAlloc(stk[0], (CTask*)stk[1]);
 }
 
 static int64_t STK___AIWNIOS_Free(int64_t* stk)
 {
-	__AIWNIOS_Free(stk[0]);
+	__AIWNIOS_Free((void*)stk[0]);
 }
 
 static int64_t STK_MSize(int64_t* stk)
 {
-	return MSize(stk[0]);
+	return MSize((void*)stk[0]);
 }
 
 static int64_t STK___SleepHP(int64_t* stk)
@@ -561,42 +561,42 @@ static int64_t STK___GetTicksHP(int64_t* stk)
 
 static int64_t STK___AIWNIOS_StrDup(int64_t* stk)
 {
-	return __AIWNIOS_StrDup(stk[0], stk[1]);
+	return (int64_t)__AIWNIOS_StrDup((char*)stk[0], (void*)stk[1]);
 }
 
 static int64_t STK_memcpy(int64_t* stk)
 {
-	return memcpy(stk[0], stk[1], stk[2]);
+	return (int64_t)memcpy((void*)stk[0], (void*)stk[1], stk[2]);
 }
 
 static int64_t STK_memset(int64_t* stk)
 {
-	return memset(stk[0], stk[1], stk[2]);
+	return (int64_t)memset((void*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_MemSetU16(int64_t* stk)
 {
-	return MemSetU16(stk[0], stk[1], stk[2]);
+	return (int64_t)MemSetU16((void*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_MemSetU32(int64_t* stk)
 {
-	return MemSetU32(stk[0], stk[1], stk[2]);
+	return (int64_t)MemSetU32((void*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_MemSetU64(int64_t* stk)
 {
-	return MemSetU64(stk[0], stk[1], stk[2]);
+	return (int64_t)MemSetU64((void*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_strlen(int64_t* stk)
 {
-	return strlen(stk[0]);
+	return strlen((void*)stk[0]);
 }
 
 static int64_t STK_strcmp(int64_t* stk)
 {
-	return strcmp(stk[0], stk[1]);
+	return strcmp((void*)stk[0], (void*)stk[1]);
 }
 
 static int64_t STK_toupper(int64_t* stk)
@@ -638,12 +638,12 @@ static int64_t STK_exp(double* stk)
 
 static int64_t STK_PrintI(int64_t* stk)
 {
-	PrintI(stk[0], stk[1]);
+	PrintI((char*)stk[0], stk[1]);
 }
 
 static int64_t STK_PrintF(double* stk)
 {
-	PrintF(((int64_t*)stk)[0], stk[1]);
+	PrintF(((char**)stk)[0], stk[1]);
 }
 
 static int64_t STK_round(double* stk)
@@ -672,33 +672,33 @@ static int64_t STK_ceil(double* stk)
 
 static int64_t STK_memcmp(int64_t* stk)
 {
-	return memcmp(stk[0], stk[1], stk[2]);
+	return (int64_t)memcmp((void*)stk[0], (void*)stk[1], stk[2]);
 }
 
 static int64_t STK_Bt(int64_t* stk)
 {
-	return Misc_Bt(stk[0], stk[1]);
+	return Misc_Bt((void*)stk[0], stk[1]);
 }
 
 static int64_t STK_LBts(int64_t* stk)
 {
-	return Misc_LBts(stk[0], stk[1]);
+	return Misc_LBts((void*)stk[0], stk[1]);
 }
 static int64_t STK_LBtr(int64_t* stk)
 {
-	return Misc_LBtr(stk[0], stk[1]);
+	return Misc_LBtr((void*)stk[0], stk[1]);
 }
 static int64_t STK_LBtc(int64_t* stk)
 {
-	return Misc_LBtc(stk[0], stk[1]);
+	return Misc_LBtc((void*)stk[0], stk[1]);
 }
 static int64_t STK_Btr(int64_t* stk)
 {
-	return Misc_Btr(stk[0], stk[1]);
+	return Misc_Btr((void*)stk[0], stk[1]);
 }
 static int64_t STK_Bts(int64_t* stk)
 {
-	return Misc_Bts(stk[0], stk[1]);
+	return Misc_Bts((void*)stk[0], stk[1]);
 }
 static int64_t STK_Bsf(int64_t* stk)
 {
@@ -711,25 +711,25 @@ static int64_t STK_Bsr(int64_t* stk)
 
 static int64_t STK_DbgPutS(int64_t* stk)
 {
-	puts(stk[0]);
+	puts((char*)stk[0]);
 }
 static int64_t STK_PutS(int64_t* stk)
 {
-	puts(stk[0]);
+	puts((char*)stk[0]);
 }
 static int64_t STK_SetHolyFs(int64_t* stk)
 {
-	SetHolyFs(stk[0]);
+	SetHolyFs((void*)stk[0]);
 }
 
 static int64_t STK_GetHolyFs(int64_t* stk)
 {
-	return GetHolyFs();
+	return (int64_t)GetHolyFs();
 }
 
 static int64_t STK_SpawnCore(int64_t* stk)
 {
-	SpawnCore(stk[0], stk[1], stk[2]);
+	SpawnCore((void*)stk[0], (void*)stk[1], stk[2]);
 }
 
 static int64_t STK_MPSleepHP(int64_t* stk)
@@ -749,7 +749,7 @@ static int64_t STK_mp_cnt(int64_t* stk)
 
 static int64_t STK_SetHolyGs(int64_t* stk)
 {
-	SetHolyGs(stk[0]);
+	SetHolyGs((void*)stk[0]);
 }
 static int64_t STK___GetTicks(int64_t* stk)
 {
@@ -763,277 +763,281 @@ static int64_t STK___Sleep(int64_t* stk)
 
 static int64_t STK_ImportSymbolsToHolyC(int64_t* stk)
 {
-	ImportSymbolsToHolyC(stk[0]);
+	ImportSymbolsToHolyC((void*)stk[0]);
 }
 static int64_t STK_AIWNIOS_getcontext(int64_t* stk)
 {
-	return AIWNIOS_getcontext(stk[0]);
+	return AIWNIOS_getcontext((void*)stk[0]);
 }
 
 static int64_t STK_AIWNIOS_setcontext(int64_t* stk)
 {
-	AIWNIOS_setcontext(stk[0]);
+	AIWNIOS_setcontext((void*)stk[0]);
 }
 
 static int64_t STK_IsValidPtr(int64_t* stk)
 {
-	return IsValidPtr(stk[0]);
+	return IsValidPtr((char*)stk[0]);
 }
 static int64_t STK___HC_CmpCtrl_SetAOT(int64_t* stk)
 {
-	__HC_CmpCtrl_SetAOT(stk[0]);
+	__HC_CmpCtrl_SetAOT((CCmpCtrl*)stk[0]);
+}
+
+static int64_t STK__HC_ICAdd_RawBytes(int64_t *stk) {
+	return (int64_t)__HC_ICAdd_RawBytes((CCmpCtrl*)stk[0],(char*)stk[1],stk[2]);
 }
 
 static int64_t STK___HC_ICAdd_Typecast(int64_t* stk)
 {
-	return __HC_ICAdd_Typecast(stk[0], stk[1], stk[2]);
+	return (int64_t)__HC_ICAdd_Typecast((CCodeCtrl*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK___HC_ICAdd_SubCall(int64_t* stk)
 {
-	return __HC_ICAdd_SubCall(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_SubCall((CCodeCtrl*)stk[0], (CCodeMisc*)stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_SubProlog(int64_t* stk)
 {
-	return __HC_ICAdd_SubProlog(stk[0]);
+	return (int64_t)__HC_ICAdd_SubProlog((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_SubRet(int64_t* stk)
 {
-	return __HC_ICAdd_SubRet(stk[0]);
+	return (int64_t)__HC_ICAdd_SubRet((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Switch(int64_t* stk)
 {
-	return __HC_ICAdd_Switch(stk[0], stk[1], stk[2]);
+	return (int64_t)__HC_ICAdd_Switch((CCodeCtrl*)stk[0], (CCodeMisc*)stk[1], (CCodeMisc*)stk[2]);
 }
 
 static int64_t STK___HC_ICAdd_UnboundedSwitch(int64_t* stk)
 {
-	return __HC_ICAdd_UnboundedSwitch(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_UnboundedSwitch((CCodeCtrl*)stk[0], (CCodeMisc*)stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_PreInc(int64_t* stk)
 {
-	return __HC_ICAdd_PreInc(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_PreInc((CCodeCtrl*)stk[0], stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_Call(int64_t* stk)
 {
-	return __HC_ICAdd_Call(stk[0], stk[1], stk[2], stk[3]);
+	return (int64_t)__HC_ICAdd_Call((CCodeCtrl*)stk[0], stk[1], stk[2], stk[3]);
 }
 
 static int64_t STK___HC_ICAdd_F64(int64_t* stk)
 {
-	return __HC_ICAdd_F64(stk[0], ((double*)stk)[1]);
+	return (int64_t)__HC_ICAdd_F64((CCodeCtrl*)stk[0], ((double*)stk)[1]);
 }
 
 static int64_t STK___HC_ICAdd_I64(int64_t* stk)
 {
-	return __HC_ICAdd_I64(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_I64((CCodeCtrl*)stk[0], stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_PreDec(int64_t* stk)
 {
-	return __HC_ICAdd_PreDec(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_PreDec((CCodeCtrl*)stk[0], stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_PostInc(int64_t* stk)
 {
-	return __HC_ICAdd_PostInc(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_PostInc((CCodeCtrl*)stk[0], stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_PostDec(int64_t* stk)
 {
-	return __HC_ICAdd_PostDec(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_PostDec((CCodeCtrl*)stk[0], stk[1]);
 }
 
 static int64_t STK___HC_ICAdd_Pow(int64_t* stk)
 {
-	return __HC_ICAdd_Pow(stk[0]);
+	return (int64_t)__HC_ICAdd_Pow((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Eq(int64_t* stk)
 {
-	return __HC_ICAdd_Eq(stk[0]);
+	return (int64_t)__HC_ICAdd_Eq((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Div(int64_t* stk)
 {
-	return __HC_ICAdd_Div(stk[0]);
+	return (int64_t)__HC_ICAdd_Div((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Sub(int64_t* stk)
 {
-	return __HC_ICAdd_Sub(stk[0]);
+	return (int64_t)__HC_ICAdd_Sub((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Mul(int64_t* stk)
 {
-	return __HC_ICAdd_Mul(stk[0]);
+	return (int64_t)__HC_ICAdd_Mul((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Add(int64_t* stk)
 {
-	return __HC_ICAdd_Add(stk[0]);
+	return (int64_t)__HC_ICAdd_Add((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Deref(int64_t* stk)
 {
-	return __HC_ICAdd_Deref(stk[0], stk[1], stk[2]);
+	return (int64_t)__HC_ICAdd_Deref((CCodeCtrl*)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK___HC_ICAdd_Comma(int64_t* stk)
 {
-	return __HC_ICAdd_Comma(stk[0]);
+	return (int64_t)__HC_ICAdd_Comma((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Addr(int64_t* stk)
 {
-	return __HC_ICAdd_Addr(stk[0]);
+	return (int64_t)__HC_ICAdd_Addr((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Xor(int64_t* stk)
 {
-	return __HC_ICAdd_Xor(stk[0]);
+	return (int64_t)__HC_ICAdd_Xor((CCodeCtrl*)stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_Mod(int64_t* stk)
 {
-	return __HC_ICAdd_Mod(stk[0]);
+	return (int64_t)__HC_ICAdd_Mod((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Or(int64_t* stk)
 {
-	return __HC_ICAdd_Or(stk[0]);
+	return (int64_t)__HC_ICAdd_Or((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Lt(int64_t* stk)
 {
-	return __HC_ICAdd_Lt(stk[0]);
+	return (int64_t)__HC_ICAdd_Lt((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Gt(int64_t* stk)
 {
-	return __HC_ICAdd_Gt(stk[0]);
+	return (int64_t)__HC_ICAdd_Gt((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Ge(int64_t* stk)
 {
-	return __HC_ICAdd_Ge(stk[0]);
+	return (int64_t)__HC_ICAdd_Ge((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Le(int64_t* stk)
 {
-	return __HC_ICAdd_Le(stk[0]);
+	return (int64_t)__HC_ICAdd_Le((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_LNot(int64_t* stk)
 {
-	return __HC_ICAdd_LNot(stk[0]);
+	return (int64_t)__HC_ICAdd_LNot((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Vargs(int64_t* stk)
 {
-	return __HC_ICAdd_Vargs(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_Vargs((CCodeCtrl*)stk[0], stk[1]);
 }
 static int64_t STK___HC_ICAdd_BNot(int64_t* stk)
 {
-	return __HC_ICAdd_BNot(stk[0]);
+	return (int64_t)__HC_ICAdd_BNot((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_AndAnd(int64_t* stk)
 {
-	return __HC_ICAdd_AndAnd(stk[0]);
+	return (int64_t)__HC_ICAdd_AndAnd((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_OrOr(int64_t* stk)
 {
-	return __HC_ICAdd_OrOr(stk[0]);
+	return (int64_t)__HC_ICAdd_OrOr((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_XorXor(int64_t* stk)
 {
-	return __HC_ICAdd_XorXor(stk[0]);
+	return (int64_t)__HC_ICAdd_XorXor((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Ne(int64_t* stk)
 {
-	return __HC_ICAdd_Ne(stk[0]);
+	return (int64_t)__HC_ICAdd_Ne((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Lsh(int64_t* stk)
 {
-	return __HC_ICAdd_Lsh(stk[0]);
+	return (int64_t)__HC_ICAdd_Lsh((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_Rsh(int64_t* stk)
 {
-	return __HC_ICAdd_Rsh(stk[0]);
+	return (int64_t)__HC_ICAdd_Rsh((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_AddEq(int64_t* stk)
 {
-	return __HC_ICAdd_AddEq(stk[0]);
+	return (int64_t)__HC_ICAdd_AddEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_SubEq(int64_t* stk)
 {
-	return __HC_ICAdd_SubEq(stk[0]);
+	return (int64_t)__HC_ICAdd_SubEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_MulEq(int64_t* stk)
 {
-	return __HC_ICAdd_MulEq(stk[0]);
+	return (int64_t)__HC_ICAdd_MulEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_DivEq(int64_t* stk)
 {
-	return __HC_ICAdd_DivEq(stk[0]);
+	return (int64_t)__HC_ICAdd_DivEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_LshEq(int64_t* stk)
 {
-	return __HC_ICAdd_LshEq(stk[0]);
+	return (int64_t)__HC_ICAdd_LshEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_RshEq(int64_t* stk)
 {
-	return __HC_ICAdd_RshEq(stk[0]);
+	return (int64_t)__HC_ICAdd_RshEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_AndEq(int64_t* stk)
 {
-	return __HC_ICAdd_AndEq(stk[0]);
+	return (int64_t)__HC_ICAdd_AndEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_OrEq(int64_t* stk)
 {
-	return __HC_ICAdd_OrEq(stk[0]);
+	return (int64_t)__HC_ICAdd_OrEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_XorEq(int64_t* stk)
 {
-	return __HC_ICAdd_XorEq(stk[0]);
+	return (int64_t)__HC_ICAdd_XorEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_ModEq(int64_t* stk)
 {
-	return __HC_ICAdd_ModEq(stk[0]);
+	return (int64_t)__HC_ICAdd_ModEq((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_ICAdd_IReg(int64_t* stk)
 {
-	return __HC_ICAdd_IReg(stk[0], stk[1], stk[2], stk[3]);
+	return (int64_t)__HC_ICAdd_IReg((CCodeCtrl*)stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK___HC_ICAdd_FReg(int64_t* stk)
 {
-	return __HC_ICAdd_FReg(stk[0], stk[1]);
+	return (int64_t)__HC_ICAdd_FReg((CCodeCtrl*)stk[0], stk[1]);
 }
 static int64_t STK___HC_ICAdd_Frame(int64_t* stk)
 {
-	return __HC_ICAdd_Frame(stk[0], stk[1], stk[2], stk[3]);
+	return (int64_t)__HC_ICAdd_Frame((CCodeCtrl*)stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK___HC_CodeMiscStrNew(int64_t* stk)
 {
-	return __HC_CodeMiscStrNew(stk[0], stk[1], stk[2]);
+	return (int64_t)__HC_CodeMiscStrNew((CCmpCtrl*)stk[0], (char*)stk[1], stk[2]);
 }
 static int64_t STK___HC_CodeMiscLabelNew(int64_t* stk)
 {
-	return __HC_CodeMiscLabelNew(stk[0]);
+	return (int64_t)__HC_CodeMiscLabelNew((CCmpCtrl*)stk[0],(void**)stk[1]);
 }
 static int64_t STK___HC_CmpCtrlNew(int64_t* stk)
 {
-	return __HC_CmpCtrlNew();
+	return (int64_t)__HC_CmpCtrlNew();
 }
 static int64_t STK___HC_CodeCtrlPush(int64_t* stk)
 {
-	return __HC_CodeCtrlPush(stk[0]);
+	return (int64_t)__HC_CodeCtrlPush((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_CodeCtrlPop(int64_t* stk)
 {
-	return __HC_CodeCtrlPop(stk[0]);
+	return __HC_CodeCtrlPop((CCodeCtrl*)stk[0]);
 }
 static int64_t STK___HC_Compile(int64_t* stk)
 {
-	return __HC_Compile(stk[0], stk[1], stk[2]);
+	return (int64_t)__HC_Compile((CCmpCtrl*)stk[0], (int64_t*)stk[1], (char**)stk[2]);
 }
 static int64_t STK___HC_ICAdd_Label(int64_t* stk)
 {
@@ -1118,28 +1122,28 @@ static int64_t STK___HC_ICAdd_BTC(int64_t* stk)
 
 static int64_t STK___HC_ICAdd_LBTS(int64_t* stk)
 {
-	return __HC_ICAdd_LBTS(stk[0]);
+	return (int64_t)__HC_ICAdd_LBTS(stk[0]);
 }
 static int64_t STK___HC_ICAdd_LBTR(int64_t* stk)
 {
-	return __HC_ICAdd_LBTR(stk[0]);
+	return (int64_t)__HC_ICAdd_LBTR(stk[0]);
 }
 static int64_t STK___HC_ICAdd_LBTC(int64_t* stk)
 {
-	return __HC_ICAdd_LBTC(stk[0]);
+	return (int64_t)__HC_ICAdd_LBTC(stk[0]);
 }
 
 static int64_t STK___HC_ICAdd_ToF64(int64_t* stk)
 {
-	return __HC_ICAdd_ToF64(stk[0]);
+	return (int64_t)__HC_ICAdd_ToF64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_ShortAddr(int64_t* stk)
 {
-	return __HC_ICAdd_ShortAddr(stk[0], stk[1], stk[2], stk[3]);
+	return (int64_t)__HC_ICAdd_ShortAddr(stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK_Misc_Caller(int64_t* stk)
 {
-	return Misc_Caller(stk[0]);
+	return (int64_t)Misc_Caller(stk[0]);
 }
 static int64_t STK_VFsSetPwd(int64_t* stk)
 {
@@ -1155,7 +1159,7 @@ static int64_t STK_VFsIsDir(int64_t* stk)
 }
 static int64_t STK_VFsFileRead(int64_t* stk)
 {
-	return VFsFileRead(stk[0], stk[1]);
+	return (int64_t)VFsFileRead(stk[0], stk[1]);
 }
 static int64_t STK_VFsFileWrite(int64_t* stk)
 {
@@ -1167,7 +1171,7 @@ static int64_t STK_VFsDel(int64_t* stk)
 }
 static int64_t STK_VFsDir(int64_t* stk)
 {
-	return VFsDir(stk[0]);
+	return (int64_t)VFsDir(stk[0]);
 }
 static int64_t STK_VFsDirMk(int64_t* stk)
 {
@@ -1251,7 +1255,7 @@ static int64_t STK___HC_CodeMiscInterateThroughRefs(int64_t* stk)
 }
 static int64_t STK___HC_CodeMiscJmpTableNew(int64_t* stk)
 {
-	return __HC_CodeMiscJmpTableNew(stk[0], stk[1], stk[2], stk[3]);
+	return (int64_t)__HC_CodeMiscJmpTableNew(stk[0], stk[1], stk[2], stk[3]);
 }
 void BootAiwnios(char *bootstrap_text)
 {
@@ -1270,6 +1274,7 @@ void BootAiwnios(char *bootstrap_text)
 		// TODO make a better way of doing this
 		PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
 		PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
+		PrsAddSymbol("__HC_ICAdd_RawBytes",STK__HC_ICAdd_RawBytes,3);
 		PrsAddSymbol("__HC_SetAOTRelocBeforeRIP", STK___HC_SetAOTRelocBeforeRIP, 2);
 		PrsAddSymbol("__HC_CodeMiscIsUsed", STK___HC_CodeMiscIsUsed, 1);
 		PrsAddSymbol("AiwniosSetClipboard", STK_AiwniosSetClipboard, 1);
@@ -1392,7 +1397,7 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("__HC_ICAdd_IReg", STK___HC_ICAdd_IReg, 4);
 		PrsAddSymbol("__HC_ICAdd_Frame", STK___HC_ICAdd_Frame, 4);
 		PrsAddSymbol("__HC_CodeMiscStrNew", STK___HC_CodeMiscStrNew, 3);
-		PrsAddSymbol("__HC_CodeMiscLabelNew", STK___HC_CodeMiscLabelNew, 1);
+		PrsAddSymbol("__HC_CodeMiscLabelNew", STK___HC_CodeMiscLabelNew, 2);
 		PrsAddSymbol("__HC_CmpCtrlNew", STK___HC_CmpCtrlNew, 0);
 		PrsAddSymbol("__HC_CodeCtrlPush", STK___HC_CodeCtrlPush, 1);
 		PrsAddSymbol("__HC_CodeCtrlPop", STK___HC_CodeCtrlPop, 1);
@@ -1479,7 +1484,7 @@ static void Boot()
 		"#define IMPORT_AIWNIOS_SYMS 1\n" \
 		"#define TEXT_MODE 1\n" \
 		"#define BOOTSTRAP 1\n" \
-		"#include \"Src/FULL_PACKAGE.HC\";\n" 
+		"#include \"Src/FULL_PACKAGE.HC\";;\n" 
 		#if defined(__aarch64__) || defined(_M_ARM64)
 		len=snprintf(NULL,0,BOOTSTRAP_FMT,"AARCH64");
 		char buf[len+1];
