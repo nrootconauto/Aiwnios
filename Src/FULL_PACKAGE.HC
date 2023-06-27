@@ -232,6 +232,12 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   #endif
 }
 U0 InitSymbols() {
+#ifdef TARGET_X86
+  ExePrint("#define TARGET_X86\n;");
+#endif
+#ifdef TARGET_AARCH64
+  ExePrint("#define TARGET_AARCH64\n;");
+#endif
   ExeFile("T:/Src/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
   if(FileFind("HCRT2.DBG.Z"))

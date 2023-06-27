@@ -713,7 +713,6 @@ I64 ImplicitFunCall(CCmpCtrl *cc,CHashFun *fun,I64 start_idx=0) {
     } else if(lst->flags&MLF_DOT_DOT_DOT) {
       //Do nothing ,argc/argv are implicit
     } else {
-      DumpRPN(cc->coc.coc_head.next);
       LexExcept(cc,"Missing dft value for argument at: ");
     }
 next:
@@ -757,7 +756,7 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
   switch(rpn->type) {
     break;case IC_IMM_I64:
     case IC_FRAME:
-    ",%d,",rpn->imm_i64;
+    DbgPrint(",%d,",rpn->imm_i64);
     break;case IC_IMM_F64:
     ",%n,",rpn->imm_f64;
   }
@@ -1242,14 +1241,16 @@ vargs:
 		  ic_fun->return_class
 		  );
 	  } else {
-	    arity--;
-	    RPNDel(next); //Remove function
-	    RPNAddNew(
+		rpn=RPNAddNew(
 		  cc,
-		  ic_fun->exe_addr,
+		  IC_CALL_INDIRECT,
 		  arity,
 		  ic_fun->return_class
 		  );
+		//"SWAP" out the new rpn type with the desired one
+		rpn->type=ic_fun->exe_addr; 		  
+		//next is the old dummy function,not needed as we are using an intermendiate
+		RPNDel(next);
 	  }
         } else {
 	  if(tok==TK_IDENT&&cc->hash_entry) {
@@ -1286,10 +1287,10 @@ found_end_paren:;
 	  flags&=~PEF_FUN_BEFORE;
 paren_unexp:;
         break;case '[':
-	if(cc->flags&CCF_ASM_EXPRESSIONS) {
+        if(cc->flags&CCF_ASM_EXPRESSIONS) {
 	  finish=TRUE;
 	  break;
-	}
+        }
         Lex(cc);
         PrsPush(cc->ps,(PREC_NULL<<32)|'[]');
         PrsPush2(cc->ps,NULL);
@@ -1366,7 +1367,7 @@ found_end_square:
 	        RPNDel(PrsPop2(cc->ps));
 	      } else
 	        LexExcept(cc,"Expected a '&' at ");
-	      cc->local_var_entry->reg=REG_NONE;
+	      cc->local_var_entry->reg=REG_NONE;
 	      tmpex=CAlloc(sizeof(CHashExport));
 	      tmpex->str=MStrPrint("%s.%s",cc->htc.fun->str,cc->cur_str);
 	      tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
@@ -1377,18 +1378,18 @@ new:
 	      tmpex->str=StrNew(cc->cur_str);
 	      if (*tmpex->str=='@' && tmpex->str[1]=='@') {
 	        tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED | HTF_LOCAL;
+//
+	        //Nroot here,I turn local labels into scope.@@local
 	        //
-		//Nroot here,I turn local labels into scope.@@local
-		//
-		Free(tmpex->str);
-		tmpex->str=MStrPrint("%d.%s",cc->asm_local_scope,cc->cur_str);
-	        //HashAdd(tmpex,cc->htc.local_hash_table);
+	        Free(tmpex->str);
+	        tmpex->str=MStrPrint("%d.%s",cc->asm_local_scope,cc->cur_str);
+//HashAdd(tmpex,cc->htc.local_hash_table);
 	        cc->flags|=CCF_LOCAL;
 	        goto ins_label;
 	      } else {
 	        tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
 ins_label:
-		tmpc=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_EXPORT_SYS_SYM);
+	        tmpc=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_EXPORT_SYS_SYM);
 	        if (tmpc)
 		  HashAddAfter(tmpex,tmpc,cc->htc.glbl_hash_table);
 	        else
@@ -1444,23 +1445,25 @@ ins_label:
 	      goto fin_ident;
 	    }
 	    if(cc->hash_entry->type&HTT_FUN) {
-	      if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
-	        rpn=RPNAddNew(
-		      cc,
-		      IC_ADDR_IMPORT,
-		      CodeMiscHashNew(cc,cc->hash_entry),
-		      cc->hash_entry,
-		      );
-	      else
-	        rpn=RPNAddNew(
-		      cc,
-		      IC_IMM_I64,
-		      cc->hash_entry(CHashFun*)->exe_addr,
-		      cc->hash_entry,
-		      );
 	      ic_fun=cc->hash_entry;
+	        if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
+		  rpn=RPNAddNew(
+		        cc,
+		        IC_ADDR_IMPORT,
+		        CodeMiscHashNew(cc,cc->hash_entry),
+		        cc->hash_entry,
+		        );
+	        else
+		  rpn=RPNAddNew(
+		        cc,
+		        IC_IMM_I64,
+		        cc->hash_entry(CHashFun*)->exe_addr,
+		        cc->hash_entry,
+		        );
 	      Lex(cc);
 	      if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
+	        if(ic_fun->flags&(1<<Ff_INTERNAL))
+		  LexExcept(cc,"Can't get address of internal function at ");
 //Continue as usual
 	        rpn->ic_class=AddrOfType(rpn->ic_class); //Emulate a pointer star
 	        PrsPop(cc->ps);
@@ -1557,6 +1560,7 @@ fin_ident:
 	    flags|=PEF_FUN_BEFORE;
 	  } else
 	    flags&=~PEF_FUN_BEFORE;
+fin_ident_final:;
 	  break;end:
         flags&=~PEF_ADDR_OF;
         break;default:
