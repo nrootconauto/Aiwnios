@@ -499,7 +499,7 @@ I64 GetOpcodeReg(CX86Opcode *opc,I64 rex,U8 *data) {
   }
   throw('UAsmItrn');
 }
-U8 *DisasOpc(CDoc *doc,U8 *data) {
+U8 *DisasOpc(CDoc *doc,U8 *data) {
   DocPrint(doc,"%P\t",data);
   I64 prefix_groups=0,opc,ext;
   Bool found_opc=FALSE;

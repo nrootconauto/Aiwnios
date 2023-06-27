@@ -32,13 +32,6 @@ U0 InsNote(CMakeSongSettings *mss,U8 *buf,I64 k,I64 *j)
   }
 }
 
-#define DUR_4		0
-#define DUR_8_8		1
-#define DUR_3_3_3	2
-#define DUR_16_16_16_16	3
-#define DUR_8DOT_16	4
-#define DUR_8_16_16	5
-#define DUR_16_16_8	6
 
 U8 god_simple_songs [5]={DUR_4,DUR_4,DUR_4,DUR_4,DUR_8_8};
 U8 god_normal_songs [5]={DUR_4,DUR_4,DUR_8_8,DUR_3_3_3,DUR_16_16_16_16};

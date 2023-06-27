@@ -19,7 +19,7 @@ I64 PrsPop2(CPrsStk *ps)
 }
 
 U0 PrsPush3(CPrsStk *ps,I64 val)
-{
+{
   ps->stk3[++ps->ptr3]=val;
 }
 

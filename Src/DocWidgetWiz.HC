@@ -334,8 +334,6 @@ U0 EdInsPageSetting()
   Free(e);
 }
 
-#define WIZ_HIGHLIGHT_ON	(DOCT_ERROR+1)
-#define WIZ_HIGHLIGHT_OFF	(DOCT_ERROR+2)
 
 I64 PopUpWidgetType()
 {

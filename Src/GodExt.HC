@@ -1,7 +1,5 @@
 #help_index "God"
 
-#define GOD_BAD_BITS	4
-#define GOD_GOOD_BITS	24
 
 public class CGodGlbls
 {

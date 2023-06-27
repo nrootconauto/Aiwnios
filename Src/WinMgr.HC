@@ -761,7 +761,7 @@ wmt_start:
 		    DocUnlock(doc);
 		  }
 		}
-	      }// else if (msg_code==MSG_MS_R_D_UP) Nroot doesnt like this
+	      }// else if (msg_code==MSG_MS_R_D_UP) Nroot doesnt like this
 		// TaskMsg(task,0,MSG_KEY_DOWN,CH_SHIFT_ESC,0,0);
 	    }
 	    old_ms.rb=FALSE;

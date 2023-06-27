@@ -64,7 +64,7 @@ Bool HashRemDel(CHash *tmph,CHashTable *table,
   for(c=table->body[b];c;c=c->next) {
     if(c==tmph) {
       if(p) p->next=c->next;
-      else table->body[b]=c->next;
+      else table->body[b]=c->next;
       c->next=NULL;
       HashDel(c);
       return TRUE;

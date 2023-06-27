@@ -710,7 +710,7 @@ U0 MPDrawIt(CTask *task,CDC *dc)
     }
   }
 
-  tmpb=b_head[Gs->num].next;
+  tmpb=b_head[Gs->num].next;
   while (tmpb!=&b_head[Gs->num]) {
     elems1=SpriteInterpolate(Tri(tS,0.2),$IB,"<2>",BI=2$,$IB,"<3>",BI=3$);
 

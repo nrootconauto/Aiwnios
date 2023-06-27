@@ -11,7 +11,7 @@ U0 DrawIt(CTask *,CDC *dc)
   I64 i,j;
 
   dc->color=BLACK;
-  dc->thick=7;
+  dc->thick=7;
   for (i=0;i<4;i++) {
     y=0;
     d=dt%4;

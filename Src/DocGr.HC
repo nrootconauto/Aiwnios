@@ -86,7 +86,6 @@ public Bool PopUpTransform(I64 *r)
 }
 
 #help_index "Graphics/Input"
-#define PU_SPACING	10
 U0 DrawIt(CTask *task,CDC *dc)
 {
   I64 i,j,i1,j1;

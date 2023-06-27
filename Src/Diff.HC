@@ -20,13 +20,6 @@ I64 DiffEntriesCompare(CDocEntry *doc_e1,CDocEntry *doc_e2)
   return StrCmp(doc_e1->tag,doc_e2->tag);
 }
 
-#define DF_MODIFIED			0x01
-#define DF_DONT_MODIFIED		0x02
-#define DF_REMAINDER_ALL_FILE1		0x04
-#define DF_REMAINDER_ALL_FILE2		0x08
-#define DF_ABORT_FILE			0x10
-#define DF_ABORT_ALL_FILES		0x20
-#define DF_NO_MORE_PMTS_THIS_FILE	0x40
 
 U0 DiffSel(CDoc *doc,I64 *_df_flags,I64 j1_lo,I64 j1_hi,
 	I64 j2_lo,I64 j2_hi,I64 cnt1,I64 cnt2,

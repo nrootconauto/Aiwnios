@@ -280,8 +280,6 @@ public U0 DCReflect(CDC *dc,I64 *_x,I64 *_y,I64 *_z)
 }
 
 #help_index "Graphics/Math"
-#define GR_SCALE1_BITS	24
-#define GR_SCALE2_BITS	8
 public Bool Circle(U8 *aux_data,I64 cx,I64 cy,I64 cz,I64 radius,
 	Bool (*fp_plot)(U8 *aux,I64 x,I64 y,I64 z),
 	I64 step=1,F64 start_radians=0,F64 len_radians=2*pi)
@@ -720,10 +718,6 @@ public Bool BSpline3(U8 *aux_data,CD3I32 *ctrl,I64 cnt,
   return TRUE;
 }
 
-#define CC_LEFT		1
-#define CC_RIGHT	2
-#define CC_TOP		4
-#define CC_BOTTOM	8
 
 public Bool ClipLine(I64 *_x1,I64 *_y1,I64 *_x2,I64 *_y2,
 	I64 left,I64 top,I64 right,I64 bottom)
