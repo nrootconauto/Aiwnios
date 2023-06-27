@@ -5860,6 +5860,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				rpn->code_misc->str,
 				rpn->code_misc->str_len);
 		}
+		break;
 	ic_raw_bytes:
 		if (cctrl->code_ctrl->final_pass) {
 			memcpy(
