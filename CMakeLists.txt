@@ -82,6 +82,8 @@ find_package(PkgConfig)
 pkg_check_modules(SDL2 REQUIRED sdl2)
 target_compile_options(aiwnios PUBLIC ${SDL2_CFLAGS_OTHER})
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
+
+target_compile_options(aiwnios PRIVATE -w)
 set(ASM_OBJS "")
 if("${ARCH}" STREQUAL "x86_64")
   foreach(X IN LISTS ASM_SOURCES)

@@ -134,7 +134,7 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
     test=HashFind(LstSub(op,name),cmp.asm_hash,HTT_OPCODE);
     if(test) {
       if(test->arity!=opc->arity) {
-	"ARITYMISSAMATCH:%s\n",LstSub(op,name);
+	"ARITYMISSAMATCH:%s\n",LstSub(op,name);
 	throw('AsmItrn');
       }
     }
