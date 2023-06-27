@@ -215,6 +215,7 @@ CRPN* ICFwd(CRPN* rpn)
 	case IC_RELOC:
 		return rpn->base.next;
 		break;
+	case IC_GET_VARGS_PTR:
 	case IC_TO_F64:
 	case IC_TO_I64:
 		goto unop;
@@ -580,6 +581,9 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 	case IC_RELOC:
 		printf("RELOC:%s\n", rpn->code_misc->str);
 		return ICFwd(rpn);
+	case IC_GET_VARGS_PTR:
+		printf("GET_VARGS_PTR:\n");
+		return ParserDumpIR(rpn->base.next,indent+1);
 	case __IC_VARGS:
 		printf("VARGS:%d\n", rpn->length);
 		rpn = rpn->base.next;
@@ -3704,7 +3708,7 @@ ret:
 	cctrl->flags = old_flags;
 	return 1;
 }
-static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
+static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked,int64_t arity)
 {
 	CHashFun* fun;
 	CHashGlblVar* glbl;
@@ -3714,12 +3718,16 @@ static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
 			glbl->base.type &= ~HTF_EXTERN;
 			glbl->data_addr = ptr;
 		} else if (glbl->base.type & HTT_FUN) {
+			if(fun->argc!=arity) {
+				puts(name);
+				abort();
+			}
 			if (!fun->fun_ptr) {
 				fun->base.base.type &= ~HTF_EXTERN;
 				if (naked)
-					fun->fun_ptr = GenFFIBindingNaked(ptr, 0);
+					fun->fun_ptr = GenFFIBindingNaked(ptr, arity);
 				else
-					fun->fun_ptr = GenFFIBinding(ptr, 0);
+					fun->fun_ptr = GenFFIBinding(ptr, arity);
 			}
 		}
 		SysSymImportsResolve(name, 0);
@@ -3730,21 +3738,21 @@ static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
 		exp->base.str = A_STRDUP(name, NULL);
 		exp->base.type = HTT_EXPORT_SYS_SYM;
 		if (naked)
-			exp->val = GenFFIBindingNaked(ptr, 0);
+			exp->val = GenFFIBindingNaked(ptr, arity);
 		else
-			exp->val = GenFFIBinding(ptr, 0);
+			exp->val = GenFFIBinding(ptr, arity);
 		HashAdd(exp, Fs->hash_table);
 	}
 }
 
-void PrsBindCSymbol(char* name, void* ptr)
+void PrsBindCSymbol(char* name, void* ptr,int64_t arity)
 {
-	__PrsBindCSymbol(name, ptr, 0);
+	__PrsBindCSymbol(name, ptr, 0,arity);
 }
 
-void PrsBindCSymbolNaked(char* name, void* ptr)
+void PrsBindCSymbolNaked(char* name, void* ptr,int64_t arity)
 {
-	__PrsBindCSymbol(name, ptr, 1);
+	__PrsBindCSymbol(name, ptr, 1,arity);
 }
 
 int64_t PrsTry(CCmpCtrl* cctrl)
@@ -4379,6 +4387,16 @@ CCodeMiscRef* CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 	ref->next = misc->refs;
 	misc->refs = ref;
 	return ref;
+}
+
+void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) 
+{
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = IC_GET_VARGS_PTR;
+	rpn->ic_class = NULL;
+	rpn->raw_type = RT_I64i;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
 }
 
 void __HC_CodeMiscInterateThroughRefs(CCodeMisc* cm, void (*fptr)(void* addr, void* user_data), void* user_data)

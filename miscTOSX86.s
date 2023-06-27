@@ -18,4 +18,4 @@ _loop:
 en:
 	CALL QWORD [RBP+2*8] ;fptr
 	LEAVE
-	RET
+	RET 16

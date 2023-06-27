@@ -7,6 +7,7 @@
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
+import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
@@ -95,6 +96,7 @@ import U8 * __HC_ICAdd_LBTR(U8*);
 import U8 * __HC_ICAdd_LBTS(U8*);
 import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 #else
+extern U8 *__HC_ICAdd_GetVargsPtr(U8*);
 extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 extern U8 * __HC_ICAdd_ToF64(U8 *);
@@ -150,7 +152,7 @@ extern U8 * __HC_ICAdd_OrEq(U8*);
 extern U8 * __HC_ICAdd_XorEq(U8*);
 extern U8 * __HC_ICAdd_ModEq(U8*);
 extern U8 * __HC_ICAdd_FReg(U8*,I64);
-extern U8 * __HC_ICAdd_Vargs(U8 *,I64);
+extern U8 * __HC_ICAdd_Ds(U8 *,I64);
 extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
 extern U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 extern U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
@@ -446,7 +448,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       } else {
         __HC_ICAdd_FReg(cc2,mlst->reg);      
       }
-      __HC_ICAdd_Arg(cc2,idx);
+      if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
+        __HC_ICAdd_GetVargsPtr(cc2);
+      } else
+        __HC_ICAdd_Arg(cc2,idx);
       mlst=mlst->next;
     }
     Free(mv);

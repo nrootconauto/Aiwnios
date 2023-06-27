@@ -551,6 +551,7 @@ enum {
 	IC_TAN,
 	IC_ATAN,
 	IC_RAW_BYTES,
+	IC_GET_VARGS_PTR, //Doing this sets the function as a VARGS function
 	IC_CNT, //MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -646,7 +647,7 @@ void HashDel(CHash *h);
 int64_t HashStr(char *str);
 
 
-void PrsBindCSymbol(char *name,void *ptr);
+void PrsBindCSymbol(char *name,void *ptr,int64_t arity);
 void ICFree(CRPN *ic);
 CHashClass *PrsClassNew();
 char *PrsArray(CCmpCtrl *ccmp,CHashClass *base,CArrayDim *dim,char *write_to);
@@ -1134,7 +1135,7 @@ extern int64_t FFI_CALL_TOS_3(void *fptr,int64_t,int64_t,int64_t);
 extern int64_t FFI_CALL_TOS_4(void *fptr,int64_t,int64_t,int64_t,int64_t);
 extern void *GenFFIBinding(void *fptr,int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr,int64_t arity);
-extern void PrsBindCSymbolNaked(char *name,void *ptr);
+extern void PrsBindCSymbolNaked(char *name,void *ptr,int64_t arity);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
 const char *ResolveBootDir(char *use,int overwrite,int make_new_dir);
 

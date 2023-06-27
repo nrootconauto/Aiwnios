@@ -21,11 +21,11 @@ static int64_t STK_PrintPtr(int64_t* stk) { PrintPtr((char*)(stk[0]), (void*)stk
 static void ExitAiwnios();
 static void PrsAddSymbol(char* name, void* ptr, int64_t arity)
 {
-	PrsBindCSymbol(name, ptr);
+	PrsBindCSymbol(name, ptr,arity);
 }
 static void PrsAddSymbolNaked(char* name, void* ptr, int64_t arity)
 {
-	PrsBindCSymbolNaked(name, ptr);
+	PrsBindCSymbolNaked(name, ptr,arity);
 }
 static void FuzzTest1()
 {
@@ -788,6 +788,10 @@ static int64_t STK__HC_ICAdd_RawBytes(int64_t *stk) {
 	return (int64_t)__HC_ICAdd_RawBytes((CCmpCtrl*)stk[0],(char*)stk[1],stk[2]);
 }
 
+static int64_t STK___HC_ICAdd_GetVargsPtr(int64_t *stk) {
+	return (int64_t)__HC_ICAdd_GetVargsPtr((CCmpCtrl*)stk[0]);
+}
+
 static int64_t STK___HC_ICAdd_Typecast(int64_t* stk)
 {
 	return (int64_t)__HC_ICAdd_Typecast((CCodeCtrl*)stk[0], stk[1], stk[2]);
@@ -1283,7 +1287,7 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("Cos", STK_cos, 1);
 		PrsAddSymbol("Sin", STK_sin, 1);
 		PrsAddSymbol("Tan", STK_tan, 1);
-		PrsAddSymbol("Arg", STK_Arg, 1);
+		PrsAddSymbol("Arg", STK_Arg, 2);
 		PrsAddSymbol("ACos", STK_acos, 1);
 		PrsAddSymbol("ASin", STK_asin, 1);
 		PrsAddSymbol("ATan", STK_atan, 1);
@@ -1296,8 +1300,8 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("Free", STK___AIWNIOS_Free, 1);
 		PrsAddSymbol("MSize", STK_MSize, 1);
 		PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
-		PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 1);
-		PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 1);
+		PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
+		PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
 		PrsAddSymbol("MemCpy", STK_memcpy, 3);
 		PrsAddSymbol("MemSet", STK_memset, 3);
 		PrsAddSymbol("MemSetU16", STK_MemSetU16, 3);
@@ -1310,8 +1314,8 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("Log2", STK_log2, 1);
 		PrsAddSymbol("Pow10", STK_Pow10, 1);
 		PrsAddSymbol("Pow", STK_pow, 2);
-		PrsAddSymbol("PrintI", STK_PrintI, 1);
-		PrsAddSymbol("PrintF", STK_PrintF, 1);
+		PrsAddSymbol("PrintI", STK_PrintI, 2);
+		PrsAddSymbol("PrintF", STK_PrintF, 2);
 		PrsAddSymbol("Round", STK_round, 1);
 		PrsAddSymbol("Ln", STK_log, 1);
 		PrsAddSymbol("Floor", STK_floor, 1);
@@ -1324,40 +1328,41 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("LBtr", STK_Misc_LBtr, 2);
 		PrsAddSymbol("Bts", STK_Misc_Bts, 2);
 		PrsAddSymbol("Btr", STK_Misc_Btr, 2);
-		PrsAddSymbol("Bsf", STK_Bsf, 2);
-		PrsAddSymbol("Bsr", STK_Bsr, 2);
+		PrsAddSymbol("Bsf", STK_Bsf, 1);
+		PrsAddSymbol("Bsr", STK_Bsr, 1);
 		PrsAddSymbol("DbgPutS", STK_PutS, 1);
 		PrsAddSymbol("PutS", STK_PutS, 1);
 		PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
 		PrsAddSymbol("Fs", GetHolyFs, 0); // Gs just calls Thread local storage on linux(not mutations in saved registers)
-		PrsAddSymbol("SpawnCore", STK_SpawnCore, 1);
+		PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
 		PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
 		PrsAddSymbol("MPAwake", STK_MPAwake, 1);
 		PrsAddSymbol("mp_cnt", STK_mp_cnt, 0);
 		PrsAddSymbol("Gs", GetHolyGs, 0); // Gs just calls Thread local storage on linux(not mutations in saved registers)
 		PrsAddSymbol("SetGs", STK_SetHolyGs, 1);
-		PrsAddSymbol("__GetTicks", STK___GetTicks, 1);
+		PrsAddSymbol("__GetTicks", STK___GetTicks, 0);
 		PrsAddSymbol("__Sleep", STK___Sleep, 1);
 		PrsAddSymbol("ImportSymbolsToHolyC", STK_ImportSymbolsToHolyC, 1);
 		// These dudes will expected to return to a location on the stack,SO DONT MUDDY THE STACK WITH ABI "translations"
 		PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
 		PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
 		PrsAddSymbolNaked("Call", TempleOS_CallN, 3);
+		PrsAddSymbol("__HC_ICAdd_GetVargsPtr",STK___HC_ICAdd_GetVargsPtr,1);
 		PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
 		PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);
 		PrsAddSymbol("__HC_ICAdd_Typecast", STK___HC_ICAdd_Typecast, 3);
 		PrsAddSymbol("__HC_ICAdd_SubCall", STK___HC_ICAdd_SubCall, 2);
 		PrsAddSymbol("__HC_ICAdd_SubProlog", STK___HC_ICAdd_SubProlog, 1);
 		PrsAddSymbol("__HC_ICAdd_SubRet", STK___HC_ICAdd_SubRet, 1);
-		PrsAddSymbol("__HC_ICAdd_BoundedSwitch", STK___HC_ICAdd_Switch, 1);
-		PrsAddSymbol("__HC_ICAdd_UnboundedSwitch", STK___HC_ICAdd_UnboundedSwitch, 1);
-		PrsAddSymbol("__HC_ICAdd_PreInc", STK___HC_ICAdd_PreInc, 1);
+		PrsAddSymbol("__HC_ICAdd_BoundedSwitch", STK___HC_ICAdd_Switch, 3);
+		PrsAddSymbol("__HC_ICAdd_UnboundedSwitch", STK___HC_ICAdd_UnboundedSwitch, 2);
+		PrsAddSymbol("__HC_ICAdd_PreInc", STK___HC_ICAdd_PreInc, 2);
 		PrsAddSymbol("__HC_ICAdd_Call", STK___HC_ICAdd_Call, 4);
 		PrsAddSymbol("__HC_ICAdd_F64", STK___HC_ICAdd_F64, 2);
 		PrsAddSymbol("__HC_ICAdd_I64", STK___HC_ICAdd_I64, 2);
-		PrsAddSymbol("__HC_ICAdd_PreDec", STK___HC_ICAdd_PreDec, 1);
-		PrsAddSymbol("__HC_ICAdd_PostDec", STK___HC_ICAdd_PostDec, 1);
-		PrsAddSymbol("__HC_ICAdd_PostInc", STK___HC_ICAdd_PostInc, 1);
+		PrsAddSymbol("__HC_ICAdd_PreDec", STK___HC_ICAdd_PreDec, 2);
+		PrsAddSymbol("__HC_ICAdd_PostDec", STK___HC_ICAdd_PostDec, 2);
+		PrsAddSymbol("__HC_ICAdd_PostInc", STK___HC_ICAdd_PostInc, 2);
 		PrsAddSymbol("__HC_ICAdd_Pow", STK___HC_ICAdd_Pow, 1);
 		PrsAddSymbol("__HC_ICAdd_Eq", STK___HC_ICAdd_Eq, 1);
 		PrsAddSymbol("__HC_ICAdd_Div", STK___HC_ICAdd_Div, 1);
@@ -1375,7 +1380,7 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("__HC_ICAdd_Le", STK___HC_ICAdd_Le, 1);
 		PrsAddSymbol("__HC_ICAdd_Ge", STK___HC_ICAdd_Ge, 1);
 		PrsAddSymbol("__HC_ICAdd_LNot", STK___HC_ICAdd_LNot, 1);
-		PrsAddSymbol("__HC_ICAdd_Vargs", STK___HC_ICAdd_Vargs, 1);
+		PrsAddSymbol("__HC_ICAdd_Vargs", STK___HC_ICAdd_Vargs, 2);
 		PrsAddSymbol("__HC_ICAdd_BNot", STK___HC_ICAdd_BNot, 1);
 		PrsAddSymbol("__HC_ICAdd_AndAnd", STK___HC_ICAdd_AndAnd, 1);
 		PrsAddSymbol("__HC_ICAdd_OrOr", STK___HC_ICAdd_OrOr, 1);
@@ -1402,7 +1407,6 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("__HC_CodeCtrlPush", STK___HC_CodeCtrlPush, 1);
 		PrsAddSymbol("__HC_CodeCtrlPop", STK___HC_CodeCtrlPop, 1);
 		PrsAddSymbol("__HC_Compile", STK___HC_Compile, 3);
-		PrsAddSymbol("__HC_CodeMiscLabelNew", STK___HC_CodeMiscLabelNew, 1);
 		PrsAddSymbol("__HC_CodeMiscStrNew", STK___HC_CodeMiscStrNew, 3);
 		PrsAddSymbol("__HC_CodeMiscJmpTableNew", STK___HC_CodeMiscJmpTableNew, 4);
 		PrsAddSymbol("__HC_ICAdd_Label", STK___HC_ICAdd_Label, 2);
@@ -1415,10 +1419,10 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("__HC_ICAdd_Ret", STK___HC_ICAdd_Ret, 1);
 		PrsAddSymbol("__HC_ICAdd_Arg", STK___HC_ICAdd_Arg, 2);
 		PrsAddSymbol("__HC_ICAdd_SetFrameSize", STK___HC_ICAdd_SetFrameSize, 2);
-		PrsAddSymbol("__HC_ICAdd_Reloc", STK___HC_ICAdd_Reloc, 5);
+		PrsAddSymbol("__HC_ICAdd_Reloc", STK___HC_ICAdd_Reloc, 6);
 		PrsAddSymbol("__HC_ICSetLine", STK___HC_ICSetLine, 2);
 		PrsAddSymbol("__HC_ICAdd_StaticRef", STK___HC_ICAdd_StaticRef, 4);
-		PrsAddSymbol("__HC_ICAdd_StaticData", STK___HC_ICAdd_StaticData, 4);
+		PrsAddSymbol("__HC_ICAdd_StaticData", STK___HC_ICAdd_StaticData, 5);
 		PrsAddSymbol("__HC_ICAdd_SetStaticsSize", STK___HC_ICAdd_SetStaticsSize, 2);
 		PrsAddSymbol("__HC_ICAdd_ToI64", STK___HC_ICAdd_ToI64, 1);
 		PrsAddSymbol("__HC_ICAdd_ToF64", STK___HC_ICAdd_ToF64, 1);
@@ -1439,18 +1443,18 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("VFsFRead", STK_VFsFileRead, 2);
 		PrsAddSymbol("VFsFWrite", STK_VFsFileWrite, 3);
 		PrsAddSymbol("VFsDel", STK_VFsDel, 1);
-		PrsAddSymbol("VFsDir", STK_VFsDir, 1);
+		PrsAddSymbol("VFsDir", STK_VFsDir, 0);
 		PrsAddSymbol("VFsDirMk", STK_VFsDirMk, 1);
 		PrsAddSymbol("VFsFBlkRead", STK_VFsBlkRead, 4);
 		PrsAddSymbol("VFsFBlkWrite", STK_VFsBlkWrite, 4);
 		PrsAddSymbol("VFsFOpenW", STK_VFsFOpenW, 1);
 		PrsAddSymbol("VFsFOpenR", STK_VFsFOpenR, 1);
 		PrsAddSymbol("VFsFClose", STK_VFsFClose, 1);
-		PrsAddSymbol("VFsFSeek", STK_VFsFSeek, 1);
+		PrsAddSymbol("VFsFSeek", STK_VFsFSeek, 2);
 		PrsAddSymbol("VFsSetDrv", STK_VFsSetDrv, 1);
 		PrsAddSymbol("FUnixTime", STK_VFsUnixTime, 1);
 		PrsAddSymbol("FSize", STK_VFsFSize, 1);
-		PrsAddSymbol("VFsFTrunc", STK_VFsTrunc, 1);
+		PrsAddSymbol("VFsFTrunc", STK_VFsTrunc, 2);
 		PrsAddSymbol("UnixNow", STK_UnixNow, 0);
 		PrsAddSymbol("__GrPaletteColorSet", STK_GrPaletteColorSet, 2);
 		PrsAddSymbol("DrawWindowNew", STK_DrawWindowNew, 0);

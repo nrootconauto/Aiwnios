@@ -217,7 +217,12 @@ static int64_t X86Ret(char* to, int64_t ul)
 	int64_t len = 0;
 	char buf[16];
 	if(!to) to=buf;
-	ADD_U8(0xc3);
+	if(!ul) {
+		ADD_U8(0xc3);
+	} else {
+		ADD_U8(0xc2);
+		ADD_U16(ul);
+	}
 	return len;
 }
 
@@ -2721,17 +2726,22 @@ static int64_t DstRegAffectsMode(CICArg* d, CICArg* arg)
 static int64_t __ICFCallTOS(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 	int64_t code_off)
 {
-	int64_t i;
+	int64_t i,has_vargs=0;
 	CICArg tmp;
 	CRPN* rpn2;
 	int64_t to_pop = rpn->length * 8;
 	void* fptr;
 	for (i = 0; i < rpn->length; i++) {
 		rpn2 = ICArgN(rpn, i);
-		if (rpn2->type == __IC_VARGS)
+		if (rpn2->type == __IC_VARGS) {
+			to_pop-=8; //We dont count argv
 			to_pop += rpn2->length * 8;
-		code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-		code_off = PushToStack(cctrl, &rpn2->res, bin, code_off);
+			has_vargs=1;
+			code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
+		} else {
+			code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
+			code_off = PushToStack(cctrl, &rpn2->res, bin, code_off);
+		}
 	}
 	rpn2 = ICArgN(rpn, rpn->length);
 	if (rpn2->type == IC_SHORT_ADDR) {
@@ -2770,7 +2780,7 @@ static int64_t __ICFCallTOS(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 	}
 after_call:
-	if (to_pop)
+	if (has_vargs)
 		AIWNIOS_ADD_CODE(X86AddImm32, RSP, to_pop);
 	if (rpn->raw_type != RT_U0 && rpn->res.mode != MD_NULL) {
 		tmp.reg = 0;
@@ -3808,17 +3818,28 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	char ilist[16];
 	char flist[16];
 	int64_t i, i2, i3, r, r2, ireg_arg_cnt, freg_arg_cnt, stk_arg_cnt, fsz, code, off;
+	int64_t has_vargs=0,arg_cnt=0;
 	CMemberLst* lst;
 	CICArg fun_arg = { 0 }, write_to = { 0 }, stack = { 0 }, tmp = { 0 };
 	CRPN *rpn, *arg;
 	if (cctrl->cur_fun) {
 		fsz = cctrl->cur_fun->base.sz + 16; //+16 for RBP/return address
+		arg_cnt=cctrl->cur_fun->argc;
+		if(cctrl->cur_fun->base.flags&CLSF_VARGS)
+			arg_cnt--; //argv
 	} else {
 		fsz = 16;
 		for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.next) {
-			if (rpn->type == __IC_SET_FRAME_SIZE) {
-				fsz = rpn->integer;
-				break;
+			switch(rpn->type) {
+				case __IC_SET_FRAME_SIZE:
+					fsz = rpn->integer;
+					break;
+				case IC_GET_VARGS_PTR:
+					has_vargs=1;
+					break;
+				case __IC_ARG:
+					arg_cnt++;
+					break;
 			}
 		}
 	}
@@ -3880,13 +3901,11 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 				write_to.off = lst->off;
 				write_to.raw_type = lst->member_class->raw_type;
 			}
-			if (fun_arg.mode == MD_FRAME && write_to.mode == MD_FRAME) {
-				// DONT DIRTY THE POOP REGISTER THAT IS USED AS AN ARGUMENT
-				tmp.reg = 0;
-				tmp.mode = MD_REG;
-				tmp.raw_type = write_to.raw_type;
-				code_off = ICMov(cctrl, &tmp, &fun_arg, bin, code_off);
-				fun_arg = tmp;
+			if((cctrl->cur_fun->base.flags&CLSF_VARGS)&&!strcmp("argv",lst->str)) {
+				AIWNIOS_ADD_CODE(X86LeaSIB,0,-1,-1,RBP,16+arg_cnt*8);
+				fun_arg.reg=0;
+				fun_arg.mode=MD_REG;
+				fun_arg.raw_type=RT_I64i;
 			}
 			code_off = ICMov(cctrl, &write_to, &fun_arg, bin, code_off);
 			lst = lst->next;
@@ -3911,6 +3930,19 @@ static int64_t FuncProlog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 					fun_arg = tmp;
 				}
 				code_off = ICMov(cctrl, &arg->res, &fun_arg, bin, code_off);
+			} else if(rpn->type==IC_GET_VARGS_PTR) {
+				arg = ICArgN(rpn, 0);
+				PushTmp(cctrl, arg, NULL);
+				PopTmp(cctrl, arg);
+				if(arg->res.mode==MD_REG) {
+					AIWNIOS_ADD_CODE(X86LeaSIB,arg->res.reg,-1,-1,RBP,16+arg_cnt*8);
+				} else {
+					AIWNIOS_ADD_CODE(X86LeaSIB,0,-1,-1,RBP,16+arg_cnt*8);
+					tmp.reg=0;
+					tmp.mode=MD_REG;
+					tmp.raw_type=RT_I64i;
+					code_off = ICMov(cctrl, &arg->res, &tmp, bin, code_off);
+				}
 			}
 		}
 	}
@@ -3924,7 +3956,7 @@ static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 {
 	char push_ireg[16], ilist[16];
 	char push_freg[16], flist[16];
-	int64_t i, r, r2, fsz, i2, i3, off;
+	int64_t i, r, r2, fsz, i2, i3, off,is_vargs=0,arg_cnt=0;
 	CICArg spill_loc = { 0 }, write_to = { 0 };
 	CRPN* rpn;
 	/* <== OLD SP
@@ -3933,14 +3965,20 @@ static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 	 * locals
 	 * OLD FP,LR<===FP=SP
 	 */
-	if (cctrl->cur_fun)
+	if (cctrl->cur_fun) {
 		fsz = cctrl->cur_fun->base.sz + 16; //+16 for LR/FP
-	else {
+		arg_cnt=cctrl->cur_fun->argc;
+		is_vargs=!!(cctrl->cur_fun->base.flags&CLSF_VARGS);
+	} else {
 		fsz = 16;
 		for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.next) {
 			if (rpn->type == __IC_SET_FRAME_SIZE) {
 				fsz = rpn->integer;
 				break;
+			} else if(rpn->type==IC_GET_VARGS_PTR) {
+				is_vargs=1;
+			} else if(rpn->type==__IC_ARG) {
+				arg_cnt++;
 			}
 		}
 	}
@@ -3981,7 +4019,11 @@ static int64_t FuncEpilog(CCmpCtrl* cctrl, char* bin, int64_t code_off)
 		off -= 8;
 	}
 	AIWNIOS_ADD_CODE(X86Leave, 0);
-	AIWNIOS_ADD_CODE(X86Ret, 0);
+	if(is_vargs) {
+		AIWNIOS_ADD_CODE(X86Ret, 0);
+	} else {
+		AIWNIOS_ADD_CODE(X86Ret, 8*arg_cnt);
+	}
 	return code_off;
 }
 
@@ -5631,10 +5673,6 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				tmp.raw_type = RT_I64i;
 			code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);
 		}
-		tmp.reg = X86_64_STACK_REG;
-		tmp.mode = MD_REG;
-		tmp.raw_type = RT_I64i;
-		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 		break;
 	ic_add_eq:
 		code_off = __SexyAssignOp(cctrl, rpn, bin, code_off);
