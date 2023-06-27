@@ -91,24 +91,24 @@ void MPSleepHP(int64_t ns)
 {
 	struct timespec ts = { 0 };
 	ts.tv_nsec += ns * 1000U;
+	Misc_LBts(&cores[core_num].wake_futex, 0);
 	#if defined(__linux__)
-	syscall(SYS_futex, &cores[core_num].wake_futex, 0, FUTEX_WAIT, &ts, NULL, 0);
+	syscall(SYS_futex, &cores[core_num].wake_futex, 1, FUTEX_WAIT, &ts, NULL, 0);
 	#endif
 	#if defined(__FreeBSD__)
-	_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAIT,0,NULL,&ts);
+	_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAIT,1,NULL,&ts);
 	#endif
-	cores[core_num].wake_futex = 0;
-	
+	Misc_LBtr(&cores[core_num].wake_futex, 0);
 }
 
 void MPAwake(int64_t core)
 {
 	
-	if (!Misc_LBts(&cores[core].wake_futex, 0)) {
+	if (Misc_Bt(&cores[core].wake_futex, 0)) {
 		#if defined(__linux__)
 		syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
 		#elif defined(__FreeBSD__)
-		_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAKE,NULL,NULL,NULL);
+		_umtx_op(&cores[core].wake_futex,UMTX_OP_WAKE,1,NULL,NULL);
 		#endif
 	}
 }

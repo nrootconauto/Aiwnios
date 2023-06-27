@@ -1,7 +1,0 @@
-   0x0000007ff7c3c2f4:	ldr	x19, [sp, #24]
-   0x0000007ff7c3c2f8:	ldr	x20, [sp, #32]
-   0x0000007ff7c3c2fc:	ldr	x21, [sp, #40]
-   0x0000007ff7c3c300:	ldr	x22, [sp, #48]
-   0x0000007ff7c3c304:	ldr	x29, [sp, #56]
-   0x0000007ff7c3c308:	ldr	x30, [sp, #64]
-   0x0000007ff7c3c30c:	add	sp, sp, #0x50
