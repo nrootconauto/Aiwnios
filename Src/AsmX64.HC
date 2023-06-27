@@ -1456,7 +1456,7 @@ duxx:
         HashAdd(exp,cc->htc.glbl_hash_table);
     }
   } else if(cc->token==';') {
-    Lex(cc);
+    Lex(cc);
   } else {
     QueDel(to_fill);
     Free(buf);

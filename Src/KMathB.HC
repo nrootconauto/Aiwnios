@@ -137,7 +137,7 @@ U64 RandU64()
 {//Random U64.
   I64 res=Fs->rand_seed;
   res=LIN_CONGRUE_A*res^(res&0xFFFFFFFF0000)>>16+LIN_CONGRUE_C;
-//  if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
+//  if (!Bt(&(Fs->task_flags),TASKf_NONTIMER_RAND))
 //    res^=__GetTicks;
   Fs->rand_seed=res;
   return res;

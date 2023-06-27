@@ -158,14 +158,16 @@ set(
   ACWords.DATA
 )
 foreach(F IN LISTS TEMPLATE_FILES)
-  if(IS_DIRECTORY ${F})
+  if(IS_DIRECTORY "${F}")
     install(
       DIRECTORY 
+      "${F}"
       DESTINATION share/aiwnios
     )
   else()
     install (
-      TARGETS
+      FILES
+      "${F}"
       DESTINATION share/aiwnios
     )
   endif()

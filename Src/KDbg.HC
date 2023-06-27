@@ -273,7 +273,7 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
   I64 oframe=frame,dummy;
 #ifdef TARGET_X86
   rbp=t->context_save_area[2];
-  rip=t->context_save_area[0];
+  rip=t->context_save_area[0];
 #else
   rbp=t->context_save_area[11];
   rip=t->context_save_area[12];

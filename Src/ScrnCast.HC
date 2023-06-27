@@ -1,6 +1,5 @@
 #help_index "ScrnCast;Graphics/Device Contexts;Graphics/GR Files"
 
-#define MV_FILE_MAX	0x007FF000
 
 public I64 GR2MV(U8 *print_fmt="VID%03d.MV",
 	U8 *files_find_mask,U8 *fu_flags=NULL)

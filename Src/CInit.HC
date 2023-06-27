@@ -1,5 +1,3 @@
-#define INTERNAL_TYPES_NUM	17
-
 class CInternalType
 {
   U8 type,size,name[8];
