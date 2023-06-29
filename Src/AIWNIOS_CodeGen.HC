@@ -448,10 +448,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       } else {
         __HC_ICAdd_FReg(cc2,mlst->reg);      
       }
+
+#ifdef TARGET_X86
+//Not yet implemented for AARCH64
       if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
         __HC_ICAdd_GetVargsPtr(cc2);
       } else
         __HC_ICAdd_Arg(cc2,idx);
+#endif
+#ifdef TARGET_AARCH64
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
       mlst=mlst->next;
     }
     Free(mv);

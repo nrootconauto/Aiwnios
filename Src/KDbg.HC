@@ -20,14 +20,17 @@ U8 *__CallerBP(U8 **rbp,I64 num=1)
 }
 U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
 {//Fetches addr of Nth caller on task's stk.
-  U8 **ptr,**x29,**sp;
+  U8 **ptr,**x29;
   if (!task) task=Fs;
   if (!saved_context && task==Fs)
     return Caller(num+1);
   if (!TaskValidate(task))
     return NULL;
+#ifdef TARGET_X86
+  x29=task->context_save_area[2];
+#else
   x29=task->context_save_area[11];
-  sp=task->context_save_area[21];
+#endif
   if (num) {
     while (x29) {
       if(!ChkOnStk(x29,task))
@@ -42,7 +45,11 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     }
     return NULL;
   } else {
+#ifdef TARGET_X86
+    return task->context_save_area[0];
+#else    
     return task->context_save_area[12];
+#endif
   }
 }
 CTask *GetDebuggedProcess() {
