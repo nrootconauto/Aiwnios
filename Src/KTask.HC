@@ -355,7 +355,7 @@ U0 TaskDel(CTask *task)
 {//We delay freeing in case lingering ptr to reincarnated.
   HeapCtrlDel(task->code_heap);
   if (task->data_heap!=task->code_heap)
-    HeapCtrlDel(task->data_heap);
+    HeapCtrlDel(task->data_heap);
   Free(task);
 }
 
@@ -365,6 +365,7 @@ I64 TaskEnd()
   U0 (*cb)();
   if (task==sys_task_being_scrn_updated) {
     LBts(&task->task_flags,TASKf_KILL_TASK);
+    Yield;
     return task->next_task;
   }
   if (task->task_end_cb) {
@@ -393,6 +394,7 @@ I64 TaskEnd()
       LBts(&tmpt->task_flags,TASKf_KILL_TASK);
       tmpt=tmpt->next_sibling_task;
     } while (tmpt!=tmpt1);
+    Yield;
     return task->next_task;
   }
   if (LBtr(&task->display_flags,DISPLAYf_SHOW))
