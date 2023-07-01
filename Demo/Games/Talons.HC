@@ -293,14 +293,14 @@ U0 MPDoPanels(CTask *task)
 	      cont=TRUE;
 	    }
 	  } while (cont);
-	  if (w>=threshold || h>=threshold) {
+	  if (w>=threshold>=1 || h>=threshold>=1) {
 	    tmpp=CAlloc(sizeof(Panel),task);
 	    QueInit(&tmpp->next_obj);
-	    l=elevations[j][i];
+	    l=elevations[j%MAP_HEIGHT][i%MAP_WIDTH];
 	    if (l<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[j][i+w-1]<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[j+h-1][i]<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[j+h-1][i+w-1]<=WATER_ELEVATION*MAP_SCALE) {
+		  elevations[j%MAP_HEIGHT][(i+w-1)%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE &&
+		  elevations[(j+h-1)%MAP_HEIGHT][i%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE &&
+		  elevations[(j+h-1)%MAP_HEIGHT][(i+w-1)%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE) {
 	      tmpp->color=BLUE;
 	      if (Rand<0.05) {
 		tmpo=MAlloc(sizeof(Obj),task);
@@ -365,16 +365,16 @@ U0 MPDoPanels(CTask *task)
 	    poly=tmpp->pts=MAlloc(sizeof(CD3I32)*tmpp->num_sides,task);
 	    poly[0].x=MAP_SCALE*i;
 	    poly[0].y=MAP_SCALE*j;
-	    poly[0].z=elevations[j][i];
+	    poly[0].z=elevations[j%MAP_HEIGHT][i%MAP_WIDTH];
 	    poly[1].x=MAP_SCALE*(i+w);
 	    poly[1].y=MAP_SCALE*j;
-	    poly[1].z=elevations[j][i+w];
+	    poly[1].z=elevations[j%MAP_HEIGHT][(i+w)%MAP_WIDTH];
 	    poly[2].x=MAP_SCALE*(i+w);
 	    poly[2].y=MAP_SCALE*(j+h);
-	    poly[2].z=elevations[j+h][i+w];
+	    poly[2].z=elevations[(j+h)%MAP_HEIGHT][(i+w)%MAP_WIDTH];
 	    poly[3].x=MAP_SCALE*i;
 	    poly[3].y=MAP_SCALE*(j+h);
-	    poly[3].z=elevations[j+h][i];
+	    poly[3].z=elevations[(j+h)%MAP_HEIGHT][i%MAP_WIDTH];
 	    tmpp->next=start_ptr;
 	    start_ptr=tmpp;
 	    if (!end_ptr)
@@ -710,7 +710,7 @@ U0 MPDrawIt(CTask *task,CDC *dc)
     }
   }
 
-  tmpb=b_head[Gs->num].next;
+  tmpb=b_head[Gs->num].next;
   while (tmpb!=&b_head[Gs->num]) {
     elems1=SpriteInterpolate(Tri(tS,0.2),$IB,"<2>",BI=2$,$IB,"<3>",BI=3$);
 
@@ -865,7 +865,7 @@ U0 Core0Talons()
   xx=x/(MAP_SCALE*COORDINATE_SCALE);
   yy=y/(MAP_SCALE*COORDINATE_SCALE);
   if (0<=xx<MAP_WIDTH && 0<=yy<MAP_HEIGHT)
-    elev=elevations[yy][xx];
+    elev=elevations[yy%MAP_HEIGHT][xx%MAP_WIDTH];
   else
     elev=I64_MAX;
 
@@ -1035,7 +1035,7 @@ U0 AnimateTask(I64)
 	  tmpb->p.x+=10*ms/1000*MAP_SCALE*Cos(tmpb->é);
 	  tmpb->p.y+=10*ms/1000*MAP_SCALE*Sin(tmpb->é);
 	  tmpb->p.z=BIRD_ELEVATION*MAP_SCALE+
-		elevations[tmpb->p.y/MAP_SCALE%MAP_HEIGHT][tmpb->p.x/MAP_SCALE%MAP_WIDTH];
+		elevations[AbsI64(tmpb->p.y/MAP_SCALE)%MAP_HEIGHT][AbsI64(tmpb->p.x/MAP_SCALE)%MAP_WIDTH];
 	  tmpb->é+=2*pi*ms/1000/10;
 	  tmpb=tmpb->next;
 	}
