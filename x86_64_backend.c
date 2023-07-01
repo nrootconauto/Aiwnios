@@ -2203,6 +2203,16 @@ static CRPN* __AddOffset(CRPN* r, int64_t* const_val)
 	}
 	return NULL;
 }
+static int64_t IsCompare(int64_t c) {
+	switch(c) {
+		case IC_GT:
+		case IC_LT:
+		case IC_GE:
+		case IC_LE:
+		return 1;
+	}
+	return 0;
+}
 
 // Returns 1 if we hit the bottom
 static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled)
@@ -2225,7 +2235,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled)
 		return 1;
 	}
 	int64_t a, argc, old_icnt = cctrl->backend_user_data2, old_fcnt = cctrl->backend_user_data3, i, i2, tmp, old_scnt = cctrl->backend_user_data1;
-	CRPN *arg, *arg2, *d, *b, *idx, *orig;
+	CRPN *arg, *arg2, *d, *b, *idx, *orig,**array;
 	switch (r->type) {
 		break;
 	case IC_SHORT_ADDR:
@@ -2262,18 +2272,37 @@ static int64_t PushTmpDepthFirst(CCmpCtrl* cctrl, CRPN* r, int64_t spilled)
 	case IC_LE:
 	cmp_binop:
 		arg = ICArgN(r, 1);
-		arg2 = ICArgN(r, 0);
+		arg2 = ICArgN(r, 0);	
 		if (!IsCompoundCompare(r)) {
 			PushTmpDepthFirst(cctrl, arg, SpillsTmpRegs(arg2));
 			PushTmpDepthFirst(cctrl, arg2, 1);
-			PopTmp(cctrl, arg);
 			PopTmp(cctrl, arg2);
+			PopTmp(cctrl, arg);
 			goto fin;
 		}
-		PushTmpDepthFirst(cctrl, arg, 1);
-		PushTmpDepthFirst(cctrl, arg2, 1);
-		PopTmp(cctrl, arg);
-		PopTmp(cctrl, arg2);
+		//There are 2 compares here,but 3 args
+		//a<b<c
+		argc=1;
+		d=r;
+		while(IsCompare(d->type)) {
+			d=ICFwd(d->base.next);
+			argc++;
+		}
+		array=A_MALLOC(sizeof(CRPN*)*argc,NULL);
+		argc=0;
+		d=r;
+		while(IsCompare(d->type)) {
+			array[argc++]=d->base.next;
+			PushTmpDepthFirst(cctrl,d->base.next,1);
+			d=ICFwd(d->base.next);
+		}
+		//See above note(d here is the 3)
+		array[argc++]=d;
+		PushTmpDepthFirst(cctrl,d,1);
+		//
+		while(argc--)
+			PopTmp(cctrl,array[argc]);
+		A_FREE(array);
 		goto fin;
 		break;
 	case IC_BT:

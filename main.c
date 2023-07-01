@@ -591,12 +591,12 @@ static int64_t STK_MemSetU64(int64_t* stk)
 
 static int64_t STK_strlen(int64_t* stk)
 {
-	return strlen((void*)stk[0]);
+	return (int64_t)strlen((void*)stk[0]);
 }
 
 static int64_t STK_strcmp(int64_t* stk)
 {
-	return strcmp((void*)stk[0], (void*)stk[1]);
+	return (int64_t)strcmp((void*)stk[0], (void*)stk[1]);
 }
 
 static int64_t STK_toupper(int64_t* stk)

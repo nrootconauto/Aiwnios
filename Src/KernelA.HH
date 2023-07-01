@@ -4184,8 +4184,6 @@ extern U0 MsHardSet(I64 x,I64 y,I64 z,I64 l,I64 r);
 extern U8 *GetStr(U8 *msg=NULL,U8 *dft=NULL,I64 flags=0);
 extern U0 UserStartUp();
 extern U0 DocPrintPartial(CDoc *doc=NULL,U8 *fmt,...);
-
-extern U0 throw(U64,Bool no_log=FALSE);
 extern U0 GetOutOfDollar();
 public extern CDoc *DocPut(CTask *task=NULL);
 public extern CDoc *DocDisplay(CTask *task=NULL);
