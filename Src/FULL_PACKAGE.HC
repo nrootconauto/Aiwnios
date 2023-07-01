@@ -116,6 +116,7 @@ TaskInit(adam_task,0);
 #include "Message.HC"
 #include "Mouse.HC"
 #include "EdLite.HC"
+#include "Profiler.HC"
 #ifdef TARGET_X86
 #include "UAsmX64.HC"
 #include "AsmX64.HC"

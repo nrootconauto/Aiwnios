@@ -9,10 +9,25 @@
 #endif
 //
 // Dec 8, I volenterreed today
+// Jun 29,Im staying up all night
 //
 struct CTask;
 struct CMemBlk;
 struct CMemUnused;
+
+//Bounds checker works like this.
+//All allocations will be in first 32bits
+//There will be a bitmap of "good" 8bytes(this is ok as most accesses are 8 bytes wide)
+//Beacuse the address space will be 2 GB,we can have a fixed length bitmap of 2GB/8/64 int64_t's
+//and i can Misc_Bt it to check if it is valid
+//
+int64_t bc_enable=0;
+static char *bc_good_bitmap;
+void InitBoundsChecker() {
+	int64_t want=(1ll<<31)/8;
+	bc_good_bitmap=calloc(want,1);
+	bc_enable=1;
+}
 static void MemPagTaskFree(CMemBlk* blk, CHeapCtrl* hc)
 {
 	QueRem(blk);
@@ -33,6 +48,7 @@ static void MemPagTaskFree(CMemBlk* blk, CHeapCtrl* hc)
 #endif
 }
 static int64_t Hex2I64(char* ptr, char** _res);
+static void *GetAvailRegion32(int64_t b);
 static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 {
 	if (!hc)
@@ -48,10 +64,14 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity * dwAllocationGranularity, _try, addr;
 	if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
 		b += dwAllocationGranularity;
-	ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, hc->is_code_heap?PAGE_EXECUTE_READWRITE:PAGE_READWRITE);
+	if(bc_enable) {
+		ret=VirtualAlloc(GetAvailRegion32(b),b,MEM_COMMIT|MEM_RESERVE,hc->is_code_heap?PAGE_EXECUTE_READWRITE:PAGE_READWRITE);
+	} else 
+		ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE, hc->is_code_heap?PAGE_EXECUTE_READWRITE:PAGE_READWRITE);
 	if (!ret)
 		return NULL;
 #else
+	int64_t add_flags = bc_enable ?MAP_32BIT:0; 
 	static int64_t ps;
 	int64_t b;
 	if (!ps) {
@@ -63,11 +83,12 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	b /= ps;
 	b *= ps;
 	CMemBlk* ret = mmap(NULL, b, (hc->is_code_heap?PROT_EXEC:0) | PROT_READ | PROT_WRITE,
-		MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		MAP_PRIVATE | MAP_ANONYMOUS|add_flags, -1, 0);
 #endif
 	int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
 	CMemUnused **unm, *tmp, *tmp2;
 	QueIns(&ret->base, hc->mem_blks.last);
+	
 	ret->pags = pags;
 	// Move silly willies malloc_free_lst,in to the heap_hash
 	do {
@@ -97,9 +118,10 @@ void* __AIWNIOS_MAlloc(int64_t cnt, void* t)
 {
 	if (!cnt)
 		return NULL;
-	cnt += 16;
 	if (!t)
 		t = Fs->heap;
+	int64_t orig=cnt;
+	cnt += 16;
 	CHeapCtrl* hc = t;
 	int64_t pags;
 	CMemUnused* ret;
@@ -151,6 +173,12 @@ almost_done:
 	Misc_LBtr(&hc->locked_flags, 1);
 	ret->hc = hc;
 	ret++;
+	if(bc_enable) {
+		assert((int64_t)ret<(1ll<<31));
+		if(orig<8) orig=8;
+		if(orig&7) orig=8+orig&~7ll;
+		memset(&bc_good_bitmap[(int64_t)ret/8],7,orig/8);
+	}
 	return ret;
 }
 
@@ -168,6 +196,11 @@ void __AIWNIOS_Free(void* ptr)
 		throw('BadFree');
 	if (un->sz < 0) // Aligned chunks are negative and point to start
 		un = un->sz + (char*)un;
+	if(bc_enable) {
+		cnt=MSize(ptr);
+		assert((int64_t)ptr<(1ll<<31));
+		memset(&bc_good_bitmap[(int64_t)ptr/8],0,cnt/8);
+	}
 	hc = un->hc;
 	while (Misc_LBts(&hc->locked_flags, 1))
 		;
@@ -268,6 +301,38 @@ int64_t IsValidPtr(char* chk)
 	}
 	return 0;
 }
+
+static void *GetAvailRegion32(int64_t len) {
+	static int64_t dwAllocationGranularity;
+	static void *try_page=0x100000;
+	void *start_page=try_page;
+	int64_t wrapped_around=0,sz;
+	if (!dwAllocationGranularity) {
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+		dwAllocationGranularity = si.dwAllocationGranularity;
+	}
+
+	MEMORY_BASIC_INFORMATION mbi;
+	while(!(!wrapped_around&&start_page>try_page)) {
+		memset(&mbi, 0, sizeof mbi);
+		if (sz=VirtualQuery(try_page, &mbi, sizeof(mbi))) {
+			if(mbi.State&MEM_FREE&&mbi.RegionSize>len) {
+				return try_page;
+			}
+			next:
+			if(mbi.State&MEM_FREE)
+				try_page+=mbi.RegionSize;
+			else
+				try_page=(char*)mbi.BaseAddress+mbi.RegionSize;
+			if(try_page>(void*)(1ll<<31)) {
+				try_page=0x100000;
+				wrapped_around=1;
+			}
+		} else abort();
+	}
+	return NULL;
+}
 #else
 static int64_t Hex2I64(char* s, char** end)
 {
@@ -323,4 +388,25 @@ int64_t IsValidPtr(char* chk)
 	fclose(f);
 	return ok;
 }
+
 #endif
+//Returns good region if good,else NULL and after is set how many bytes OOB
+//Returns INVALID_PTR on error
+void *BoundsCheck(void *ptr,int64_t *after) {
+	if(!bc_enable) return INVALID_PTR;
+	int64_t waste=0;
+	int64_t optr=ptr;
+	ptr=((int64_t)ptr)&~7ll;
+	if(after) *after=0;
+	//TOO big
+	if((int64_t)ptr>1ll<<31)
+		return ptr;
+	while((int64_t)ptr+waste>=0) {
+		if(bc_good_bitmap[(int64_t)(ptr+waste)/8])
+			break;
+		waste-=8;
+	}
+	if(!waste||(optr-(int64_t)(ptr+waste))==0) return ptr;
+	if(after) *after=optr-(int64_t)(ptr+waste);
+ 	return NULL;
+}

@@ -89,7 +89,7 @@ if("${ARCH}" STREQUAL "x86_64")
   foreach(X IN LISTS ASM_SOURCES)
     add_custom_command(
       COMMAND yasm
-      ARGS -f elf64 "${CMAKE_CURRENT_SOURCE_DIR}/${X}" -o "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
+      ARGS "${CMAKE_CURRENT_SOURCE_DIR}/${X}" -fwin64 -o "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
       DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${X}"
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
     )
@@ -107,11 +107,15 @@ elseif("${ARCH}" STREQUAL "arm64")
   endforeach()
 endif()
 #https://stackoverflow.com/questions/34657287/cmakebuild-yasm-source-files
-add_library(FFI ${ASM_OBJS}) 
+if(WIN32)
+    add_library(FFI SHARED ${ASM_OBJS})
+else()
+    add_library(FFI ${ASM_OBJS})
+endif() 
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
 target_link_directories(aiwnios PUBLIC ${SDL2_LIBRARY_DIRS})
 if(WIN32)
-	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m)
+	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m Shlwapi winmm)
 else()
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m pthread)
 endif()

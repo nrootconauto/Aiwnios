@@ -230,24 +230,24 @@ extern U8 * __HC_ICAdd_LBTS(U8*);
 // Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
 //
 U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
-  CRPN *head=&cc->coc.coc_head,*cur;
+  CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc;
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
       if(!(misc->h->type&HTF_IMPORT)) {
 force:
-		cur->misc=misc;
+        cur->misc=misc;
         cur->misc->flags|=CMF_SHORT_ADDR;
         cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       } else {
-		/* Nroot removed this as not all platforms have easy access to lower 32bits
-        #ifdef TARGET_X86
-        //In X86_64,i will put all functions in low 32bits to avoid viener functions.
-        goto force;
-        #endif
-        */
+/* Nroot removed this as not all platforms have easy access to lower 32bits
+#ifdef TARGET_X86
+//In X86_64,i will put all functions in low 32bits to avoid viener functions.
+goto force;
+#endif
+*/
       }
     }
   }
@@ -294,6 +294,22 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
   U8 *cc2=__HC_CodeCtrlPush(acc);
+  if(GetOption(OPTf_BOUNDS_CHECK)&&HashFind("WhineOOB",cc->htc.glbl_hash_table,HTT_FUN)) {
+    for(cur=head->next;cur!=head;cur=cur->next) {
+      if(cur->type==IC_DEREF) {
+        new=CAlloc(sizeof CRPN);
+        new->type=IC_ADDR_IMPORT;
+        new->ic_class=cmp.internal_types[RT_I64];
+        new->ic_data=CodeMiscHashNew(cc,HashFind("WhineOOB",cc->htc.glbl_hash_table,HTT_FUN));
+        QueInsRev(new,RPNNext(cur)); 
+        new=CAlloc(sizeof CRPN);
+        new->type=IC_CALL_INDIRECT;
+        new->length=2;
+        new->ic_class=cmp.internal_types[RT_I64];
+        QueIns(new,cur);
+      }
+    }    
+  }
   #ifdef TARGET_X86
   if(cc->flags&CCF_AOT_COMPILE)
     AiwniosMakeShortJmps(cc,acc);
@@ -458,7 +474,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 #endif
 #ifdef TARGET_AARCH64
         __HC_ICAdd_Arg(cc2,idx);
-#endif
+#endif
       mlst=mlst->next;
     }
     Free(mv);
@@ -735,10 +751,7 @@ break;case IC_ASM:
     break;case IC_UNARY_MINUS:
     new=__HC_ICAdd_Neg(cc2);
     break;case IC_DEREF:
-    if(cur->ic_class->raw_type==RT_PTR)
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
-    else
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
+    new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     //break;case IC_DEREF_PP //NOT USED BY AIWINIOS
     //break;case IC_DEREF_MM //DITTO
     break;case IC__PP:

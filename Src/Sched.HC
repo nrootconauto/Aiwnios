@@ -115,7 +115,7 @@ U0 Yield() {
         goto restore;
       }
       goto restore;
-    }
+    }
   }
 not_seth:
 next:

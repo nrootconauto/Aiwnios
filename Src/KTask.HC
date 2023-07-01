@@ -355,7 +355,7 @@ U0 TaskDel(CTask *task)
 {//We delay freeing in case lingering ptr to reincarnated.
   HeapCtrlDel(task->code_heap);
   if (task->data_heap!=task->code_heap)
-    HeapCtrlDel(task->data_heap);
+    HeapCtrlDel(task->data_heap);
   Free(task);
 }
 

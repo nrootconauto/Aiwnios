@@ -1,3 +1,4 @@
+SECTION .text
 .global FFI_CALL_TOS_0
 .global FFI_CALL_TOS_1
 .global FFI_CALL_TOS_2
