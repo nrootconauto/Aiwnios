@@ -145,7 +145,7 @@ set (CPACK_FREEBSD_PACKAGE_DEPS "devel/sdl20")
 
 include (CPack)
 
-install (FILES aiwnios TYPE BIN DESTINATION bin)
+install (FILES aiwnios TYPE BIN)
 set(
   TEMPLATE_FILES
   HSNotes.DD
