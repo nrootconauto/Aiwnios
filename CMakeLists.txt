@@ -113,7 +113,7 @@ else()
     add_library(FFI ${ASM_OBJS})
 endif() 
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
-target_link_directories(aiwnios PUBLIC ${SDL2_LIBRARY_DIRS})
+link_directories(${SDL2_LIBRARY_DIRS})
 if(WIN32)
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m Shlwapi winmm)
 else()
@@ -145,7 +145,7 @@ set (CPACK_FREEBSD_PACKAGE_DEPS "devel/sdl20")
 
 include (CPack)
 
-install (FILES aiwnios TYPE BIN)
+install (FILES aiwnios TYPE BIN DESTINATION bin)
 set(
   TEMPLATE_FILES
   HSNotes.DD
