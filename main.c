@@ -1534,7 +1534,8 @@ int main(int argc, char* argv[])
 		t_drive="."; //Bootstrap in current directory
 	if((!arg_t_dir->count||arg_overwrite->count)&&!arg_bootstrap_bin->count)
 		t_drive=ResolveBootDir(!t_drive?"T":t_drive,arg_overwrite->count,arg_new_boot_dir->count);
-	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_Init(SDL_INIT_TIMER);
+	SDL_Init(SDL_INIT_EVENTS);
 	InitSound();
 	user_ev_num = SDL_RegisterEvents(1);
 	SpawnCore(&Boot, NULL, 0);

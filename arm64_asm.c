@@ -553,7 +553,7 @@ int64_t ARM_lsrImm(int64_t d, int64_t n, int64_t imm)
 
 int64_t ARM_lsrImmX(int64_t d, int64_t n, int64_t imm)
 {
-	return BitfieldX(0, d, n, imm, 63);
+	return BitfieldX(2, d, n, imm, 63);
 }
 int64_t ARM_ret() { return UncondBrNoReg(2, 31, 0, 30, 0); }
 

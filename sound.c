@@ -25,8 +25,10 @@ void SndFreq(int64_t f)
 void InitSound()
 {
 	SDL_AudioSpec want;
-	if (!SDL_WasInit(SDL_INIT_EVERYTHING))
-		SDL_Init(SDL_INIT_EVERYTHING);
+	if(SDL_Init(SDL_INIT_AUDIO)) {
+	    //Audio failed to initailize
+	    return;
+	}
 	memset(&want, 0, sizeof(SDL_AudioSpec));
 	want.freq = 24000;
 	want.format = AUDIO_S8;

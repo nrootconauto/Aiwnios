@@ -20,6 +20,9 @@ static int64_t screen_ready = 0;
 
 static void _DrawWindowNew()
 {
+	if(SDL_Init(SDL_INIT_VIDEO)) {
+		return;
+	}
 	int rends;
 	SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear", SDL_HINT_OVERRIDE);
 	SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0", SDL_HINT_OVERRIDE);
@@ -568,7 +571,8 @@ void InputLoop(void* ul)
 			}
 			if (e.type == SDL_USEREVENT)
 				UserEvHandler(NULL, &e);
-		}
+		} else
+puts(SDL_GetError());
 	}
 }
 
