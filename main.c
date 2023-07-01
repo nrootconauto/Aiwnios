@@ -7,7 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "argtable3.h"
-struct arg_lit *arg_help,*arg_overwrite,*arg_new_boot_dir;
+struct arg_lit *arg_help,*arg_overwrite,*arg_new_boot_dir,*arg_asan_enable;
 struct arg_file *arg_t_dir,*arg_bootstrap_bin;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -352,7 +352,7 @@ static void __SleepHP(int64_t us)
 {
 	usleep(us);
 }
-static void* GetHolyFs()
+void* GetHolyFs()
 {
 	return HolyFs;
 }
@@ -1261,6 +1261,15 @@ static int64_t STK___HC_CodeMiscJmpTableNew(int64_t* stk)
 {
 	return (int64_t)__HC_CodeMiscJmpTableNew(stk[0], stk[1], stk[2], stk[3]);
 }
+
+static int64_t STK_BoundsCheck(int64_t *stk) {
+	return BoundsCheck((void*)stk[0],(int64_t*)stk[1]);
+}
+
+
+static int64_t STK_MPSetProfilerInt(int64_t *stk) {
+	MPSetProfilerInt((void*)stk[0],stk[1],stk[2]);
+}
 void BootAiwnios(char *bootstrap_text)
 {
 	//Run a dummy expression to link the functions into the hash table
@@ -1276,6 +1285,8 @@ void BootAiwnios(char *bootstrap_text)
 		CodeCtrlPop(ccmp);
 		CodeCtrlPush(ccmp);
 		// TODO make a better way of doing this
+		PrsAddSymbol("MPSetProfilerInt",STK_MPSetProfilerInt,3);
+		PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
 		PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
 		PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
 		PrsAddSymbol("__HC_ICAdd_RawBytes",STK__HC_ICAdd_RawBytes,3);
@@ -1526,6 +1537,7 @@ int main(int argc, char* argv[])
 		arg_overwrite=arg_lit0("o","overwrite","Overwrite the T directory with the installed T template."),
 		arg_t_dir=arg_file0("t",NULL,"Directory","Specify the boot drive(dft is current dir)."),
 		arg_bootstrap_bin=arg_lit0("b","bootstrap","Build a new binary with the \"slim\" compiler of aiwnios."),
+		arg_asan_enable=arg_lit0("a","address-sanitize","Enable bounds checking."),
 		arg_new_boot_dir=arg_lit0("n","new-boot-dir","Create a new boot directory(backs up old boot directory if present)."),
 		_arg_end=arg_end(20)
 	};
@@ -1537,6 +1549,8 @@ int main(int argc, char* argv[])
 		arg_print_glossary(stdout,argtable,"  %-25s %s\n");
 		exit(1);
 	}
+	if(arg_asan_enable->count)
+		InitBoundsChecker();
 	if(arg_t_dir->count)
 		t_drive=arg_t_dir->filename[0];
 	else if(arg_bootstrap_bin->count)

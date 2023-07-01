@@ -1,4 +1,8 @@
 #pragma once
+#if defined (__MINGW64__)
+#define _WIN32 1
+#define WIN32
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -1142,3 +1146,11 @@ const char *ResolveBootDir(char *use,int overwrite,int make_new_dir);
 //Uses TempleOS ABI
 int64_t TempleOS_CallN(void (*fptr),int64_t argc,int64_t *argv);
 CRPN* __HC_ICAdd_RawBytes(CCodeCtrl* cc,char *bytes,int64_t cnt);
+
+extern int64_t bc_enable;
+//Returns good region if good,else NULL and after is set how many bytes OOB
+//Returns INVALID_PTR on error
+extern void *BoundsCheck(void *ptr,int64_t *after);
+//f is delay in nano seconds
+extern void MPSetProfilerInt(void *fp,int c,int64_t f);
+extern void* GetHolyFs();

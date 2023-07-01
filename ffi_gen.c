@@ -21,7 +21,7 @@ e:  41 50                   push   r8
 */
 	char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x20\x41\x51\x41\x50\x52\x51\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\xC9\xC2";
 	char* ret = A_MALLOC(0x26, NULL);
-	memcpy(ret, ffi_binding, 0x224);
+	memcpy(ret, ffi_binding, 0x24);
 	*(int64_t*)(ret + 0x14) = fptr;
 	*(int16_t*)(ret + 0x24) = arity*8;
 	return ret;

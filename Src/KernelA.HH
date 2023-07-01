@@ -1525,6 +1525,7 @@ class CWinMgrTimingGlbls
 #define OPTf_NO_BUILTIN_CONST	0x24 //Applied to funs, not stmts
 #define OPTf_USE_IMM64		0x25 //Not completely implemented
 #define OPTf_KEEP_RELOCATIONS 0x26 //Added by nroot,will keep the CHashImport's
+#define OPTf_BOUNDS_CHECK 0x27 //Added by nroot,Bounds checker
 
 #define OPTF_ECHO		(1<<OPTf_ECHO)
 
@@ -3815,6 +3816,8 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
+import U8 *BoundsCheck(U8 *ptr,I64 *oob_bytes);
 import I64 Call(U8 *,I64 argc,I64 *argv);
 import U0 ExitAiwnios();
 import U0 TaskContextSetRIP(U8 *,U8 *);
@@ -3915,6 +3918,7 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 #else
+extern U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
 extern I64 Call(U8 *,I64 argc,I64 *argv);
 extern U0 ExitAiwnios();
 extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
@@ -3927,7 +3931,7 @@ extern U64 Btc(U8 *,I64);
 extern I64 mp_cnt();
 extern CCPU *Gs();
 extern U0 SetGs(CCPU *);
-#define public 
+extern U8 *BoundsCheck(U8 *ptr,I64 *oob_bytes);
 extern F64 Pow(F64,F64);
 extern U0 SndFreq(I64);
 extern U0 __SleepHP(I64);
@@ -6970,4 +6974,7 @@ extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
 
 #define PRSF_UNION		0x010000
 
+extern U8 *WhineOOB(U8 *ptr);
+public extern U0 Prof(I64 depth=0,I64 cpu_num=0);
+public extern U0 ProfRep(I64 filter_cnt=1,Bool leave_it=OFF);
 #define __AIWNIOS__

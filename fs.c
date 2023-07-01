@@ -457,13 +457,13 @@ int64_t VFsDirMk(char* f)
 
 // Creates a virtual drive by a template
 static void CopyDir(char *dst, char *src) {
-#ifdef TARGET_WIN32
+#if defined(WIN32) || defined (_WIN32)
 	char delim='\\';
 #else
 	char delim='/';
 #endif
   if (!__FExists(dst)) {
-#ifdef TARGET_WIN32
+#if defined (_WIN32) || defined (WIN32)
     mkdir(dst);
 #else
     mkdir(dst, 0700);
@@ -504,7 +504,7 @@ static void CopyDir(char *dst, char *src) {
 }
 
 static int __FIsNewer(char *fn, char *fn2) {
-#ifndef TARGET_WIN32
+#if !(defined (_WIN32)||defined(WIN32))
   struct stat s, s2;
   stat(fn, &s), stat(fn2, &s2);
   int64_t r = mktime(localtime(&s.st_ctime)),
@@ -558,7 +558,7 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
             buffer
         );
 // Rename the old boot drive to something else
-#ifdef TARGET_WIN32
+#if defined(_WIN32) || defined(WIN32)
         MoveFile(to, buffer);
 #else
         rename(to, buffer);
@@ -568,7 +568,7 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
     }
     return 0;
   }
-  #ifdef TARGET_WIN32
+#if defined(_WIN32) || defined (WIN32)
   strcpy(buffer2, template);
   strcat(buffer2, "\\");
 #else

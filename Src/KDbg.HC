@@ -1,3 +1,14 @@
+//Added by nroot,used for Bounds checker
+U8 *WhineOOB(U8 *ptr) {
+  I64 oob=0;
+  if(!BoundsCheck(ptr,&oob)) {
+     DbgPrint("Memory access is %d bytes Out of Bounds!!!\n",oob);
+     DbgPrint("%P\n%P\n%P\n%P\n%P\n",Caller(3),Caller(4),Caller(5),
+     Caller(6),Caller(7));
+  }
+  return ptr;
+}
+
 public Bool ChkOnStk(U8 *ptr,CTask *task=NULL) {
   if(!task) task=Fs;
   return task->stk<=ptr<task->stk+MSize(task->stk);
