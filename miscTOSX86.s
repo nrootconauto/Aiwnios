@@ -1,6 +1,6 @@
 SECTION .text
 GLOBAL TempleOS_CallN
-; I64 CallN(fptr,...)
+; I64 CallN(fptr,argc,argv)
 TempleOS_CallN:
 	PUSH RBP
 	MOV RBP,RSP
@@ -18,4 +18,4 @@ _loop:
 en:
 	CALL QWORD [RBP+2*8] ;fptr
 	LEAVE
-	RET
+	RET 3*8

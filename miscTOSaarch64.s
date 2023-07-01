@@ -1,3 +1,4 @@
+SECTION .text
 .global TempleOS_CallN
 TempleOS_CallN:
   ldr x0,[sp]

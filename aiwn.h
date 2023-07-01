@@ -1,4 +1,8 @@
 #pragma once
+#if defined (__MINGW64__)
+#define _WIN32 1
+#define WIN32
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -550,6 +554,8 @@ enum {
 	IC_COS,
 	IC_TAN,
 	IC_ATAN,
+	IC_RAW_BYTES,
+	IC_GET_VARGS_PTR, //Doing this sets the function as a VARGS function
 	IC_CNT, //MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -610,6 +616,7 @@ struct CRPN {
 	CArrayDim* ic_dim;
 	union {
 		double flt;
+		char *raw_bytes;
 		int64_t integer;
 		char* string;
 		CMemberLst* local_mem;
@@ -644,7 +651,7 @@ void HashDel(CHash *h);
 int64_t HashStr(char *str);
 
 
-void PrsBindCSymbol(char *name,void *ptr);
+void PrsBindCSymbol(char *name,void *ptr,int64_t arity);
 void ICFree(CRPN *ic);
 CHashClass *PrsClassNew();
 char *PrsArray(CCmpCtrl *ccmp,CHashClass *base,CArrayDim *dim,char *write_to);
@@ -1028,7 +1035,7 @@ CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc,int64_t r,int64_t rt,int64_t ptr_cnt);
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc,int64_t off,int64_t rt,int64_t ptr_cnt);
 CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp,CCodeMisc *labels,void **table_address,int64_t hi);
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp,char *str,int64_t sz);
-CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp);
+CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp,void **);
 CCmpCtrl *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
@@ -1132,9 +1139,18 @@ extern int64_t FFI_CALL_TOS_3(void *fptr,int64_t,int64_t,int64_t);
 extern int64_t FFI_CALL_TOS_4(void *fptr,int64_t,int64_t,int64_t,int64_t);
 extern void *GenFFIBinding(void *fptr,int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr,int64_t arity);
-extern void PrsBindCSymbolNaked(char *name,void *ptr);
+extern void PrsBindCSymbolNaked(char *name,void *ptr,int64_t arity);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
 const char *ResolveBootDir(char *use,int overwrite,int make_new_dir);
 
 //Uses TempleOS ABI
 int64_t TempleOS_CallN(void (*fptr),int64_t argc,int64_t *argv);
+CRPN* __HC_ICAdd_RawBytes(CCodeCtrl* cc,char *bytes,int64_t cnt);
+
+extern int64_t bc_enable;
+//Returns good region if good,else NULL and after is set how many bytes OOB
+//Returns INVALID_PTR on error
+extern void *BoundsCheck(void *ptr,int64_t *after);
+//f is delay in nano seconds
+extern void MPSetProfilerInt(void *fp,int c,int64_t f);
+extern void* GetHolyFs();

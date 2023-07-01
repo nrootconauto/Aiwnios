@@ -1,3 +1,14 @@
+//Added by nroot,used for Bounds checker
+U8 *WhineOOB(U8 *ptr) {
+  I64 oob=0;
+  if(!BoundsCheck(ptr,&oob)) {
+     DbgPrint("Memory access is %d bytes Out of Bounds!!!\n",oob);
+     DbgPrint("%P\n%P\n%P\n%P\n%P\n",Caller(3),Caller(4),Caller(5),
+     Caller(6),Caller(7));
+  }
+  return ptr;
+}
+
 public Bool ChkOnStk(U8 *ptr,CTask *task=NULL) {
   if(!task) task=Fs;
   return task->stk<=ptr<task->stk+MSize(task->stk);
@@ -20,14 +31,17 @@ U8 *__CallerBP(U8 **rbp,I64 num=1)
 }
 U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
 {//Fetches addr of Nth caller on task's stk.
-  U8 **ptr,**x29,**sp;
+  U8 **ptr,**x29;
   if (!task) task=Fs;
   if (!saved_context && task==Fs)
     return Caller(num+1);
   if (!TaskValidate(task))
     return NULL;
+#ifdef TARGET_X86
+  x29=task->context_save_area[2];
+#else
   x29=task->context_save_area[11];
-  sp=task->context_save_area[21];
+#endif
   if (num) {
     while (x29) {
       if(!ChkOnStk(x29,task))
@@ -42,7 +56,11 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     }
     return NULL;
   } else {
+#ifdef TARGET_X86
+    return task->context_save_area[0];
+#else    
     return task->context_save_area[12];
+#endif
   }
 }
 CTask *GetDebuggedProcess() {
@@ -271,8 +289,13 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
   CHash *fun;
   U8 *rip;
   I64 oframe=frame,dummy;
+#ifdef TARGET_X86
+  rbp=t->context_save_area[2];
+  rip=t->context_save_area[0];
+#else
   rbp=t->context_save_area[11];
   rip=t->context_save_area[12];
+#endif
   while(frame>0) {
     rip=rbp[1];
     rbp=*rbp;

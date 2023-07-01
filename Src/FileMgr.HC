@@ -131,8 +131,6 @@ CDirEntry *FMRebuildDocDrv(U8 drv_let,CDoc *doc,CDirEntry **_head,Bool init)
   return tmpde;
 }
 
-#define DEF2_PROCESSED		1
-#define DEF2_NOT_INITIALIZED	2
 
 U0 FMRebuildDoc(CDoc **_doc,CDirEntry **_head,I64 mode)
 {
@@ -457,20 +455,6 @@ U0 FMCopy(CDoc *doc)
     DocUnlock(doc2);
 }
 
-#define FMR_INCLUDE		0
-#define FMR_ADAM_INCLUDE	1
-#define FMR_DELETE		2
-#define FMR_RENAME		3
-#define FMR_MKDIR		4
-#define FMR_PLAIN		5
-#define FMR_PASTE		6
-#define FMR_CHG_DSK		7
-#define FMR_FORMAT		8
-#define FMR_MOUNT_REDSEA_ISO_C	9
-#define FMR_UNMOUNT		10
-#define FMR_MAKE_REDSEA_ISO_C	11
-#define FMR_BURN_ISO		12
-#define FMR_HELP		13
 
 I64 PopUpFMRight(U8 *header=NULL,U8 *footer=NULL)
 {

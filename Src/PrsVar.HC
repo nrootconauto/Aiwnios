@@ -218,9 +218,12 @@ U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
 {
   U8 *dst=tmpm->static_data;
   CHashClass *tmpc=tmpm->member_class;
+  CHashFun *old_fun=cc->htc.fun; //Added by nroot,DONT ALLOW COCCompile to pick up function args
   I64 (*machine_code)();
   I64 i,size;
   CAOTImportExport *tmpie;
+
+  cc->htc.fun=NULL;
 
   if (cc->flags&CCF_AOT_COMPILE && pass==2) {
     COCPush(cc);
@@ -248,6 +251,8 @@ U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
     } //TODO: else del misc?
     COCPop(cc);
   }
+  
+  cc->htc.fun=old_fun;
 }
 
 U0 PrsArrayDims(CCmpCtrl *cc,I64 mode,CArrayDim *dim)
@@ -421,7 +426,7 @@ U0 PrsVarLst(CCmpCtrl *cc,CHashClass *tmpc,I64 mode,I64 union_base=0)
   CHash *tmph;
   CMemberLst *tmpm;
   CMemberLstMeta *tmp_meta;
-  U8 (*machine_code)();
+  U8 *(*machine_code)();
   Bool undef_array_size,first;
   cc->flags|=CCF_DONT_MAKE_RES;
   if (mode.u8[1]==PRS1B_CLASS)
