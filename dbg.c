@@ -95,7 +95,12 @@ enum
 	UnblockSignals();
 	for (i = 18; i <= 30; i++)
 		if (i - 18 != 12) // the 12th one is the return register
+#if defined (__linux__)
 			actx[i - 18] = ctx->regs[i];
+#elif defined(__FreeBSD__)
+			actx[i - 18] = ctx->mc_gpregs.gp_x[i];
+#endif 
+#if defined (__linux__)
 	// We will look for FPSIMD_MAGIC(0x46508001)
 	// From https://github.com/torvalds/linux/blob/master/arch/arm64/include/uapi/asm/sigcontext.h
 	for (i = 0; i < 4096;) {
@@ -111,30 +116,26 @@ enum
 		else
 			i += sz;
 	}
+#elif defined (__FreeBSD__)
+	for (i2 = 8; i2 <= 15; i2++)
+		actx[(30 - 18 + 1) + i2 - 8] = *(int64_t*)(&ctx->mc_fpregs.fp_q[16 * i2]);
+#endif
+#if defined(__linux__)
 	actx[21] = ctx->sp;
+#elif defined(__FreeBSD__)
+	actx[21] = ctx->mc_gpregs.gp_sp;
+#endif
 	// AiwniosDbgCB will return 1 for singlestep
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		fp = exp->val;
-		actx[12] = ctx->pc;
-		is_single_step = fp(sig, actx);
-		ctx->pc = actx[12];
-		for (i = 18; i <= 30; i++)
-			if (i - 18 != 12) // the 12th one is the return register
-				ctx->regs[i] = actx[i - 18];
-		// for(i2=8;i2<=15;i2++)
-		//   *(int64_t*)(&ctx->__reserved[fp_idx+16*i2])=actx[(30-18+1)+i2-8];
-		if (is_single_step) {
-			ctx->pstate |= (1 << 21);
-			puts("ss");
-		} else
-			ctx->pstate &= ~(1 << 21);
+		FFI_CALL_TOS_2(fp,sig,actx);
 	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+call_exit:
 		fp2 = exp->val;
-		ctx->pc = fp2;
+		FFI_CALL_TOS_0(fp2);
 	} else
 		abort();
-	__builtin___clear_cache(ctx->pc, 1024);
-	setcontext(_ctx);
+	goto call_exit; 
 #endif
 }
 #endif

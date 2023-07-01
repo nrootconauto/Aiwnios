@@ -9,21 +9,4 @@
 %requires libsdl2-2.0-0
 %system all
 %provides aiwnios
-f 755 root sys /usr/local/bin/aiwnios aiwnios
-f 755 root sys /usr/share/aiwnios/Bible.TXT.Z Bible.TXT.Z
-d 755 root sys /usr/share/aiwnios/ -
-d 755 root sys /usr/share/aiwnios/AfterEgypt -
-d 755 root sys /usr/share/aiwnios/Doc -
-d 755 root sys /usr/share/aiwnios/Apps -
-d 755 root sys /usr/share/aiwnios/Src -
-d 755 root sys /usr/share/aiwnios/Demo -
-f 755 root sys /usr/share/aiwnios/Doc Doc/*
-f 755 root sys /usr/share/aiwnios/Demo Demo/*
-f 755 root sys /usr/share/aiwnios/Src Src/*
-f 755 root sys /usr/share/aiwnios/AfterEgypt AfterEgypt/*
-f 755 root sys /usr/share/aiwnios/ACDefs.DATA ACDefs.DATA
-f 755 root sys /usr/share/aiwnios/ACWords.DATA ACWords.DATA
-f 755 root sys /usr/share/aiwnios/HCRT2.DBG.Z HCRT2.DBG.Z
-f 755 root sys /usr/share/aiwnios/HCRT2.BIN HCRT2.BIN
-f 755 root sys /usr/share/aiwnios/Vocab.DD Vocab.DD
-f 755 root sys /usr/share/aiwnios/PersonalMenu.DD PersonalMenu.DD
+%include aiwnios_deps.list
