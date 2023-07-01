@@ -633,9 +633,11 @@ re_enter:;
 	case '#':
 		if (TK_NAME == Lex(lex)) {
 			if (!strcmp(lex->string, "help_file")) {
+				Lex(lex); //Go past string
 				LexWarn(lex, "AIWN ignore's #help_file's ignored by the C side");
 				goto re_enter;
 			} else if (!strcmp(lex->string, "help_index")) {
+				Lex(lex); //Go past string
 				LexWarn(lex, "AIWN ignore's #help_index's ignored by the C side");
 				goto re_enter;
 			} else if (!strcmp(lex->string, "assert")) {

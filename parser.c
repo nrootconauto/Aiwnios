@@ -205,6 +205,7 @@ CRPN* ICFwd(CRPN* rpn)
 	if(rpn->ic_fwd) return rpn->ic_fwd;
 	switch (rpn->type) {
 		break;
+	case IC_RAW_BYTES:
 	case __IC_STATICS_SIZE:
 	case __IC_SET_STATIC_DATA:
 	case __IC_STATIC_REF:
@@ -214,6 +215,7 @@ CRPN* ICFwd(CRPN* rpn)
 	case IC_RELOC:
 		return rpn->base.next;
 		break;
+	case IC_GET_VARGS_PTR:
 	case IC_TO_F64:
 	case IC_TO_I64:
 		goto unop;
@@ -557,7 +559,9 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 		printf("  ");
 	INDENT;
 	switch (rpn->type) {
-		break;
+	case IC_RAW_BYTES:
+		printf("RAW_BYTES:%ld\n", rpn->length);
+		goto ret;
 	case __IC_STATICS_SIZE:
 		printf("STATICS_SZ:%ld\n", rpn->integer);
 		goto ret;
@@ -577,6 +581,9 @@ CRPN* ParserDumpIR(CRPN* rpn, int64_t indent)
 	case IC_RELOC:
 		printf("RELOC:%s\n", rpn->code_misc->str);
 		return ICFwd(rpn);
+	case IC_GET_VARGS_PTR:
+		printf("GET_VARGS_PTR:\n");
+		return ParserDumpIR(rpn->base.next,indent+1);
 	case __IC_VARGS:
 		printf("VARGS:%d\n", rpn->length);
 		rpn = rpn->base.next;
@@ -3701,7 +3708,7 @@ ret:
 	cctrl->flags = old_flags;
 	return 1;
 }
-static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
+static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked,int64_t arity)
 {
 	CHashFun* fun;
 	CHashGlblVar* glbl;
@@ -3711,12 +3718,16 @@ static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
 			glbl->base.type &= ~HTF_EXTERN;
 			glbl->data_addr = ptr;
 		} else if (glbl->base.type & HTT_FUN) {
+			if(fun->argc!=arity) {
+				puts(name);
+				abort();
+			}
 			if (!fun->fun_ptr) {
 				fun->base.base.type &= ~HTF_EXTERN;
 				if (naked)
-					fun->fun_ptr = GenFFIBindingNaked(ptr, 0);
+					fun->fun_ptr = GenFFIBindingNaked(ptr, arity);
 				else
-					fun->fun_ptr = GenFFIBinding(ptr, 0);
+					fun->fun_ptr = GenFFIBinding(ptr, arity);
 			}
 		}
 		SysSymImportsResolve(name, 0);
@@ -3727,21 +3738,21 @@ static void __PrsBindCSymbol(char* name, void* ptr, int64_t naked)
 		exp->base.str = A_STRDUP(name, NULL);
 		exp->base.type = HTT_EXPORT_SYS_SYM;
 		if (naked)
-			exp->val = GenFFIBindingNaked(ptr, 0);
+			exp->val = GenFFIBindingNaked(ptr, arity);
 		else
-			exp->val = GenFFIBinding(ptr, 0);
+			exp->val = GenFFIBinding(ptr, arity);
 		HashAdd(exp, Fs->hash_table);
 	}
 }
 
-void PrsBindCSymbol(char* name, void* ptr)
+void PrsBindCSymbol(char* name, void* ptr,int64_t arity)
 {
-	__PrsBindCSymbol(name, ptr, 0);
+	__PrsBindCSymbol(name, ptr, 0,arity);
 }
 
-void PrsBindCSymbolNaked(char* name, void* ptr)
+void PrsBindCSymbolNaked(char* name, void* ptr,int64_t arity)
 {
-	__PrsBindCSymbol(name, ptr, 1);
+	__PrsBindCSymbol(name, ptr, 1,arity);
 }
 
 int64_t PrsTry(CCmpCtrl* cctrl)
@@ -4194,9 +4205,11 @@ char* __HC_Compile(CCmpCtrl* ccmp, int64_t* sz, char** dbg_info)
 {
 	return Compile(ccmp, sz, dbg_info);
 }
-CCodeMisc* __HC_CodeMiscLabelNew(CCmpCtrl* ccmp)
+CCodeMisc* __HC_CodeMiscLabelNew(CCmpCtrl* ccmp,void **patch_addr)
 {
-	return CodeMiscNew(ccmp, CMT_LABEL);
+	CCodeMisc *misc=CodeMiscNew(ccmp, CMT_LABEL);
+	misc->patch_addr=patch_addr;
+	return misc;
 }
 CCodeMisc* __HC_CodeMiscStrNew(CCmpCtrl* ccmp, char* str, int64_t sz)
 {
@@ -4247,6 +4260,18 @@ CRPN* __HC_ICAdd_GotoIf(CCodeCtrl* cc, CCodeMisc* cm)
 	QueIns(rpn, cc->ir_code);
 	return rpn;
 }
+
+CRPN* __HC_ICAdd_RawBytes(CCodeCtrl* cc,char *bytes,int64_t cnt)
+{
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = IC_RAW_BYTES;
+	rpn->length = cnt;
+	rpn->raw_bytes=A_MALLOC(cnt,cc->hc);
+	memcpy(rpn->raw_bytes,bytes,cnt);
+	QueIns(rpn, cc->ir_code);
+	return rpn;
+}
+
 
 CRPN* __HC_ICAdd_Vargs(CCodeCtrl* cc, int64_t arity)
 {
@@ -4362,6 +4387,16 @@ CCodeMiscRef* CodeMiscAddRef(CCodeMisc* misc, int32_t* addr)
 	ref->next = misc->refs;
 	misc->refs = ref;
 	return ref;
+}
+
+void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) 
+{
+	CRPN* rpn = A_CALLOC(sizeof(CRPN), cc->hc);
+	rpn->type = IC_GET_VARGS_PTR;
+	rpn->ic_class = NULL;
+	rpn->raw_type = RT_I64i;
+	QueIns(rpn, cc->ir_code);
+	return rpn;
 }
 
 void __HC_CodeMiscInterateThroughRefs(CCodeMisc* cm, void (*fptr)(void* addr, void* user_data), void* user_data)

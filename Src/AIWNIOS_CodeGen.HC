@@ -6,6 +6,8 @@
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
+import U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
+import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
@@ -64,12 +66,11 @@ import U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
 import U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 import U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 import U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
-import U8 *__HC_CodeMiscLabelNew(U8*);
+import U8 *__HC_CodeMiscLabelNew(U8*,U8**patch_addr=NULL);
 import U8 *__HC_CmpCtrlNew();
 import U8 *__HC_CodeCtrlPush(U8*);
 import U0 __HC_CodeCtrlPop(U8*);
 import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
-import U8 *__HC_CodeMiscLabelNew(U8 *);
 import U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 import U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 import U8 *__HC_ICAdd_Label(U8*,U8*);
@@ -95,6 +96,8 @@ import U8 * __HC_ICAdd_LBTR(U8*);
 import U8 * __HC_ICAdd_LBTS(U8*);
 import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 #else
+extern U8 *__HC_ICAdd_GetVargsPtr(U8*);
+extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 extern U8 * __HC_ICAdd_ToF64(U8 *);
 extern U8 * __HC_ICAdd_ToI64(U8 *);
@@ -149,17 +152,17 @@ extern U8 * __HC_ICAdd_OrEq(U8*);
 extern U8 * __HC_ICAdd_XorEq(U8*);
 extern U8 * __HC_ICAdd_ModEq(U8*);
 extern U8 * __HC_ICAdd_FReg(U8*,I64);
-extern U8 * __HC_ICAdd_Vargs(U8 *,I64);
+extern U8 * __HC_ICAdd_Ds(U8 *,I64);
 extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
 extern U8 * __HC_ICAdd_Frame(U8*,I64 off,I64 rt,I64 ptrs);
 extern U8 *__HC_CodeMiscJmpTableNew(U8 *,U8 **cmts,I64 lo,I64 hi);
 extern U8 *__HC_CodeMiscStrNew(U8*,U8*,I64 sz);
-extern U8 *__HC_CodeMiscLabelNew(U8*);
+extern U8 *__HC_CodeMiscLabelNew(U8*,U8**);
 extern U8 *__HC_CmpCtrlNew();
 extern U8 *__HC_CodeCtrlPush(U8*);
 extern U0 __HC_CodeCtrlPop(U8*);
 extern U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
-extern U8 *__HC_CodeMiscLabelNew(U8 *);
+extern U8 *__HC_CodeMiscLabelNew(U8 *,U8 **patch_addr=NULL);
 extern U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 extern U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 extern U8 *__HC_ICAdd_Label(U8*,U8*);
@@ -227,24 +230,24 @@ extern U8 * __HC_ICAdd_LBTS(U8*);
 // Replaces IC_CALL_INDIRECT(IC_ADDR_IMPORT) with Short jumps if not import
 //
 U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
-  CRPN *head=&cc->coc.coc_head,*cur;
+  CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc;
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
       if(!(misc->h->type&HTF_IMPORT)) {
 force:
-		cur->misc=misc;
+        cur->misc=misc;
         cur->misc->flags|=CMF_SHORT_ADDR;
         cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       } else {
-		/* Nroot removed this as not all platforms have easy access to lower 32bits
-        #ifdef TARGET_X86
-        //In X86_64,i will put all functions in low 32bits to avoid viener functions.
-        goto force;
-        #endif
-        */
+/* Nroot removed this as not all platforms have easy access to lower 32bits
+#ifdef TARGET_X86
+//In X86_64,i will put all functions in low 32bits to avoid viener functions.
+goto force;
+#endif
+*/
       }
     }
   }
@@ -291,6 +294,22 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
   U8 *cc2=__HC_CodeCtrlPush(acc);
+  if(GetOption(OPTf_BOUNDS_CHECK)&&HashFind("WhineOOB",cc->htc.glbl_hash_table,HTT_FUN)) {
+    for(cur=head->next;cur!=head;cur=cur->next) {
+      if(cur->type==IC_DEREF) {
+        new=CAlloc(sizeof CRPN);
+        new->type=IC_ADDR_IMPORT;
+        new->ic_class=cmp.internal_types[RT_I64];
+        new->ic_data=CodeMiscHashNew(cc,HashFind("WhineOOB",cc->htc.glbl_hash_table,HTT_FUN));
+        QueInsRev(new,RPNNext(cur)); 
+        new=CAlloc(sizeof CRPN);
+        new->type=IC_CALL_INDIRECT;
+        new->length=2;
+        new->ic_class=cmp.internal_types[RT_I64];
+        QueIns(new,cur);
+      }
+    }    
+  }
   #ifdef TARGET_X86
   if(cc->flags&CCF_AOT_COMPILE)
     AiwniosMakeShortJmps(cc,acc);
@@ -339,7 +358,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //Sort by score
     QSort(mv,member_cnt,sizeof(COptMemberVar),&OptMVCompare);
     for(idx=0;idx!=member_cnt;idx++) {
-      if(mv[idx].score&&!mv[idx].m->dim.next) {
+      if(mv[idx].m->reg!=REG_NONE&&mv[idx].score&&!mv[idx].m->dim.next) {
         if(mv[idx].m->member_class->raw_type==RT_F64) {
           if(AIWNIOS_FREG_START<=fr<AIWNIOS_FREG_START+AIWNIOS_FREG_CNT) {
             mv[idx].m->reg=fr++;
@@ -445,7 +464,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       } else {
         __HC_ICAdd_FReg(cc2,mlst->reg);      
       }
-      __HC_ICAdd_Arg(cc2,idx);
+
+#ifdef TARGET_X86
+//Not yet implemented for AARCH64
+      if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
+        __HC_ICAdd_GetVargsPtr(cc2);
+      } else
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
+#ifdef TARGET_AARCH64
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
       mlst=mlst->next;
     }
     Free(mv);
@@ -464,9 +493,9 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case CMT_HASH_ENTRY:
       //See spider thing for more notes 
     break;case CMT_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc);
+      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_GOTO_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc);
+      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_STR_CONST:
       misc->addr=__HC_CodeMiscStrNew(acc,misc->str,misc->st_len);
     //
@@ -600,7 +629,11 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_NOP2:
     break;case IC_LABEL:
       new=__HC_ICAdd_Label(cc2,cur->ic_data(CCodeMisc*)->addr);
-    //break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
+break;case IC_ASM:
+  __HC_ICAdd_Label(cc2,__HC_CodeMiscLabelNew(acc,&cur->ic_data(CAiwniosAOTBlob*)->final_start_addr));
+   new=__HC_ICAdd_RawBytes(cc2,cur->ic_data(CAiwniosAOTBlob*)->data,cur->ic_data(CAiwniosAOTBlob*)->len);
+            
+//break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
     //break;case IC_CALL_END:
     //break;case IC_CALL_END2:
     //break;case IC_RETURN_VAL:
@@ -671,6 +704,20 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           h(CHashFun*)->exe_addr
         );
       }
+    } else if(!(h->type&HTF_RESOLVE)) {
+        new=__HC_ICAdd_Reloc(
+            acc,
+            cc2,
+            &cur ->ic_data(CCodeMisc*)->addr,
+            h->str,
+            RT_U8,
+            1
+          );
+    } else {
+        new=__HC_ICAdd_I64(
+          cc2,
+          h(CHashExport*)->val
+	);
     }
     if(cc->flags&CCF_AOT_COMPILE) {
       if(h->type&HTT_GLBL_VAR&&h->type&HTF_EXPORT) {
@@ -704,10 +751,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case IC_UNARY_MINUS:
     new=__HC_ICAdd_Neg(cc2);
     break;case IC_DEREF:
-    if(cur->ic_class->raw_type==RT_PTR)
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
-    else
-      new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
+    new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     //break;case IC_DEREF_PP //NOT USED BY AIWINIOS
     //break;case IC_DEREF_MM //DITTO
     break;case IC__PP:
@@ -912,6 +956,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         tmpabs->rip=cc->aotc->rip+((misc->addr2(U8*)+8*idx)-machine_code);
         cc->aotc->abss=tmpabs;	
       }
+    }
+  }
+
+  //
+  // For CAiwniosAOTBlob,Fill in the relocations
+  //
+  for(cur=head->last;cur!=head;cur=cur->last)  {
+    if(cur->type==IC_ASM) {
+//TODO AOT
+      JITFixupAiwniosAOTBlob(cc,cur->ic_data,cur->ic_data(CAiwniosAOTBlob*)->final_start_addr);
+      AiwniosAOTBlobDel(cur->ic_data);
     }
   }
   __HC_CmpCtrlDel(acc);

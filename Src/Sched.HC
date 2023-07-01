@@ -114,7 +114,6 @@ U0 Yield() {
       if(Bt(&task->task_flags,TASKf_BREAK_TO_SHIFT_ESC)) {
         goto restore;
       }
-      TaskFocusNext();
       goto restore;
     }
   }
@@ -123,14 +122,15 @@ next:
   task=task->next_task;
   if(task==Gs->seth_task)
     goto restore;
-  if(task->wake_jiffy>__GetTicksHP) {
-    goto next;
-  }
   if(Bt(&task->task_flags,TASKf_KILL_TASK)) {
     SetFs(task);
     task=TaskEnd();
     goto restore;
   }
+  if(task->wake_jiffy>__GetTicksHP) {
+    goto next;
+  }
+
   if(!(task->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED))) {
     goto restore;
   } else

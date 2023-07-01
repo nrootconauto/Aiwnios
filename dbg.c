@@ -2,7 +2,9 @@
 #include <signal.h>
 //Look at your vendor's ucontext.h
 #define __USE_GNU 
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <ucontext.h>
+#endif
 static void UnblockSignals()
 {
 #if defined(__linux__) || defined(__FreeBSD__)

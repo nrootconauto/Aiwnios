@@ -1,4 +1,4 @@
-.text
+SECTION .text
 .extern __enter_try
 .extern __throw
 .global AIWNIOS_enter_try

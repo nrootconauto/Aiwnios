@@ -33,7 +33,7 @@ void InitSound()
 	want.freq = 24000;
 	want.format = AUDIO_S8;
 	want.channels = 2;
-	want.samples = 256;
+	want.samples = 64;
 	want.callback = AudioCB;
 	output = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 	SDL_PauseAudioDevice(output, 0);

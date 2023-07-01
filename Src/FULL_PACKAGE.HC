@@ -116,10 +116,12 @@ TaskInit(adam_task,0);
 #include "Message.HC"
 #include "Mouse.HC"
 #include "EdLite.HC"
+#include "Profiler.HC"
 #ifdef TARGET_X86
 #include "UAsmX64.HC"
+#include "AsmX64.HC"
 #endif
-#include "KUtils.HC"
+#include "KUtils.HC"
 #include "KMain.HC"
 U0 SCRoutine() {
   CTask *self=CAlloc(sizeof CTask,adam_task);
@@ -231,6 +233,12 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   #endif
 }
 U0 InitSymbols() {
+#ifdef TARGET_X86
+  ExePrint("#define TARGET_X86\n;");
+#endif
+#ifdef TARGET_AARCH64
+  ExePrint("#define TARGET_AARCH64\n;");
+#endif
   ExeFile("T:/Src/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
   if(FileFind("HCRT2.DBG.Z"))

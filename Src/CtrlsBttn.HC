@@ -1,6 +1,3 @@
-#define BTTN_BORDER	2
-
-#define BTF_DONT_FREE	1
 
 class CCtrlBttnState
 {

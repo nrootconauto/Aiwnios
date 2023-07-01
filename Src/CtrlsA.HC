@@ -102,8 +102,6 @@ U0 DrawCtrls(CTask *task)
   DCDel(dc);
 }
 
-#define WIN_SCROLL_SIZE		8
-#define WIN_SCROLL_BORDER_BONUS	4
 U0 DrawWinScroll(CDC *dc,CCtrl *c)
 {
   CWinScroll *s=c->state;
@@ -225,10 +223,6 @@ U0 WinScrollsInit(CTask *task)
   }
   TaskDerivedValsUpdate(task);
 }
-#define VIEWANGLES_SPACING	22
-#define VIEWANGLES_RANGE	48
-#define VIEWANGLES_BORDER	2
-#define VIEWANGLES_SNAP		2
 
 U0 DrawViewAnglesCtrl(CDC *dc,CCtrl *c)
 {

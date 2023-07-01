@@ -729,8 +729,8 @@ wmt_start:
 		    DocUnlock(doc);
 		  }
 		}
-	      } else if (msg_code==MSG_MS_L_D_UP)
-		TaskMsg(task,0,MSG_KEY_DOWN,CH_ESC,0,0);
+	      } // else if (msg_code==MSG_MS_L_D_UP) Nroot doesnt like this
+		//TaskMsg(task,0,MSG_KEY_DOWN,CH_ESC,0,0);
 	    }
 	    old_ms.lb=FALSE;
 	    goto wmt_start;
@@ -761,8 +761,8 @@ wmt_start:
 		    DocUnlock(doc);
 		  }
 		}
-	      } else if (msg_code==MSG_MS_R_D_UP)
-		TaskMsg(task,0,MSG_KEY_DOWN,CH_SHIFT_ESC,0,0);
+	      }// else if (msg_code==MSG_MS_R_D_UP) Nroot doesnt like this
+		// TaskMsg(task,0,MSG_KEY_DOWN,CH_SHIFT_ESC,0,0);
 	    }
 	    old_ms.rb=FALSE;
 	    goto wmt_start;

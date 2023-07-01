@@ -2,6 +2,7 @@ U0 CoreAPSethTask()
 {
   CJobCtrl *ctrl=&(Fs->srv_ctrl);
   Bool bl;
+  U8 *ul;
   CTask *task,task1;
   I64 ns,t;
   while (TRUE) {
