@@ -152,7 +152,7 @@ void MPSleepHP(int64_t ns)
 	ts.tv_nsec += ns * 1000U;
 	Misc_LBts(&cores[core_num].wake_futex, 0);
 	#if defined(__linux__)
-	syscall(SYS_futex, &cores[core_num].wake_futex, 1, FUTEX_WAIT, &ts, NULL, 0);
+	syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
 	#endif
 	#if defined(__FreeBSD__)
 	_umtx_op(&cores[core_num].wake_futex,UMTX_OP_WAIT,1,NULL,&ts);
