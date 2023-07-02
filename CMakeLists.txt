@@ -121,7 +121,7 @@ else()
 endif()
 
 #Build HCRT2.BIN
-set_target_properties(${PROJ_NAME}
+set_target_properties(aiwnios
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -130,6 +130,7 @@ add_custom_target(
 	ALL
 	COMMAND aiwnios -b
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
+	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 #
 # Install section
@@ -164,16 +165,16 @@ set(
   ACWords.DATA
 )
 foreach(F IN LISTS TEMPLATE_FILES)
-  if(IS_DIRECTORY "${F}")
+  if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
     install(
       DIRECTORY 
-      "${F}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
       DESTINATION share/aiwnios
     )
   else()
     install (
       FILES
-      "${F}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
       DESTINATION share/aiwnios
     )
   endif()
