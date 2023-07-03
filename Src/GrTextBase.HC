@@ -36,6 +36,8 @@ __10:
     goto __5;
   goto __15;
 __15:
+  if(!(0<=sy<TEXT_ROWS))
+    return FALSE;
   gr.text_base[sy*TEXT_COLS+sx]=d;
   return TRUE;
 }
@@ -64,6 +66,10 @@ Bool TextLenStr(CTask *task,I64 x,I64 y,I64 len,I64 attr,U8 *s) {
   else
     len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
+  if(!(0<=y<TEXT_ROWS))
+    return FALSE;
+  if(!(0<=x<TEXT_COLS))
+    return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
     *ptr++=*s++|attr;
@@ -87,7 +93,7 @@ Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
   }
   if(len<0) return FALSE;
   y+=task->win_top;
-  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS) {
+  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS||y<0) {
     return FALSE;
   }
   if(task->win_right>=TEXT_COLS)
@@ -95,6 +101,10 @@ Bool TextLenAttrStr(CTask *task,I64 x,I64 y,I64 len,U32 *attr_s) {
   else
     len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
+  if(!(0<=y<TEXT_ROWS))
+    return FALSE;
+  if(!(0<=x<TEXT_COLS))
+    return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
     *ptr++=*attr_s++;
@@ -116,7 +126,7 @@ Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
   }
   if(len<0) return FALSE;
   y+=task->win_top;
-  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS) {
+  if(x>task->win_right||y>task->win_bottom||y>=TEXT_ROWS||y<0) {
     return FALSE;
   }
   if(task->win_right>=TEXT_COLS)
@@ -124,6 +134,10 @@ Bool TextLenAttr(CTask *task,I64 x,I64 y,I64 len,I64 attr) {
   else
     len=MinI64(len,task->win_right-x+1);
   if(!len) return FALSE;
+  if(!(0<=y<TEXT_ROWS))
+    return FALSE;
+  if(!(0<=x<TEXT_COLS))
+    return FALSE;
   ptr=&gr.text_base[TEXT_COLS*y+x];
   while(--len>=0) {
     if(ptr(U8*)[0]) break;

@@ -116,21 +116,32 @@ U0 DebuggerSpawn(CTask *debugee) {
   UserTaskCont;
 }
 
+U0 DumbStackTrace(U8 **rbp,U8 *rip) {
+  I64 cnt=1;
+  DbgPrint("[0]::%P",rip);
+  while(ChkOnStk(rbp,Fs)) {
+    DbgPrint("[%d]::%P",cnt++,rbp[1]);
+    rbp=*rbp;
+  }
+}
+
 I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   CBpt *bp;
   CTask clone;
   #ifdef TARGET_X86
-  I64 oip=gps[12]; 
+  I64 oip=gps[12],rbp=gps[2]; 
   #else
-  I64 oip=gps[0]; 
+  I64 oip=gps[0],rbp=gps[11]; 
   #endif
   Fs->is_single_step=FALSE;
   if(Fs==sys_winmgr_task) {
     //Oh no,you crashed the window manager
     DbgPutS("You crashed the window manager,aborting\n");
-    //Exit3Days;
-    Exit;
+    Fs->hash_table=sys_task_being_scrn_updated->hash_table;
+    DumbStackTrace(rbp,oip);
+    ExitAiwnios;
   }
+  DumbStackTrace(rbp,oip);
   MemCpy(Fs->context_save_area,gps,22*8);
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
