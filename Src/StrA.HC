@@ -144,7 +144,7 @@ I64 StrNICmp(U8 *a,U8 *b,I64 cnt) {
 U8 *StrMatch(U8 *needle,U8 *heystack) {
   I64 i=0,len=StrLen(needle),len2=StrLen(heystack);
   if(len>len2) return NULL;
-  for(i=0;i!=len2-len;i++)
+  for(i=0;i<=len2-len;i++)
     if(!StrNCmp(needle,heystack+i,len))
       return heystack+i;
   return NULL;
@@ -153,7 +153,7 @@ U8 *StrMatch(U8 *needle,U8 *heystack) {
 U8 *StrIMatch(U8 *needle,U8 *heystack) {
   I64 i=0,len=StrLen(needle),len2=StrLen(heystack);
   if(len>len2) return NULL;
-  for(i=0;i!=len2-len;i++)
+  for(i=0;i<=len2-len;i++)
     if(!StrNICmp(needle,heystack+i,len))
       return heystack+i;
   return NULL;
