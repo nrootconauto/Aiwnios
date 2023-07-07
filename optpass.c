@@ -1,6 +1,5 @@
 #pragma once
 #include "aiwn.h"
-// TODO do some macro stuff to pick the architecture
 static int64_t IsConst(CRPN* rpn)
 {
 	switch (rpn->type) {
@@ -531,6 +530,32 @@ loop:
 		case IC_PAREN:
 			abort();
 			break;
+		case IC_TYPECAST:
+			if(IsConst(next = rpn->base.next)) {
+				if(rpn->raw_type==RT_F64) {
+					switch(rpn->type) {
+						default:
+							rpn->flt=*(double*)&next->integer;
+						break;
+						case IC_F64:
+							rpn->flt=next->flt;
+					}
+					rpn->type=IC_F64;
+				} else {
+					switch(rpn->type) {
+						case IC_F64:
+							rpn->integer=*(int64_t*)&next->flt;
+						break;
+						default:
+							rpn->integer=next->integer;
+					}
+					rpn->type=IC_I64;
+				}
+				changed=1;
+				ICFree(next);
+				break;
+			} else
+				goto next1;
 		case IC_NEG:
 			if (IsConst(next = rpn->base.next)) {
 				rpn->raw_type = next->raw_type;
