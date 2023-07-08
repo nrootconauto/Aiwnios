@@ -289,7 +289,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CAOTImportExport *tmpaie;
   CAOTAbsAddr *tmpabs;
   CAddShortRelocData fill_user_data;
-  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL;
+  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL,align;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
@@ -405,14 +405,29 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //Assign offsets
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
+//idx here is the alignment
+      switch(mlst->member_class->size) {
+	default:
+	  align=8;
+	  break;
+	case 4:
+	  align=4;
+	  break;
+	case 2:
+	  align=2;
+	  break;
+	case 1:
+	  align=1;
+	  break;
+      }
       if(mlst->reg==REG_NONE) {
         #ifdef TARGET_AARCH64
         foff_lookup[idx].i32[1]=foff;
         foff_lookup[idx].i32[0]=mlst->offset;
         mlst->offset=foff;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
-        if(foff&7)
-          foff+=8-(foff&7); //Align to 8#endifg
+        if(foff&(align-1))
+          foff+=align-(foff&(align-1)); //Align to 8
         #endif
         #ifdef TARGET_X86
         foff_lookup[idx].i32[0]=mlst->offset;
@@ -424,11 +439,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         //....
         //x8 <<=offset
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
-        if(foff&7)
-          foff+=8-(foff&7); //Align to 8
+        if(foff&(align-1))
+          foff+=align-(foff&(align-1)); //Align to 8
         mlst->offset=foff;
         foff_lookup[idx].i32[1]=foff;
         #endif
+      } else {
+//Assign  them a spot on the stack for debugging purposes
+	foff+=8;
+        if(foff&7)
+          foff+=8-(foff&7); //Align to 8
+	mlst->offset=foff;
       }
     }
     

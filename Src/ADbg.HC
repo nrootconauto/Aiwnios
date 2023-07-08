@@ -1,5 +1,6 @@
 #help_index "Debugging/Dump"
 I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) {
+#ifdef TARGET_AARCH64
   //See swapctxAARCH64.s
   if(raw_type==RT_F64) {
     if(8<=r<=15) {
@@ -7,6 +8,20 @@ I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) {
     }
   } else if(18<=r<=30)
       return &t->context_save_area[r-18];
+#endif
+#ifdef TARGET_X86
+  if(raw_type==RT_F64) {
+    if(6<=r<=15) {
+      return &t->context_save_area[9+r-6];
+    }
+  } else {
+    switch(r) {
+      case REG_RBX: return &t->context_save_area[3];
+      case 12...15: return &t->context_save_area[4+r-12];
+
+    }
+  }
+#endif
   return NULL;
 }
 

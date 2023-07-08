@@ -108,7 +108,7 @@ Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="B:/Tmp/%X.GR")
     if (!(old_val=LBtr(&scrncast.record,0))) {
       Free(scrncast.print_fmt);
       scrncast.print_fmt=StrNew(print_fmt,adam_task);
-      scrncast.t0_now=0;//Now; TODO RESTORE
+      scrncast.t0_now=Now;
       scrncast.snd_head.tS=scrncast.t0_tS=tS;
       scrncast.snd_head.ona=scrncast.ona;
       LBts(&scrncast.record,0);

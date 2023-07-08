@@ -16,6 +16,7 @@ class CRPN:CQue {
   union {
     CCodeMisc *misc;
   };
+  U8 *mem_alive_at;
 };
 
 Bool IsPtrNode(CRPN *rpn) {

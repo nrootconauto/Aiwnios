@@ -52,8 +52,8 @@ enum
 	actx[3]=ctx->gregs[REG_RBX];
 	actx[4]=ctx->gregs[REG_R12];
 	actx[5]=ctx->gregs[REG_R13];
-	actx[7]=ctx->gregs[REG_R14];
-	actx[8]=ctx->gregs[REG_R15];
+	actx[6]=ctx->gregs[REG_R14];
+	actx[7]=ctx->gregs[REG_R15];
 	CHashExport* exp;
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		FFI_CALL_TOS_2(exp->val,sig, actx);
@@ -72,8 +72,8 @@ enum
 	actx[3]=ctx->mc_rbx;
 	actx[4]=ctx->mc_r12;
 	actx[5]=ctx->mc_r13;
-	actx[7]=ctx->mc_r14;
-	actx[8]=ctx->mc_r15;
+	actx[6]=ctx->mc_r14;
+	actx[7]=ctx->mc_r15;
 	CHashExport* exp;
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		FFI_CALL_TOS_2(exp->val,sig, actx);
