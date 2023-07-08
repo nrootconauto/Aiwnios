@@ -130,7 +130,28 @@ enum
 	// AiwniosDbgCB will return 1 for singlestep
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		fp = exp->val;
-		FFI_CALL_TOS_2(fp,sig,actx);
+		if(FFI_CALL_TOS_2(fp,sig,actx)) { //Returns 1 for single step
+#if defined(__FreeBSD__)
+			ctx->mc_rip=actx[0];
+			ctx->mc_rsp=actx[1];
+			ctx->mc_rbp=actx[2];
+			ctx->mc_rbx=actx[3];
+			ctx->mc_r12=actx[4];
+			ctx->mc_r13=actx[5];
+			ctx->mc_r14=actx[6];
+			ctx->mc_r15=actx[7];
+			ctx->mc_eflags|=1<<8;
+#elif defined(__linux__)
+			ctx->gregs[REG_RIP]=actx[0];
+			ctx->gregs[REG_RSP]=actx[1];
+			ctx->gregs[REG_RBP]=actx[2];
+			ctx->gregs[REG_RBX]=actx[3];
+			ctx->gregs[REG_R12]=actx[4];
+			ctx->gregs[REG_R13]=actx[5];
+			ctx->gregs[REG_R14]=actx[6];
+			ctx->gregs[REG_R15]=actx[7];
+#endif
+		}
 	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 call_exit:
 		fp2 = exp->val;
