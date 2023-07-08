@@ -406,20 +406,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
 //idx here is the alignment
-      switch(mlst->member_class->size) {
-	default:
-	  align=8;
-	  break;
-	case 4:
-	  align=4;
-	  break;
-	case 2:
-	  align=2;
-	  break;
-	case 1:
-	  align=1;
-	  break;
-      }
+      align=8;
       if(mlst->reg==REG_NONE) {
         #ifdef TARGET_AARCH64
         foff_lookup[idx].i32[1]=foff;
@@ -452,7 +439,8 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 	mlst->offset=foff;
       }
     }
-    
+    if(foff&7)
+      foff+=8-(foff&7); //Align to 8    
     cc->htc.fun->size=foff;
   }
   
