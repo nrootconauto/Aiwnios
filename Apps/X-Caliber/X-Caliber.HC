@@ -463,7 +463,7 @@ U0 DrawIt(CTask *task,CDC *dc)
   GrPrint(dc,0,0,"Level:%d Score:%d High Score:%d",level,score,best_score);
   if (game_over) {
     if (Blink)
-      GrPrint(dc,(task->pix_width-9*FONT_WIDTH)/2,
+      GrPrint(dc,(task->pix_width-9*FONT_WIDTH)/2,
 	    (task->pix_height-FONT_HEIGHT)/2,"Game Over");
   } else if (show_level_msg) {
     if (Blink)
@@ -511,11 +511,6 @@ U0 DrawIt(CTask *task,CDC *dc)
 	  GrCircle(dc,tmpmi->p_front.x,tmpmi->p_front.y,i);
 	}
       } else {
-	PrintF("pb",tmpmi->p_back.x);
-	PrintF("pf",tmpmi->p_front.x);
-	PrintF("x",(tmpmi->p_front.x+tmpmi->p_back.x)/2);
-	PrintF("y",(tmpmi->p_front.y+tmpmi->p_back.y)/2);
-	PrintF("ang",Arg(tmpmi->p_front.x-tmpmi->p_back.x,tmpmi->p_front.y-tmpmi->p_back.y));
 	Sprite3ZB(dc,(tmpmi->p_front.x+tmpmi->p_back.x)/2,
 	      (tmpmi->p_front.y+tmpmi->p_back.y)/2,0,tmpmi->img,
 	      Arg(tmpmi->p_front.x-tmpmi->p_back.x,
@@ -780,7 +775,7 @@ U0 MyDerivative(CMathODE *ode,F64,COrder2D3 *,COrder2D3 *)
   MyMass *tmpm,*tmpm1;
 
   tmpm=ode->next_mass;
-  while (tmpm!=&ode->next_mass) {
+  while (tmpm!=&ode->next_mass) {
     if (tmpm->type!=MT_SOLAR_FLARE && tmpm->type!=MT_ION) {
       d=tmpm->state->x;
       if (d-tmpm->radius<0)
