@@ -406,7 +406,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
 //idx here is the alignment
-      align=8;
+      align=8;
       if(mlst->reg==REG_NONE) {
         #ifdef TARGET_AARCH64
         foff_lookup[idx].i32[1]=foff;
@@ -463,7 +463,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     __HC_ICAdd_SetFrameSize(cc2,cc->htc.fun->size+16);
     mlst=cc->htc.fun->member_lst_and_root;
     argc=cc->htc.fun->arg_cnt;
-    if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT))
+   if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT))
       argc+=2;
     for(idx=0;idx!=argc;idx++) {
       if(mlst->reg==REG_NONE)
@@ -1115,7 +1115,7 @@ U0 DbgInfoWrite(CHashTable *h,U8 *name) {
 U0 DbgInfoRead(U8 *name) {
   I64 len,min,max,ln,type;
   CHashSrcSym *tmph;
-  CMemberLst *tmpm=NULL,*tmpm2=NULL;
+  CMemberLst *tmpm=NULL,*tmpm2=NULL,*tmpm_start;
   CDbgInfo *dbg_info;
   CHashClass *tmpc;
   U8 *body=FileRead(name,&len),*ptr=body,*fn,*idx;
@@ -1156,10 +1156,10 @@ U0 DbgInfoRead(U8 *name) {
       max=ptr(U32*)[0];
       ptr+=sizeof(U32);
       tmpm=NULL;
+      tmpm2=NULL;
+      tmpm_start=NULL;
       for(min=0;min!=max;min++) {
-        tmpm2=tmpm;
         if(tmph) tmpm=CAlloc(sizeof(CMemberLst));
-        if(tmpm2) tmpm2->next=tmpm;
         if(tmph) tmpm->str=StrNew(ptr);
         ptr+=StrLen(ptr)+1;
         tmpc=HashFind(ptr,Fs->hash_table,HTT_CLASS|HTT_INTERNAL_TYPE);
@@ -1169,28 +1169,29 @@ U0 DbgInfoRead(U8 *name) {
         if(!tmpc) {
           if(tmpm) Free(tmpm->str);
           Free(tmpm);
-          if(tmpm2) tmpm2->next=NULL;
-          tmpm=tmpm2;
           ptr+=16;
           goto next;
         } 
 	if(tmph) tmpm->reg=ptr(U32*)[0];
 	ptr+=4;
-       	if(tmph) tmpm->offset=ptr(I32*)[0];
+        if(tmph) tmpm->offset=ptr(I32*)[0];
         ptr+=4;
         if(tmpm) tmpm->member_class+=ptr(U32*)[0]; //In TempleOS,the next class is a "pointer star"
         ptr+=4;
         if(tmpm) tmpm->dim.total_cnt=tmpm->dim.cnt=ptr(U32*)[0];
         ptr+=4;
+        if(!tmpm_start) tmpm_start=tmpm;
+        if(tmpm2) tmpm2->next=tmpm;
+        tmpm2=tmpm;
         next:;
       }
       if(tmph) {
         tmpm=tmph(CHashFun*)->member_lst_and_root;
         for(;tmpm&&tmpm->next;tmpm=tmpm->next);
         if(tmpm)
-	  tmpm->next=tmpm2;
+	  tmpm->next=tmpm_start;
         else
-	  tmph(CHashFun*)->member_lst_and_root=tmpm2;
+	  tmph(CHashFun*)->member_lst_and_root=tmpm_start;
       }
     } else if(type&HTT_HELP_FILE) {
       tmph=CAlloc(sizeof(CHashSrcSym));

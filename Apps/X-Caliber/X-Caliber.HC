@@ -496,6 +496,7 @@ U0 DrawIt(CTask *task,CDC *dc)
     tmpsps=tmpsps->next;
   }
 
+
   tmpmi=missile_head.next;
   while (tmpmi!=&missile_head) {
     if (tmpmi->active) {
@@ -509,11 +510,17 @@ U0 DrawIt(CTask *task,CDC *dc)
 	    dc->color=LTRED;
 	  GrCircle(dc,tmpmi->p_front.x,tmpmi->p_front.y,i);
 	}
-      } else
+      } else {
+	PrintF("pb",tmpmi->p_back.x);
+	PrintF("pf",tmpmi->p_front.x);
+	PrintF("x",(tmpmi->p_front.x+tmpmi->p_back.x)/2);
+	PrintF("y",(tmpmi->p_front.y+tmpmi->p_back.y)/2);
+	PrintF("ang",Arg(tmpmi->p_front.x-tmpmi->p_back.x,tmpmi->p_front.y-tmpmi->p_back.y));
 	Sprite3ZB(dc,(tmpmi->p_front.x+tmpmi->p_back.x)/2,
 	      (tmpmi->p_front.y+tmpmi->p_back.y)/2,0,tmpmi->img,
 	      Arg(tmpmi->p_front.x-tmpmi->p_back.x,
 	      tmpmi->p_front.y-tmpmi->p_back.y));
+      }
     }
     tmpmi=tmpmi->next;
   }
@@ -715,6 +722,7 @@ U0 Explosion(MyMass *tmpm1,MyMass *tmpm2,F64 tons)
   CD3 p1;
   F64 d;
 
+
   tmpm=ode->next_mass;
   while (tmpm!=&ode->next_mass) {
     if (tmpm!=tmpm1 && tmpm!=tmpm2) {
@@ -734,7 +742,7 @@ U0 Explosion(MyMass *tmpm1,MyMass *tmpm2,F64 tons)
   }
 }
 
-Ship TargetGet(Missile *tmpmi)
+Ship *TargetGet(Missile *tmpmi)
 {
   Ship *tmpsp,*res=NULL;
   F64 dd,best_dd=F64_MAX;
@@ -772,7 +780,7 @@ U0 MyDerivative(CMathODE *ode,F64,COrder2D3 *,COrder2D3 *)
   MyMass *tmpm,*tmpm1;
 
   tmpm=ode->next_mass;
-  while (tmpm!=&ode->next_mass) {
+  while (tmpm!=&ode->next_mass) {
     if (tmpm->type!=MT_SOLAR_FLARE && tmpm->type!=MT_ION) {
       d=tmpm->state->x;
       if (d-tmpm->radius<0)
@@ -792,19 +800,34 @@ U0 MyDerivative(CMathODE *ode,F64,COrder2D3 *,COrder2D3 *)
 	  if (tmpm1->type==MT_ANTIMATTER_SPLAT) {
 	    if (tmpm->type==MT_HUMAN_SHIP || tmpm->type==MT_ENEMY_SHIP) {
 	      D3Sub(&p,&tmpm->state->x,&tmpm1->state->x);
-	      dd=D3NormSqr(&p)+1;
+	      //Nroot here,see below note,X87 FPU behavior is different and yields less NAN's
+	      //I assume this is a repulsion thing
+	      dd=D3Norm(&p);
+	      if(1.<=dd<GR_WIDTH/2.) {
+		D3MulEqu(&p,GR_WIDTH/2./dd*.2);
+		D3AddEqu(&tmpm1->DstateDt->DxDt,&p);
+	      }
+	      /*dd=D3NormSqr(&p)+1;
 	      if (dd<100000) {
 		D3MulEqu(&p,100000/dd);
 		D3AddEqu(&tmpm1->DstateDt->DxDt,&p);
-	      }
+	      }*/
 	    }
 	  } else if (tmpm1->type!=MT_ION) {
 	    D3Sub(&p,&tmpm->state->x,&tmpm1->state->x);
 	    dd=D3NormSqr(&p);
 	    dd2=Sqr(tmpm->radius+tmpm1->radius);
-	    if (dd<=dd2) {
+	    //Nroot here X87 behavior is differnet than SSE
+	    //I assume  this code does some sort of "attraction" thing
+	    
+	    /*if (dd<dd2) { X87 FPUbehavior yields less NAN's
 	      d=Sqrt(dd)+0.0001;
-	      D3MulEqu(&p,Sqr(Sqr(dd2-dd))/d);
+	      D3MulEqu(&p,Clamp(Sqr(Sqr(dd2-dd))/d,0,GR_WIDTH));
+	      D3AddEqu(&tmpm ->DstateDt->DxDt,&p);
+	      D3SubEqu(&tmpm1->DstateDt->DxDt,&p);
+	    }*/
+	    if(dd<GR_WIDTH/2.) { 
+	      D3MulEqu(&p,Clamp(-Sqrt(dd),-1.,0.));
 	      D3AddEqu(&tmpm ->DstateDt->DxDt,&p);
 	      D3SubEqu(&tmpm1->DstateDt->DxDt,&p);
 	    }
@@ -1003,15 +1026,19 @@ U0 CheckDamage()
   }
 
   tmpsp=ship_head.next;
+
+ship_loop:
   while (tmpsp!=&ship_head) {
     tmpsp1=tmpsp->next;
     death_score=0;
     switch (tmpsp->type) {
       case ST_HUMAN1:
 	if (tmpsp->exploding) {
-	  if (tS>tmpsp->die_timeout)  {
+	  if (tS>tmpsp->die_timeout)  {  
 	    ShipDel(tmpsp);
 	    human=NULL;
+	    tmpsp=tmpsp1;
+            goto ship_loop;
 	  }
 	} else
 	  for (i=0;i<tmpsp->springs;i++) {
@@ -1034,6 +1061,8 @@ U0 CheckDamage()
 	    if (score>best_score)
 	      best_score=score;
 	  }
+	  tmpsp=tmpsp1;
+	  goto ship_loop;
 	} else {
 	  j=0;
 	  for (i=0;i<tmpsp->springs;i++) {
@@ -1042,8 +1071,6 @@ U0 CheckDamage()
 	    else if (Abs(tmpsp->s[i].f)>tmpsp->s[i].strength) {
 	      tmpsp->s[i].flags|=SSF_INACTIVE;
 	      j++;
-DbgPrint("%n,%n\n",Abs(tmpsp->s[i].f),tmpsp->s[i].strength);
-PrintI("j2",j);
 	    }
  	  }
 	  if (j>1)
@@ -1054,7 +1081,6 @@ PrintI("j2",j);
       for (i=0;i<tmpsp->masses;i++)
 	if (tmpsp->p[i].temperature>MASS_TEMP_MAX){
 	  death_score++;
-PrintF("tmp,",tmpsp->p[i].temperature);
         }
       if (death_score) {
 	tmpsp->exploding=TRUE;

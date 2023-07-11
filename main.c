@@ -632,7 +632,7 @@ static int64_t STK_pow(double* stk)
 }
 static int64_t STK_exp(double* stk)
 {
-	double r = pow(stk[0], stk[1]);
+	double r = exp(stk[0]);
 	return *(int64_t*)&r;
 }
 
