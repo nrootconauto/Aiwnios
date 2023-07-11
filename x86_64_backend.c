@@ -3611,7 +3611,7 @@ static int64_t __SexyAssignOp(CCmpCtrl* cctrl, CRPN* rpn,
 enter:;
 	int64_t old_type = rpn->type, od = cctrl->backend_user_data2, next_old = next->type, decr = 0,
 			old_next2 = next2->type, pop = 0, use_tc = 0, use_raw_type = rpn->raw_type, use_f64 = 0,
-			old_raw_type = rpn->raw_type, old_flags = next->flags, old_flags2 = next2->flags;
+			old_raw_type = rpn->raw_type, old_flags = next->flags, old_flags2 = next2->flags,set_flags=0;
 	if (next->type == IC_TYPECAST) {
 		use_raw_type = next->raw_type;
 		next = ICArgN(next, 0);
@@ -3633,6 +3633,7 @@ enter:;
 		if (use_f64)                                                                                                                              \
 			rpn->raw_type = RT_F64;                                                                                                               \
 		code_off = __OptPassFinal(cctrl, rpn, bin, code_off);                                                                                     \
+		set_flags=rpn->res.set_flags; \
 		rpn->raw_type = old_raw_type;                                                                                                             \
 		code_off = ICMov(cctrl, &old, &rpn->res, bin, code_off);                                                                                  \
 		break;                                                                                                                                    \
@@ -3656,6 +3657,7 @@ enter:;
 			rpn->raw_type = RT_F64;                                                                                                               \
 		rpn->res.raw_type = rpn->raw_type;                                                                                                        \
 		code_off = __OptPassFinal(cctrl, rpn, bin, code_off);                                                                                     \
+		set_flags=rpn->res.set_flags; \
 		rpn->raw_type = old_raw_type;                                                                                                             \
 		next->flags &= ~ICF_PRECOMPUTED;                                                                                                          \
 		next2->flags &= ~ICF_PRECOMPUTED;                                                                                                         \
@@ -3675,6 +3677,7 @@ enter:;
 		if (use_f64)                                                                                                                              \
 			rpn->raw_type = RT_F64;                                                                                                               \
 		code_off = __OptPassFinal(cctrl, rpn, bin, code_off);                                                                                     \
+		set_flags=rpn->res.set_flags; \
 		rpn->raw_type = old_raw_type;                                                                                                             \
 		code_off = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);                                                                            \
 	}                                                                                                                                             \
@@ -3710,6 +3713,7 @@ enter:;
 	case IC_MOD_EQ:
 		XXX_EQ_OP(IC_MOD);
 	}
+	if(set_flags) rpn->res.set_flags=1;
 	return code_off;
 }
 
@@ -4587,12 +4591,11 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 					goto ret;
 				}
 			}
-		next->res.set_flags = 1;
 		PushTmpDepthFirst(cctrl, next, 0);
 		PopTmp(cctrl, next);
 		code_off = __OptPassFinal(cctrl, next, bin, code_off);
 		if (next->res.set_flags) {
-			if (reverse) {
+			if (!reverse) {
 				AIWNIOS_ADD_CODE(X86Jcc, X86_COND_E | 1, 6);
 				CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
 			} else {
@@ -4738,6 +4741,8 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 		} else {
 			BACKEND_UNOP(X86NegReg, X86NegReg);
+			if(rpn->raw_type!=RT_F64)
+				rpn->res.set_flags=1;
 		}
 		break;
 	ic_pos:
@@ -4971,6 +4976,8 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}                                                                                                                        \
 		break;                                                                                                                   \
 	}
+		if(rpn->raw_type!=RT_F64)
+			rpn->res.set_flags=1;
 		BACKEND_BINOP_IMM(X86AddImm32, X86AddReg);
 		BACKEND_BINOP(X86AddSDReg, X86AddReg, X86AddSDSIB64, X86AddSIB64);
 		break;
@@ -5030,6 +5037,8 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		code_off = ICMov(cctrl, &rpn->res, &next2->res, bin, code_off);
 		break;
 	ic_sub:
+		if(rpn->raw_type!=RT_F64)
+			rpn->res.set_flags=1;
 		BACKEND_BINOP_IMM(X86SubImm32, X86SubReg);
 		BACKEND_BINOP(X86SubSDReg, X86SubReg, X86SubSDSIB64, X86SubSIB64);
 		break;
@@ -5053,9 +5062,11 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 				case RT_I32i:
 				case RT_I64i:
 					AIWNIOS_ADD_CODE(X86SarImm, into_reg, __builtin_ffsll(next->integer) - 1);
+					if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 					break;
 				default:
 					AIWNIOS_ADD_CODE(X86ShrImm, into_reg, __builtin_ffsll(next->integer) - 1);
+					if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 					break;
 				}
 				if (rpn->res.keep_in_tmp)
@@ -5163,6 +5174,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 		break;
 	ic_and:
+	    if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 		BACKEND_BINOP_IMM(X86AndImm, X86AndImm);
 		BACKEND_BINOP(X86AndPDReg, X86AndReg, X86AndPDSIB64, X86AndSIB64);
 		break;
@@ -5237,6 +5249,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		break;
 	ic_xor:
 		if (rpn->raw_type != RT_F64) {
+			rpn->res.set_flags=1;
 			BACKEND_BINOP_IMM(X86XorImm, X86XorReg);
 		}
 		BACKEND_BINOP(X86XorPDReg, X86XorReg, X86XorPDSIB64, X86XorSIB64);
@@ -5275,6 +5288,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		}
 		break;
 	ic_or:
+		if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 		BACKEND_BINOP_IMM(X86OrImm, X86OrReg);
 		BACKEND_BINOP(X86OrPDReg, X86OrReg, X86OrPDSIB64, X86OrSIB64);
 		break;
@@ -5456,6 +5470,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			AIWNIOS_ADD_CODE(X86XorPDReg, next->res.reg, 0);
 			goto ret;
 		}
+		if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 		BACKEND_UNOP(X86NotReg, X86NotReg);
 		break;
 	ic_post_inc:
@@ -5676,6 +5691,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			next2 = ICArgN(rpn, 0);
 			next = ICArgN(rpn, 1);
 			if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+				if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 				BACKEND_BINOP_IMM(X86ShlImm, X86AddReg); // X86AddReg wont be used here
 				break;
 			}
@@ -5692,6 +5708,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			code_off = PutICArgIntoReg(cctrl, &tmp2, RT_U64i, AIWNIOS_TMP_IREG_POOP, bin, code_off);
 			code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
 			AIWNIOS_ADD_CODE(X86ShlRCX, tmp2.reg);
+			if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 			if (rpn->res.keep_in_tmp)
 				rpn->res = tmp2;
 			code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
@@ -5699,6 +5716,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			next = ICArgN(rpn, 1);
 			next2 = ICArgN(rpn, 0);
 			if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+				if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 				BACKEND_BINOP_IMM(X86ShlImm, X86AddReg); // X86AddReg wont be used here
 			}
 			code_off = __OptPassFinal(cctrl, next, bin, code_off);
@@ -5730,6 +5748,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			tmp.reg = RAX;
 			code_off = PopFromStack(cctrl, &next->res, bin, code_off);
 			AIWNIOS_ADD_CODE(X86ShrImm, tmp.reg, next2->res.reg);
+			if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 			if (rpn->res.keep_in_tmp)
 				rpn->res = tmp;
 			code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
@@ -5741,6 +5760,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		case RT_U32i:
 		case RT_U64i:
 			if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+				if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 				BACKEND_BINOP_IMM(X86ShrImm, X86AddReg); // X86AddReg wont be used here
 			}
 			next2 = ICArgN(rpn, 0);
@@ -5759,12 +5779,14 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			code_off = PutICArgIntoReg(cctrl, &tmp2, RT_U64i, AIWNIOS_TMP_IREG_POOP, bin, code_off);
 			code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
 			AIWNIOS_ADD_CODE(X86ShrRCX, tmp2.reg);
+			if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 			if (rpn->res.keep_in_tmp)
 				rpn->res = tmp2;
 			code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
 			break;
 		default:
 			if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+				if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 				BACKEND_BINOP_IMM(X86SarImm, X86AddReg); // X86AddReg wont be used here
 			}
 			tmp.raw_type = RT_I64i;
@@ -5780,6 +5802,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			code_off = PutICArgIntoReg(cctrl, &tmp2, RT_U64i, AIWNIOS_TMP_IREG_POOP, bin, code_off);
 			code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
 			AIWNIOS_ADD_CODE(X86SarRCX, tmp2.reg);
+			if(rpn->raw_type!=RT_F64) rpn->res.set_flags=1;
 			if (rpn->res.keep_in_tmp)
 				rpn->res = tmp2;
 			code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
