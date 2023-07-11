@@ -352,6 +352,7 @@ U0 ODEMPWake(CMathODE *ode)
   }
   for (i=0;i<mp_cnt;i++) {
     Suspend(ode->slave_tasks[i],FALSE);
+    MPAwake(i);
   }
 }
 
@@ -534,7 +535,7 @@ U0 ODECashKarp(CMathODE *ode)
 U0 ODERK5OneStep(CMathODE *ode)
 {
   I64 i;
-  F64 errmax,tmp,*tmpstate=ode->tmp6,*stateerr=ode->tmp7;
+  F64 errmax,tmp,*tmpstate=ode->tmp6,*stateerr=ode->tmp7;
   while (TRUE) {
     ode->h=Clamp(ode->h,ode->h_min,ode->h_max);
     ODECashKarp(ode);
@@ -575,7 +576,6 @@ it has a timeout.
 */
   I64 i;
   F64 d,start_time,timeout_time,t_desired,t_initial,interpolation;
-  F64 orig;
   CMathODE *ode;
 
   if (task->next_ode==&task->next_ode)
@@ -614,22 +614,20 @@ it has a timeout.
 	    ODEState2Internal(ode);
 	    MemCpy(ode->initial_state,ode->state_internal,
 		  ode->n_internal*sizeof(F64));
-	    ode->h=(t_desired-ode->t)/1024;
 	    while (ode->t<t_desired) {
 	      ode->h_max=t_desired-ode->t;
-//	      ODECallDerivative(ode,ode->t,ode->state_internal,ode->DstateDt);
+	      ODECallDerivative(ode,ode->t,ode->state_internal,ode->DstateDt);
 	      for (i=0;i<ode->n_internal;i++)
 		ode->state_scale[i]=Abs(ode->state_internal[i])+
 		      Abs(ode->DstateDt[i]*ode->h)+ode->tolerance_internal;
-	      orig=ode->t;
-	      ODEOneStep(ode);
-	      if(orig==ode->t) ode->h=ode->h_max;
-/*	      if (tS>timeout_time) {
+	      ODERK5OneStep(ode);
+	      if (tS>timeout_time) {
 		ode->base_t+=t_desired-ode->t; //Slip
 		goto ode_done;
 
-	      }*/
+	      }
 	    }
+
 	    //Interpolate if end time was not exact.
 	    if (ode->t!=t_desired) {
 	      if (interpolation=ode->t-t_initial) {
@@ -688,4 +686,3 @@ ode_done:
     winmgr.ode_time+=task->last_ode_time=tS-start_time;
   }
 }
-
