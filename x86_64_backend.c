@@ -1248,6 +1248,52 @@ int64_t X86MovRegIndirI64(char* to, int64_t reg, int64_t scale, int64_t index, i
 	return len;
 }
 
+int64_t X86MovIndirI8Imm(char *to,int64_t imm,int64_t scale, int64_t index, int64_t base, int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0, 0, scale, index, base, off);
+	ADD_U8(0xc6);
+	SIB_END();
+	ADD_U8(imm);
+	return len;
+}
+
+int64_t X86MovIndirI16Imm(char *to,int64_t imm,int64_t scale, int64_t index, int64_t base, int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	ADD_U8(0x66);
+	SIB_BEGIN(0, 0, scale, index, base, off);
+	ADD_U8(0xc7);
+	SIB_END();
+	ADD_U16(imm);
+	return len;
+}
+
+int64_t X86MovIndirI32Imm(char *to,int64_t imm,int64_t scale, int64_t index, int64_t base, int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0, 0, scale, index, base, off);
+	ADD_U8(0xc7);
+	SIB_END();
+	ADD_U32(imm);
+	return len;
+}
+
+int64_t X86MovIndirI64Imm(char *to,int64_t imm,int64_t scale, int64_t index, int64_t base, int64_t off) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(1, 0, scale, index, base, off);
+	ADD_U8(0xc7);
+	SIB_END();
+	ADD_U32(imm);
+	return len;
+}
+
+
 int64_t X86MovIndirRegI64(char* to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off)
 {
 	int64_t len = 0;
@@ -2896,7 +2942,32 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		}
 		goto dft;
 	case __MD_X86_64_SIB:
-		if (src->mode == MD_REG && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
+		if (src->mode == MD_I64 && Is32Bit(src->integer) && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
+			switch (dst->raw_type) {
+				break;
+			case RT_U8i:
+			case RT_I8i:
+				AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+				break;
+			case RT_U16i:
+			case RT_I16i:
+				AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+				break;
+			case RT_U32i:
+			case RT_I32i:
+				AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+				break;
+			case RT_PTR:
+			case RT_U64i:
+			case RT_I64i:
+			case RT_FUNC:
+				AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+				break;
+			default:
+				abort();
+			}
+			return code_off;
+		} else if(src->mode == MD_REG && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
 			switch (dst->raw_type) {
 				break;
 			case RT_U8i:
@@ -2928,7 +2999,32 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 		goto dft;
 		break;
 	case MD_STATIC:
-		if (src->mode == MD_REG && (dst->raw_type == RT_F64) == (src->raw_type == RT_F64)) {
+		if (src->mode == MD_I64 && Is32Bit(src->integer) && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
+			switch (dst->raw_type) {
+				break;
+			case RT_U8i:
+			case RT_I8i:
+				AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, RIP, 0);
+				break;
+			case RT_U16i:
+			case RT_I16i:
+				AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, RIP, 0);
+				break;
+			case RT_U32i:
+			case RT_I32i:
+				AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, RIP, 0);
+				break;
+			case RT_PTR:
+			case RT_U64i:
+			case RT_I64i:
+			case RT_FUNC:
+				AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 0);
+				break;
+			default:
+				abort();
+			}
+			return code_off;
+		} else if (src->mode == MD_REG && (dst->raw_type == RT_F64) == (src->raw_type == RT_F64)) {
 			switch (dst->raw_type) {
 				break;
 			case RT_U8i:
@@ -2973,7 +3069,32 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 			goto dft;
 		} else if (src->mode == MD_REG)
 			use_reg = src->reg;
-		else {
+		else if (src->mode == MD_I64 && Is32Bit(src->integer) && ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
+			switch (dst->raw_type) {
+				break;
+			case RT_U8i:
+			case RT_I8i:
+				AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, use_reg2, indir_off);
+				break;
+			case RT_U16i:
+			case RT_I16i:
+				AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, use_reg2, indir_off);
+				break;
+			case RT_U32i:
+			case RT_I32i:
+				AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, use_reg2, indir_off);
+				break;
+			case RT_PTR:
+			case RT_U64i:
+			case RT_I64i:
+			case RT_FUNC:
+				AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, use_reg2, indir_off);
+				break;
+			default:
+				abort();
+			}
+			return code_off;
+		} else {
 		dft:
 			tmp.raw_type = src->raw_type;
 			if (dst->raw_type != RT_F64)
