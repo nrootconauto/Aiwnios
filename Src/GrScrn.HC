@@ -125,42 +125,28 @@ public U0 GrScaleZoom(F64 scale)
 U0 GrZoomInScrn()
 {
   GrFixZoomScale;
-  I64 plane,row,col,k,l,
-	d2=gr.zoomed_dc->width>>3/gr.scrn_zoom,
-	d4=gr.zoomed_dc->width_internal>>3,
-	d5=d4-d2*gr.scrn_zoom,
-	d3=gr.zoomed_dc->height/gr.scrn_zoom,
-	d6=(gr.zoomed_dc->height-d3)*gr.dc1->width_internal>>3,
-	d7=gr.zoomed_dc->height%gr.scrn_zoom*d4;
-  U8 *src,*src2,*dst,*src3,*map=gr.scrn_zoom_tables[gr.scrn_zoom];
-
-  src=gr.dc1->body+gr.sx>>3+gr.sy*gr.dc1->width_internal>>3;
+  I64 k,l,span,j,y;
+  U8 *src,*src_cap,*dst,*ndst;
   dst=gr.zoomed_dc->body;
-  for (plane=1;plane<0x10;plane<<=1) {
-    row=d3;
-    while (row--) {
-      k=gr.scrn_zoom;
-      while (k--) {
-	src2=src;
-	col=d2;
-	while (col--) {
-	  src3=&map[*src2++];
-	  l=gr.scrn_zoom;
-	  while (l--) {
-	    *dst++=*src3;
-	    src3+=256;
-	  }
-	}
-	l=d5;
-	while (l--)
-	  *dst++=0;
-      }
-      src+=d4;
+  span=gr.zoomed_dc->width/gr.scrn_zoom;
+  for(y=0;y!=gr.zoomed_dc->height/gr.scrn_zoom;y++) {
+    src=gr.dc2->body+gr.sx+(gr.sy+y)*gr.dc2->width_internal;  
+    src_cap=src+span;
+//We fill 1 row then we multiply that row,gr.scrn_zoom times
+    //This will make our "pixels" sqaure
+    while(src!=src_cap) {
+      for(k=0;k!=gr.scrn_zoom;k++)
+        *dst++=*src;
+      src++;
     }
-    l=d7;
-    while (l--)
-      *dst++=0;
-    src+=d6;
+    dst-=span*gr.scrn_zoom;
+    //Repeat the zoomed rows as they are the same
+    for(l=1;l<gr.scrn_zoom;l++) {
+      ndst=dst+gr.zoomed_dc->width_internal;
+      MemCpy(ndst,dst,gr.zoomed_dc->width_internal);
+      dst=ndst;
+    }
+    dst=ndst+gr.zoomed_dc->width_internal;
   }
 }
 
@@ -389,6 +375,14 @@ U0 GrUpdateScrn()
   if (gr.fp_final_scrn_update)
     (*gr.fp_final_scrn_update)(dc);
   DCDel(dc);
+
+  if(gr.scrn_zoom==1) {
+    dc=gr.dc2;
+  } else {
+    GrZoomInScrn;
+    dc=gr.zoomed_dc;
+  }
   
-  UpdateScreen(gr.dc2->body,gr.dc2->width,gr.dc2->height,gr.dc2->width_internal);
+  UpdateScreen(dc->body,dc->width,dc->height,dc->width_internal);
+  MemCpy(gr.scrn_image->body,dc->body,640*480);
 }
