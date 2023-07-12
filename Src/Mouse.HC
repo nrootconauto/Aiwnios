@@ -207,9 +207,6 @@ U0 HMSSet4(I64 x,I64 y,I64 z,I64 lr) {
   while(LBts(&ms_mtx,0))
     ; //TODO atomic
   SetFs(adam_task);
-  x=x*ms.scale.x+ms.offset.x;
-  y=y*ms.scale.y+ms.offset.y;
-  z=z*ms.scale.z+ms.offset.z;
   MsSet(x,y,z,lr>>1,lr&1);
   LBtr(&ms_mtx,0);
 }

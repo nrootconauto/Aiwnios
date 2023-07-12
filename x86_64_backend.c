@@ -180,13 +180,60 @@ static int64_t X86CmpRegReg(char* to, int64_t a, int64_t b)
 	return len;
 }
 
+static int64_t X86CmpSIB64Imm(char* to, int64_t imm,int64_t s,int64_t i,int64_t b,int64_t o) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(1,7,s,i,b,o);
+	ADD_U8(0x81);
+	SIB_END();
+	ADD_U32(imm);
+	return len;	
+}
+
+static int64_t X86CmpSIB32Imm(char* to, int64_t imm,int64_t s,int64_t i,int64_t b,int64_t o) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0,7,s,i,b,o);
+	ADD_U8(0x81);
+	SIB_END();
+	ADD_U32(imm);
+	return len;	
+}
+
+
+
+static int64_t X86CmpSIB16Imm(char* to, int64_t imm,int64_t s,int64_t i,int64_t b,int64_t o) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	ADD_U8(0x66);
+	SIB_BEGIN(0,7,s,i,b,o);
+	ADD_U8(0x81);
+	SIB_END();
+	ADD_U16(imm);
+	return len;	
+}
+
+static int64_t X86CmpSIB8Imm(char* to, int64_t imm,int64_t s,int64_t i,int64_t b,int64_t o) {
+	int64_t len = 0;
+	char buf[16];
+	if(!to) to=buf;
+	SIB_BEGIN(0,7,s,i,b,o);
+	ADD_U8(0x80);
+	SIB_END();
+	ADD_U8(imm);
+	return len;	
+}
+
 static int64_t X86CmpRegImm(char* to, int64_t a, int64_t imm)
 {
 	int64_t len = 0;
 	char buf[16];
 	if(!to) to=buf;
 	ADD_U8(ErectREX(1, 0, 0, a));
-	ADD_U8(0x3b);
+	ADD_U8(0x81);
 	ADD_U8(MODRMRegReg(7, a));
 	ADD_U32(imm);
 	return len;
@@ -3957,7 +4004,7 @@ static int64_t X86Setcc(char* to, int64_t cond, int64_t r)
 	case X86_COND_LE | 1:
 		ADD_U8(0x9f);
 	}
-	ADD_U8(MODRMRegReg(r, r)); // REG is not used by processor Mr poopneilius
+	ADD_U8(MODRMRegReg(0, r));
 	if (!to)
 		len += X86MovZXRegRegI8(NULL, r, r);
 	else
@@ -4475,7 +4522,31 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		PushTmpDepthFirst(cctrl, next2, 0);                                                                 \
 		PopTmp(cctrl, next2);                                                                               \
 		PopTmp(cctrl, next3);                                                                               \
-		if (next3->raw_type == RT_F64 || next2->raw_type == RT_F64) {                                       \
+		if (next3->raw_type != RT_F64 && next2->raw_type != RT_F64 && IsConst(next3) &&Is32Bit(next3->integer)) { \
+			if(ModeIsDerefToSIB(next2)) { \
+				code_off = DerefToICArg(cctrl, &tmp, next2, AIWNIOS_TMP_IREG_POOP, bin, code_off);  \
+				switch(next2->raw_type) { \
+					case RT_I8i: \
+					case RT_U8i: \
+						AIWNIOS_ADD_CODE(X86CmpSIB8Imm,next3->integer,tmp.__SIB_scale,tmp.reg2,tmp.reg,tmp.off); \
+					break; \
+					case RT_I16i: \
+					case RT_U16i: \
+						AIWNIOS_ADD_CODE(X86CmpSIB16Imm,next3->integer,tmp.__SIB_scale,tmp.reg2,tmp.reg,tmp.off); \
+					break; \
+					case RT_I32i: \
+					case RT_U32i: \
+						AIWNIOS_ADD_CODE(X86CmpSIB16Imm,next3->integer,tmp.__SIB_scale,tmp.reg2,tmp.reg,tmp.off); \
+					break; \
+					default: \
+						AIWNIOS_ADD_CODE(X86CmpSIB64Imm,next3->integer,tmp.__SIB_scale,tmp.reg2,tmp.reg,tmp.off); \
+				} \
+			}  else {\
+				code_off = __OptPassFinal(cctrl, next2, bin, code_off);                                     \
+				code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i, AIWNIOS_TMP_IREG_POOP2, bin, code_off); \
+				AIWNIOS_ADD_CODE(X86CmpRegImm,next2->res.reg,next3->integer); \
+			} \
+		} else if (next3->raw_type == RT_F64 || next2->raw_type == RT_F64) {                                       \
 			code_off = __OptPassFinal(cctrl, next3, bin, code_off);                                         \
 			code_off = __OptPassFinal(cctrl, next2, bin, code_off);                                         \
 			code_off = PutICArgIntoReg(cctrl, &next2->res, RT_F64, 1, bin, code_off);                       \
