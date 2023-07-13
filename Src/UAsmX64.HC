@@ -639,7 +639,7 @@ bad:
       DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL,&len);
       for(cnt=0;cnt!=4;cnt++)
 	if(cur->operands[cnt].u8[0]==X86_OPERAND_EXT)
-	  if(cur->operands[cnt].u8[1]!=ext)
+	  if(cur->operands[cnt].u8[1]!=ext&0x7)
 	    goto next;
       imm_off=len;
       //If Opcode wants a MEMORY only ass motherfucker,make sure ModRM/SIB
@@ -1023,7 +1023,7 @@ U0 UAsmInit() {
   AO("ADC",-1,-1,0x13,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
   AO("ADC",-1,-1,0x14,-1,0,X86_OPERAND_CONST_R8,REG_RAX,X86_OPERAND_IMM8);
   AO("ADC",-1,-1,0x15,-1,0,X86_OPERAND_CONST_Rx,REG_RAX,X86_OPERAND_IMMx);
-  AO("ADC",-1,-1,0x80,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_IMM8,X86_OPERAND_EXT,2);
+  AO("ADC",-1,-1,0x80,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_IMM8,X86_OPERAND_EXT,2);
   AO("ADC",-1,-1,0x81,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMMx,X86_OPERAND_EXT,2);
   AO("ADC",-1,-1,0x83,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMM8,X86_OPERAND_EXT,2);
 
