@@ -6135,13 +6135,7 @@ int64_t __OptPassFinal(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 		code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
 		break;
 	ic_set_static_data:
-		// Final pass
-		if (cctrl->code_ctrl->final_pass) {
-			memcpy(
-				bin + cctrl->code_ctrl->statics_offset + rpn->code_misc->integer,
-				rpn->code_misc->str,
-				rpn->code_misc->str_len);
-		}
+		//TODO later
 		break;
 	ic_raw_bytes:
 		if (cctrl->code_ctrl->final_pass) {
@@ -6388,8 +6382,18 @@ char* OptPassFinal(CCmpCtrl* cctrl, int64_t* res_sz, char** dbg_info)
 		if (code_off % 8) // Align to 8
 			code_off += 8 - code_off % 8;
 		cctrl->code_ctrl->statics_offset = code_off;
-		cctrl->statics_label->addr = bin + code_off;
+		cctrl->statics_label->addr = bin + cctrl->code_ctrl->statics_offset;
 		// Fill in the static references
+		if(bin)
+			for(r=cctrl->code_ctrl->ir_code->next;r!=cctrl->code_ctrl->ir_code;r=r->base.next) {
+				if(r->type==__IC_SET_STATIC_DATA) {
+					memcpy(
+						bin+cctrl->code_ctrl->statics_offset+r->code_misc->integer,
+						r->code_misc->str,
+						r->code_misc->str_len
+					);
+				}
+			}
 		if (bin) {
 			for (cm_ref = cctrl->statics_label->refs; cm_ref; cm_ref = cm_ref_tmp) {
 				cm_ref_tmp = cm_ref->next;
