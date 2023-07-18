@@ -3051,24 +3051,36 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				break;
 			case RT_U8i:
 			case RT_I8i:
-				AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, RIP, 1000);
+				indir_off2=1;
 				break;
 			case RT_U16i:
 			case RT_I16i:
-				AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, RIP, 1000);
+				indir_off2=2;
 				break;
 			case RT_U32i:
 			case RT_I32i:
-				AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, RIP, 1000);
+				indir_off2=4;
 				break;
 			case RT_PTR:
 			case RT_U64i:
 			case RT_I64i:
 			case RT_FUNC:
-				AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 0);
+			case RT_F64:
+				indir_off2=8;
+				AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 1000);
 				break;
 			default:
 				abort();
+			}
+			if(bin) {
+				//Heres the deal
+				//These are encoded as CX05[offset][immediate]
+				//When we do the relocation,be sure to modify the offset and not the immeidate
+				//Also add indir_off2 to point to the end of the instriction as the relocation only points to the offset
+				CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4-indir_off2)->offset = dst->off-indir_off2;
 			}
 			return code_off;
 		} else if (src->mode == MD_REG && (dst->raw_type == RT_F64) == (src->raw_type == RT_F64)) {
@@ -3076,24 +3088,24 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				break;
 			case RT_U8i:
 			case RT_I8i:
-				AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 1000);
 				break;
 			case RT_U16i:
 			case RT_I16i:
-				AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 1000);
 				break;
 			case RT_U32i:
 			case RT_I32i:
-				AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 1000);
 				break;
 			case RT_PTR:
 			case RT_U64i:
 			case RT_I64i:
 			case RT_FUNC:
-				AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 1000);
 				break;
 			case RT_F64:
-				AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, -1, -1, RIP, 0);
+				AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, -1, -1, RIP, 1000);
 				break;
 			default:
 				abort();
@@ -3438,22 +3450,22 @@ int64_t ICMov(CCmpCtrl* cctrl, CICArg* dst, CICArg* src, char* bin,
 				case RT_U0:
 					break;
 				case RT_U8i:
-					AIWNIOS_ADD_CODE(X86MovZXRegIndirI8, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovZXRegIndirI8, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_I8i:
-					AIWNIOS_ADD_CODE(X86MovSXRegIndirI8, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI8, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_U16i:
-					AIWNIOS_ADD_CODE(X86MovZXRegIndirI16, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovZXRegIndirI16, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_I16i:
-					AIWNIOS_ADD_CODE(X86MovSXRegIndirI16, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI16, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_U32i:
-					AIWNIOS_ADD_CODE(X86MovRegIndirI32, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovRegIndirI32, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_I32i:
-					AIWNIOS_ADD_CODE(X86MovSXRegIndirI32, dst->reg, -1, -1, RIP, 0);
+					AIWNIOS_ADD_CODE(X86MovSXRegIndirI32, dst->reg, -1, -1, RIP, 1000);
 					break;
 				case RT_U64i:
 				case RT_PTR:
