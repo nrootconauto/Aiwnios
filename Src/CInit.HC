@@ -418,5 +418,9 @@ U0 CMiscInit() {
   CmpAddKw(cmp.asm_hash,"haserrcode",45);
   CmpAddKw(cmp.asm_hash,"argpop",46);
   CmpAddKw(cmp.asm_hash,"noargpop",47);
+  CmpAddKw(cmp.asm_hash,"DU8",48);
+  CmpAddKw(cmp.asm_hash,"DU16",49);
+  CmpAddKw(cmp.asm_hash,"DU32",50);
+  CmpAddKw(cmp.asm_hash,"DU64",51);
   adam_task->hash_table->next=cmp.asm_hash;
 }
