@@ -228,7 +228,7 @@ set_idx:
         cc->cur_i64=cur_i64;
         cc->token=TK_I64;
 check_imm:
-        mode->imm=LexExpressionI64(cc);
+        PrsAsmImm(cc,mode);
         if(cc->token!=']') {
 exp_indir_end:
 	  Free(mode);
@@ -1373,7 +1373,7 @@ enter:
     }
     sz=X86EncodeOpcode(len,best,modes,dummy,asm_patches);
     AddBytesToBuf(&buf,&len,sz,dummy);
-  } else if(cc->hash_entry&&cc->hash_entry->type&HTT_ASM_KEYWORD) {
+  } else if(cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
     if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
 //TODO
     } else if(!StrCmp(cc->hash_entry->str,"BINFILE")) {
