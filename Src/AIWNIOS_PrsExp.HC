@@ -1373,6 +1373,10 @@ found_end_square:
 	      tmpex->str=MStrPrint("%s.%s",cc->htc.fun->str,cc->cur_str);
 	      tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
 	      goto ins_label;
+	    } else if(cc->hash_entry&&cc->hash_entry->type&HTT_CLASS) {
+	      //MOV RAX, CTask.addr[RBX]
+	      PrsOffsetOf(cc);
+	      break;
 	    } else if(!cc->hash_entry) {
 new:
 	      tmpex=CAlloc(sizeof(CHashExport));
