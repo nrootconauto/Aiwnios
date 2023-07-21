@@ -3,27 +3,27 @@
 void* GenFFIBinding(void* fptr, int64_t arity)
 {
 #ifdef USE_TEMPLEOS_ABI
-	/*
+/*
 0:  55                      push   rbp
 1:  48 89 e5                mov    rbp,rsp
 4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
-8:  48 83 ec 20             sub    rsp,0x20
-c:  41 51                   push   r9
-e:  41 50                   push   r8
-10: 52                      push   rdx
-11: 51                      push   rcx
-12: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
-19: 00 00 00
-1c: 48 8d 4d 10             lea    rcx,[rbp+0x10]
-20: ff d0                   call   rax
-22: c9                      leave
-23: c2 NNNN                 ret    nnnn
-*/
-	char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x20\x41\x51\x41\x50\x52\x51\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\xC9\xC2";
-	char* ret = A_MALLOC(0x26, NULL);
-	memcpy(ret, ffi_binding, 0x24);
-	*(int64_t*)(ret + 0x14) = fptr;
-	*(int16_t*)(ret + 0x24) = arity*8;
+8:  41 52                   push   r10
+a:  41 53                   push   r11
+c:  48 83 ec 20             sub    rsp,0x20
+10: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
+17: 00 00 00
+1a: 48 8d 4d 10             lea    rcx,[rbp+0x10]
+1e: ff d0                   call   rax
+20: 48 83 c4 20             add    rsp,0x20
+24: 41 5b                   pop    r11
+26: 41 5a                   pop    r10
+28: c9                      leave
+29: c2 34 12                ret    0x1234 */
+	char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x41\x52\x41\x53\x48\x83\xEC\x20\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\x48\x83\xC4\x20\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
+	char* ret = A_MALLOC(0x2c, NULL);
+	memcpy(ret, ffi_binding, 0x2c);
+	*(int64_t*)(ret + 0x12) = fptr;
+	*(int16_t*)(ret + 0x2a) = arity*8;
 	return ret;
 #else
 	return fptr;
@@ -51,12 +51,11 @@ void* GenFFIBindingNaked(void* fptr, int64_t arity)
 void* GenFFIBinding(void* fptr, int64_t arity)
 {
 #ifdef USE_TEMPLEOS_ABI
-	// Here's the deal,i will save RDI/RSI on windows and SYSTEMV
 	/*
 0:  55                      push   rbp
 1:  48 89 e5                mov    rbp,rsp
 4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
-8:  48 83 ec 58             sub    rsp,0x58
+8:  48 83 ec 60             sub    rsp,0x60
 c:  f2 0f 11 74 24 08       movsd  QWORD PTR [rsp+0x8],xmm6
 12: f2 0f 11 7c 24 10       movsd  QWORD PTR [rsp+0x10],xmm7
 18: f2 44 0f 11 44 24 18    movsd  QWORD PTR [rsp+0x18],xmm8
@@ -65,39 +64,41 @@ c:  f2 0f 11 74 24 08       movsd  QWORD PTR [rsp+0x8],xmm6
 2d: f2 44 0f 11 5c 24 30    movsd  QWORD PTR [rsp+0x30],xmm11
 34: f2 44 0f 11 64 24 38    movsd  QWORD PTR [rsp+0x38],xmm12
 3b: f2 44 0f 11 6c 24 40    movsd  QWORD PTR [rsp+0x40],xmm13
-42: f2 44 0f 11 74 24 48    movsd  QWORD PTR [rsp+0x48],xmm14
-49: f2 44 0f 11 7c 24 50    movsd  QWORD PTR [rsp+0x50],xmm15
-50: 53                      push   rbx
+42: f2 44 0f 11 74 24 50    movsd  QWORD PTR [rsp+0x50],xmm14
+49: f2 44 0f 11 7c 24 58    movsd  QWORD PTR [rsp+0x58],xmm15
+50: 56                      push   rsi
 51: 57                      push   rdi
-52: 56                      push   rsi
-53: 48 8d 7d 10             lea    rdi,[rbp+0x10]
-57: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
-5e: 00 00 00
-61: ff d0                   call   rax
-63: 5f                      pop    rdi
-64: 5e                      pop    rsi
-65: 5b                      pop    rbx
-66: f2 0f 10 74 24 08       movsd  xmm6,QWORD PTR [rsp+0x8]
-6c: f2 0f 10 7c 24 10       movsd  xmm7,QWORD PTR [rsp+0x10]
-72: f2 44 0f 10 44 24 18    movsd  xmm8,QWORD PTR [rsp+0x18]
-79: f2 44 0f 10 4c 24 20    movsd  xmm9,QWORD PTR [rsp+0x20]
-80: f2 44 0f 10 54 24 28    movsd  xmm10,QWORD PTR [rsp+0x28]
-87: f2 44 0f 10 5c 24 30    movsd  xmm11,QWORD PTR [rsp+0x30]
-8e: f2 44 0f 10 64 24 38    movsd  xmm12,QWORD PTR [rsp+0x38]
-95: f2 44 0f 10 6c 24 40    movsd  xmm13,QWORD PTR [rsp+0x40]
-9c: f2 44 0f 10 74 24 48    movsd  xmm14,QWORD PTR [rsp+0x48]
-a3: f2 44 0f 10 7c 24 50    movsd  xmm15,QWORD PTR [rsp+0x50]
-aa: 66 48 0f 6e c0          movq   xmm0,rax
-af: c9                      leave
-b0: c2 NNNN                 ret    nnnn
+52: 41 52                   push   r10
+54: 41 53                   push   r11
+56: 48 8d 7d 10             lea    rdi,[rbp+0x10]
+5a: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
+61: 00 00 00
+64: ff d0                   call   rax
+66: 41 5b                   pop   r11
+68: 41 5a                   pop   r10
+6a: 5f                      pop    rdi
+6b: 5e                      pop    rsi
+6c: f2 0f 10 74 24 08       movsd  xmm6,QWORD PTR [rsp+0x8]
+72: f2 0f 10 7c 24 10       movsd  xmm7,QWORD PTR [rsp+0x10]
+78: f2 44 0f 10 44 24 18    movsd  xmm8,QWORD PTR [rsp+0x18]
+7f: f2 44 0f 10 4c 24 20    movsd  xmm9,QWORD PTR [rsp+0x20]
+86: f2 44 0f 10 54 24 28    movsd  xmm10,QWORD PTR [rsp+0x28]
+8d: f2 44 0f 10 5c 24 30    movsd  xmm11,QWORD PTR [rsp+0x30]
+94: f2 44 0f 10 64 24 38    movsd  xmm12,QWORD PTR [rsp+0x38]
+9b: f2 44 0f 10 6c 24 40    movsd  xmm13,QWORD PTR [rsp+0x40]
+a2: f2 44 0f 10 74 24 50    movsd  xmm14,QWORD PTR [rsp+0x50]
+a9: f2 44 0f 10 7c 24 58    movsd  xmm15,QWORD PTR [rsp+0x58]
+b0: 66 48 0f 6e c0          movq   xmm0,rax
+b5: c9                      leave
+b6: c2 22 11                ret    0x1122 
 */
 	// Look at the silly sauce at https://defuse.ca/online-x86-assembler.htm#disassembly
 	// Is 0x22 bytes long
-	const char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x58\xF2\x0F\x11\x74\x24\x08\xF2\x0F\x11\x7C\x24\x10\xF2\x44\x0F\x11\x44\x24\x18\xF2\x44\x0F\x11\x4C\x24\x20\xF2\x44\x0F\x11\x54\x24\x28\xF2\x44\x0F\x11\x5C\x24\x30\xF2\x44\x0F\x11\x64\x24\x38\xF2\x44\x0F\x11\x6C\x24\x40\xF2\x44\x0F\x11\x74\x24\x48\xF2\x44\x0F\x11\x7C\x24\x50\x53\x57\x56\x48\x8D\x7D\x10\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x5F\x5E\x5B\xF2\x0F\x10\x74\x24\x08\xF2\x0F\x10\x7C\x24\x10\xF2\x44\x0F\x10\x44\x24\x18\xF2\x44\x0F\x10\x4C\x24\x20\xF2\x44\x0F\x10\x54\x24\x28\xF2\x44\x0F\x10\x5C\x24\x30\xF2\x44\x0F\x10\x64\x24\x38\xF2\x44\x0F\x10\x6C\x24\x40\xF2\x44\x0F\x10\x74\x24\x48\xF2\x44\x0F\x10\x7C\x24\x50\x66\x48\x0F\x6E\xC0\xC9\xC2";
-	char* ret = A_MALLOC(0xb3, NULL);
-	memcpy(ret, ffi_binding, 0xb1);
-	*(int64_t*)(ret + 0x59) = fptr;
-	*(int16_t*)(ret + 0xb1) = arity*8;
+	const char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x60\xF2\x0F\x11\x74\x24\x08\xF2\x0F\x11\x7C\x24\x10\xF2\x44\x0F\x11\x44\x24\x18\xF2\x44\x0F\x11\x4C\x24\x20\xF2\x44\x0F\x11\x54\x24\x28\xF2\x44\x0F\x11\x5C\x24\x30\xF2\x44\x0F\x11\x64\x24\x38\xF2\x44\x0F\x11\x6C\x24\x40\xF2\x44\x0F\x11\x74\x24\x50\xF2\x44\x0F\x11\x7C\x24\x58\x56\x57\x41\x52\x41\x53\x48\x8D\x7D\x10\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x41\x5B\x41\x5A\x5F\x5E\xF2\x0F\x10\x74\x24\x08\xF2\x0F\x10\x7C\x24\x10\xF2\x44\x0F\x10\x44\x24\x18\xF2\x44\x0F\x10\x4C\x24\x20\xF2\x44\x0F\x10\x54\x24\x28\xF2\x44\x0F\x10\x5C\x24\x30\xF2\x44\x0F\x10\x64\x24\x38\xF2\x44\x0F\x10\x6C\x24\x40\xF2\x44\x0F\x10\x74\x24\x50\xF2\x44\x0F\x10\x7C\x24\x58\x66\x48\x0F\x6E\xC0\xC9\xC2\x22\x11";
+	char* ret = A_MALLOC(0xb9, NULL);
+	memcpy(ret, ffi_binding, 0xb9);
+	*(int64_t*)(ret + 0x5c) = fptr;
+	*(int16_t*)(ret + 0xb7) = arity*8;
 	return ret;
 #else
 	return fptr;
@@ -106,16 +107,15 @@ b0: c2 NNNN                 ret    nnnn
 void* GenFFIBindingNaked(void* fptr, int64_t arity)
 {
 	/*
-	0:  48 8d 7c 24 08          lea    rdi,[rsp+0x8]
-	5:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
-	c:  00 00 00
-	f:  ff e0 					jmp rax
+	0:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
+	7:  00 00 00
+	a:  ff e0 					jmp rax
 	*/
-	const char* ffi_binding = "\x48\x8D\x7C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
+	const char* ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
 #ifdef USE_TEMPLEOS_ABI
-	char* ret = A_MALLOC(0x12, NULL);
-	memcpy(ret, ffi_binding, 0x12);
-	*(int64_t*)(ret + 0x7) = fptr;
+	char* ret = A_MALLOC(0xd, NULL);
+	memcpy(ret, ffi_binding, 0xd);
+	*(int64_t*)(ret + 0x2) = fptr;
 	return ret;
 #else
 	return fptr;

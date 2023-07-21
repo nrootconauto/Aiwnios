@@ -1249,47 +1249,30 @@ void OptPassRegAlloc(CCmpCtrl* cctrl)
 					mv[i].m->reg = REG_NONE;
 			} else if (RT_I8i <= mv[i].m->member_class->raw_type && mv[i].m->member_class->raw_type <= RT_PTR && !mv[i].m->dim.next) {
 				if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
-#if defined(__x86_64__) && (defined(__linux__)|| defined(__FreeBSD__))
+#if defined(__x86_64__)
 					switch (ireg++ - AIWNIOS_IREG_START) {
 						break;
 					case 0:
-						mv[i].m->reg = RBX;
+						mv[i].m->reg = RDI;
 						break;
 					case 1:
-						mv[i].m->reg = R12;
-						// break;case 1: res->reg=R13; R13 is weird with dereferences
-						break;
-					case 2:
-						mv[i].m->reg = R14;
-						break;
-					case 3:
-						mv[i].m->reg = R15;
-						break;
-					default:
-						abort();
-					}
-#endif
-#if defined(__x86_64__) && defined(_WIN32) && defined(WIN32)
-					switch (ireg++ - AIWNIOS_IREG_START) {
-						break;
-					case 0:
-						mv[i].m->reg = RBX;
-						break;
-					case 1:
-						mv[i].m->reg = R12;
-						// break;case 1: res->reg=R13; R13 is weird with dereferences
-						break;
-					case 2:
-						mv[i].m->reg = R14;
-						break;
-					case 3:
-						mv[i].m->reg = R15;
-						break;
-					case 4:
 						mv[i].m->reg = RSI;
 						break;
+					case 2:
+						mv[i].m->reg = R10;
+						break;
+					case 3:
+						mv[i].m->reg = R11;
+						break;
+					case 4:
+						mv[i].m->reg = R12;
+						break;
 					case 5:
-						mv[i].m->reg = RDI;
+					//TODO something with R13
+						mv[i].m->reg = R14;
+						break;
+					case 6:
+						mv[i].m->reg = R15;
 						break;
 					default:
 						abort();
