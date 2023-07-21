@@ -2101,13 +2101,7 @@ int64_t TmpRegToReg(int64_t r)
 	case 0:
 		return R9;
 	case 1:
-		return R10;
-	case 2:
-		return R11;
-	case 3:
-		return RDI;
-	case 4:
-		return RSI;
+		return RBX;
 	default:
 		abort();
 	}
@@ -2897,7 +2891,7 @@ static int64_t __ICFCallTOS(CCmpCtrl* cctrl, CRPN* rpn, char* bin,
 			AIWNIOS_ADD_CODE(X86Call32, rpn2->integer - (int64_t)(bin + code_off));
 		} else {
 			code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-			code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, R10, bin, code_off);
+			code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, AIWNIOS_TMP_IREG_POOP, bin, code_off);
 			AIWNIOS_ADD_CODE(X86CallReg, rpn2->res.reg);
 		}
 	}
@@ -3779,15 +3773,19 @@ enter:;
 static int64_t IsSavedIReg(int64_t r)
 {
 	switch (r) {
-	case RBX:
+	case RSI:
+	case RDI:
 	case RSP:
 	case RBP:
+	case R10:
+	case R11:
 	case R12:
 	case R13:
 	case R14:
 	case R15:;
-	}
 	return 1;
+	}
+	return 0;
 }
 
 // This is used for FuncProlog/Epilog. It is used for finding the non-violatle

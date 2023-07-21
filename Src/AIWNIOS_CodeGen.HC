@@ -215,8 +215,8 @@ extern U8 * __HC_ICAdd_LBTS(U8*);
 #define	REG_R14 14
 #define	REG_R15 15
 #define	REG_RIP 16
-#define AIWNIOS_IREG_START 12
-#define AIWNIOS_IREG_CNT 4
+#define AIWNIOS_IREG_START 9
+#define AIWNIOS_IREG_CNT 7
 #define AIWNIOS_TMP_IREG_CNT 3
 #define AIWNIOS_REG_FP REG_RBP
 #define AIWNIOS_REG_SP REG_RSP
@@ -255,10 +255,13 @@ goto force;
 #ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
 	switch(r) {
-		break;case 0: return REG_RBX;
-		break;case 1: return REG_R12;
-		break;case 2: return REG_R14;
-		break;case 3: return REG_R15;
+		break;case 0: return REG_R10;
+		break;case 1: return REG_R11;
+		break;case 2: return REG_R12;
+		break;case 3: return REG_R14;
+		break;case 4: return REG_R15;
+		break;case 5: return REG_RDI;
+		break;case 6: return REG_RSI;
 	}
 	throw('Compile');
 }
