@@ -223,7 +223,7 @@ int64_t GetTicksHP()
 		tick_inc = tc.wPeriodMin;
 		timeSetEvent(tick_inc, tick_inc, &update_ticks, NULL, TIME_PERIODIC);
 	}
-	return ticks;
+	return ticks*1000;
 }
 void SpawnCore(void (*fp)(), void* gs, int64_t core)
 {
@@ -238,7 +238,7 @@ void SpawnCore(void (*fp)(), void* gs, int64_t core)
 void MPSleepHP(int64_t us)
 {
 	int64_t s, e;
-	s = GetTicksHP();
+	s = GetTicksHP()/1000;
 	WaitForSingleObject(cores[core_num].mtx, INFINITE);
 	cores[core_num].awake_at = s + us / 1000;
 	ReleaseMutex(cores[core_num].mtx);
