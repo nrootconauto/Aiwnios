@@ -327,8 +327,12 @@ static void SetHolyFs(void* fs)
 {
 	HolyFs = fs;
 }
+extern int64_t GetTicksHP();
 static int64_t __GetTicksHP()
 {
+#if defined (_WIN32) || defined (WIN32)
+	return GetTicksHP(); //From multic.c
+#else
 	struct timespec ts;
 	static int64_t initial = 0;
 	int64_t theTick = 0U;
@@ -343,6 +347,7 @@ static int64_t __GetTicksHP()
 	theTick = ts.tv_nsec / 1000;
 	theTick += ts.tv_sec * 1000000U;
 	return theTick - initial;
+#endif
 }
 static int64_t __GetTicks()
 {

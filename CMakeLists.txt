@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.00) #For sauce I have come,and to sauce I shall return
+cmake_minimum_required(VERSION 3.20) #For sauce I have come,and to sauce I shall return
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS)
 target_architecture(ARCH)
@@ -78,8 +78,7 @@ add_executable(
   aiwnios
   ${C_SOURCES}
 )
-find_package(PkgConfig)
-pkg_check_modules(SDL2 REQUIRED sdl2)
+find_package(SDL2 REQUIRED)
 target_compile_options(aiwnios PUBLIC ${SDL2_CFLAGS_OTHER})
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
 
@@ -115,7 +114,7 @@ endif()
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
 link_directories(${SDL2_LIBRARY_DIRS})
 if(WIN32)
-	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m Shlwapi winmm)
+	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m shlwapi winmm)
 else()
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m pthread)
 endif()
@@ -125,13 +124,29 @@ set_target_properties(aiwnios
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-add_custom_target(
+set (USE_WINE 0)
+if(NOT (CMAKE_SYSTEM MATCHES Windows))
+  if(WIN32)
+    set(USE_WINE 1)
+  endif()
+endif()
+if(NOT "$USE_WINE")
+  add_custom_target(
 	"HCRT2.BIN"
 	ALL
 	COMMAND aiwnios -b
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-)
+  )
+else()
+  add_custom_target(
+	"HCRT2.BIN"
+	ALL
+	COMMAND wine64 aiwnios -b
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
+	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+endif()
 #
 # Install section
 #
@@ -146,7 +161,6 @@ set (CPACK_FREEBSD_PACKAGE_DEPS "devel/sdl20")
 
 include (CPack)
 
-install (FILES aiwnios TYPE BIN)
 set(
   TEMPLATE_FILES
   HSNotes.DD
@@ -164,6 +178,9 @@ set(
   ACDefs.DATA
   ACWords.DATA
 )
+
+install(FILES aiwnios TYPE BIN)
+
 foreach(F IN LISTS TEMPLATE_FILES)
   if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
     install(
