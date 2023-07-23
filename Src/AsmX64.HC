@@ -663,6 +663,18 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
     sib=0b00100101;
     goto fin;
   }
+  if(b==REG_RSP&&i==-1) {
+    sib=0b00100100;
+    if(!off) {
+      modrm=0b00000100|r<<3;
+    } else if(I8_MIN<=off<=I8_MAX) {
+      modrm=0b01000100|r<<3;
+      disp_sz=1;
+    }
+    modrm=0b10000100|r<<3;
+    disp_sz=4;
+    goto fin;
+  }
   if(!off&&i==-1) {
     if(b&0b111==0b100) {
       modrm=0b01000101|r<<3;
@@ -674,18 +686,6 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
       goto fin;
     }
     modrm=(b&0b111)|r<<3;
-    goto fin;
-  }
-  if(b==REG_RSP) {
-    sib=0b00100100;
-    if(!off) {
-      modrm=0b00000100|r<<3;
-    } else if(I8_MIN<=off<=I8_MAX) {
-      modrm=0b01000100|r<<3;
-      disp_sz=1;
-    }
-    modrm=0b10000100|r<<3;
-    disp_sz=4;
     goto fin;
   }
   if(i==-1) {
@@ -1373,7 +1373,7 @@ enter:
     }
     sz=X86EncodeOpcode(len,best,modes,dummy,asm_patches);
     AddBytesToBuf(&buf,&len,sz,dummy);
-  } else if(cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
+  } else if(cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
     if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
 //TODO
     } else if(!StrCmp(cc->hash_entry->str,"BINFILE")) {
