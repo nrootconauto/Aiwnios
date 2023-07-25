@@ -6976,3 +6976,21 @@ extern U8 *WhineOOB(U8 *ptr);
 public extern U0 Prof(I64 depth=0,I64 cpu_num=0);
 public extern U0 ProfRep(I64 filter_cnt=1,Bool leave_it=OFF);
 #define __AIWNIOS__
+
+extern U32 char_bmp_alpha[16];
+extern U32 char_bmp_alpha_numeric[16];
+extern U32 char_bmp_alpha_numeric_no_at[16];
+extern U32 char_bmp_word[16];
+extern U32 char_bmp_filename[16];
+extern U32 char_bmp_hex_numeric[16];
+extern U32 char_bmp_dec_numeric[16];
+extern U32 char_bmp_white_space[16];
+extern U32 char_bmp_non_eol_white_space[16];
+extern U32 char_bmp_zero_cr_nl_cursor[16];
+extern U32 char_bmp_zero_tab_cr_nl_cursor[16];
+extern U32 char_bmp_zero_tab_cr_nl_cursor_dollar[16];
+extern U32 char_bmp_macro[16];
+extern U32 char_bmp_printable[16];
+extern U32 char_bmp_displayable[16];
+extern U32 char_bmp_safe_dollar[16];
+extern U32 char_bmp_non_eol[16];

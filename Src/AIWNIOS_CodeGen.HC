@@ -587,8 +587,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     } else if(cur->ic_class->ptr_stars_cnt)
       //All pointer arithmetic is pre-computed
       new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_PTR,0);
-    else
+    else if(!cur->ic_dim)
       new=__HC_ICAdd_Frame(cc2,cur->ic_data,cur->ic_class->raw_type,0);
+    else
+      new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_I64,0);
     break;case IC_BR_ZERO:
     new=__HC_ICAdd_LNot(cc2);
     __HC_ICSetLine(new,cur->ic_line);
@@ -739,10 +741,14 @@ break;case IC_ASM:
       }
     }
     break;case IC_REG:
-    if(cur->ic_class->raw_type==RT_F64) {
-      new=__HC_ICAdd_FReg(cc2,cur->imm_i64);
+    if(cur->ic_dim) {
+        new=__HC_ICAdd_IReg(cc2,cur->imm_i64,cmp.internal_types[RT_I64],0);
     } else {
-      new=__HC_ICAdd_IReg(cc2,cur->imm_i64,cur->ic_class->raw_type,0);
+      if(cur->ic_class->raw_type==RT_F64) {
+        new=__HC_ICAdd_FReg(cc2,cur->imm_i64);
+      } else {
+        new=__HC_ICAdd_IReg(cc2,cur->imm_i64,cur->ic_class->raw_type,0);
+      }
     }
     break;case IC_TO_I64:
     new=__HC_ICAdd_ToI64(cc2);

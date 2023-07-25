@@ -535,7 +535,7 @@ U0 ODECashKarp(CMathODE *ode)
 U0 ODERK5OneStep(CMathODE *ode)
 {
   I64 i;
-  F64 errmax,tmp,*tmpstate=ode->tmp6,*stateerr=ode->tmp7;
+  F64 errmax,tmp,*tmpstate=ode->tmp6,*stateerr=ode->tmp7;
   while (TRUE) {
     ode->h=Clamp(ode->h,ode->h_min,ode->h_max);
     ODECashKarp(ode);
