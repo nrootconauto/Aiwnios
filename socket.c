@@ -1,4 +1,4 @@
-#if defined (__FreeBSD__)
+#if !defined(_WIN32) && !defined(WIN32)
 #include "aiwn.h"
 #include <unistd.h>
 #include <sys/types.h>
