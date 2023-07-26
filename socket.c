@@ -6,6 +6,21 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <poll.h>
+#else
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#define write send
+#define read recv
+#define close closesocket
+static int64_t was_init=0;
+WSADATA ws_data;
+static void InitWS2() {
+	WSAStartup(MAKEWORD(2,2),&ws_data);
+	was_init=1;
+}
+#endif
 typedef struct CInAddr {
 	char *address;
 	int64_t port;
@@ -15,10 +30,16 @@ typedef struct CNetAddr {
 	struct addrinfo *ai;
 } CNetAddr;
 int64_t NetSocketNew() {
-	int64_t s=socket(AF_INET,SOCK_STREAM,0);
+	#if defined(_WIN32) || defined (WIN32) 
+	if(!was_init)
+		InitWS2();
+	#endif
+	int64_t s=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+	#if defined (__FreeBSD__) || defined (__linux__)
 	int yes=1;
 	//On FreeBSD the port will stay in use for awhile after death,so reuse the address
 	setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes));
+	#endif
 	return s;
 }
 
@@ -58,9 +79,11 @@ int64_t NetAccept(int64_t socket,CNetAddr **addr) {
 	return con;
 }
 void NetClose(int64_t s) {
+	#if !(defined(_WIN32) || defined (WIN32))
 	//https://stackoverflow.com/questions/48208236/tcp-close-vs-shutdown-in-linux-os
 	shutdown(s,SHUT_WR);
 	shutdown(s,SHUT_RD);
+	#endif
 	close(s);
 }
 int64_t NetWrite(int64_t s,char *data,int64_t len) {
@@ -77,7 +100,11 @@ static int64_t _PollFor(int64_t _for,int64_t argc,int64_t *argv) {
 		poll_for[idx].events=_for;
 		poll_for[idx].revents=0;
 	}
+	#if defined(_WIN32) || defined (WIN32)
+	WSAPoll(poll_for,argc,0);
+	#else
 	poll(poll_for,argc,0);
+	#endif
 	for(idx=0;idx!=argc;idx++) {
 		if(poll_for[idx].revents&POLLHUP) {
 			if(_for&POLLHUP)
@@ -98,4 +125,3 @@ int64_t NetPollForWrite(int64_t argc,int64_t *argv) {
 int64_t NetPollForHangup(int64_t argc,int64_t *argv) {
 	return _PollFor(POLLHUP,argc,argv);
 }
-#endif
