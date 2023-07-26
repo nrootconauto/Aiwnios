@@ -54,7 +54,7 @@ Please be aware that **THIS COMPILER USES REVERSE POLISH NOTATION**. Furthermore
 
 Aiwnios comes with a sockets API(currently tested on FreeBSD). This should be cross platform in the future
 
-Here is a simple server for you to play with until Nroot documents the Sockets API
+Here is a simple server for you to play with until Nroot documents the Sockets API,(currently only server stuff is here,not client stuff but it will be an easy fix)
 ```c
 U0 Main () {
   U8 buf[STR_LEN];
