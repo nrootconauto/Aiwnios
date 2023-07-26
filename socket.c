@@ -1,5 +1,5 @@
-#if !defined(_WIN32) && !defined(WIN32)
 #include "aiwn.h"
+#if !defined(_WIN32) && !defined(WIN32)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -11,9 +11,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
-#define write send
-#define read recv
-#define close closesocket
 static int64_t was_init=0;
 WSADATA ws_data;
 static void InitWS2() {
@@ -83,14 +80,24 @@ void NetClose(int64_t s) {
 	//https://stackoverflow.com/questions/48208236/tcp-close-vs-shutdown-in-linux-os
 	shutdown(s,SHUT_WR);
 	shutdown(s,SHUT_RD);
-	#endif
 	close(s);
+	#else
+	closesocket(s);
+	#endif
 }
 int64_t NetWrite(int64_t s,char *data,int64_t len) {
-	return write(s,data,len);
+	#if defined (_WIN32) || defined (WIN32)
+	return send(s,data,len,0);
+	#else
+	return read(s,data,len);
+	#endif
 } 
 int64_t NetRead(int64_t s,char *data,int64_t len) {
+	#if defined (_WIN32) || defined (WIN32)
+	return recv(s,data,len,0);
+	#else
 	return read(s,data,len);
+	#endif
 }
 static int64_t _PollFor(int64_t _for,int64_t argc,int64_t *argv) {
 	struct pollfd poll_for[argc];
