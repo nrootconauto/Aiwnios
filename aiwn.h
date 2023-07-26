@@ -1154,3 +1154,17 @@ extern void *BoundsCheck(void *ptr,int64_t *after);
 //f is delay in nano seconds
 extern void MPSetProfilerInt(void *fp,int c,int64_t f);
 extern void* GetHolyFs();
+
+struct CNetAddr;
+extern int64_t NetPollForHangup(int64_t argc,int64_t *argv);
+extern int64_t NetPollForWrite(int64_t argc,int64_t *argv);
+extern int64_t NetPollForRead(int64_t argc,int64_t *argv);
+extern int64_t NetWrite(int64_t s,char *data,int64_t len);
+extern int64_t NetRead(int64_t s,char *data,int64_t len) ;
+extern void NetClose(int64_t s);
+extern int64_t NetAccept(int64_t socket,struct CNetAddr **addr);
+extern void NetListen(int64_t socket,int64_t max);
+extern void NetBindIn(int64_t socket,struct CNetAddr *);
+extern int64_t NetSocketNew();
+extern struct CNetAddr *NetAddrNew(char *host,int64_t port);
+extern void NetAddrDel(struct CNetAddr*);

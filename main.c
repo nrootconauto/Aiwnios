@@ -1271,10 +1271,58 @@ static int64_t STK_BoundsCheck(int64_t *stk) {
 	return BoundsCheck((void*)stk[0],(int64_t*)stk[1]);
 }
 
+static int64_t STK_NetPollForHangup(int64_t *stk) {
+	return NetPollForHangup(stk[0],stk[1]);
+}
+
+static int64_t STK_NetPollForWrite(int64_t *stk) {
+	return NetPollForWrite(stk[0],stk[1]);
+}
+
+static int64_t STK_NetPollForRead(int64_t *stk) {
+	return NetPollForRead(stk[0],stk[1]);
+}
+
+static int64_t STK_NetWrite(int64_t *stk) {
+	return NetWrite(stk[0],stk[1],stk[2]);
+}
+
+static int64_t STK_NetRead(int64_t *stk) {
+	return NetRead(stk[0],stk[1],stk[2]);
+}
+
+static int64_t STK_NetClose(int64_t *stk) {
+	NetClose(stk[0]);
+}
+
+static int64_t STK_NetAccept(int64_t *stk) {
+	return NetAccept(stk[0],stk[1]);
+}
+
+static int64_t STK_NetListen(int64_t *stk) {
+	NetListen(stk[0],stk[1]);
+}
+
+static int64_t STK_NetBindIn(int64_t *stk) {
+	NetBindIn(stk[0],stk[1]);
+}
+
+static int64_t STK_NetSocketNew(int64_t *stk) {
+	return NetSocketNew();
+}
 
 static int64_t STK_MPSetProfilerInt(int64_t *stk) {
 	MPSetProfilerInt((void*)stk[0],stk[1],stk[2]);
 }
+
+static int64_t STK_NetAddrNew(int64_t *stk) {
+	return NetAddrNew(stk[0],stk[1]);
+}
+
+static int64_t STK_NetAddrDel(int64_t *stk) {
+	NetAddrDel(stk[0]);
+}
+
 void BootAiwnios(char *bootstrap_text)
 {
 	//Run a dummy expression to link the functions into the hash table
@@ -1480,6 +1528,18 @@ void BootAiwnios(char *bootstrap_text)
 		PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
 		PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
 		PrsAddSymbol("ExitAiwnios",ExitAiwnios,0);
+		PrsAddSymbol("NetSocketNew",STK_NetSocketNew,0);
+		PrsAddSymbol("NetBindIn",STK_NetBindIn,2);
+		PrsAddSymbol("NetListen",STK_NetListen,2);
+		PrsAddSymbol("NetAccept",STK_NetAccept,2);
+		PrsAddSymbol("NetClose",STK_NetClose,1);
+		PrsAddSymbol("NetRead",STK_NetRead,3);
+		PrsAddSymbol("NetWrite",STK_NetWrite,3);
+		PrsAddSymbol("NetPollForHangup",STK_NetPollForHangup,2);
+		PrsAddSymbol("NetPollForRead",STK_NetPollForRead,2);
+		PrsAddSymbol("NetPollForWrite",STK_NetPollForWrite,2);
+		PrsAddSymbol("NetAddrDel",STK_NetAddrDel,1);
+		PrsAddSymbol("NetAddrNew",STK_NetAddrNew,2);
 	}
 }
 static const char *t_drive;

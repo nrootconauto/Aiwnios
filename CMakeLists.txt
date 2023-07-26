@@ -41,6 +41,7 @@ if("${ARCH}" STREQUAL "x86_64")
     multic.c
     ffi_gen.c
     argtable3.c
+    socket.c
   )
 elseif("${ARCH}" STREQUAL "arm64")
 	set(
