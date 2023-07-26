@@ -50,9 +50,44 @@ The heart of Aiwnios lies primarily in `arm_backend.c`, where you'll find the co
 
 Please be aware that **THIS COMPILER USES REVERSE POLISH NOTATION**. Furthermore, statements are reversed, so the last statement resides at `head->base.next`, while the first statement concludes at `head->base.last`. For more information, feel free to contact me via email at [nrootconauto@gmail.com](mailto:nrootconauto@gmail.com). I apologize if my code is currently hard to read; I'll be happy to provide further explanations.
 
+## Sockets
+
+Aiwnios comes with a sockets API(currently tested on FreeBSD). This should be cross platform in the future
+
+Here is a simple server for you to play with until Nroot documents the Sockets API
+```c
+U0 Main () {
+  U8 buf[STR_LEN];
+  I64 fd;
+  I64 s=NetSocketNew;
+  CNetAddr *addr;
+  addr=NetAddrNew("127.0.0.1",8000);
+  NetBindIn(s,addr);
+  NetListen(s,4);
+  while(TRUE) {
+    if(-1==NetPollForRead(1,&s)) {
+      Sleep(10); 
+    } else {
+      fd=NetAccept(s,NULL);
+      while(-1==NetPollForRead(1,&fd))
+        Sleep(10);
+      buf[NetRead(fd,buf,STR_LEN)]=0;
+      "GOT:%s\n",buf;
+      NetClose(fd);
+    }
+    if(ScanKey)
+     break;
+  }
+  NetClose(s);
+  NetAddrDel(addr);
+}
+Main;
+```
+
 ## Credits
 
 Aiwnios would not be possible without the valuable contributions of the following:
 
 - [argtable3](https://github.com/argtable/argtable3)
 - [Cmake architecture detector by axr](https://github.com/axr/solar-cmake/blob/master/TargetArch.cmake)
+- [Xbyak Arm assembler](https://github.com/fujitsu/xbyak_aarch64)

@@ -6994,3 +6994,18 @@ extern U32 char_bmp_printable[16];
 extern U32 char_bmp_displayable[16];
 extern U32 char_bmp_safe_dollar[16];
 extern U32 char_bmp_non_eol[16];
+
+extern class CNetAddr;
+extern CNetAddr *NetAddrNew(U8 *hn=NULL,I64);
+extern U0 NetAddrDel(CNetAddr *);
+extern I64 NetPollForHangup(I64 argc,I64 *argv);
+extern I64 NetPollForWrite(I64 argc,I64 *argv);
+extern I64 NetPollForRead(I64 argc,I64 *argv);
+extern I64 NetWrite(I64 s,U8 *data,I64 len);
+extern I64 NetRead(I64 s,U8 *data,I64 len);
+extern U0 NetClose(I64 s);
+extern I64 NetAccept(I64 socket,CNetAddr **addr);
+extern U0 NetListen(I64 socket,I64 max);
+extern U0 NetBindIn(I64 socket,CNetAddr *);
+extern I64 NetSocketNew(); 
+extern U0 NetShutdown(I64); 
