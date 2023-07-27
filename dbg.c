@@ -131,6 +131,7 @@ enum
 	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
 		fp = exp->val;
 		if(FFI_CALL_TOS_2(fp,sig,actx)) { //Returns 1 for single step
+#if defined (__x86_64__)
 #if defined(__FreeBSD__)
 			ctx->mc_rip=actx[0];
 			ctx->mc_rsp=actx[1];
@@ -150,6 +151,7 @@ enum
 			ctx->gregs[REG_R13]=actx[5];
 			ctx->gregs[REG_R14]=actx[6];
 			ctx->gregs[REG_R15]=actx[7];
+#endif
 #endif
 		}
 	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {

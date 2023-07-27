@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.20) #For sauce I have come,and to sauce I shall return
+cmake_minimum_required(VERSION 3.10) #For sauce I have come,and to sauce I shall return
+#For SD2 cmake modules 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS)
 target_architecture(ARCH)
@@ -73,6 +75,7 @@ elseif("${ARCH}" STREQUAL "arm64")
     multic.c
     ffi_gen.c
     argtable3.c
+    socket.c
   )
 endif()
 add_executable(
@@ -113,11 +116,11 @@ else()
     add_library(FFI ${ASM_OBJS})
 endif() 
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
-link_directories(${SDL2_LIBRARY_DIRS})
+target_link_directories(aiwnios PUBLIC ${SDL2_LIBRARY_DIRS})
 if(WIN32)
 	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m shlwapi winmm ws2_32)
 else()
-	target_link_libraries(aiwnios ${SDL2_LIBRARIES} FFI m pthread)
+	target_link_libraries(aiwnios  ${SDL2_LIBRARIES} FFI m pthread)
 endif()
 
 #Build HCRT2.BIN

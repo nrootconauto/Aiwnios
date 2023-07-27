@@ -91,3 +91,4 @@ Aiwnios would not be possible without the valuable contributions of the followin
 - [argtable3](https://github.com/argtable/argtable3)
 - [Cmake architecture detector by axr](https://github.com/axr/solar-cmake/blob/master/TargetArch.cmake)
 - [Xbyak Arm assembler](https://github.com/fujitsu/xbyak_aarch64)
+- [sdl2-cmake-modules](https://github.com/aminosbh/sdl2-cmake-modules)

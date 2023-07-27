@@ -1,4 +1,4 @@
-SECTION .text
+.text
 .global AIWNIOS_getcontext
 .global AIWNIOS_setcontext
 .global AIWNIOS_makecontext
