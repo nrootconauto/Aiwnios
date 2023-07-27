@@ -71,7 +71,11 @@ static CMemBlk* MemPagTaskAlloc(int64_t pags, CHeapCtrl* hc)
 	if (!ret)
 		return NULL;
 #else
-	int64_t add_flags = bc_enable||hc->is_code_heap ?MAP_32BIT:0; 
+#if defined (__x86_64__)
+	int64_t add_flags = bc_enable||hc->is_code_heap ?MAP_32BIT:0;
+#else 
+	int64_t add_flags = 0;
+#endif
 	static int64_t ps;
 	int64_t b;
 	if (!ps) {

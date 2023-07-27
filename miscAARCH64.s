@@ -1,4 +1,4 @@
-SECTION .text
+.text
 .global Misc_LBts
 .global Misc_LBtr
 .global Misc_LBtc

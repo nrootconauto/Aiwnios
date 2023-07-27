@@ -3964,7 +3964,7 @@ extern I64 MSize(U8i *);
 extern U8 *MemSet(U8i *,U8 ch,I64 sz);
 extern U8 *MemSetU16(U16 *,U16 ch,I64 sz);
 extern U8 *MemSetU32(U32 *,U32 ch,I64 sz);
-extern U8 *MemSetU64(U64 *,U64 ch,I64 sz);
+extern U8 *MemSetU64(U64 *,U64 ch,I64 sz);
 extern I64 StrLen(I64);
 extern I64 StrCmp(U8*,U8*);
 extern U64 ToUpper(U64);
@@ -6997,7 +6997,7 @@ extern U32 char_bmp_non_eol[16];
 
 extern class CNetAddr;
 extern CNetAddr *NetAddrNew(U8 *hn=NULL,I64);
-extern U0 NetAddrDel(CNetAddr *);
+extern U0 NetAddrDel(CNetAddr *);
 extern I64 NetPollForHangup(I64 argc,I64 *argv);
 extern I64 NetPollForWrite(I64 argc,I64 *argv);
 extern I64 NetPollForRead(I64 argc,I64 *argv);

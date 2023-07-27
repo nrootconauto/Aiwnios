@@ -120,7 +120,7 @@ I64 StrICmp(U8 *a,U8 *b) {
     if((A=ToUpper(*a++))!=(B=ToUpper(*b++)))
       return A-B;
   }
-  return 0;
+  return ToUpper(*a)-ToUpper(*b);
 }
 
 I64 StrNCmp(U8 *a,U8 *b,I64 cnt) {
@@ -164,7 +164,7 @@ U8 *LstSub(I64 sub, U8 *lst)
 //Not efficient.  Use an array of U8 ptrs for efficiency.
   if (!lst) return NULL;
   while (*lst && sub>0) {
-    while (*lst)	//Advance to end of cur entry.
+    while (*lst)	//Advance to end of cur entry.
       lst++;
     lst++;		//Skip trailing zero.
     if (*lst=='@')	//Check for '@' alias lst entry.

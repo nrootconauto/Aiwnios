@@ -89,7 +89,7 @@ int64_t NetWrite(int64_t s,char *data,int64_t len) {
 	#if defined (_WIN32) || defined (WIN32)
 	return send(s,data,len,0);
 	#else
-	return read(s,data,len);
+	return write(s,data,len);
 	#endif
 } 
 int64_t NetRead(int64_t s,char *data,int64_t len) {
