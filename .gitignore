@@ -1,6 +1,7 @@
 **.o
 **.a
 **.obj
+**.dll
 FUZZ*.HC
 **.exe
 CMakeLists.txt.user
@@ -20,3 +21,4 @@ aiwnios
 HCRT2.BIN
 HCRT2.DBG.Z
 build
+Registry.HC.Z

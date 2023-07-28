@@ -271,5 +271,8 @@ WinMax(User);
 ACInit("T:/Src/Kernel*.HH*");
 ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
 ExePrint2("#include \"T:/Src/AMouse.HC\";");
+if (_SixtyFPS)
+  SetFPS(60.);
+
 CoreAPSethTask;
 #endif;
