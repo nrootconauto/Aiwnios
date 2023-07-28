@@ -1,61 +1,63 @@
-SECTION .text
-GLOBAL FFI_CALL_TOS_0
+.intel_syntax noprefix
+
+.global FFI_CALL_TOS_0
+.global FFI_CALL_TOS_1
+.global FFI_CALL_TOS_2
+.global FFI_CALL_TOS_3
+.global FFI_CALL_TOS_4
+
 FFI_CALL_TOS_0:
-PUSH RBP
-MOV RBP,RSP
-PUSH RBX
-CALL RDI
-POP RBX
-LEAVE
-RET
+  push rbp
+  mov rbp,rsp
+  push rbx
+  call rdi
+  pop rbx
+  leave
+  ret
 
 
-GLOBAL FFI_CALL_TOS_1
 FFI_CALL_TOS_1:
-PUSH RBP
-MOV RBP,RSP
-PUSH RBX
-PUSH RSI
-CALL RDI
-POP RBX
-LEAVE
-RET
+  push rbp
+  mov rbp,rsp
+  push rbx
+  push rsi
+  call rdi
+  pop rbx
+  leave
+  ret
 
-GLOBAL FFI_CALL_TOS_2
 FFI_CALL_TOS_2:
-PUSH RBP
-MOV RBP,RSP
-PUSH RBX
-PUSH RDX
-PUSH RSI
-CALL RDI
-POP RBX
-LEAVE
-RET
+  push rbp
+  mov rbp,rsp
+  push rbx
+  push rdx
+  push rsi
+  call rdi
+  pop rbx
+  leave
+  ret
 
-GLOBAL FFI_CALL_TOS_3
 FFI_CALL_TOS_3:
-PUSH RBP
-MOV RBP,RSP
-PUSH RBX
-PUSH RCX
-PUSH RDX
-PUSH RSI
-CALL RDI
-POP RBX
-LEAVE
-RET
+  push rbp
+  mov rbp,rsp
+  push rbx
+  push rcx
+  push rdx
+  push rsi
+  call rdi
+  pop rbx
+  leave
+  ret
 
-GLOBAL FFI_CALL_TOS_4
 FFI_CALL_TOS_4:
-PUSH RBP
-MOV RBP,RSP
-PUSH RBX
-PUSH R8
-PUSH RCX
-PUSH RDX
-PUSH RSI
-CALL RDI
-POP RBX
-LEAVE
-RET
+  push rbp
+  mov rbp,rsp
+  push rbx
+  push r8
+  push rcx
+  push rdx
+  push rsi
+  call rdi
+  pop rbx
+  leave
+  ret
