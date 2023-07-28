@@ -100,7 +100,7 @@ if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
 endif ()
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
-target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
+target_link_libraries(aiwnios PRIVATE ${SDL2_LIBRARIES})
 
 target_compile_options(aiwnios PRIVATE -w)
 
@@ -150,6 +150,7 @@ if (BUILD_HCRT)
   endif ()
 endif ()
 
+if ("${ARCH}" STREQUAL "x86_64")
 target_compile_options(aiwnios
   PRIVATE
     -fno-math-errno
@@ -163,7 +164,20 @@ target_compile_options(aiwnios
     -fcf-protection=none
     -mno-shstk
 )
-
+elseif ("${ARCH}" STREQUAL "arm64") 
+target_compile_options(aiwnios
+  PRIVATE
+    -fno-math-errno
+    -fno-trapping-math
+    -fno-exceptions
+    -fno-omit-frame-pointer
+    -fno-signaling-nans
+    -fno-stack-protector
+    -fno-unwind-tables
+    -fno-asynchronous-unwind-tables
+    -fcf-protection=none
+)
+endif()
 #
 # Install section
 #
