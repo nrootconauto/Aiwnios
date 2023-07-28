@@ -29,6 +29,7 @@ U0 RPNDel(CRPN *rpn) {
 }
 //This accounts for CHashClass/CHashFun
 CHashClass *DerefType(CHashClass *cls) {
+  if(!cls->ptr_stars_cnt) return NULL;
   if(cls->type&HTT_FUN)
     return cls(CHashFun*)-1;
   return cls-1;
@@ -838,8 +839,10 @@ U0 PrsMembers(CCmpCtrl *cc) {
         ic_dim=ic_dim->next;
         RPNAddNew(cc,IC_DEREF,,,TRUE);
         mlst=MemberFind(cc->cur_str,cls);
-      } else {
+      } else if(DerefType(cls)) {
         mlst=MemberFind(cc->cur_str,DerefType(cls));
+      } else {
+        LexExcept(cc,"Use '.' at");
       }
       if(!mlst)
         LexExcept(cc,"Invalid member at");
