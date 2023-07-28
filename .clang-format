@@ -1,6 +1,8 @@
 ﻿---
-BasedOnStyle: WebKit
-TabWidth: '4'
-UseTab: Always
-
+BasedOnStyle: LLVM
+TabWidth: '2'
+UseTab: Never
+Language: Cpp
+AllowShortFunctionsOnASingleLine: false
+IndentPPDirectives: BeforeHash
 ...

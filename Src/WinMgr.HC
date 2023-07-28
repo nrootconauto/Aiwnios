@@ -857,3 +857,10 @@ wmt_start:
     }
   }
 }
+
+public F64 SetFPS(F64 target) {
+  if (target>100.)
+    target=99.;
+  target_fps=target;
+  return target_fps;
+}
