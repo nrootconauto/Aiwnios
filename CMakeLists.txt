@@ -1,27 +1,39 @@
-cmake_minimum_required(VERSION 3.10) #For sauce I have come,and to sauce I shall return
-#For SD2 cmake modules 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR) #For sauce I have come,and to sauce I shall return
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
-project(AIWNIOS)
+project(AIWNIOS
+  LANGUAGES C CXX ASM
+)
+option(BUILD_HCRT "Build HCRT" YES)
+set(default_build_type "Release")
+
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}"
+    CACHE STRING "Choose the type of build." FORCE
+  )
+  set_property(CACHE CMAKE_BUILD_TYPE
+    PROPERTY
+      STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo"
+  )
+endif ()
+
 target_architecture(ARCH)
-if("${ARCH}" STREQUAL "x86_64")
-	if(WIN32)
-		set(
-			ASM_SOURCES
-			miscWIN.s
-			swapctxWIN.s
-			ffi_call_tos_WIN.s
-			miscTOSX86.s
-		)
-	else()
-		set(
-			ASM_SOURCES
-			miscX86.s
-			swapctxX86.s
-			ffi_call_tos.s
-			miscTOSX86.s
-		)
-	endif()
+if ("${ARCH}" STREQUAL "x86_64")
+  if (WIN32)
+    set(ASM_SOURCES
+      miscWIN.s
+      swapctxWIN.s
+      ffi_call_tos_WIN.s
+      miscTOSX86.s
+    )
+  else ()
+    set(ASM_SOURCES
+      miscX86.s
+      swapctxX86.s
+      ffi_call_tos.s
+      miscTOSX86.s
+    )
+endif ()
   set(
     C_SOURCES
     x86_64_backend.c 
@@ -45,16 +57,17 @@ if("${ARCH}" STREQUAL "x86_64")
     argtable3.c
     socket.c
   )
-elseif("${ARCH}" STREQUAL "arm64")
-	set(
-		ASM_SOURCES
-		miscAARCH64.s
-		swapctxAARCH64.s
-		ffi_call_tos_aarch64.s
+elseif ("${ARCH}" STREQUAL "arm64")
+  #For SDL2 cmake modules
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
+
+  set(ASM_SOURCES
+    miscAARCH64.s
+    swapctxAARCH64.s
+    ffi_call_tos_aarch64.s
     miscTOSaarch64.s
-	)
-  set(
-    C_SOURCES
+  )
+  set(C_SOURCES
     arm64_asm.c 
     arm_backend.c
     bungis.c
@@ -83,74 +96,74 @@ add_executable(
   ${C_SOURCES}
 )
 find_package(SDL2 REQUIRED)
-target_compile_options(aiwnios PUBLIC ${SDL2_CFLAGS_OTHER})
+if (NOT SDL2_FOUND)
+  message(FATAL_ERROR "Please install SDL2")
+endif ()
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
+target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
 
 target_compile_options(aiwnios PRIVATE -w)
-set(ASM_OBJS "")
-if("${ARCH}" STREQUAL "x86_64")
-  foreach(X IN LISTS ASM_SOURCES)
-    add_custom_command(
-      COMMAND yasm
-      ARGS "${CMAKE_CURRENT_SOURCE_DIR}/${X}" -fwin64 -o "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${X}"
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
-    )
-    set(ASM_OBJS "${ASM_OBJS}" "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj")
-  endforeach()
-elseif("${ARCH}" STREQUAL "arm64")
-  foreach(X IN LISTS ASM_SOURCES)
-    add_custom_command(
-      COMMAND gcc
-      ARGS -c "${CMAKE_CURRENT_SOURCE_DIR}/${X}" -o "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${X}"
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj"
-    )
-    set(ASM_OBJS "${ASM_OBJS}" "${CMAKE_CURRENT_BINARY_DIR}/${X}.obj")
-  endforeach()
-endif()
-#https://stackoverflow.com/questions/34657287/cmakebuild-yasm-source-files
-if(WIN32)
-    add_library(FFI SHARED ${ASM_OBJS})
-else()
-    add_library(FFI ${ASM_OBJS})
-endif() 
+
+add_library(FFI STATIC ${ASM_SOURCES})
+target_compile_options(FFI PRIVATE -w)
 set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
-target_link_directories(aiwnios PUBLIC ${SDL2_LIBRARY_DIRS})
-if(WIN32)
-	target_link_libraries(aiwnios ${SDL2_LIBRARIES} ${ASM_OBJS} m shlwapi winmm ws2_32)
+target_link_libraries(aiwnios PRIVATE FFI m)
+
+if (WIN32)
+  target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 -static)
 else()
-	target_link_libraries(aiwnios  ${SDL2_LIBRARIES} FFI m pthread)
+  target_link_libraries(aiwnios PRIVATE pthread)
 endif()
 
-#Build HCRT2.BIN
 set_target_properties(aiwnios
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    INTERPROCEDURAL_OPTIMIZATION ON
+    C_VISIBILITY_PRESET hidden
+    C_STANDARD 11
+    C_STANDARD_REQUIRED YES
+    C_EXTENSIONS YES
 )
-set (USE_WINE 0)
-if(NOT (CMAKE_SYSTEM MATCHES Windows))
-  if(WIN32)
-    set(USE_WINE 1)
+
+if (BUILD_HCRT)
+  set (USE_WINE NO)
+  if(NOT (CMAKE_SYSTEM MATCHES Windows))
+    if(WIN32)
+      set(USE_WINE YES)
+    endif()
   endif()
-endif()
-if(NOT "$USE_WINE")
-  add_custom_target(
-	"HCRT2.BIN"
-	ALL
-	COMMAND aiwnios -b
-	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
-	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  )
-else()
-  add_custom_target(
-	"HCRT2.BIN"
-	ALL
-	COMMAND wine64 aiwnios -b
-	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
-	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  )
-endif()
+
+  if (NOT USE_WINE)
+    add_custom_target(HCRT2.BIN
+      ALL
+      COMMAND aiwnios -b
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+  else ()
+    add_custom_target(HCRT2.BIN
+      ALL
+      COMMAND wine64 aiwnios -b
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+  endif ()
+endif ()
+
+target_compile_options(aiwnios
+  PRIVATE
+    -fno-math-errno
+    -fno-trapping-math
+    -fno-exceptions
+    -fno-omit-frame-pointer
+    -fno-signaling-nans
+    -fno-stack-protector
+    -fno-unwind-tables
+    -fno-asynchronous-unwind-tables
+    -fcf-protection=none
+    -mno-shstk
+)
+
 #
 # Install section
 #
@@ -201,3 +214,4 @@ foreach(F IN LISTS TEMPLATE_FILES)
   endif()
 endforeach()
 
+# vim: set expandtab ts=2 sw=2 :

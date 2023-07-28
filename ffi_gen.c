@@ -1,57 +1,58 @@
 #include "aiwn.h"
 #if defined(_WIN32) || defined(WIN32)
-void* GenFFIBinding(void* fptr, int64_t arity)
-{
-#ifdef USE_TEMPLEOS_ABI
-/*
-0:  55                      push   rbp
-1:  48 89 e5                mov    rbp,rsp
-4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
-8:  41 52                   push   r10
-a:  41 53                   push   r11
-c:  48 83 ec 20             sub    rsp,0x20
-10: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
-17: 00 00 00
-1a: 48 8d 4d 10             lea    rcx,[rbp+0x10]
-1e: ff d0                   call   rax
-20: 48 83 c4 20             add    rsp,0x20
-24: 41 5b                   pop    r11
-26: 41 5a                   pop    r10
-28: c9                      leave
-29: c2 34 12                ret    0x1234 */
-	char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x41\x52\x41\x53\x48\x83\xEC\x20\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\x48\x83\xC4\x20\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
-	char* ret = A_MALLOC(0x2c, NULL);
-	memcpy(ret, ffi_binding, 0x2c);
-	*(int64_t*)(ret + 0x12) = fptr;
-	*(int16_t*)(ret + 0x2a) = arity*8;
-	return ret;
-#else
-	return fptr;
-#endif
+void *GenFFIBinding(void *fptr, int64_t arity) {
+  #ifdef USE_TEMPLEOS_ABI
+  /*
+  0:  55                      push   rbp
+  1:  48 89 e5                mov    rbp,rsp
+  4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
+  8:  41 52                   push   r10
+  a:  41 53                   push   r11
+  c:  48 83 ec 20             sub    rsp,0x20
+  10: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
+  17: 00 00 00
+  1a: 48 8d 4d 10             lea    rcx,[rbp+0x10]
+  1e: ff d0                   call   rax
+  20: 48 83 c4 20             add    rsp,0x20
+  24: 41 5b                   pop    r11
+  26: 41 5a                   pop    r10
+  28: c9                      leave
+  29: c2 34 12                ret    0x1234 */
+  char *ffi_binding =
+      "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x41\x52\x41\x53\x48\x83\xEC\x20\x48\xB8"
+      "\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\x48\x83\xC4\x20"
+      "\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
+  char *ret = A_MALLOC(0x2c, NULL);
+  memcpy(ret, ffi_binding, 0x2c);
+  *(int64_t *)(ret + 0x12) = fptr;
+  *(int16_t *)(ret + 0x2a) = arity * 8;
+  return ret;
+  #else
+  return fptr;
+  #endif
 }
-void* GenFFIBindingNaked(void* fptr, int64_t arity)
-{
-	/*
-	0:  \x48\x8D\x4C\x24\x08          lea    rcx,[rsp+0x8]
-	5:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
-	c:  00 00 00
-	f:  ff e0 					jmp rax
-	*/
-	const char* ffi_binding = "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-#ifdef USE_TEMPLEOS_ABI
-	char* ret = A_MALLOC(0x12, NULL);
-	memcpy(ret, ffi_binding, 0x12);
-	*(int64_t*)(ret + 0x7) = fptr;
-	return ret;
-#else
-	return fptr;
-#endif
+void *GenFFIBindingNaked(void *fptr, int64_t arity) {
+  /*
+  0:  \x48\x8D\x4C\x24\x08          lea    rcx,[rsp+0x8]
+  5:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
+  c:  00 00 00
+  f:  ff e0 					jmp rax
+  */
+  const char *ffi_binding =
+      "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
+  #ifdef USE_TEMPLEOS_ABI
+  char *ret = A_MALLOC(0x12, NULL);
+  memcpy(ret, ffi_binding, 0x12);
+  *(int64_t *)(ret + 0x7) = fptr;
+  return ret;
+  #else
+  return fptr;
+  #endif
 }
-#elif (defined (__linux__) ||defined (__FreeBSD__)) && defined (__x86_64__)
-void* GenFFIBinding(void* fptr, int64_t arity)
-{
-#ifdef USE_TEMPLEOS_ABI
-	/*
+#elif (defined(__linux__) || defined(__FreeBSD__)) && defined(__x86_64__)
+void *GenFFIBinding(void *fptr, int64_t arity) {
+  #ifdef USE_TEMPLEOS_ABI
+  /*
 0:  55                      push   rbp
 1:  48 89 e5                mov    rbp,rsp
 4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
@@ -90,64 +91,74 @@ a2: f2 44 0f 10 74 24 50    movsd  xmm14,QWORD PTR [rsp+0x50]
 a9: f2 44 0f 10 7c 24 58    movsd  xmm15,QWORD PTR [rsp+0x58]
 b0: 66 48 0f 6e c0          movq   xmm0,rax
 b5: c9                      leave
-b6: c2 22 11                ret    0x1122 
+b6: c2 22 11                ret    0x1122
 */
-	// Look at the silly sauce at https://defuse.ca/online-x86-assembler.htm#disassembly
-	// Is 0x22 bytes long
-	const char* ffi_binding = "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x60\xF2\x0F\x11\x74\x24\x08\xF2\x0F\x11\x7C\x24\x10\xF2\x44\x0F\x11\x44\x24\x18\xF2\x44\x0F\x11\x4C\x24\x20\xF2\x44\x0F\x11\x54\x24\x28\xF2\x44\x0F\x11\x5C\x24\x30\xF2\x44\x0F\x11\x64\x24\x38\xF2\x44\x0F\x11\x6C\x24\x40\xF2\x44\x0F\x11\x74\x24\x50\xF2\x44\x0F\x11\x7C\x24\x58\x56\x57\x41\x52\x41\x53\x48\x8D\x7D\x10\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x41\x5B\x41\x5A\x5F\x5E\xF2\x0F\x10\x74\x24\x08\xF2\x0F\x10\x7C\x24\x10\xF2\x44\x0F\x10\x44\x24\x18\xF2\x44\x0F\x10\x4C\x24\x20\xF2\x44\x0F\x10\x54\x24\x28\xF2\x44\x0F\x10\x5C\x24\x30\xF2\x44\x0F\x10\x64\x24\x38\xF2\x44\x0F\x10\x6C\x24\x40\xF2\x44\x0F\x10\x74\x24\x50\xF2\x44\x0F\x10\x7C\x24\x58\x66\x48\x0F\x6E\xC0\xC9\xC2\x22\x11";
-	char* ret = A_MALLOC(0xb9, NULL);
-	memcpy(ret, ffi_binding, 0xb9);
-	*(int64_t*)(ret + 0x5c) = fptr;
-	*(int16_t*)(ret + 0xb7) = arity*8;
-	return ret;
-#else
-	return fptr;
-#endif
+  // Look at the silly sauce at
+  // https://defuse.ca/online-x86-assembler.htm#disassembly Is 0x22 bytes long
+  const char *ffi_binding =
+      "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x48\x83\xEC\x60\xF2\x0F\x11\x74\x24\x08"
+      "\xF2\x0F\x11\x7C\x24\x10\xF2\x44\x0F\x11\x44\x24\x18\xF2\x44\x0F\x11\x4C"
+      "\x24\x20\xF2\x44\x0F\x11\x54\x24\x28\xF2\x44\x0F\x11\x5C\x24\x30\xF2\x44"
+      "\x0F\x11\x64\x24\x38\xF2\x44\x0F\x11\x6C\x24\x40\xF2\x44\x0F\x11\x74\x24"
+      "\x50\xF2\x44\x0F\x11\x7C\x24\x58\x56\x57\x41\x52\x41\x53\x48\x8D\x7D\x10"
+      "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x41\x5B\x41\x5A\x5F\x5E"
+      "\xF2\x0F\x10\x74\x24\x08\xF2\x0F\x10\x7C\x24\x10\xF2\x44\x0F\x10\x44\x24"
+      "\x18\xF2\x44\x0F\x10\x4C\x24\x20\xF2\x44\x0F\x10\x54\x24\x28\xF2\x44\x0F"
+      "\x10\x5C\x24\x30\xF2\x44\x0F\x10\x64\x24\x38\xF2\x44\x0F\x10\x6C\x24\x40"
+      "\xF2\x44\x0F\x10\x74\x24\x50\xF2\x44\x0F\x10\x7C\x24\x58\x66\x48\x0F\x6E"
+      "\xC0\xC9\xC2\x22\x11";
+  char *ret = A_MALLOC(0xb9, NULL);
+  memcpy(ret, ffi_binding, 0xb9);
+  *(int64_t *)(ret + 0x5c) = fptr;
+  *(int16_t *)(ret + 0xb7) = arity * 8;
+  return ret;
+  #else
+  return fptr;
+  #endif
 }
-void* GenFFIBindingNaked(void* fptr, int64_t arity)
-{
-	/*
-	0:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
-	7:  00 00 00
-	a:  ff e0 					jmp rax
-	*/
-	const char* ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-#ifdef USE_TEMPLEOS_ABI
-	char* ret = A_MALLOC(0xd, NULL);
-	memcpy(ret, ffi_binding, 0xd);
-	*(int64_t*)(ret + 0x2) = fptr;
-	return ret;
-#else
-	return fptr;
-#endif
+void *GenFFIBindingNaked(void *fptr, int64_t arity) {
+  /*
+  0:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
+  7:  00 00 00
+  a:  ff e0 					jmp rax
+  */
+  const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
+  #ifdef USE_TEMPLEOS_ABI
+  char *ret = A_MALLOC(0xd, NULL);
+  memcpy(ret, ffi_binding, 0xd);
+  *(int64_t *)(ret + 0x2) = fptr;
+  return ret;
+  #else
+  return fptr;
+  #endif
 }
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-void* GenFFIBinding(void* fptr, int64_t arity) {
+void *GenFFIBinding(void *fptr, int64_t arity) {
   #ifdef USE_TEMPLEOS_ABI
-  //0:  stp x29,x30[sp,-16]!
-  //4:  add x0,sp,16
-  //8:  ldr x1,label
-  //c:  blr x1
-  //10: ldp x29,x30[sp],16
-  //14: ret
-  //18: label: fptr
-  int32_t *blob=A_MALLOC(0x18+8,NULL);
-  blob[0]=ARM_stpPreImmX(29,30,31,-16);
-  blob[1]=ARM_addImmX(0,31,16);
-  blob[2]=ARM_ldrLabelX(1,0x18-0x8);
-  blob[3]=ARM_blr(1);
-  blob[4]=ARM_ldpPostImmX(29,30,31,16);
-  blob[5]=ARM_ret();
-  *(void**)(blob+6)=fptr;
+  // 0:  stp x29,x30[sp,-16]!
+  // 4:  add x0,sp,16
+  // 8:  ldr x1,label
+  // c:  blr x1
+  // 10: ldp x29,x30[sp],16
+  // 14: ret
+  // 18: label: fptr
+  int32_t *blob = A_MALLOC(0x18 + 8, NULL);
+  blob[0] = ARM_stpPreImmX(29, 30, 31, -16);
+  blob[1] = ARM_addImmX(0, 31, 16);
+  blob[2] = ARM_ldrLabelX(1, 0x18 - 0x8);
+  blob[3] = ARM_blr(1);
+  blob[4] = ARM_ldpPostImmX(29, 30, 31, 16);
+  blob[5] = ARM_ret();
+  *(void **)(blob + 6) = fptr;
   return blob;
   #else
   return fptr;
   #endif
 }
-void* GenFFIBindingNaked(void* fptr, int64_t arity) {
-  //TODO
+void *GenFFIBindingNaked(void *fptr, int64_t arity) {
+  // TODO
   return fptr;
 }
 #endif

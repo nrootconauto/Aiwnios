@@ -18,7 +18,6 @@ To build Aiwnios, you will need the following dependencies:
 - `gcc`
 - `libsdl2-dev`
 - `cmake`
-- `yasm` (required for x86_64)
 
 Once you have the dependencies installed, building Aiwnios is straightforward:
 
