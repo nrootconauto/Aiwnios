@@ -7,7 +7,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
-struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable;
+struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
+    *sixty_fps;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -281,6 +282,9 @@ static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
 }
 static void PutS(char *s) {
   printf("%s", s);
+}
+static uint64_t STK_60fps(uint64_t *stk) {
+  return sixty_fps->count != 0;
 }
 
 // This a "symbolic" Fs only used from the HolyC part
@@ -1308,6 +1312,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetPollForWrite", STK_NetPollForWrite, 2);
     PrsAddSymbol("NetAddrDel", STK_NetAddrDel, 1);
     PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 2);
+    PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
   }
 }
 static const char *t_drive;
@@ -1382,7 +1387,9 @@ int main(int argc, char **argv) {
       arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
                                   "Create a new boot directory(backs up old "
                                   "boot directory if present)."),
-      _arg_end = arg_end(20)};
+      sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+      _arg_end = arg_end(20),
+  };
   errors = arg_parse(argc, argv, argtable);
   if (errors || arg_help->count) {
     if (errors)

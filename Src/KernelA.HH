@@ -1446,8 +1446,10 @@ class CWinMgrTimingGlbls
   I64	calc_idle_cnt;
 };
 
-#define WINMGR_FPS	(30000.0/1001)
-#define WINMGR_PERIOD	(1001/30000.0)
+extern F64 target_fps;
+#define WINMGR_FPS	(target_fps)
+#define WINMGR_PERIOD	(1./target_fps)
+public extern F64 SetFPS(F64 target);
 
 /*public */ class CWinMgrGlbls
 {
@@ -3907,6 +3909,7 @@ import I64 FUnixTime(U8*);
 import U0 VFsFTrunc(U8*,I64);
 import F64 Sqrt(F64);
 import I64 MemCmp(U8*,U8*,I64);
+import Bool _SixtyFPS();
 import U0 SetKBCallback(U8 *fptr);
 import U0 SetMSCallback(U8 *fptr);
 import U0 SndFreq(I64);
@@ -4041,6 +4044,7 @@ extern U0 BlkDevsRelease();
 extern U8 Drv2Let(CDrv *dv=NULL);
 extern Bool FileFind(U8 *filename,CDirEntry *_de=NULL,I64 fuf_flags=FUF_Z_OR_NOT_Z);
 extern Bool IsDir(U8*);
+extern Bool _SixtyFPS();
 extern CBlkDev *BlkDevChk(CBlkDev *bd,Bool except=TRUE); 
 extern CDrv *Let2Drv(U8 drv_let=0,Bool except=TRUE);
 extern Bool RedSeaValidate(U8 drv_let);
