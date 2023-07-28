@@ -185,6 +185,10 @@ endif()
 #
 # Install section
 #
+
+set (AIWNIOS_VERSION "0.0.1")
+
+# FreeBSD
 set (CPACK_FREEBSD_PACKAGE_NAME "aiwnios")
 set (CPACK_FREEBSD_PACKAGE_COMMENT "A HolyC Compiler/Runtime for FreeBSD,Linux and Windows.")
 set (CPACK_FREEBSD_PACKAGE_DESCRIPTION "A HolyC Compiler/Runtime for FreeBSD,Linux and Windows.")
@@ -194,6 +198,13 @@ set (CPACK_FREEBSD_PACKAGE_MAINTAINER "nrootconauto@gmail.com")
 set (CPACK_FREEBSD_PACKAGE_ORIGIN "devel/aiwnios")
 set (CPACK_FREEBSD_PACKAGE_DEPS "devel/sdl20")
 
+# Debian
+set (CPACK_DEBIAN_PACKAGE_PRIORITY "standard")
+set (CPACK_DEBIAN_PACKAGE_SECTION "devel")
+set (CPACK_DEBIAN_PACKAGE_DESCRIPTION "A HolyC Compiler/Runtime for Linux,Windows and FreeBSD")
+set (CPACK_DEBIAN_PACKAGE_MAINTAINER "nrootconauto@gmail.com")
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "libsdl2-2.0-0")
+set (CPACK_DEBIAN_PACKAGE_VERSION "${AIWNIOS_VERSION}")
 include (CPack)
 
 set(
@@ -214,7 +225,7 @@ set(
   ACWords.DATA
 )
 
-install(FILES aiwnios TYPE BIN)
+install(PROGRAMS aiwnios TYPE BIN)
 
 foreach(F IN LISTS TEMPLATE_FILES)
   if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
