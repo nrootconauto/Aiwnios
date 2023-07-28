@@ -14,7 +14,7 @@ AIWNIOS_getcontext:
   mov qword ptr [rax+5*8],r13
   mov qword ptr [rax+6*8],r14
   mov qword ptr [rax+7*8],r15
-  movsd qword ptr [rax+9*8],xmm6
+  movsd qword ptr [rax+9*8],xmm6 # qword because double
   movsd qword ptr [rax+10*8],xmm7
   movsd qword ptr [rax+11*8],xmm8
   movsd qword ptr [rax+12*8],xmm9
