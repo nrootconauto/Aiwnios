@@ -3,6 +3,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS
   LANGUAGES C CXX ASM
 )
+option(BUILD_HCRT "Build HCRT" YES)
 set(default_build_type "Release")
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -114,7 +115,6 @@ else()
   target_link_libraries(aiwnios PRIVATE pthread)
 endif()
 
-# Build HCRT2.BIN
 set_target_properties(aiwnios
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -125,29 +125,29 @@ set_target_properties(aiwnios
     C_EXTENSIONS YES
 )
 
-set (USE_WINE 0)
-if(NOT (CMAKE_SYSTEM MATCHES Windows))
-  if(WIN32)
-    set(USE_WINE 1)
+if (BUILD_HCRT)
+  set (USE_WINE NO)
+  if(NOT (CMAKE_SYSTEM MATCHES Windows))
+    if(WIN32)
+      set(USE_WINE YES)
+    endif()
   endif()
-endif()
 
-if (NOT "$USE_WINE")
-  add_custom_target(
-    "HCRT2.BIN"
-    ALL
-    COMMAND aiwnios -b
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  )
-else ()
-  add_custom_target(
-    "HCRT2.BIN"
-    ALL
-    COMMAND wine64 aiwnios -b
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" ${PROJ_NAME}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  )
+  if (NOT USE_WINE)
+    add_custom_target(HCRT2.BIN
+      ALL
+      COMMAND aiwnios -b
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+  else ()
+    add_custom_target(HCRT2.BIN
+      ALL
+      COMMAND wine64 aiwnios -b
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+  endif ()
 endif ()
 
 target_compile_options(aiwnios

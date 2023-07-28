@@ -15,3 +15,8 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 Tmp.DD.Z
+Src/STAGE1.HC
+aiwnios
+HCRT2.BIN
+HCRT2.DBG.Z
+build
