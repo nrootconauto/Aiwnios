@@ -1,67 +1,74 @@
-SECTION .text
-GLOBAL Misc_Btc
-Misc_Btc:
-	BTC QWORD [RCX],RSI
-	SETC AL
-	MOVZX RAX,AL
-	RET 
-GLOBAL Misc_LBtc
-Misc_LBtc:
-	LOCK BTC QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET 
+.intel_syntax noprefix
+.global Misc_Btc
+.global Misc_LBtc
+.global Misc_Bt
+.global Misc_Bts
+.global Misc_Btr
+.global Misc_LBtr
+.global Misc_LBts
+.global Misc_Caller
 
-GLOBAL Misc_Bt
+Misc_Btc:
+  btc qword ptr [rcx],rsi
+  setc al
+  movzx rax,al
+  ret 
+
+Misc_LBtc:
+  lock btc qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret 
+
 Misc_Bt:
-	BT QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET 
-GLOBAL Misc_Bts
+  bt qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret 
+
 Misc_Bts:
-	BTS QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET 
-GLOBAL Misc_Btr
+  bts qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret 
+
 Misc_Btr:
-	BTR QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET 
-GLOBAL Misc_LBtr
+  btr qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret 
+
 Misc_LBtr:
-	LOCK BTR QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET
-GLOBAL Misc_LBts
+  lock btr qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret
+
 Misc_LBts:
-	LOCK BTS QWORD [RCX],RDX
-	SETC AL
-	MOVZX RAX,AL
-	RET 
-GLOBAL Misc_Caller
+  lock bts qword ptr [rcx],rdx
+  setc al
+  movzx rax,al
+  ret 
+
 Misc_Caller:
-	PUSH RBP
-	MOV RBP,RSP
-	MOV RAX,RBP
-_loop:
-	TEST RCX,RCX
-	JZ fin
-	TEST RAX,RAX 
-	JZ fail
-	MOV RAX,QWORD [RAX]
-	DEC RCX
-	JMP _loop
-fin:
-	TEST RAX,RAX
-	JZ fail
-	MOV RAX,QWORD[RAX+8]
-	LEAVE
-	RET
-fail:
-	MOV RAX,0
-	LEAVE
-	RET
+  push rbp
+  mov rbp,rsp
+  mov rax,rbp
+.L_loop:
+  test rcx,rcx
+  jz .L_fin
+  test rax,rax 
+  jz .L_fail
+  mov rax,qword ptr [rax]
+  dec rcx
+  jmp .L_loop
+.L_fin:
+  test rax,rax
+  jz .L_fail
+  mov rax,qword ptr[rax+8]
+  leave
+  ret
+.L_fail:
+  mov rax,0
+  leave
+  ret

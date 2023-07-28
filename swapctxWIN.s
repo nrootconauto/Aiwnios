@@ -1,59 +1,62 @@
-SECTION .text
-GLOBAL AIWNIOS_getcontext
-GLOBAL AIWNIOS_setcontext
-GLOBAL AIWNIOS_makecontext
+.intel_syntax noprefix
+.global AIWNIOS_getcontext
+.global AIWNIOS_setcontext
+.global AIWNIOS_makecontext
+
 AIWNIOS_getcontext:
-	POP RDX
-	POP RAX
-	MOV QWORD [RAX+0*8],RDX
-	MOV QWORD [RAX+1*8],RSP
-	MOV QWORD [RAX+2*8],RBP
-	MOV QWORD [RAX+3*8],R11
-	MOV QWORD [RAX+4*8],R12
-	MOV QWORD [RAX+5*8],R13
-	MOV QWORD [RAX+6*8],R14
-	MOV QWORD [RAX+7*8],R15
-	MOVSD QWORD [RAX+9*8],XMM6
-	MOVSD QWORD [RAX+10*8],XMM7
-	MOVSD QWORD [RAX+11*8],XMM8
-	MOVSD QWORD [RAX+12*8],XMM9
-	MOVSD QWORD [RAX+13*8],XMM10
-	MOVSD QWORD [RAX+14*8],XMM11
-	MOVSD QWORD [RAX+15*8],XMM12
-	MOVSD QWORD [RAX+16*8],XMM13
-	MOVSD QWORD [RAX+17*8],XMM14
-	MOVSD QWORD [RAX+19*8],XMM15
-	MOV QWORD [RAX+20*8],R10
-	MOV QWORD [RAX+21*8],RDI
-	MOV QWORD [RAX+22*8],RSI
-	MOV RAX,0
-	JMP RDX
+  pop rdx
+  pop rax
+  mov qword ptr [rax+0*8],rdx
+  mov qword ptr [rax+1*8],rsp
+  mov qword ptr [rax+2*8],rbp
+  mov qword ptr [rax+3*8],r11
+  mov qword ptr [rax+4*8],r12
+  mov qword ptr [rax+5*8],r13
+  mov qword ptr [rax+6*8],r14
+  mov qword ptr [rax+7*8],r15
+  movsd qword ptr [rax+9*8],xmm6
+  movsd qword ptr [rax+10*8],xmm7
+  movsd qword ptr [rax+11*8],xmm8
+  movsd qword ptr [rax+12*8],xmm9
+  movsd qword ptr [rax+13*8],xmm10
+  movsd qword ptr [rax+14*8],xmm11
+  movsd qword ptr [rax+15*8],xmm12
+  movsd qword ptr [rax+16*8],xmm13
+  movsd qword ptr [rax+17*8],xmm14
+  movsd qword ptr [rax+19*8],xmm15
+  mov qword ptr [rax+20*8],r10
+  mov qword ptr [rax+21*8],rdi
+  mov qword ptr [rax+22*8],rsi
+  mov rax,0
+  jmp rdx
+
 AIWNIOS_setcontext:
-	MOV RAX,QWORD [RSP+8]
-	MOV RCX,QWORD [RAX+0*8]
-	MOV RSP,QWORD [RAX+1*8]
-	MOV RBP,QWORD [RAX+2*8]
-	MOV R11,QWORD [RAX+3*8]
-	MOV R12,QWORD [RAX+4*8]
-	MOV R13,QWORD [RAX+5*8]
-	MOV R14,QWORD [RAX+6*8]
-	MOV R15,QWORD [RAX+7*8]
-	MOVSD XMM6,QWORD [RAX+9*8]
-	MOVSD XMM7,QWORD [RAX+10*8]
-	MOVSD XMM8,QWORD [RAX+11*8]
-	MOVSD XMM9,QWORD [RAX+12*8]
-	MOVSD XMM10,QWORD [RAX+13*8]
-	MOVSD XMM11,QWORD [RAX+14*8]
-	MOVSD XMM12,QWORD [RAX+15*8]
-	MOVSD XMM13,QWORD [RAX+16*8]
-	MOVSD XMM14,QWORD [RAX+17*8]
-	MOVSD XMM15,QWORD [RAX+19*8]
-	MOV R10,QWORD [RAX+20*8]
-	MOV RDI,QWORD [RAX+21*8]
-	MOV RSI,QWORD [RAX+22*8]
-	MOV RAX,1
-	JMP RCX
+  mov rax,qword ptr [rsp+8]
+  mov rcx,qword ptr [rax+0*8]
+  mov rsp,qword ptr [rax+1*8]
+  mov rbp,qword ptr [rax+2*8]
+  mov r11,qword ptr [rax+3*8]
+  mov r12,qword ptr [rax+4*8]
+  mov r13,qword ptr [rax+5*8]
+  mov r14,qword ptr [rax+6*8]
+  mov r15,qword ptr [rax+7*8]
+  movsd xmm6,qword ptr [rax+9*8]
+  movsd xmm7,qword ptr [rax+10*8]
+  movsd xmm8,qword ptr [rax+11*8]
+  movsd xmm9,qword ptr [rax+12*8]
+  movsd xmm10,qword ptr [rax+13*8]
+  movsd xmm11,qword ptr [rax+14*8]
+  movsd xmm12,qword ptr [rax+15*8]
+  movsd xmm13,qword ptr [rax+16*8]
+  movsd xmm14,qword ptr [rax+17*8]
+  movsd xmm15,qword ptr [rax+19*8]
+  mov r10,qword ptr [rax+20*8]
+  mov rdi,qword ptr [rax+21*8]
+  mov rsi,qword ptr [rax+22*8]
+  mov rax,1
+  jmp rcx
+
 AIWNIOS_makecontext:
-	MOV QWORD [RCX+0*8],RDX
-	MOV QWORD [RCX+1*8],R8
-	RET
+  mov qword ptr [rcx+0*8],rdx
+  mov qword ptr [rcx+1*8],r8
+  ret
