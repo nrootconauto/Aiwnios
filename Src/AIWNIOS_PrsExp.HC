@@ -29,7 +29,7 @@ U0 RPNDel(CRPN *rpn) {
 }
 //This accounts for CHashClass/CHashFun
 CHashClass *DerefType(CHashClass *cls) {
-  if(!cls->ptr_stars_cnt) return NULL;
+  if(!cls->ptr_stars_cnt) return NULL;
   if(cls->type&HTT_FUN)
     return cls(CHashFun*)-1;
   return cls-1;
@@ -374,15 +374,20 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
         break;case IS_V_ARG:
         width=rpn->length;
         while(width--) {
-	  PrsPop3(cc->ps);
+	  if(!PrsPop3(cc->ps))
+	    LexExcept(cc,"Unexpected end of expression at ");
         }
         break;case IS_2_ARG:
         rpn->t.arg2_tree=PrsPop3(cc->ps);
         rpn->t.arg1_tree=PrsPop3(cc->ps);
+	if(!rpn->t.arg1_tree||!rpn->t.arg2_tree)
+	  LexExcept(cc,"Unexpected end of expression at ");
         rpn->t.arg2_class=rpn->t.arg2_tree->ic_class;
         rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
         break;case IS_1_ARG:
         rpn->t.arg1_tree=PrsPop3(cc->ps);
+	if(!rpn->t.arg1_tree)
+	  LexExcept(cc,"Unexpected end of expression at ");
         rpn->t.arg1_class=rpn->t.arg1_tree->ic_class;
         break;case IS_0_ARG:
     }
@@ -1631,7 +1636,7 @@ U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL)
     if(_type) *_type=AssignRawTypeToNode(cc->coc.coc_head.next)->raw_type; 
   } else
     res=NULL;
-  COCPop(cc);
+  COCPop(cc);
   if(old_trace)
     LBts(&cc->flags,CCf_PASS_TRACE_PRESENT);
   else
