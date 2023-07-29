@@ -4000,7 +4000,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       AIWNIOS_ADD_CODE(0);
     break;
   case __IC_SET_STATIC_DATA:
-    break; // TODO
+    // Will be filled in later
+    break;
   }
   // Call the Kool-Aid man because Oh-Yeah,Trump gonna be president hopefully
   if (old_fail_addr && old_pass_addr && !IsBranchableInst(rpn)) {
@@ -4216,6 +4217,13 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
       if (code_off % 8) // Align to 8
         code_off += 8 - code_off % 8;
       cctrl->statics_label->addr = code_off + bin;
+      for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+           r = r->base.next) {
+        if (r->type == __IC_SET_STATIC_DATA) {
+          memcpy(cctrl->statics_label->addr + r->code_misc->integer,
+                 r->code_misc->str, r->code_misc->str_len);
+        }
+      }
       if (statics_sz)
         code_off += statics_sz + 8;
       if (run)
