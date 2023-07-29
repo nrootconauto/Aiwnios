@@ -4,9 +4,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #if defined(_WIN32) || defined(WIN32)
+  #include <windows.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
-  #include <windows.h>
 static void MakePathSane(char *ptr) {
   char *ptr2 = ptr;
 enter:
@@ -52,14 +52,14 @@ void FileWrite(char *fn, char *data, int64_t sz) {
 }
 char *FileRead(char *fn, int64_t *sz) {
   int64_t s, e;
-  FILE *f = fopen(fn, "rb");
-  char *ret;
+  FILE   *f = fopen(fn, "rb");
+  char   *ret;
   if (!f)
     return NULL;
   fseek(f, 0, SEEK_END);
   e = ftell(f);
   fseek(f, 0, SEEK_SET);
-  s = e - ftell(f);
+  s   = e - ftell(f);
   ret = A_MALLOC(s + 1, NULL);
   fread(ret, 1, s, f);
   ret[s] = 0;
@@ -72,7 +72,7 @@ char *FileRead(char *fn, int64_t *sz) {
 // From 3Days(also by nroot)
 __thread char thrd_pwd[1024];
 __thread char thrd_drv;
-void VFsThrdInit() {
+void          VFsThrdInit() {
   strcpy(thrd_pwd, "/");
   thrd_drv = 'T';
 }
@@ -98,9 +98,9 @@ int VFsCd(char *to, int make) {
   return 0;
 }
 static void DelDir(char *p) {
-  DIR *d = opendir(p);
+  DIR           *d = opendir(p);
   struct dirent *d2;
-  char od[2048];
+  char           od[2048];
   while (d2 = readdir(d)) {
     if (!strcmp(".", d2->d_name) || !strcmp("..", d2->d_name))
       continue;
@@ -134,11 +134,11 @@ int64_t VFsDel(char *p) {
 }
 
 static char *mount_points['z' - 'a' + 1];
-char *__VFsFileNameAbs(char *name) {
+char        *__VFsFileNameAbs(char *name) {
   char computed[1024];
   strcpy(computed, mount_points[toupper(thrd_drv) - 'A']);
   computed[strlen(computed) + 1] = 0;
-  computed[strlen(computed)] = '/';
+  computed[strlen(computed)]     = '/';
   strcat(computed, thrd_pwd);
   computed[strlen(computed) + 1] = 0;
   if (!name)
@@ -153,12 +153,12 @@ char *__VFsFileNameAbs(char *name) {
 static int64_t FILETIME2Unix(FILETIME *t) {
   // https://www.frenk.com/2009/12/convert-filetime-to-unix-timestamp/
   int64_t time = t->dwLowDateTime | ((int64_t)t->dwHighDateTime << 32), adj;
-  adj = 10000 * (int64_t)11644473600000ll;
+  adj          = 10000 * (int64_t)11644473600000ll;
   time -= adj;
   return time / 10000000ll;
 }
 int64_t VFsUnixTime(char *name) {
-  char *fn = __VFsFileNameAbs(name);
+  char    *fn = __VFsFileNameAbs(name);
   FILETIME t;
   if (!fn)
     return 0;
@@ -173,7 +173,7 @@ int64_t VFsUnixTime(char *name) {
 }
 
 int64_t VFsFSize(char *name) {
-  char *fn = __VFsFileNameAbs(name), *delim;
+  char   *fn = __VFsFileNameAbs(name), *delim;
   int64_t s64;
   int32_t h32;
   if (!fn)
@@ -184,15 +184,15 @@ int64_t VFsFSize(char *name) {
   }
   if (__FIsDir(fn)) {
     WIN32_FIND_DATAA data;
-    HANDLE dh;
-    char buffer[strlen(fn) + 4];
+    HANDLE           dh;
+    char             buffer[strlen(fn) + 4];
     strcpy(buffer, fn);
     strcat(buffer, "/*");
     MakePathSane(buffer);
     while (delim = strchr(buffer, '/'))
       *delim = '\\';
     s64 = 0;
-    dh = FindFirstFileA(buffer, &data);
+    dh  = FindFirstFileA(buffer, &data);
     while (FindNextFileA(dh, &data))
       s64++;
     A_FREE(fn);
@@ -203,7 +203,7 @@ int64_t VFsFSize(char *name) {
   }
   HANDLE fh = CreateFileA(fn, GENERIC_READ, 0, NULL, OPEN_EXISTING,
                           FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  s64 = GetFileSize(fh, &h32);
+  s64       = GetFileSize(fh, &h32);
   s64 |= (int64_t)h32 << 32;
   A_FREE(fn);
   CloseHandle(fh);
@@ -222,15 +222,15 @@ char **VFsDir(char *name) {
   if (sz) {
     ret = A_CALLOC((sz + 1) * 8, NULL);
     WIN32_FIND_DATAA data;
-    HANDLE dh;
-    char buffer[strlen(fn) + 4];
+    HANDLE           dh;
+    char             buffer[strlen(fn) + 4];
     strcpy(buffer, fn);
     strcat(buffer, "/*");
     MakePathSane(buffer);
     while (delim = strchr(buffer, '/'))
       *delim = '\\';
     int64_t s64 = 0;
-    dh = FindFirstFileA(buffer, &data);
+    dh          = FindFirstFileA(buffer, &data);
     while (FindNextFileA(dh, &data))
       ret[s64++] = A_STRDUP(data.cFileName, NULL);
     A_FREE(fn);
@@ -328,10 +328,10 @@ int64_t VFsIsDir(char *name) {
 int64_t VFsFileRead(char *name, int64_t *len) {
   if (len)
     *len = 0;
-  FILE *f;
+  FILE   *f;
   int64_t s, e;
-  void *data = NULL;
-  name = __VFsFileNameAbs(name);
+  void   *data = NULL;
+  name         = __VFsFileNameAbs(name);
   if (!name)
     return (int64_t)NULL;
   if (__FExists(name))
@@ -356,7 +356,7 @@ end:
 int VFsFileExists(char *path) {
   if (!path)
     return 0;
-  path = __VFsFileNameAbs(path);
+  path  = __VFsFileNameAbs(path);
   int e = __FExists(path);
   A_FREE(path);
   return e;
@@ -371,7 +371,7 @@ int VFsMountDrive(char let, char *path) {
   strcat(mount_points[idx], "/");
 }
 FILE *VFsFOpen(char *path, char *m) {
-  path = __VFsFileNameAbs(path);
+  path    = __VFsFileNameAbs(path);
   FILE *f = fopen(path, m);
   A_FREE(path);
   return f;
@@ -408,14 +408,14 @@ void VFsSetPwd(char *pwd) {
 
 FILE *VFsFOpenW(char *f) {
   char *path = __VFsFileNameAbs(f);
-  FILE *r = fopen(path, "wb");
+  FILE *r    = fopen(path, "wb");
   A_FREE(path);
   return r;
 }
 
 FILE *VFsFOpenR(char *f) {
   char *path = __VFsFileNameAbs(f);
-  FILE *r = fopen(path, "rb");
+  FILE *r    = fopen(path, "rb");
   A_FREE(path);
   return r;
 }
@@ -438,22 +438,22 @@ static void CopyDir(char *dst, char *src) {
     mkdir(dst, 0700);
 #endif
   }
-  char buf[1024], sbuf[1024], *s, buffer[0x10000];
+  char    buf[1024], sbuf[1024], *s, buffer[0x10000];
   int64_t root, sz, sroot, r;
   strcpy(buf, dst);
   buf[root = strlen(buf)] = delim;
-  buf[++root] = 0;
+  buf[++root]             = 0;
 
   strcpy(sbuf, src);
   sbuf[sroot = strlen(sbuf)] = delim;
-  sbuf[++sroot] = 0;
+  sbuf[++sroot]              = 0;
 
-  DIR *d = opendir(src);
+  DIR           *d = opendir(src);
   struct dirent *ent;
   while (ent = readdir(d)) {
     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
       continue;
-    buf[root] = 0;
+    buf[root]   = 0;
     sbuf[sroot] = 0;
     strcat(buf, ent->d_name);
     strcat(sbuf, ent->d_name);
@@ -476,7 +476,7 @@ static int __FIsNewer(char *fn, char *fn2) {
 #if !(defined(_WIN32) || defined(WIN32))
   struct stat s, s2;
   stat(fn, &s), stat(fn2, &s2);
-  int64_t r = mktime(localtime(&s.st_ctime)),
+  int64_t r  = mktime(localtime(&s.st_ctime)),
           r2 = mktime(localtime(&s2.st_ctime));
   if (r > r2)
     return 1;

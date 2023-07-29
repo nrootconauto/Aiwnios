@@ -7,8 +7,8 @@ void QueInit(CQue *i) {
 }
 
 void QueIns(CQue *a, CQue *to) {
-  a->next = to->next;
-  a->last = to;
+  a->next       = to->next;
+  a->last       = to;
   a->last->next = a;
   a->next->last = a;
 }
@@ -22,7 +22,7 @@ void QueRem(CQue *a) {
 
 int64_t QueCnt(CQue *head) {
   int64_t r = 0;
-  CQue *q;
+  CQue   *q;
   for (q = head->next; q != head; q = q->next)
     r++;
   return r;

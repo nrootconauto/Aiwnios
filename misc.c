@@ -2,7 +2,7 @@
 #include "aiwn.h"
 #include <ctype.h>
 uint64_t ToUpper(uint64_t ch) {
-  char arr[8];
+  char    arr[8];
   int64_t i;
   memcpy(arr, &ch, 8);
   for (i = 0; i != 8; i++)
@@ -27,8 +27,8 @@ int64_t Bsr(int64_t v) {
 #endif
 }
 char *WhichFun(char *fptr) {
-  int64_t idx, best_dist = 0x1000000, dist;
-  CHashFun *fun, *best = NULL;
+  int64_t      idx, best_dist = 0x1000000, dist;
+  CHashFun    *fun, *best     = NULL;
   CHashExport *exp;
   for (idx = 0; idx <= Fs->hash_table->mask; idx++) {
     for (fun = Fs->hash_table->body[idx]; fun; fun = fun->base.base.next) {
@@ -36,7 +36,7 @@ char *WhichFun(char *fptr) {
         if ((char *)fun->fun_ptr <= fptr) {
           dist = fptr - (char *)fun->fun_ptr;
           if (dist < best_dist) {
-            best = fun;
+            best      = fun;
             best_dist = dist;
           }
         }
@@ -46,7 +46,7 @@ char *WhichFun(char *fptr) {
         if ((char *)exp->val <= fptr) {
           dist = fptr - (char *)exp->val;
           if (dist < best_dist) {
-            best = exp;
+            best      = exp;
             best_dist = dist;
           }
         }
