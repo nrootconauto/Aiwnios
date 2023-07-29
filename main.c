@@ -9,7 +9,7 @@
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps;
-struct arg_file *arg_t_dir, *arg_bootstrap_bin;
+struct arg_file       *arg_t_dir, *arg_bootstrap_bin;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -36,9 +36,9 @@ static void PrsAddSymbolNaked(char *name, void *ptr, int64_t arity) {
 }
 static void FuzzTest1() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char    tf[TMP_MAX];
   strcpy(tf, "FUZZ1.HC");
-  char buf[TMP_MAX + 64];
+  char  buf[TMP_MAX + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintI(U8i *,I64i);\n");
   // Do complicated expr to dirty some temp registers
@@ -98,7 +98,7 @@ static void FuzzTest1() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex = LexerNew("None", buf);
+  CLexer   *lex  = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -108,15 +108,15 @@ static void FuzzTest1() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintI", &STK_PrintI, 2);
-  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun      = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop5)() = ccmp->cur_fun->fun_ptr;
   FFI_CALL_TOS_0(poop5);
 }
 static void FuzzTest2() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char    tf[TMP_MAX];
   strcpy(tf, "FUZZ2.HC");
-  char buf[TMP_MAX + 64];
+  char  buf[TMP_MAX + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintF(U8i *,F64);\n");
   // Do complicated expr to dirty some temp registers
@@ -129,7 +129,7 @@ static void FuzzTest2() {
       "rb", "nb", "*pnb", "Fb", "6.",
   };
   char *bopers[] = {"+", "-", "*", "%", "/", "==", "!=", ">", "<", ">=", "<="};
-  char *assignOps[] = {"=", "+=", "-=", "*=", "%=", "/="};
+  char *assignOps[]  = {"=", "+=", "-=", "*=", "%=", "/="};
   char *assignUOps[] = {"++", "--"};
   fprintf(f, "U0 Fuzz() {\n");
   fprintf(f, "    F64 ra,rb,na,nb,*pna,*pnb;\n");
@@ -167,7 +167,7 @@ static void FuzzTest2() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex = LexerNew("None", buf);
+  CLexer   *lex  = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -177,15 +177,15 @@ static void FuzzTest2() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintF", &STK_PrintF, 2);
-  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun      = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poopf)() = ccmp->cur_fun->fun_ptr;
   FFI_CALL_TOS_0(poopf);
 }
 static void FuzzTest3() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char    tf[TMP_MAX];
   strcpy(tf, "FUZZ3.HC");
-  char buf[TMP_MAX + 64];
+  char  buf[TMP_MAX + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintPtr(U8i *,I64i);\n");
   // Do complicated expr to dirty some temp registers
@@ -198,8 +198,8 @@ static void FuzzTest3() {
   char *operandsB[] = {
       "rb", "nb", "*pnb", "Fb", "2",
   };
-  char *bopers[] = {"+", "-"};
-  char *assignOps[] = {"=", "+=", "-="};
+  char *bopers[]     = {"+", "-"};
+  char *assignOps[]  = {"=", "+=", "-="};
   char *assignUOps[] = {"++", "--"};
   fprintf(f, "U0 Fuzz() {\n");
   fprintf(f, "    I32i *ra,*na,**pna;\n");
@@ -244,7 +244,7 @@ static void FuzzTest3() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex = LexerNew("None", buf);
+  CLexer   *lex  = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -254,7 +254,7 @@ static void FuzzTest3() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintPtr", &STK_PrintPtr, 2);
-  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun         = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop_ptr)() = ccmp->cur_fun->fun_ptr;
   FFI_CALL_TOS_0(poop_ptr);
 }
@@ -297,8 +297,8 @@ static int64_t __GetTicksHP() {
   return GetTicksHP(); // From multic.c
 #else
   struct timespec ts;
-  static int64_t initial = 0;
-  int64_t theTick = 0U;
+  static int64_t  initial = 0;
+  int64_t         theTick = 0U;
   if (!initial) {
     clock_gettime(CLOCK_REALTIME, &ts);
     theTick = ts.tv_nsec / 1000;
@@ -322,7 +322,7 @@ void *GetHolyFs() {
   return HolyFs;
 }
 static __thread void *HolyGs;
-void *GetHolyGs() {
+void                 *GetHolyGs() {
   return HolyGs;
 }
 void SetHolyGs(void *ptr) {
@@ -1093,7 +1093,7 @@ static int64_t STK_NetAddrDel(int64_t *stk) {
 
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
-  CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
+  CLexer   *lex  = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
   CodeCtrlPush(ccmp);
@@ -1316,9 +1316,9 @@ void BootAiwnios(char *bootstrap_text) {
   }
 }
 static const char *t_drive;
-static void Boot() {
+static void        Boot() {
   int64_t len;
-  char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
+  char    bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");
   Fs = calloc(sizeof(CTask), 1);
@@ -1356,7 +1356,7 @@ static void Boot() {
     Load(bin);
 }
 static int64_t quit = 0;
-static void ExitAiwnios() {
+static void    ExitAiwnios() {
   quit = 1;
   SDL_Event q;
   memset(&q, 0, sizeof q);
@@ -1372,23 +1372,23 @@ static void ExitAiwnios() {
 int main(int argc, char **argv) {
   t_drive = NULL;
   int64_t errors, idx;
-  void *argtable[] = {
+  void   *argtable[] = {
       arg_help = arg_lit0("h", "help", "Show the help message"),
       arg_overwrite =
           arg_lit0("o", "overwrite",
-                   "Overwrite the T directory with the installed T template."),
+                     "Overwrite the T directory with the installed T template."),
       arg_t_dir = arg_file0("t", NULL, "Directory",
-                            "Specify the boot drive(dft is current dir)."),
+                              "Specify the boot drive(dft is current dir)."),
       arg_bootstrap_bin =
           arg_lit0("b", "bootstrap",
-                   "Build a new binary with the \"slim\" compiler of aiwnios."),
+                     "Build a new binary with the \"slim\" compiler of aiwnios."),
       arg_asan_enable =
           arg_lit0("a", "address-sanitize", "Enable bounds checking."),
       arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
-                                  "Create a new boot directory(backs up old "
-                                  "boot directory if present)."),
-      sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
-      _arg_end = arg_end(20),
+                                    "Create a new boot directory(backs up old "
+                                      "boot directory if present)."),
+      sixty_fps        = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+      _arg_end         = arg_end(20),
   };
   errors = arg_parse(argc, argv, argtable);
   if (errors || arg_help->count) {

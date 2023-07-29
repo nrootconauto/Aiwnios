@@ -12,11 +12,11 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#define ERR 0x7fFFffFFffFFffFF
-#define INVALID_PTR ERR
-#define A_FREE __AIWNIOS_Free
-#define A_MALLOC(sz, task) __AIWNIOS_MAlloc(sz, task)
-#define A_CALLOC(sz, task) __AIWNIOS_CAlloc(sz, task)
+#define ERR                 0x7fFFffFFffFFffFF
+#define INVALID_PTR         ERR
+#define A_FREE              __AIWNIOS_Free
+#define A_MALLOC(sz, task)  __AIWNIOS_MAlloc(sz, task)
+#define A_CALLOC(sz, task)  __AIWNIOS_CAlloc(sz, task)
 #define A_STRDUP(str, task) __AIWNIOS_StrDup(str, task)
 struct CHash;
 struct CHashTable;
@@ -24,39 +24,39 @@ struct CHashFun;
 struct CTask;
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t);
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
-void __AIWNIOS_Free(void *ptr);
+void  __AIWNIOS_Free(void *ptr);
 char *__AIWNIOS_StrDup(char *str, void *t);
-#define ARM_ERR -1
+#define ARM_ERR         -1
 #define ARM_ERR_INV_OFF -2
 #define ARM_ERR_INV_REG -3
 
-#define LSL 0
-#define LSR 1
-#define ASR 2
-#define ROR 3
-#define MSL 4
+#define LSL  0
+#define LSR  1
+#define ASR  2
+#define ROR  3
+#define MSL  4
 #define NONE 5
 
-#define EXT_NONE 0xffff
-#define UXTB_32 0b000
-#define UXTH_32 0b001
+#define EXT_NONE   0xffff
+#define UXTB_32    0b000
+#define UXTH_32    0b001
 #define EXT_LSL_32 0b010
-#define UXTW_32 0b010
-#define UXTX_32 0b011
-#define SXTB_32 0b100
-#define SXTH_32 0b101
-#define SXTW_32 0b110
-#define SXTX_32 0b111
+#define UXTW_32    0b010
+#define UXTX_32    0b011
+#define SXTB_32    0b100
+#define SXTH_32    0b101
+#define SXTW_32    0b110
+#define SXTX_32    0b111
 
-#define UXTB_64 0b000
-#define UXTH_64 0b001
+#define UXTB_64    0b000
+#define UXTH_64    0b001
 #define EXT_LSL_64 0b010
-#define UXTW_64 0b010
-#define UXTX_64 0b011
-#define SXTB_64 0b100
-#define SXTH_64 0b101
-#define SXTW_64 0b110
-#define SXTX_64 0b111
+#define UXTW_64    0b010
+#define UXTX_64    0b011
+#define SXTB_64    0b100
+#define SXTH_64    0b101
+#define SXTW_64    0b110
+#define SXTX_64    0b111
 
 #define ARM_EQ 0x0
 #define ARM_NE 0x1
@@ -77,16 +77,16 @@ char *__AIWNIOS_StrDup(char *str, void *t);
 #define ARM_AL 0xe
 #define ARM_NV 0xf
 
-#define HTT_INVALID 0
-#define HTT_DEFINE_STR 0x1
-#define HTT_KEYWORD 0x2
-#define HTT_CLASS 0x4
-#define HTT_GLBL_VAR 0x8
-#define HTT_FUN 0x10
-#define HTF_IMPORT 0x20
-#define HTF_EXTERN 0x40
-#define HTT_IMPORT_SYS_SYM 0x80
-#define HTT_EXPORT_SYS_SYM 0x100
+#define HTT_INVALID         0
+#define HTT_DEFINE_STR      0x1
+#define HTT_KEYWORD         0x2
+#define HTT_CLASS           0x4
+#define HTT_GLBL_VAR        0x8
+#define HTT_FUN             0x10
+#define HTF_IMPORT          0x20
+#define HTF_EXTERN          0x40
+#define HTT_IMPORT_SYS_SYM  0x80
+#define HTT_EXPORT_SYS_SYM  0x100
 #define HTT_IMPORT_SYS_SYM2 0x200 // See arm_loader.c
 struct CCmpCtrl;
 struct CRPN;
@@ -112,58 +112,58 @@ struct CCodeMisc;
 typedef struct CQue {
   struct CQue *last, *next;
 } CQue;
-#define HClF_LOCKED 1
+#define HClF_LOCKED        1
 #define MEM_HEAP_HASH_SIZE 1024
-#define MEM_PAG_BITS (12)
-#define MEM_PAG_SIZE (1 << MEM_PAG_BITS)
+#define MEM_PAG_BITS       (12)
+#define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
 struct CHashTable;
 #include <setjmp.h>
 typedef struct CExceptPad {
   int64_t gp[30 - 18 + 1];
-  double fp[15 - 8 + 1];
+  double  fp[15 - 8 + 1];
 } CExceptPad;
 typedef struct CExcept {
-  CQue base;
+  CQue    base;
   jmp_buf ctx;
 } CExcept;
 typedef struct CTask {
-  int64_t task_signature;
-  CQue *except; // CExcept
-  int64_t except_ch;
-  int64_t catch_except;
+  int64_t            task_signature;
+  CQue              *except; // CExcept
+  int64_t            except_ch;
+  int64_t            catch_except;
   struct CHashTable *hash_table;
-  void *stack;
-  char ctx[2048];
-  jmp_buf throw_pad;
-  struct CHeapCtrl *heap;
+  void              *stack;
+  char               ctx[2048];
+  jmp_buf            throw_pad;
+  struct CHeapCtrl  *heap;
 } CTask;
 typedef struct CHeapCtrl {
-  int32_t hc_signature;
-  char is_code_heap;
-  int64_t locked_flags, alloced_u8s, used_u8s;
-  struct CTask *mem_task;
+  int32_t            hc_signature;
+  char               is_code_heap;
+  int64_t            locked_flags, alloced_u8s, used_u8s;
+  struct CTask      *mem_task;
   struct CMemUnused *malloc_free_lst, *heap_hash[MEM_HEAP_HASH_SIZE / 8 + 1];
-  CQue mem_blks;
+  CQue               mem_blks;
 } CHeapCtrl;
 typedef struct CMemBlk {
-  CQue base;
+  CQue    base;
   int64_t pags;
 } CMemBlk;
 typedef struct CMemUnused {
   // MUST BE FIRST MEMBER
   struct CMemUnused *next;
-  CHeapCtrl *hc;
-  int64_t sz, pad;
+  CHeapCtrl         *hc;
+  int64_t            sz, pad;
 } CMemUnused;
 typedef struct CHash {
   struct CHash *next;
-  char *str;
-  int32_t type, use_cnt;
+  char         *str;
+  int32_t       type, use_cnt;
 } CHash;
 typedef struct CHashTable {
   struct CHashTable *next;
-  int64_t mask, locked_flags;
-  CHash **body;
+  int64_t            mask, locked_flags;
+  CHash            **body;
 } CHashTable;
 // This represents a peice of text being lexed(it could be a file macro, or
 // such)
@@ -173,18 +173,18 @@ typedef struct CLexFile {
   // last will point to the "old" file we are in
   //
   struct CLexFile *last;
-  char *filename, *text, *dir;
-  int64_t ln, col, pos, is_file;
+  char            *filename, *text, *dir;
+  int64_t          ln, col, pos, is_file;
 } CLexFile;
 typedef struct CHashDefineStr {
   struct CHash base;
-  char *src_link;
-  char *name;
-  char *data;
+  char        *src_link;
+  char        *name;
+  char        *data;
 } CHashDefineStr;
 typedef struct CHashKeyword {
   struct CHash base;
-  int64_t tk;
+  int64_t      tk;
 } CHashKeyword;
 #define STR_LEN 144
 typedef struct CLexer {
@@ -195,16 +195,16 @@ typedef struct CLexer {
   int64_t str_len;
   union {
     int64_t integer;
-    double flt;
-    char string[STR_LEN * 6];
+    double  flt;
+    char    string[STR_LEN * 6];
   };
   //
   // Sometimes we are lexing and want to go back a charactor
   // LEXF_USE_LAST_CHAR allows us to simulate this.
   //
 #define LEXF_USE_LAST_CHAR 1
-#define LEXF_ERROR 2
-#define LEXF_NO_EXPAND 4 // Don't expand macros
+#define LEXF_ERROR         2
+#define LEXF_NO_EXPAND     4 // Don't expand macros
   int64_t flags, cur_char;
   int64_t cur_tok;
 } CLexer;
@@ -278,26 +278,26 @@ typedef enum {
 } LexTok;
 typedef struct CArrayDim {
   struct CArrayDim *next;
-  int64_t cnt, total_cnt;
+  int64_t           cnt, total_cnt;
 } CArrayDim;
 typedef struct CMemberLst {
   struct CMemberLst *next, *last;
   struct CHashClass *member_class;
-  CArrayDim dim;
-  struct CHashFun *fun_ptr;
-  char *str;
-#define MLF_STATIC 1
+  CArrayDim          dim;
+  struct CHashFun   *fun_ptr;
+  char              *str;
+#define MLF_STATIC        1
 #define MLF_DFT_AVAILABLE 2
   int64_t off, reg, use_cnt, flags;
   union {
     int64_t dft_val;
-    double dft_val_flt;
+    double  dft_val_flt;
     // USed for MLF_STATIC,this is a heap allocated "static" variable
     char *static_bytes;
   };
 } CMemberLst;
 typedef struct CHashImport {
-  CHash base;
+  CHash  base;
   char **address;
 } CHashImport;
 #define STAR_CNT 5
@@ -306,30 +306,30 @@ typedef struct CHashClass {
   char *src_link;
   char *import_name;
 #define REG_ALLOC -1
-#define REG_NONE -2
+#define REG_NONE  -2
 #define REG_MAYBE -3
   // TODO make a mechanism for assigning hardware regs
 
-#define RT_U0 -1
+#define RT_U0    -1
 #define RT_UNDEF 0
-#define RT_I8i 1
-#define RT_U8i 2
-#define RT_I16i 3
-#define RT_U16i 4
-#define RT_I32i 5
-#define RT_U32i 6
-#define RT_I64i 7
-#define RT_U64i 8
-#define RT_PTR 9
-#define RT_F64 10
-#define RT_FUNC 11
+#define RT_I8i   1
+#define RT_U8i   2
+#define RT_I16i  3
+#define RT_U16i  4
+#define RT_I32i  5
+#define RT_U32i  6
+#define RT_I64i  7
+#define RT_U64i  8
+#define RT_PTR   9
+#define RT_F64   10
+#define RT_FUNC  11
 
-#define CLSF_VARGS 1
+#define CLSF_VARGS  1
 #define CLSF_FUNPTR 2
 
-  int64_t member_cnt, ptr_star_cnt, raw_type, flags, use_cnt, sz;
+  int64_t            member_cnt, ptr_star_cnt, raw_type, flags, use_cnt, sz;
   struct CHashClass *base_class;
-  CMemberLst *members_lst;
+  CMemberLst        *members_lst;
   struct CHashClass *fwd_class;
 } CHashClass;
 
@@ -339,34 +339,34 @@ typedef struct CHashExport {
 } CHashExport;
 
 typedef struct CHashFun {
-  CHashClass base;
-  char *import_name;
+  CHashClass  base;
+  char       *import_name;
   CHashClass *return_class;
-  int64_t argc;
-  void *fun_ptr;
+  int64_t     argc;
+  void       *fun_ptr;
 } CHashFun;
 typedef struct CHashGlblVar {
-  CHash base;
-  char *src_link, *import_name;
+  CHash       base;
+  char       *src_link, *import_name;
   CHashClass *var_class;
-  void *data_addr;
-  CArrayDim dim;
-  CHashFun *fun_ptr;
+  void       *data_addr;
+  CArrayDim   dim;
+  CHashFun   *fun_ptr;
 } CHashGlblVar;
 typedef struct CCodeCtrl {
   struct CCodeCtrl *next;
-  CQue *ir_code;
-  CQue *code_misc;
+  CQue             *ir_code;
+  CQue             *code_misc;
   struct CCodeMisc *break_to;
-  int64_t final_pass; // See OptPassFinal
-  int64_t min_ln;
-  char **dbg_info;
-  int64_t statics_offset;
-  CHeapCtrl *hc;
+  int64_t           final_pass; // See OptPassFinal
+  int64_t           min_ln;
+  char            **dbg_info;
+  int64_t           statics_offset;
+  CHeapCtrl        *hc;
 } CCodeCtrl;
 typedef struct CCodeMiscRef {
   struct CCodeMiscRef *next;
-  int32_t *add_to, offset;
+  int32_t             *add_to, offset;
   // For arm
   int32_t (*patch_cond_br)(int64_t, int64_t);
   int32_t (*patch_uncond_br)(int64_t);
@@ -375,37 +375,37 @@ typedef struct CCodeMiscRef {
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;
-#define CMT_LABEL 1
-#define CMT_JMP_TAB 2
-#define CMT_STRING 3
+#define CMT_LABEL       1
+#define CMT_JMP_TAB     2
+#define CMT_STRING      3
 #define CMT_FLOAT_CONST 4
-#define CMT_INT_CONST 5 // ARM has constraints on literals
-#define CMT_RELOC_U64 6
+#define CMT_INT_CONST   5 // ARM has constraints on literals
+#define CMT_RELOC_U64   6
 #define CMT_STATIC_DATA                                                        \
   7 // integer is the offset(in the statics data) str/str_len is the data
 #define CMT_SHORT_ADDR 8
-#define CMF_DEFINED 1 // Used with Labels to tell if already defined
+#define CMF_DEFINED    1 // Used with Labels to tell if already defined
 #define CMF_JMP_TABLE_TAINTED                                                  \
   2 // Used with jump tables to tell if we tained the floating point registers
   int32_t type, flags;
   // These are used for jump tables
   int64_t lo, hi;
-  char *str;
-  void *addr;
+  char   *str;
+  void   *addr;
   union {
     struct CCodeMisc *dft_lab;
-    int64_t str_len;
+    int64_t           str_len;
   };
   void **patch_addr;
   union {
     struct CCodeMisc **jmp_tab;
-    double flt;
-    int64_t integer;
+    double             flt;
+    int64_t            integer;
   };
   int32_t aot_before_hint; // See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
   // The bit is set if the floating point register is alive at this inst
-  int64_t freg_alive_bmp;
+  int64_t       freg_alive_bmp;
   CCodeMiscRef *refs;
 } CCodeMisc;
 typedef struct CCmpCtrl {
@@ -414,35 +414,35 @@ typedef struct CCmpCtrl {
 // See PrsSwitch,this will make break statements turn into IC_SUB_RET
 //
 #define CCF_IN_SUBSWITCH_START_BLOCK 0x1
-#define CCF_STRINGS_ON_HEAP 0x2
-#define CCF_AOT_COMPILE 0x4
-#define CCF_ICMOV_NO_USE_RAX 0x8
-  int64_t flags;
-  CHashFun *cur_fun;
+#define CCF_STRINGS_ON_HEAP          0x2
+#define CCF_AOT_COMPILE              0x4
+#define CCF_ICMOV_NO_USE_RAX         0x8
+  int64_t    flags;
+  CHashFun  *cur_fun;
   CCodeCtrl *code_ctrl;
-  int64_t backend_user_data0;
-  int64_t backend_user_data1;
-  int64_t backend_user_data2;
-  int64_t backend_user_data3;
-  int64_t backend_user_data4;
-  int64_t backend_user_data5;
-  int64_t backend_user_data6;
-  int64_t backend_user_data7;
-  int64_t backend_user_data8;
-  int64_t backend_user_data9;
-  int64_t backend_user_data10;
+  int64_t    backend_user_data0;
+  int64_t    backend_user_data1;
+  int64_t    backend_user_data2;
+  int64_t    backend_user_data3;
+  int64_t    backend_user_data4;
+  int64_t    backend_user_data5;
+  int64_t    backend_user_data6;
+  int64_t    backend_user_data7;
+  int64_t    backend_user_data8;
+  int64_t    backend_user_data9;
+  int64_t    backend_user_data10;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
   CHeapCtrl *hc;
 } CCmpCtrl;
-#define PRSF_CLASS 1
-#define PRSF_UNION 2
+#define PRSF_CLASS    1
+#define PRSF_UNION    2
 #define PRSF_FUN_ARGS 4
-#define PRSF_EXTERN 8
-#define PRSF__EXTERN 0x10
-#define PRSF_IMPORT 0x20
-#define PRSF__IMPORT 0x40
-#define PRSF_STATIC 0x80
+#define PRSF_EXTERN   8
+#define PRSF__EXTERN  0x10
+#define PRSF_IMPORT   0x20
+#define PRSF__IMPORT  0x40
+#define PRSF_STATIC   0x80
 enum {
   IC_GOTO,
   IC_GOTO_IF,
@@ -561,14 +561,14 @@ enum {
 };
 typedef struct CICArg {
   // Feel free to define more in backend
-#define MD_NULL -1
-#define MD_REG 1       // raw_type==RT_F64 for flt register
-#define MD_FRAME 2     // ditto
-#define MD_PTR 3       // ditto
+#define MD_NULL      -1
+#define MD_REG       1 // raw_type==RT_F64 for flt register
+#define MD_FRAME     2 // ditto
+#define MD_PTR       3 // ditto
 #define MD_INDIR_REG 4 // ditto
-#define MD_I64 5
-#define MD_F64 6
-#define MD_STATIC 7 // off points to start of function's code
+#define MD_I64       5
+#define MD_F64       6
+#define MD_STATIC    7 // off points to start of function's code
 //
 // Here's the deal. Arm let's you shift like this (ldr dst,[a,b,lsl 3])
 //
@@ -581,10 +581,10 @@ typedef struct CICArg {
 #define __MD_X86_64_SIB 9
 // Like X86_64 but uses LEA
 #define __MD_X86_64_LEA_SIB 10
-#define MD_CODE_MISC_PTR 11
+#define MD_CODE_MISC_PTR    11
   int32_t mode;
   int32_t raw_type;
-  int8_t reg, reg2, fallback_reg;
+  int8_t  reg, reg2, fallback_reg;
   // True on enter of things that want to set the flags
   // True/False if the result of the thing set the flags or not
   char set_flags;
@@ -592,156 +592,156 @@ typedef struct CICArg {
   char keep_in_tmp;
   union {
     CCodeMisc *code_misc;
-    int64_t integer;
-    int64_t off;
-    double flt;
+    int64_t    integer;
+    int64_t    off;
+    double     flt;
   };
   int8_t __SIB_scale, pop_n_tmp_regs;
-  CRPN *__sib_base_rpn, *__sib_idx_rpn;
+  CRPN  *__sib_base_rpn, *__sib_idx_rpn;
 } CICArg;
 enum {
-  ICF_SPILLED = 1, // See PushSpilledTmp in XXX_backend.c
-  ICF_DEAD_CODE = 2,
+  ICF_SPILLED     = 1, // See PushSpilledTmp in XXX_backend.c
+  ICF_DEAD_CODE   = 2,
   ICF_TMP_NO_UNDO = 4,
   ICF_PRECOMPUTED =
-      8,        // Doesnt re-compile a node,useful for putting in "dummy" values
-  ICF_SIB = 16, // Has 2 registers (base and idnex)
-  ICF_INDIR_REG = 32,    // Has 1 registers (idnex)
+      8, // Doesnt re-compile a node,useful for putting in "dummy" values
+  ICF_SIB          = 16, // Has 2 registers (base and idnex)
+  ICF_INDIR_REG    = 32, // Has 1 registers (idnex)
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
 };
 struct CRPN {
   CQue base;
 
-  int16_t type, length, raw_type, flags, ic_line;
+  int16_t     type, length, raw_type, flags, ic_line;
   CHashClass *ic_class;
-  CHashFun *ic_fun;
-  CArrayDim *ic_dim;
+  CHashFun   *ic_fun;
+  CArrayDim  *ic_dim;
   union {
-    double flt;
-    char *raw_bytes;
-    int64_t integer;
-    char *string;
-    CMemberLst *local_mem;
+    double        flt;
+    char         *raw_bytes;
+    int64_t       integer;
+    char         *string;
+    CMemberLst   *local_mem;
     CHashGlblVar *global_var;
-    CCodeMisc *code_misc;
-    CCodeMisc *break_to;
+    CCodeMisc    *code_misc;
+    CCodeMisc    *break_to;
   };
   CCodeMisc *code_misc2, *code_misc3, *code_misc4;
-  CICArg res;
-  CRPN *tree1, *tree2, *ic_fwd;
+  CICArg     res;
+  CRPN      *tree1, *tree2, *ic_fwd;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
 extern char *Compile(struct CCmpCtrl *cctrl, int64_t *sz, char **dbg_info);
 extern __thread struct CTask *Fs;
-void AIWNIOS_throw(uint64_t code);
+void                          AIWNIOS_throw(uint64_t code);
 #define throw AIWNIOS_throw
-void QueDel(CQue *f);
+void    QueDel(CQue *f);
 int64_t QueCnt(CQue *head);
-void QueRem(CQue *a);
-void QueIns(CQue *a, CQue *to);
-void QueInit(CQue *i);
+void    QueRem(CQue *a);
+void    QueIns(CQue *a, CQue *to);
+void    QueInit(CQue *i);
 
-void HashTableDel(CHashTable *table);
-int64_t HashRemDel(CHash *h, CHashTable *table, int64_t inst);
-void HashAdd(CHash *h, CHashTable *table);
-CHash **HashBucketFind(char *str, CHashTable *table);
-CHash *HashSingleTableFind(char *str, CHashTable *table, int64_t type,
-                           int64_t inst);
-CHash *HashFind(char *str, CHashTable *table, int64_t type, int64_t inst);
+void        HashTableDel(CHashTable *table);
+int64_t     HashRemDel(CHash *h, CHashTable *table, int64_t inst);
+void        HashAdd(CHash *h, CHashTable *table);
+CHash     **HashBucketFind(char *str, CHashTable *table);
+CHash      *HashSingleTableFind(char *str, CHashTable *table, int64_t type,
+                                int64_t inst);
+CHash      *HashFind(char *str, CHashTable *table, int64_t type, int64_t inst);
 CHashTable *HashTableNew(int64_t sz, void *task);
-void HashDel(CHash *h);
-int64_t HashStr(char *str);
+void        HashDel(CHash *h);
+int64_t     HashStr(char *str);
 
-void PrsBindCSymbol(char *name, void *ptr, int64_t arity);
-void ICFree(CRPN *ic);
+void        PrsBindCSymbol(char *name, void *ptr, int64_t arity);
+void        ICFree(CRPN *ic);
 CHashClass *PrsClassNew();
-char *PrsArray(CCmpCtrl *ccmp, CHashClass *base, CArrayDim *dim,
-               char *write_to);
-int64_t PrsFunArgs(CCmpCtrl *ccmp, CHashFun *fun);
-int64_t PrsArrayDim(CCmpCtrl *ccmp, CArrayDim *to);
-double PrsF64(CCmpCtrl *ccmp);
-int64_t PrsI64(CCmpCtrl *ccmp);
-int64_t _PrsStmt(CCmpCtrl *ccmp);
-int64_t ParseWarn(CCmpCtrl *ctrl, char *fmt, ...);
-int64_t ParseExpr(CCmpCtrl *ccmp, int64_t flags);
-int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn);
-void SysSymImportsResolve(char *sym, int64_t flags);
-CRPN *ParserDumpIR(CRPN *rpn, int64_t indent);
-CRPN *ICArgN(CRPN *rpn, int64_t n);
-CRPN *ICFwd(CRPN *rpn);
-CCmpCtrl *CmpCtrlNew(CLexer *lex);
+char       *PrsArray(CCmpCtrl *ccmp, CHashClass *base, CArrayDim *dim,
+                     char *write_to);
+int64_t     PrsFunArgs(CCmpCtrl *ccmp, CHashFun *fun);
+int64_t     PrsArrayDim(CCmpCtrl *ccmp, CArrayDim *to);
+double      PrsF64(CCmpCtrl *ccmp);
+int64_t     PrsI64(CCmpCtrl *ccmp);
+int64_t     _PrsStmt(CCmpCtrl *ccmp);
+int64_t     ParseWarn(CCmpCtrl *ctrl, char *fmt, ...);
+int64_t     ParseExpr(CCmpCtrl *ccmp, int64_t flags);
+int64_t     AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn);
+void        SysSymImportsResolve(char *sym, int64_t flags);
+CRPN       *ParserDumpIR(CRPN *rpn, int64_t indent);
+CRPN       *ICArgN(CRPN *rpn, int64_t n);
+CRPN       *ICFwd(CRPN *rpn);
+CCmpCtrl   *CmpCtrlNew(CLexer *lex);
 CMemberLst *MemberFind(char *needle, CHashClass *cls);
 CMemberLst *MemberFind(char *needle, CHashClass *cls);
 CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t flags);
 CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t _flags);
-int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
-                int64_t *is_func_decl, int64_t flags, char *import_name);
-int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
-                int64_t *is_func_decl, int64_t flags, char *import_name);
-int64_t PrsTry(CCmpCtrl *cctrl);
-int64_t PrsTry(CCmpCtrl *cctrl);
-int64_t ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
-int64_t ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
-int64_t PrsReturn(CCmpCtrl *ccmp);
-int64_t PrsReturn(CCmpCtrl *ccmp);
-int64_t PrsGoto(CCmpCtrl *ccmp);
-int64_t PrsGoto(CCmpCtrl *ccmp);
-int64_t PrsLabel(CCmpCtrl *ccmp);
-int64_t PrsScope(CCmpCtrl *ccmp);
-int64_t PrsScope(CCmpCtrl *ccmp);
-int64_t PrsSwitch(CCmpCtrl *ccmp);
-int64_t PrsSwitch(CCmpCtrl *cctrl);
-int64_t PrsSwitch(CCmpCtrl *cctrl);
-int64_t PrsFor(CCmpCtrl *ccmp);
-int64_t PrsFor(CCmpCtrl *ccmp);
-int64_t PrsWhile(CCmpCtrl *ccmp);
-int64_t PrsWhile(CCmpCtrl *ccmp);
-int64_t PrsDo(CCmpCtrl *ccmp);
-int64_t PrsDo(CCmpCtrl *ccmp);
-int64_t PrsIf(CCmpCtrl *ccmp);
-int64_t PrsIf(CCmpCtrl *ccmp);
-int64_t PrsStmt(CCmpCtrl *ccmp);
-int64_t PrsStmt(CCmpCtrl *ccmp);
-int64_t PrsKw(CCmpCtrl *ccmp, int64_t);
-int64_t PrsKw(CCmpCtrl *ccmp, int64_t kwt);
-CCodeMisc *CodeMiscNew(CCmpCtrl *ccmp, int64_t type);
+int64_t     PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
+                    int64_t *is_func_decl, int64_t flags, char *import_name);
+int64_t     PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
+                    int64_t *is_func_decl, int64_t flags, char *import_name);
+int64_t     PrsTry(CCmpCtrl *cctrl);
+int64_t     PrsTry(CCmpCtrl *cctrl);
+int64_t     ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
+int64_t     ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
+int64_t     PrsReturn(CCmpCtrl *ccmp);
+int64_t     PrsReturn(CCmpCtrl *ccmp);
+int64_t     PrsGoto(CCmpCtrl *ccmp);
+int64_t     PrsGoto(CCmpCtrl *ccmp);
+int64_t     PrsLabel(CCmpCtrl *ccmp);
+int64_t     PrsScope(CCmpCtrl *ccmp);
+int64_t     PrsScope(CCmpCtrl *ccmp);
+int64_t     PrsSwitch(CCmpCtrl *ccmp);
+int64_t     PrsSwitch(CCmpCtrl *cctrl);
+int64_t     PrsSwitch(CCmpCtrl *cctrl);
+int64_t     PrsFor(CCmpCtrl *ccmp);
+int64_t     PrsFor(CCmpCtrl *ccmp);
+int64_t     PrsWhile(CCmpCtrl *ccmp);
+int64_t     PrsWhile(CCmpCtrl *ccmp);
+int64_t     PrsDo(CCmpCtrl *ccmp);
+int64_t     PrsDo(CCmpCtrl *ccmp);
+int64_t     PrsIf(CCmpCtrl *ccmp);
+int64_t     PrsIf(CCmpCtrl *ccmp);
+int64_t     PrsStmt(CCmpCtrl *ccmp);
+int64_t     PrsStmt(CCmpCtrl *ccmp);
+int64_t     PrsKw(CCmpCtrl *ccmp, int64_t);
+int64_t     PrsKw(CCmpCtrl *ccmp, int64_t kwt);
+CCodeMisc  *CodeMiscNew(CCmpCtrl *ccmp, int64_t type);
 CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
                     CHashFun **fun, CArrayDim *dim);
 CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
                     CHashFun **fun, CArrayDim *dim);
-void PrsTests();
+void        PrsTests();
 
-void TaskInit(CTask *task, void *addr, int64_t stk_sz);
-struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct, CTask *task,
-                               int64_t is_code_heap);
-void TaskExit();
+void                          TaskInit(CTask *task, void *addr, int64_t stk_sz);
+struct CHeapCtrl             *HeapCtrlInit(struct CHeapCtrl *ct, CTask *task,
+                                           int64_t is_code_heap);
+void                          TaskExit();
 extern __thread struct CTask *HolyFs;
 extern __thread struct CTask *Fs;
 
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info);
 
-void AIWNIOS_ExitCatch();
+void     AIWNIOS_ExitCatch();
 jmp_buf *__throw(uint64_t code);
-void AIWNIOS_throw(uint64_t code);
-int64_t AIWNIOS_enter_try();
+void     AIWNIOS_throw(uint64_t code);
+int64_t  AIWNIOS_enter_try();
 jmp_buf *__enter_try();
 
-void LexTests();
-void LexerDump(CLexer *lex);
+void    LexTests();
+void    LexerDump(CLexer *lex);
 CLexer *LexerNew(char *filename, char *text);
 int64_t Lex(CLexer *lex);
 int64_t LexAdvChr(CLexer *lex);
-char *LexSrcLink(CLexer *lex, void *task);
+char   *LexSrcLink(CLexer *lex, void *task);
 
-char *__AIWNIOS_StrDup(char *str, void *t);
-void HeapCtrlDel(CHeapCtrl *ct);
+char      *__AIWNIOS_StrDup(char *str, void *t);
+void       HeapCtrlDel(CHeapCtrl *ct);
 CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t code_heap);
-void *__AIWNIOS_CAlloc(int64_t cnt, void *t);
-int64_t MSize(void *ptr);
-void __AIWNIOS_Free(void *ptr);
-void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
+void      *__AIWNIOS_CAlloc(int64_t cnt, void *t);
+int64_t    MSize(void *ptr);
+void       __AIWNIOS_Free(void *ptr);
+void      *__AIWNIOS_MAlloc(int64_t cnt, void *t);
 
 extern int64_t Misc_Bt(void *ptr, int64_t);
 extern int64_t Misc_Btc(void *ptr, int64_t);
@@ -754,10 +754,10 @@ extern int64_t Misc_LBts(void *ptr, int64_t);
 extern int64_t Bsr(int64_t v);
 extern int64_t Bsf(int64_t v);
 
-void *Misc_Caller(int64_t c);
+void    *Misc_Caller(int64_t c);
 uint64_t ToUpper(uint64_t ch);
-char *WhichFun(char *fptr);
-int64_t LBtc(char *, int64_t);
+char    *WhichFun(char *fptr);
+int64_t  LBtc(char *, int64_t);
 
 //
 // These are used by optpass
@@ -772,8 +772,8 @@ enum {
   RBP = 5,
   RSI = 6,
   RDI = 7,
-  R8 = 8,
-  R9 = 9,
+  R8  = 8,
+  R9  = 9,
   R10 = 10,
   R11 = 11,
   R12 = 12,
@@ -786,38 +786,38 @@ enum {
   #define AIWNIOS_IREG_CNT                                                     \
     (15 - AIWNIOS_IREG_START + 1 - 1 +                                         \
      2) //-1 for R13 as it is wierd,+2 for RSI/RDI
-  #define AIWNIOS_REG_FP RBP
-  #define AIWNIOS_REG_SP RSP
-  #define AIWNIOS_TMP_IREG_POOP R8
+  #define AIWNIOS_REG_FP         RBP
+  #define AIWNIOS_REG_SP         RSP
+  #define AIWNIOS_TMP_IREG_POOP  R8
   #define AIWNIOS_TMP_IREG_POOP2 RCX
   #define AIWNIOS_TMP_IREG_START 0
-  #define AIWNIOS_TMP_IREG_CNT 2
-  #define AIWNIOS_FREG_START 6
-  #define AIWNIOS_FREG_CNT (15 - 6 + 1)
+  #define AIWNIOS_TMP_IREG_CNT   2
+  #define AIWNIOS_FREG_START     6
+  #define AIWNIOS_FREG_CNT       (15 - 6 + 1)
   #define AIWNIOS_TMP_FREG_START 3
-  #define AIWNIOS_TMP_FREG_CNT (5 - 3 + 1)
+  #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
 
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))
-  #define AIWNIOS_IREG_START 19
-  #define AIWNIOS_IREG_CNT (28 - 19 + 1)
-  #define AIWNIOS_REG_FP ARM_REG_FP
-  #define AIWNIOS_REG_SP ARM_REG_SP
-  #define AIWNIOS_TMP_IREG_POOP 18  // Platform register,I use it as a poo poo
+  #define AIWNIOS_IREG_START     19
+  #define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+  #define AIWNIOS_REG_FP         ARM_REG_FP
+  #define AIWNIOS_REG_SP         ARM_REG_SP
+  #define AIWNIOS_TMP_IREG_POOP  18 // Platform register,I use it as a poo poo
   #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
   #define AIWNIOS_TMP_IREG_START 8
-  #define AIWNIOS_TMP_IREG_CNT (16 - 8 + 1)
-  #define AIWNIOS_FREG_START 8
-  #define AIWNIOS_FREG_CNT (15 - 8 + 1)
+  #define AIWNIOS_TMP_IREG_CNT   (16 - 8 + 1)
+  #define AIWNIOS_FREG_START     8
+  #define AIWNIOS_FREG_CNT       (15 - 8 + 1)
   #define AIWNIOS_TMP_FREG_START 16
-  #define AIWNIOS_TMP_FREG_CNT (31 - 16 + 1)
+  #define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
 #endif
 
 #if defined(_WIN32) || defined(WIN32)
-  #define AIWNIOS_OSTREAM stdout
+  #define AIWNIOS_OSTREAM      stdout
   #define AIWNIOS_TEMPLATE_DIR "TODO"
 #else
-  #define AIWNIOS_OSTREAM stderr
+  #define AIWNIOS_OSTREAM      stderr
   #define AIWNIOS_TEMPLATE_DIR "/usr/share/aiwnios"
 #endif
 
@@ -831,144 +831,144 @@ enum {
     AIWNIOS_ExitCatch();                                                       \
   }                                                                            \
   }
-int64_t ARM_fmovF64I64(int64_t d, int64_t s);
-int64_t ARM_fmovI64F64(int64_t d, int64_t s);
-int64_t ARM_ldrRegRegF64(int64_t d, int64_t n, int64_t m);
-int64_t ARM_strRegRegF64(int64_t d, int64_t n, int64_t m);
-int64_t ARM_ldrPreImmF64(int64_t d, int64_t p, int64_t off);
-int64_t ARM_strPreImmF64(int64_t d, int64_t p, int64_t off);
-int64_t ARM_ldrPostImmF64(int64_t d, int64_t p, int64_t off);
-int64_t ARM_strPostImmF64(int64_t d, int64_t p, int64_t off);
-int64_t ARM_movnImmX(int64_t d, int64_t i16, int64_t sh);
-int64_t ARM_movzImmX(int64_t d, int64_t i16, int64_t sh);
-int64_t ARM_asrvRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_lsrvRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_lslvRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_sdivRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_fcmp(int64_t a, int64_t b);
-int64_t ARM_fmovReg(int64_t d, int64_t s);
-int64_t ARM_fnegReg(int64_t d, int64_t s);
-int64_t ARM_strRegImmF64(int64_t r, int64_t n, uint64_t off);
-int64_t ARM_ldrRegImmF64(int64_t r, int64_t n, uint64_t off);
-int64_t ARM_ldpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_ldpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_stpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_stpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_ldpPreImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_ldpPreImm(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_stpPreImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_stpPreImm(int64_t r, int64_t r2, int64_t b, int64_t off);
-int64_t ARM_ldrPreImmX(int64_t r, int64_t b, int64_t off);
-int64_t ARM_strPreImmX(int64_t r, int64_t b, int64_t off);
-int64_t ARM_ldrPostImmX(int64_t r, int64_t b, int64_t off);
-int64_t ARM_strPostImmX(int64_t r, int64_t b, int64_t off);
-int64_t ARM_ldrPreImm(int64_t r, int64_t b, int64_t off);
-int64_t ARM_strPreImm(int64_t r, int64_t b, int64_t off);
-int64_t ARM_ldrPostImm(int64_t r, int64_t b, int64_t off);
-int64_t ARM_strPostImm(int64_t r, int64_t b, int64_t off);
-int64_t ARM_ldrLabelF64(int64_t d, int64_t label);
-int64_t ARM_ldrLabelX(int64_t d, int64_t label);
-int64_t ARM_ldrLabel(int64_t d, int64_t label);
-int64_t ARM_fcvtzs(int64_t d, int64_t n);
-int64_t ARM_ucvtf(int64_t d, int64_t n);
-int64_t ARM_scvtf(int64_t d, int64_t n);
-int64_t ARM_fsubReg(int64_t d, int64_t n, int64_t m);
-int64_t ARM_faddReg(int64_t d, int64_t n, int64_t m);
-int64_t ARM_fdivReg(int64_t d, int64_t n, int64_t m);
-int64_t ARM_fmulReg(int64_t d, int64_t n, int64_t m);
-int64_t ARM_ldrRegRegX(int64_t r, int64_t a, int64_t b);
-int64_t ARM_strRegRegX(int64_t r, int64_t a, int64_t b);
-int64_t ARM_ldrRegImmX(int64_t r, int64_t n, int64_t off);
-int64_t ARM_strRegImmX(int64_t r, int64_t n, int64_t off);
-int64_t ARM_ldrRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_ldrRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_strRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_strRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_ldrhRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_ldrhRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_strhRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_strhRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_ldrbRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_ldrbRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_strbRegImm(int64_t r, int64_t n, int64_t off);
-int64_t ARM_strbRegReg(int64_t r, int64_t a, int64_t b);
-int64_t ARM_tbnz(int64_t rt, int64_t bit, int64_t label);
-int64_t ARM_tbz(int64_t rt, int64_t bit, int64_t label);
-int64_t ARM_cbnzX(int64_t r, int64_t label);
-int64_t ARM_cbnz(int64_t r, int64_t label);
-int64_t ARM_cbzX(int64_t r, int64_t label);
-int64_t ARM_cbz(int64_t r, int64_t label);
-int64_t ARM_bl(int64_t lab);
-int64_t ARM_b(int64_t lab);
-int64_t ARM_bcc(int64_t cond, int64_t lab);
-int64_t ARM_retReg(int64_t r);
-int64_t ARM_blr(int64_t r);
-int64_t ARM_br(int64_t r);
-int64_t ARM_eret();
-int64_t ARM_ret();
-int64_t ARM_lsrImmX(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_lsrImm(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_lslImmX(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_lslImm(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_asrImmX(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_asrImm(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_sxtwX(int64_t d, int64_t n);
-int64_t ARM_sxtw(int64_t d, int64_t n);
-int64_t ARM_sxthX(int64_t d, int64_t n);
-int64_t ARM_sxth(int64_t d, int64_t n);
-int64_t ARM_sxtbX(int64_t d, int64_t n);
-int64_t ARM_sxtb(int64_t d, int64_t n);
-int64_t ARM_uxtwX(int64_t d, int64_t n);
-int64_t ARM_uxthX(int64_t d, int64_t n);
-int64_t ARM_uxth(int64_t d, int64_t n);
-int64_t ARM_uxtbX(int64_t d, int64_t n);
-int64_t ARM_uxtb(int64_t d, int64_t n);
-int64_t ARM_mulRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_csetX(int64_t d, int64_t cond);
-int64_t ARM_cset(int64_t d, int64_t cond);
-int64_t ARM_cselX(int64_t d, int64_t n, int64_t m, int64_t cond);
-int64_t ARM_csel(int64_t d, int64_t n, int64_t m, int64_t cond);
-int64_t ARM_cmpRegX(int64_t n, int64_t m);
-int64_t ARM_negsRegX(int64_t d, int64_t m);
-int64_t ARM_subRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_addsRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_addRegX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_movRegX(int64_t d, int64_t n);
-int64_t ARM_movReg(int64_t d, int64_t n);
-int64_t ARM_andsRegX(int64_t rd, int64_t rn, int64_t rm);
-int64_t ARM_eorRegX(int64_t rd, int64_t rn, int64_t rm);
-int64_t ARM_eorShiftX(int64_t rd, int64_t rn, int64_t rm, int64_t shmod,
-                      int64_t sh);
-int64_t ARM_mvnRegX(int64_t rd, int64_t rm);
-int64_t ARM_mvnReg(int64_t rd, int64_t rm);
-int64_t ARM_mvnShiftX(int64_t rd, int64_t rm, int64_t shmod, int64_t sh);
-int64_t ARM_mvnShift(int64_t rd, int64_t rm, int64_t shmod, int64_t sh);
-int64_t ARM_orrRegX(int64_t rd, int64_t rn, int64_t rm);
-int64_t ARM_andRegX(int64_t rd, int64_t rn, int64_t rm);
-int64_t ARM_cmpImmX(int64_t n, int64_t imm);
-int64_t ARM_subImmX(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_addImmX(int64_t d, int64_t n, int64_t imm);
-int64_t ARM_adrX(int64_t d, int64_t pc_off);
-int64_t ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_ldrbRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_ldrhRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_strhRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_ldrRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_strRegRegShift(int64_t a, int64_t n, int64_t m);
-int64_t ARM_ldrRegRegShiftX(int64_t a, int64_t n, int64_t m);
-int64_t ARM_strRegRegShiftX(int64_t a, int64_t n, int64_t m);
-int64_t ARM_ldpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
-int64_t ARM_stpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
+int64_t    ARM_fmovF64I64(int64_t d, int64_t s);
+int64_t    ARM_fmovI64F64(int64_t d, int64_t s);
+int64_t    ARM_ldrRegRegF64(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_strRegRegF64(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_ldrPreImmF64(int64_t d, int64_t p, int64_t off);
+int64_t    ARM_strPreImmF64(int64_t d, int64_t p, int64_t off);
+int64_t    ARM_ldrPostImmF64(int64_t d, int64_t p, int64_t off);
+int64_t    ARM_strPostImmF64(int64_t d, int64_t p, int64_t off);
+int64_t    ARM_movnImmX(int64_t d, int64_t i16, int64_t sh);
+int64_t    ARM_movzImmX(int64_t d, int64_t i16, int64_t sh);
+int64_t    ARM_asrvRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_lsrvRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_lslvRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_sdivRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_fcmp(int64_t a, int64_t b);
+int64_t    ARM_fmovReg(int64_t d, int64_t s);
+int64_t    ARM_fnegReg(int64_t d, int64_t s);
+int64_t    ARM_strRegImmF64(int64_t r, int64_t n, uint64_t off);
+int64_t    ARM_ldrRegImmF64(int64_t r, int64_t n, uint64_t off);
+int64_t    ARM_ldpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_ldpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_stpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_stpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_ldpPreImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_ldpPreImm(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_stpPreImmX(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_stpPreImm(int64_t r, int64_t r2, int64_t b, int64_t off);
+int64_t    ARM_ldrPreImmX(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_strPreImmX(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_ldrPostImmX(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_strPostImmX(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_ldrPreImm(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_strPreImm(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_ldrPostImm(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_strPostImm(int64_t r, int64_t b, int64_t off);
+int64_t    ARM_ldrLabelF64(int64_t d, int64_t label);
+int64_t    ARM_ldrLabelX(int64_t d, int64_t label);
+int64_t    ARM_ldrLabel(int64_t d, int64_t label);
+int64_t    ARM_fcvtzs(int64_t d, int64_t n);
+int64_t    ARM_ucvtf(int64_t d, int64_t n);
+int64_t    ARM_scvtf(int64_t d, int64_t n);
+int64_t    ARM_fsubReg(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_faddReg(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_fdivReg(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_fmulReg(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_ldrRegRegX(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_strRegRegX(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrRegImmX(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_strRegImmX(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_ldrRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_ldrRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_strRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_strRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_ldrhRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_ldrhRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_strhRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_strhRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrbRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrbRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_strbRegImm(int64_t r, int64_t n, int64_t off);
+int64_t    ARM_strbRegReg(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_tbnz(int64_t rt, int64_t bit, int64_t label);
+int64_t    ARM_tbz(int64_t rt, int64_t bit, int64_t label);
+int64_t    ARM_cbnzX(int64_t r, int64_t label);
+int64_t    ARM_cbnz(int64_t r, int64_t label);
+int64_t    ARM_cbzX(int64_t r, int64_t label);
+int64_t    ARM_cbz(int64_t r, int64_t label);
+int64_t    ARM_bl(int64_t lab);
+int64_t    ARM_b(int64_t lab);
+int64_t    ARM_bcc(int64_t cond, int64_t lab);
+int64_t    ARM_retReg(int64_t r);
+int64_t    ARM_blr(int64_t r);
+int64_t    ARM_br(int64_t r);
+int64_t    ARM_eret();
+int64_t    ARM_ret();
+int64_t    ARM_lsrImmX(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_lsrImm(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_lslImmX(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_lslImm(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_asrImmX(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_asrImm(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_sxtwX(int64_t d, int64_t n);
+int64_t    ARM_sxtw(int64_t d, int64_t n);
+int64_t    ARM_sxthX(int64_t d, int64_t n);
+int64_t    ARM_sxth(int64_t d, int64_t n);
+int64_t    ARM_sxtbX(int64_t d, int64_t n);
+int64_t    ARM_sxtb(int64_t d, int64_t n);
+int64_t    ARM_uxtwX(int64_t d, int64_t n);
+int64_t    ARM_uxthX(int64_t d, int64_t n);
+int64_t    ARM_uxth(int64_t d, int64_t n);
+int64_t    ARM_uxtbX(int64_t d, int64_t n);
+int64_t    ARM_uxtb(int64_t d, int64_t n);
+int64_t    ARM_mulRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_csetX(int64_t d, int64_t cond);
+int64_t    ARM_cset(int64_t d, int64_t cond);
+int64_t    ARM_cselX(int64_t d, int64_t n, int64_t m, int64_t cond);
+int64_t    ARM_csel(int64_t d, int64_t n, int64_t m, int64_t cond);
+int64_t    ARM_cmpRegX(int64_t n, int64_t m);
+int64_t    ARM_negsRegX(int64_t d, int64_t m);
+int64_t    ARM_subRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_addsRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_addRegX(int64_t d, int64_t n, int64_t m);
+int64_t    ARM_movRegX(int64_t d, int64_t n);
+int64_t    ARM_movReg(int64_t d, int64_t n);
+int64_t    ARM_andsRegX(int64_t rd, int64_t rn, int64_t rm);
+int64_t    ARM_eorRegX(int64_t rd, int64_t rn, int64_t rm);
+int64_t    ARM_eorShiftX(int64_t rd, int64_t rn, int64_t rm, int64_t shmod,
+                         int64_t sh);
+int64_t    ARM_mvnRegX(int64_t rd, int64_t rm);
+int64_t    ARM_mvnReg(int64_t rd, int64_t rm);
+int64_t    ARM_mvnShiftX(int64_t rd, int64_t rm, int64_t shmod, int64_t sh);
+int64_t    ARM_mvnShift(int64_t rd, int64_t rm, int64_t shmod, int64_t sh);
+int64_t    ARM_orrRegX(int64_t rd, int64_t rn, int64_t rm);
+int64_t    ARM_andRegX(int64_t rd, int64_t rn, int64_t rm);
+int64_t    ARM_cmpImmX(int64_t n, int64_t imm);
+int64_t    ARM_subImmX(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_addImmX(int64_t d, int64_t n, int64_t imm);
+int64_t    ARM_adrX(int64_t d, int64_t pc_off);
+int64_t    ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_ldrbRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_ldrhRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_strhRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_ldrRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_strRegRegShift(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_ldrRegRegShiftX(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_strRegRegShiftX(int64_t a, int64_t n, int64_t m);
+int64_t    ARM_ldpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
+int64_t    ARM_stpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp);
-void CodeCtrlDel(CCodeCtrl *ctrl);
-void CodeCtrlPop(CCmpCtrl *ccmp);
-CRPN *__HC_ICAdd_Typecast(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
-CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc, CCodeMisc *cm);
-CRPN *__HC_ICAdd_SubProlog(CCodeCtrl *cc);
-CRPN *__HC_ICAdd_SubRet(CCodeCtrl *cc);
-CRPN *__HC_ICAdd_UnboundedSwitch(CCodeCtrl *cc, CCodeMisc *misc);
-CRPN *__HC_ICAdd_PreInc(CCodeCtrl *cc, int64_t amt);
+void       CodeCtrlDel(CCodeCtrl *ctrl);
+void       CodeCtrlPop(CCmpCtrl *ccmp);
+CRPN      *__HC_ICAdd_Typecast(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
+CRPN      *__HC_ICAdd_SubCall(CCodeCtrl *cc, CCodeMisc *cm);
+CRPN      *__HC_ICAdd_SubProlog(CCodeCtrl *cc);
+CRPN      *__HC_ICAdd_SubRet(CCodeCtrl *cc);
+CRPN      *__HC_ICAdd_UnboundedSwitch(CCodeCtrl *cc, CCodeMisc *misc);
+CRPN      *__HC_ICAdd_PreInc(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_Call(CCodeCtrl *cc, int64_t arity, int64_t rt, int64_t ptrs);
 CRPN *__HC_ICAdd_F64(CCodeCtrl *cc, double f);
 CRPN *__HC_ICAdd_I64(CCodeCtrl *cc, int64_t integer);
@@ -1045,23 +1045,23 @@ CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp, CCodeMisc *labels,
                                     void **table_address, int64_t hi);
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp, char *str, int64_t sz);
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp, void **);
-CCmpCtrl *__HC_CmpCtrlNew();
+CCmpCtrl  *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
-char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info);
-CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm);
-CRPN *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm);
-CRPN *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm);
-CRPN *__HC_ICAdd_Label(CCodeCtrl *cc, CCodeMisc *misc);
-CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc, int64_t arg);
-CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg);
-CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
-                       char *sym, int64_t rt, int64_t ptrs);
+char      *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info);
+CRPN      *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm);
+CRPN      *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm);
+CRPN      *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm);
+CRPN      *__HC_ICAdd_Label(CCodeCtrl *cc, CCodeMisc *misc);
+CRPN      *__HC_ICAdd_Arg(CCodeCtrl *cc, int64_t arg);
+CRPN      *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg);
+CRPN      *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
+                            char *sym, int64_t rt, int64_t ptrs);
 CCodeMisc *AddRelocMisc(CCmpCtrl *cctrl, char *name);
-CRPN *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
-void __HC_ICSetLine(CRPN *r, int64_t ln);
-CRPN *__HC_ICAdd_Switch(CCodeCtrl *cc, CCodeMisc *misc, CCodeMisc *dft);
-CRPN *__HC_ICAdd_Vargs(CCodeCtrl *cc, int64_t arity);
+CRPN      *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
+void       __HC_ICSetLine(CRPN *r, int64_t ln);
+CRPN      *__HC_ICAdd_Switch(CCodeCtrl *cc, CCodeMisc *misc, CCodeMisc *dft);
+CRPN      *__HC_ICAdd_Vargs(CCodeCtrl *cc, int64_t arity);
 CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp, CCodeCtrl *cc, int64_t at, char *d,
                             int64_t len);
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
@@ -1072,30 +1072,30 @@ CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr);
 // TODO remove
 char *FileRead(char *fn, int64_t *sz);
-void FileWrite(char *fn, char *data, int64_t sz);
+void  FileWrite(char *fn, char *data, int64_t sz);
 
-void VFsThrdInit();
-void VFsSetDrv(char d);
-int VFsCd(char *to, int flags);
+void    VFsThrdInit();
+void    VFsSetDrv(char d);
+int     VFsCd(char *to, int flags);
 int64_t VFsDel(char *p);
-char *__VFsFileNameAbs(char *name);
+char   *__VFsFileNameAbs(char *name);
 int64_t VFsUnixTime(char *name);
 int64_t VFsFSize(char *name);
 int64_t VFsFileWrite(char *name, char *data, int64_t len);
 int64_t VFsFileRead(char *name, int64_t *len);
-int VFsFileExists(char *path);
-int VFsMountDrive(char let, char *path);
-FILE *VFsFOpen(char *path, char *m);
+int     VFsFileExists(char *path);
+int     VFsMountDrive(char let, char *path);
+FILE   *VFsFOpen(char *path, char *m);
 int64_t VFsFClose(FILE *f);
 int64_t VFsTrunc(char *fn, int64_t sz);
 int64_t VFsFBlkRead(void *d, int64_t n, int64_t sz, FILE *f);
 int64_t VFsFBlkWrite(void *d, int64_t n, int64_t sz, FILE *f);
 int64_t VFsFSeek(int64_t off, FILE *f);
-FILE *VFsFOpenW(char *f);
-FILE *VFsFOpenR(char *f);
-void VFsSetPwd(char *pwd);
+FILE   *VFsFOpenW(char *f);
+FILE   *VFsFOpenR(char *f);
+void    VFsSetPwd(char *pwd);
 int64_t VFsDirMk(char *f);
-char **VFsDir(char *fn);
+char  **VFsDir(char *fn);
 int64_t VFsIsDir(char *name);
 
 void DrawWindowNew();
@@ -1107,43 +1107,43 @@ void WaitForSDLQuit();
 void SetKBCallback(void *fptr);
 void SetMSCallback(void *fptr);
 
-void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr));
-int64_t ARM_eorImmX(int64_t d, int64_t s, int64_t i);
-int64_t ARM_orrImmX(int64_t d, int64_t s, int64_t i);
-int64_t ARM_andImmX(int64_t d, int64_t s, int64_t i);
-CCmpCtrl *CmpCtrlDel(CCmpCtrl *d);
-void SndFreq(int64_t f);
-void InitSound();
-int64_t IsValidPtr(char *chk);
-void InstallDbgSignalsForThread();
-void *GetHolyGs();
-void SetHolyGs(void *);
-int64_t mp_cnt();
-void SpawnCore(void (*fp)(), void *gs, int64_t core);
-void MPSleepHP(int64_t ns);
-void MPAwake(int64_t core);
-extern int64_t user_ev_num;
-int64_t Btr(void *, int64_t);
-int64_t Bts(void *, int64_t);
-int64_t ARM_andsImmX(int64_t d, int64_t n, int64_t imm);
-void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
-int64_t ARM_udivX(int64_t d, int64_t n, int64_t m);
-int64_t ARM_umullX(int64_t d, int64_t n, int64_t m);
-void InteruptCore(int64_t core);
+void               ImportSymbolsToHolyC(void (*cb)(char *name, void *addr));
+int64_t            ARM_eorImmX(int64_t d, int64_t s, int64_t i);
+int64_t            ARM_orrImmX(int64_t d, int64_t s, int64_t i);
+int64_t            ARM_andImmX(int64_t d, int64_t s, int64_t i);
+CCmpCtrl          *CmpCtrlDel(CCmpCtrl *d);
+void               SndFreq(int64_t f);
+void               InitSound();
+int64_t            IsValidPtr(char *chk);
+void               InstallDbgSignalsForThread();
+void              *GetHolyGs();
+void               SetHolyGs(void *);
+int64_t            mp_cnt();
+void               SpawnCore(void (*fp)(), void *gs, int64_t core);
+void               MPSleepHP(int64_t ns);
+void               MPAwake(int64_t core);
+extern int64_t     user_ev_num;
+int64_t            Btr(void *, int64_t);
+int64_t            Bts(void *, int64_t);
+int64_t            ARM_andsImmX(int64_t d, int64_t n, int64_t imm);
+void               __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
+int64_t            ARM_udivX(int64_t d, int64_t n, int64_t m);
+int64_t            ARM_umullX(int64_t d, int64_t n, int64_t m);
+void               InteruptCore(int64_t core);
 extern CHashTable *glbl_table;
 // Sets how many bytes before function start a symbol starts at
 // Symbol    <=====RIP-off
 // some...code
 // Fun Start <==== RIP
-void __HC_SetAOTRelocBeforeRIP(CRPN *r, int64_t off);
+void    __HC_SetAOTRelocBeforeRIP(CRPN *r, int64_t off);
 int64_t __HC_CodeMiscIsUsed(CCodeMisc *cm);
 
-extern void AIWNIOS_setcontext(void *);
-extern int64_t AIWNIOS_getcontext(void *);
-extern int64_t AIWNIOS_makecontext(void *, void *, void *);
+extern void          AIWNIOS_setcontext(void *);
+extern int64_t       AIWNIOS_getcontext(void *);
+extern int64_t       AIWNIOS_makecontext(void *, void *, void *);
 extern CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr);
-extern void __HC_CodeMiscInterateThroughRefs(
-    CCodeMisc *cm, void (*fptr)(void *addr, void *user_data), void *user_data);
+extern void          __HC_CodeMiscInterateThroughRefs(
+             CCodeMisc *cm, void (*fptr)(void *addr, void *user_data), void *user_data);
 
 #define USE_TEMPLEOS_ABI 1
 extern int64_t FFI_CALL_TOS_0(void *fptr);
@@ -1151,34 +1151,34 @@ extern int64_t FFI_CALL_TOS_1(void *fptr, int64_t);
 extern int64_t FFI_CALL_TOS_2(void *fptr, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_3(void *fptr, int64_t, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_4(void *fptr, int64_t, int64_t, int64_t, int64_t);
-extern void *GenFFIBinding(void *fptr, int64_t arity);
-extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
-extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
-void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
-const char *ResolveBootDir(char *use, int overwrite, int make_new_dir);
+extern void   *GenFFIBinding(void *fptr, int64_t arity);
+extern void   *GenFFIBindingNaked(void *fptr, int64_t arity);
+extern void    PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
+void           CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
+const char    *ResolveBootDir(char *use, int overwrite, int make_new_dir);
 
 // Uses TempleOS ABI
 int64_t TempleOS_CallN(void(*fptr), int64_t argc, int64_t *argv);
-CRPN *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt);
+CRPN   *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt);
 
 extern int64_t bc_enable;
 // Returns good region if good,else NULL and after is set how many bytes OOB
 // Returns INVALID_PTR on error
 extern void *BoundsCheck(void *ptr, int64_t *after);
 // f is delay in nano seconds
-extern void MPSetProfilerInt(void *fp, int c, int64_t f);
+extern void  MPSetProfilerInt(void *fp, int c, int64_t f);
 extern void *GetHolyFs();
 
 struct CNetAddr;
-extern int64_t NetPollForHangup(int64_t argc, int64_t *argv);
-extern int64_t NetPollForWrite(int64_t argc, int64_t *argv);
-extern int64_t NetPollForRead(int64_t argc, int64_t *argv);
-extern int64_t NetWrite(int64_t s, char *data, int64_t len);
-extern int64_t NetRead(int64_t s, char *data, int64_t len);
-extern void NetClose(int64_t s);
-extern int64_t NetAccept(int64_t socket, struct CNetAddr **addr);
-extern void NetListen(int64_t socket, int64_t max);
-extern void NetBindIn(int64_t socket, struct CNetAddr *);
-extern int64_t NetSocketNew();
+extern int64_t          NetPollForHangup(int64_t argc, int64_t *argv);
+extern int64_t          NetPollForWrite(int64_t argc, int64_t *argv);
+extern int64_t          NetPollForRead(int64_t argc, int64_t *argv);
+extern int64_t          NetWrite(int64_t s, char *data, int64_t len);
+extern int64_t          NetRead(int64_t s, char *data, int64_t len);
+extern void             NetClose(int64_t s);
+extern int64_t          NetAccept(int64_t socket, struct CNetAddr **addr);
+extern void             NetListen(int64_t socket, int64_t max);
+extern void             NetBindIn(int64_t socket, struct CNetAddr *);
+extern int64_t          NetSocketNew();
 extern struct CNetAddr *NetAddrNew(char *host, int64_t port);
-extern void NetAddrDel(struct CNetAddr *);
+extern void             NetAddrDel(struct CNetAddr *);

@@ -40,9 +40,9 @@
 extern "C" {
 #endif
 
-#define ARG_REX_ICASE 1
-#define ARG_DSTR_SIZE 200
-#define ARG_CMD_NAME_LEN 100
+#define ARG_REX_ICASE           1
+#define ARG_DSTR_SIZE           200
+#define ARG_CMD_NAME_LEN        100
 #define ARG_CMD_DESCRIPTION_LEN 256
 
 #ifndef ARG_REPLACE_GETOPT
@@ -66,7 +66,7 @@ enum { ARG_TERMINATOR = 0x1, ARG_HASVALUE = 0x2, ARG_HASOPTVALUE = 0x4 };
 #endif
 
 typedef struct _internal_arg_dstr *arg_dstr_t;
-typedef void *arg_cmd_itr_t;
+typedef void                      *arg_cmd_itr_t;
 
 typedef void(arg_resetfn)(void *parent);
 typedef int(arg_scanfn)(void *parent, const char *argval);
@@ -95,17 +95,17 @@ typedef int(arg_comparefn)(const void *k1, const void *k2);
  * constructor and left unaltered.
  */
 typedef struct arg_hdr {
-  char flag;             /* Modifier flags: ARG_TERMINATOR, ARG_HASVALUE. */
+  char        flag;      /* Modifier flags: ARG_TERMINATOR, ARG_HASVALUE. */
   const char *shortopts; /* String defining the short options */
   const char *longopts;  /* String defiing the long options */
   const char *datatype;  /* Description of the argument data type */
   const char *glossary;  /* Description of the option as shown by
                             arg_print_glossary function */
-  int mincount; /* Minimum number of occurences of this option accepted */
-  int maxcount; /* Maximum number of occurences if this option accepted */
-  void *parent; /* Pointer to parent arg_xxx struct */
+  int   mincount; /* Minimum number of occurences of this option accepted */
+  int   maxcount; /* Maximum number of occurences if this option accepted */
+  void *parent;   /* Pointer to parent arg_xxx struct */
   arg_resetfn *resetfn; /* Pointer to parent arg_xxx reset function */
-  arg_scanfn *scanfn;   /* Pointer to parent arg_xxx scan function */
+  arg_scanfn  *scanfn;  /* Pointer to parent arg_xxx scan function */
   arg_checkfn *checkfn; /* Pointer to parent arg_xxx check function */
   arg_errorfn *errorfn; /* Pointer to parent arg_xxx error function */
   void *priv; /* Pointer to private header data for use by arg_xxx functions */
@@ -116,61 +116,61 @@ typedef struct arg_rem {
 } arg_rem_t;
 
 typedef struct arg_lit {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  int count;          /* Number of matching command line args */
+  struct arg_hdr hdr;   /* The mandatory argtable header struct */
+  int            count; /* Number of matching command line args */
 } arg_lit_t;
 
 typedef struct arg_int {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  int count;          /* Number of matching command line args */
-  int *ival;          /* Array of parsed argument values */
+  struct arg_hdr hdr;   /* The mandatory argtable header struct */
+  int            count; /* Number of matching command line args */
+  int           *ival;  /* Array of parsed argument values */
 } arg_int_t;
 
 typedef struct arg_dbl {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  int count;          /* Number of matching command line args */
-  double *dval;       /* Array of parsed argument values */
+  struct arg_hdr hdr;   /* The mandatory argtable header struct */
+  int            count; /* Number of matching command line args */
+  double        *dval;  /* Array of parsed argument values */
 } arg_dbl_t;
 
 typedef struct arg_str {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  int count;          /* Number of matching command line args */
-  const char **sval;  /* Array of parsed argument values */
+  struct arg_hdr hdr;   /* The mandatory argtable header struct */
+  int            count; /* Number of matching command line args */
+  const char   **sval;  /* Array of parsed argument values */
 } arg_str_t;
 
 typedef struct arg_rex {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  int count;          /* Number of matching command line args */
-  const char **sval;  /* Array of parsed argument values */
+  struct arg_hdr hdr;   /* The mandatory argtable header struct */
+  int            count; /* Number of matching command line args */
+  const char   **sval;  /* Array of parsed argument values */
 } arg_rex_t;
 
 typedef struct arg_file {
-  struct arg_hdr hdr;     /* The mandatory argtable header struct */
-  int count;              /* Number of matching command line args*/
-  const char **filename;  /* Array of parsed filenames  (eg: /home/foo.bar) */
-  const char **basename;  /* Array of parsed basenames  (eg: foo.bar) */
-  const char **extension; /* Array of parsed extensions (eg: .bar) */
+  struct arg_hdr hdr;       /* The mandatory argtable header struct */
+  int            count;     /* Number of matching command line args*/
+  const char   **filename;  /* Array of parsed filenames  (eg: /home/foo.bar) */
+  const char   **basename;  /* Array of parsed basenames  (eg: foo.bar) */
+  const char   **extension; /* Array of parsed extensions (eg: .bar) */
 } arg_file_t;
 
 typedef struct arg_date {
-  struct arg_hdr hdr; /* The mandatory argtable header struct */
-  const char *format; /* strptime format string used to parse the date */
-  int count;          /* Number of matching command line args */
-  struct tm *tmval;   /* Array of parsed time values */
+  struct arg_hdr hdr;    /* The mandatory argtable header struct */
+  const char    *format; /* strptime format string used to parse the date */
+  int            count;  /* Number of matching command line args */
+  struct tm     *tmval;  /* Array of parsed time values */
 } arg_date_t;
 
 enum { ARG_ELIMIT = 1, ARG_EMALLOC, ARG_ENOMATCH, ARG_ELONGOPT, ARG_EMISSARG };
 typedef struct arg_end {
-  struct arg_hdr hdr;  /* The mandatory argtable header struct */
-  int count;           /* Number of errors encountered */
-  int *error;          /* Array of error codes */
-  void **parent;       /* Array of pointers to offending arg_xxx struct */
-  const char **argval; /* Array of pointers to offending argv[] string */
+  struct arg_hdr hdr;    /* The mandatory argtable header struct */
+  int            count;  /* Number of errors encountered */
+  int           *error;  /* Array of error codes */
+  void         **parent; /* Array of pointers to offending arg_xxx struct */
+  const char   **argval; /* Array of pointers to offending argv[] string */
 } arg_end_t;
 
 typedef struct arg_cmd_info {
-  char name[ARG_CMD_NAME_LEN];
-  char description[ARG_CMD_DESCRIPTION_LEN];
+  char       name[ARG_CMD_NAME_LEN];
+  char       description[ARG_CMD_DESCRIPTION_LEN];
   arg_cmdfn *proc;
 } arg_cmd_info_t;
 
@@ -249,13 +249,13 @@ ARG_EXTERN struct arg_date *arg_daten(const char *shortopts,
 
 ARG_EXTERN struct arg_end *arg_end(int maxcount);
 
-#define ARG_DSTR_STATIC ((arg_dstr_freefn *)0)
+#define ARG_DSTR_STATIC   ((arg_dstr_freefn *)0)
 #define ARG_DSTR_VOLATILE ((arg_dstr_freefn *)1)
-#define ARG_DSTR_DYNAMIC ((arg_dstr_freefn *)3)
+#define ARG_DSTR_DYNAMIC  ((arg_dstr_freefn *)3)
 
 /**** other functions *******************************************/
-ARG_EXTERN int arg_nullcheck(void **argtable);
-ARG_EXTERN int arg_parse(int argc, char **argv, void **argtable);
+ARG_EXTERN int  arg_nullcheck(void **argtable);
+ARG_EXTERN int  arg_parse(int argc, char **argv, void **argtable);
 ARG_EXTERN void arg_print_option(FILE *fp, const char *shortopts,
                                  const char *longopts, const char *datatype,
                                  const char *suffix);
@@ -282,31 +282,31 @@ ARG_EXTERN void arg_print_errors_ds(arg_dstr_t ds, struct arg_end *end,
 ARG_EXTERN void arg_freetable(void **argtable, size_t n);
 
 ARG_EXTERN arg_dstr_t arg_dstr_create(void);
-ARG_EXTERN void arg_dstr_destroy(arg_dstr_t ds);
-ARG_EXTERN void arg_dstr_reset(arg_dstr_t ds);
-ARG_EXTERN void arg_dstr_free(arg_dstr_t ds);
-ARG_EXTERN void arg_dstr_set(arg_dstr_t ds, char *str,
-                             arg_dstr_freefn *free_proc);
-ARG_EXTERN void arg_dstr_cat(arg_dstr_t ds, const char *str);
-ARG_EXTERN void arg_dstr_catc(arg_dstr_t ds, char c);
-ARG_EXTERN void arg_dstr_catf(arg_dstr_t ds, const char *fmt, ...);
-ARG_EXTERN char *arg_dstr_cstr(arg_dstr_t ds);
+ARG_EXTERN void       arg_dstr_destroy(arg_dstr_t ds);
+ARG_EXTERN void       arg_dstr_reset(arg_dstr_t ds);
+ARG_EXTERN void       arg_dstr_free(arg_dstr_t ds);
+ARG_EXTERN void       arg_dstr_set(arg_dstr_t ds, char *str,
+                                   arg_dstr_freefn *free_proc);
+ARG_EXTERN void       arg_dstr_cat(arg_dstr_t ds, const char *str);
+ARG_EXTERN void       arg_dstr_catc(arg_dstr_t ds, char c);
+ARG_EXTERN void       arg_dstr_catf(arg_dstr_t ds, const char *fmt, ...);
+ARG_EXTERN char      *arg_dstr_cstr(arg_dstr_t ds);
 
 ARG_EXTERN void arg_cmd_init(void);
 ARG_EXTERN void arg_cmd_uninit(void);
 ARG_EXTERN void arg_cmd_register(const char *name, arg_cmdfn *proc,
                                  const char *description);
 ARG_EXTERN void arg_cmd_unregister(const char *name);
-ARG_EXTERN int arg_cmd_dispatch(const char *name, int argc, char *argv[],
-                                arg_dstr_t res);
-ARG_EXTERN unsigned int arg_cmd_count(void);
+ARG_EXTERN int  arg_cmd_dispatch(const char *name, int argc, char *argv[],
+                                 arg_dstr_t res);
+ARG_EXTERN unsigned int    arg_cmd_count(void);
 ARG_EXTERN arg_cmd_info_t *arg_cmd_info(const char *name);
-ARG_EXTERN arg_cmd_itr_t arg_cmd_itr_create(void);
-ARG_EXTERN void arg_cmd_itr_destroy(arg_cmd_itr_t itr);
-ARG_EXTERN int arg_cmd_itr_advance(arg_cmd_itr_t itr);
-ARG_EXTERN char *arg_cmd_itr_key(arg_cmd_itr_t itr);
+ARG_EXTERN arg_cmd_itr_t   arg_cmd_itr_create(void);
+ARG_EXTERN void            arg_cmd_itr_destroy(arg_cmd_itr_t itr);
+ARG_EXTERN int             arg_cmd_itr_advance(arg_cmd_itr_t itr);
+ARG_EXTERN char           *arg_cmd_itr_key(arg_cmd_itr_t itr);
 ARG_EXTERN arg_cmd_info_t *arg_cmd_itr_value(arg_cmd_itr_t itr);
-ARG_EXTERN int arg_cmd_itr_search(arg_cmd_itr_t itr, void *k);
+ARG_EXTERN int             arg_cmd_itr_search(arg_cmd_itr_t itr, void *k);
 ARG_EXTERN void arg_mgsort(void *data, int size, int esize, int i, int k,
                            arg_comparefn *comparefn);
 ARG_EXTERN void arg_make_get_help_msg(arg_dstr_t res);

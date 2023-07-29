@@ -7,20 +7,20 @@
   #include <sys/types.h>
   #include <unistd.h>
 #else
-  #include <iphlpapi.h>
-  #include <windows.h>
   #include <winsock2.h>
+  #include <windows.h>
+  #include <iphlpapi.h>
   #include <ws2tcpip.h>
 static int64_t was_init = 0;
-WSADATA ws_data;
-static void InitWS2() {
+WSADATA        ws_data;
+static void    InitWS2() {
   WSAStartup(MAKEWORD(2, 2), &ws_data);
   was_init = 1;
 }
 #endif
 typedef struct CInAddr {
-  char *address;
-  int64_t port;
+  char              *address;
+  int64_t            port;
   struct sockaddr_in sa;
 } CInAddr;
 typedef struct CNetAddr {
@@ -42,13 +42,13 @@ int64_t NetSocketNew() {
 }
 
 CNetAddr *NetAddrNew(char *host, int64_t port) {
-  CNetAddr *ret = A_CALLOC(sizeof(CNetAddr), NULL);
-  char buf[1024];
+  CNetAddr       *ret = A_CALLOC(sizeof(CNetAddr), NULL);
+  char            buf[1024];
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
+  hints.ai_family   = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+  hints.ai_flags    = AI_PASSIVE;
   sprintf(buf, "%d", port);
   getaddrinfo(host, buf, &hints, &ret->ai);
   return ret;
@@ -67,8 +67,8 @@ void NetListen(int64_t socket, int64_t max) {
 }
 int64_t NetAccept(int64_t socket, CNetAddr **addr) {
   struct sockaddr sa;
-  socklen_t ul = sizeof(sa);
-  int64_t con = accept(socket, &sa, &ul);
+  socklen_t       ul  = sizeof(sa);
+  int64_t         con = accept(socket, &sa, &ul);
   if (addr)
     *addr = NULL;
   /*	if(addr) {
@@ -103,10 +103,10 @@ int64_t NetRead(int64_t s, char *data, int64_t len) {
 }
 static int64_t _PollFor(int64_t _for, int64_t argc, int64_t *argv) {
   struct pollfd poll_for[argc];
-  int64_t idx;
+  int64_t       idx;
   for (idx = 0; idx != argc; idx++) {
-    poll_for[idx].fd = argv[0];
-    poll_for[idx].events = _for;
+    poll_for[idx].fd      = argv[0];
+    poll_for[idx].events  = _for;
     poll_for[idx].revents = 0;
   }
 #if defined(_WIN32) || defined(WIN32)

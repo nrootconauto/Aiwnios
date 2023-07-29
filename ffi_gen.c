@@ -124,7 +124,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   */
   const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
   #ifdef USE_TEMPLEOS_ABI
-  char *ret = A_MALLOC(0xd, NULL);
+  char       *ret         = A_MALLOC(0xd, NULL);
   memcpy(ret, ffi_binding, 0xd);
   *(int64_t *)(ret + 0x2) = fptr;
   return ret;
@@ -144,13 +144,13 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   // 10: ldp x29,x30[sp],16
   // 14: ret
   // 18: label: fptr
-  int32_t *blob = A_MALLOC(0x18 + 8, NULL);
-  blob[0] = ARM_stpPreImmX(29, 30, 31, -16);
-  blob[1] = ARM_addImmX(0, 31, 16);
-  blob[2] = ARM_ldrLabelX(1, 0x18 - 0x8);
-  blob[3] = ARM_blr(1);
-  blob[4] = ARM_ldpPostImmX(29, 30, 31, 16);
-  blob[5] = ARM_ret();
+  int32_t *blob        = A_MALLOC(0x18 + 8, NULL);
+  blob[0]              = ARM_stpPreImmX(29, 30, 31, -16);
+  blob[1]              = ARM_addImmX(0, 31, 16);
+  blob[2]              = ARM_ldrLabelX(1, 0x18 - 0x8);
+  blob[3]              = ARM_blr(1);
+  blob[4]              = ARM_ldpPostImmX(29, 30, 31, 16);
+  blob[5]              = ARM_ret();
   *(void **)(blob + 6) = fptr;
   return blob;
   #else

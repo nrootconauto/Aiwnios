@@ -42,7 +42,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   };
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
-  int64_t actx[32];
+  int64_t     actx[32];
   actx[0] = ctx->gregs[REG_RIP];
   actx[1] = ctx->gregs[REG_RSP];
   actx[2] = ctx->gregs[REG_RBP];
@@ -62,7 +62,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     #elif defined(__FreeBSD__)
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
-  int64_t actx[32];
+  int64_t     actx[32];
   actx[0] = ctx->mc_rip;
   actx[1] = ctx->mc_rsp;
   actx[2] = ctx->mc_rbp;
@@ -81,9 +81,9 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t *ctx = &_ctx->uc_mcontext;
+  mcontext_t  *ctx = &_ctx->uc_mcontext;
   CHashExport *exp;
-  int64_t is_single_step;
+  int64_t      is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
@@ -167,8 +167,8 @@ void InstallDbgSignalsForThread() {
 #if defined(__linux__) || defined(__FreeBSD__)
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler = SIG_IGN;
-  sa.sa_flags = SA_SIGINFO;
+  sa.sa_handler   = SIG_IGN;
+  sa.sa_flags     = SA_SIGINFO;
   sa.sa_sigaction = SigHandler;
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGBUS, &sa, NULL);

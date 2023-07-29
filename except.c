@@ -12,7 +12,7 @@ jmp_buf *__throw(uint64_t code) {
   Fs->except_ch = code;
   CExcept *ex;
   Fs->catch_except = 0;
-  Fs->except_ch = code;
+  Fs->except_ch    = code;
   QueRem(ex = Fs->except->last);
   memcpy(Fs->throw_pad, ex->ctx, sizeof(ex->ctx));
   A_FREE(ex);
