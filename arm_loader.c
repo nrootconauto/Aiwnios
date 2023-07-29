@@ -8,35 +8,35 @@ typedef struct _CHashImport {
 
 #define IET_END 0
 // reserved
-#define IET_REL_I0 2 // Fictitious
-#define IET_IMM_U0 3 // Fictitious
-#define IET_REL_I8 4
-#define IET_IMM_U8 5
-#define IET_REL_I16 6
-#define IET_IMM_U16 7
-#define IET_REL_I32 8
-#define IET_IMM_U32 9
-#define IET_REL_I64 10
-#define IET_IMM_I64 11
+#define IET_REL_I0      2 // Fictitious
+#define IET_IMM_U0      3 // Fictitious
+#define IET_REL_I8      4
+#define IET_IMM_U8      5
+#define IET_REL_I16     6
+#define IET_IMM_U16     7
+#define IET_REL_I32     8
+#define IET_IMM_U32     9
+#define IET_REL_I64     10
+#define IET_IMM_I64     11
 #define IEF_IMM_NOT_REL 1
 // reserved
-#define IET_REL32_EXPORT 16
-#define IET_IMM32_EXPORT 17
-#define IET_REL64_EXPORT 18 // Not implemented
-#define IET_IMM64_EXPORT 19 // Not implemented
-#define IET_ABS_ADDR 20
-#define IET_CODE_HEAP 21        // Not really used
+#define IET_REL32_EXPORT     16
+#define IET_IMM32_EXPORT     17
+#define IET_REL64_EXPORT     18 // Not implemented
+#define IET_IMM64_EXPORT     19 // Not implemented
+#define IET_ABS_ADDR         20
+#define IET_CODE_HEAP        21 // Not really used
 #define IET_ZEROED_CODE_HEAP 22 // Not really used
-#define IET_DATA_HEAP 23
+#define IET_DATA_HEAP        23
 #define IET_ZEROED_DATA_HEAP 24 // Not really used
-#define IET_MAIN 25
+#define IET_MAIN             25
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
-  char *src = *_src, *ptr2, *st_ptr;
-  int64_t i, etype;
-  CHashExport *tmpex = NULL;
+  char         *src = *_src, *ptr2, *st_ptr;
+  int64_t       i, etype;
+  CHashExport  *tmpex = NULL;
   _CHashImport *tmpiss;
-  int64_t first = 1;
+  int64_t       first = 1;
 
   while (etype = *src++) {
     i = *(int32_t *)src;
@@ -53,11 +53,11 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
                   HashFind(st_ptr, Fs->hash_table,
                            HTT_FUN | HTT_GLBL_VAR | HTT_EXPORT_SYS_SYM, 1))) {
           printf("Unresolved Reference:%s\n", st_ptr);
-          tmpiss = A_CALLOC(sizeof(_CHashImport), NULL);
-          tmpiss->base.str = A_STRDUP(st_ptr, NULL);
-          tmpiss->base.type = HTT_IMPORT_SYS_SYM2;
+          tmpiss                      = A_CALLOC(sizeof(_CHashImport), NULL);
+          tmpiss->base.str            = A_STRDUP(st_ptr, NULL);
+          tmpiss->base.type           = HTT_IMPORT_SYS_SYM2;
           tmpiss->module_header_entry = st_ptr - 5;
-          tmpiss->module_base = module_base;
+          tmpiss->module_base         = module_base;
           HashAdd(tmpiss, Fs->hash_table);
         }
       }
@@ -103,7 +103,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 
 static void SysSymImportsResolve2(char *st_ptr, int64_t ld_flags) {
   _CHashImport *tmpiss;
-  char *ptr;
+  char         *ptr;
   while (tmpiss = HashSingleTableFind(st_ptr, Fs->hash_table,
                                       HTT_IMPORT_SYS_SYM2, 1)) {
     ptr = tmpiss->module_header_entry;
@@ -113,8 +113,8 @@ static void SysSymImportsResolve2(char *st_ptr, int64_t ld_flags) {
 }
 
 static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
-  char *ptr2, *ptr3, *st_ptr;
-  int64_t i, j, cnt, etype;
+  char        *ptr2, *ptr3, *st_ptr;
+  int64_t      i, j, cnt, etype;
   CHashExport *tmpex = NULL;
   while (etype = *src++) {
     i = *(int32_t *)src;
@@ -126,8 +126,8 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
     case IET_IMM32_EXPORT:
     case IET_REL64_EXPORT:
     case IET_IMM64_EXPORT:
-      tmpex = A_CALLOC(sizeof(CHashExport), NULL);
-      tmpex->base.str = A_STRDUP(st_ptr, NULL);
+      tmpex            = A_CALLOC(sizeof(CHashExport), NULL);
+      tmpex->base.str  = A_STRDUP(st_ptr, NULL);
       tmpex->base.type = HTT_EXPORT_SYS_SYM;
       if (etype == IET_IMM32_EXPORT || etype == IET_IMM64_EXPORT)
         tmpex->val = i;
@@ -163,10 +163,10 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       src += 4;
     end:
       if (*st_ptr) {
-        tmpex = A_CALLOC(sizeof(CHashExport), NULL);
-        tmpex->base.str = A_STRDUP(st_ptr, NULL);
+        tmpex            = A_CALLOC(sizeof(CHashExport), NULL);
+        tmpex->base.str  = A_STRDUP(st_ptr, NULL);
         tmpex->base.type = HTT_EXPORT_SYS_SYM;
-        tmpex->val = ptr3;
+        tmpex->val       = ptr3;
         HashAdd(tmpex, Fs->hash_table);
       }
       cnt = i;
@@ -187,10 +187,10 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       goto end;
     end2:
       if (*st_ptr) {
-        tmpex = A_CALLOC(sizeof(CHashExport), NULL);
-        tmpex->base.str = A_STRDUP(st_ptr, NULL);
+        tmpex            = A_CALLOC(sizeof(CHashExport), NULL);
+        tmpex->base.str  = A_STRDUP(st_ptr, NULL);
         tmpex->base.type = HTT_EXPORT_SYS_SYM;
-        tmpex->val = ptr3;
+        tmpex->val       = ptr3;
         HashAdd(tmpex, Fs->hash_table);
       }
       cnt = i;
@@ -205,7 +205,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
 }
 
 static void LoadPass2(char *src, char *module_base) {
-  char *st_ptr;
+  char   *st_ptr;
   int64_t i, etype;
   void (*fptr)();
   while (etype = *src++) {
@@ -247,14 +247,14 @@ Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$ file_size;
  */
 typedef struct CBinFile {
   uint16_t jmp;
-  int8_t module_align_bits, reserved;
-  char bin_signature[4];
-  int64_t org, patch_table_offset, file_size;
+  int8_t   module_align_bits, reserved;
+  char     bin_signature[4];
+  int64_t  org, patch_table_offset, file_size;
 } CBinFile;
 char *Load(char *filename) { // Load a .BIN file module into memory.
   // bfh_addr==INVALID_PTR means don't care what load addr.
-  char *fbuf = filename, *module_base, *absname;
-  int64_t size, module_align, misalignment;
+  char     *fbuf = filename, *module_base, *absname;
+  int64_t   size, module_align, misalignment;
   CBinFile *bfh;
   CBinFile *bfh_addr;
 
@@ -280,7 +280,7 @@ lo_skip:
 }
 
 void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
-  int64_t idx = 0;
+  int64_t      idx = 0;
   CHashExport *h;
   for (idx = 0; idx <= Fs->hash_table->mask; idx++) {
     for (h = Fs->hash_table->body[idx]; h; h = h->base.next) {

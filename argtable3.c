@@ -70,7 +70,7 @@
   #include <stdlib.h>
 
   #define ARG_ENABLE_TRACE 0
-  #define ARG_ENABLE_LOG 1
+  #define ARG_ENABLE_LOG   1
 
   #ifdef __cplusplus
 extern "C" {
@@ -123,30 +123,30 @@ typedef void(arg_panicfn)(const char *fmt, ...);
    * They can be a problem for the platforms like NuttX, where
    * the namespace is flat for everything including apps and libraries.
    */
-  #define xmalloc argtable3_xmalloc
-  #define xcalloc argtable3_xcalloc
+  #define xmalloc  argtable3_xmalloc
+  #define xcalloc  argtable3_xcalloc
   #define xrealloc argtable3_xrealloc
-  #define xfree argtable3_xfree
+  #define xfree    argtable3_xfree
 
-extern void dbg_printf(const char *fmt, ...);
-extern void arg_set_panic(arg_panicfn *proc);
+extern void  dbg_printf(const char *fmt, ...);
+extern void  arg_set_panic(arg_panicfn *proc);
 extern void *xmalloc(size_t size);
 extern void *xcalloc(size_t count, size_t size);
 extern void *xrealloc(void *ptr, size_t size);
-extern void xfree(void *ptr);
+extern void  xfree(void *ptr);
 
 struct arg_hashtable_entry {
-  void *k, *v;
-  unsigned int h;
+  void                       *k, *v;
+  unsigned int                h;
   struct arg_hashtable_entry *next;
 };
 
 typedef struct arg_hashtable {
-  unsigned int tablelength;
+  unsigned int                 tablelength;
   struct arg_hashtable_entry **table;
-  unsigned int entrycount;
-  unsigned int loadlimit;
-  unsigned int primeindex;
+  unsigned int                 entrycount;
+  unsigned int                 loadlimit;
+  unsigned int                 primeindex;
   unsigned int (*hashfn)(const void *k);
   int (*eqfn)(const void *k1, const void *k2);
 } arg_hashtable_t;
@@ -241,10 +241,10 @@ int arg_hashtable_change(arg_hashtable_t *h, void *k, void *v);
 void arg_hashtable_destroy(arg_hashtable_t *h, int free_values);
 
 typedef struct arg_hashtable_itr {
-  arg_hashtable_t *h;
+  arg_hashtable_t            *h;
   struct arg_hashtable_entry *e;
   struct arg_hashtable_entry *parent;
-  unsigned int index;
+  unsigned int                index;
 } arg_hashtable_itr_t;
 
 arg_hashtable_itr_t *arg_hashtable_itr_create(arg_hashtable_t *h);
@@ -334,7 +334,7 @@ int arg_hashtable_itr_search(arg_hashtable_itr_t *itr, arg_hashtable_t *h,
 #include <stdlib.h>
 #include <string.h>
 
-static void panic(const char *fmt, ...);
+static void         panic(const char *fmt, ...);
 static arg_panicfn *s_panic = panic;
 
 void dbg_printf(const char *fmt, ...) {
@@ -346,7 +346,7 @@ void dbg_printf(const char *fmt, ...) {
 
 static void panic(const char *fmt, ...) {
   va_list args;
-  char *s;
+  char   *s;
 
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
@@ -382,8 +382,8 @@ void *xmalloc(size_t size) {
 
 void *xcalloc(size_t count, size_t size) {
   size_t allocated_count = count && size ? count : 1;
-  size_t allocated_size = count && size ? size : 1;
-  void *ret = calloc(allocated_count, allocated_size);
+  size_t allocated_size  = count && size ? size : 1;
+  void  *ret             = calloc(allocated_count, allocated_size);
   if (!ret) {
     s_panic("Out of memory!\n");
   }
@@ -392,7 +392,7 @@ void *xcalloc(size_t count, size_t size) {
 
 void *xrealloc(void *ptr, size_t size) {
   size_t allocated_size = size ? size : 1;
-  void *ret = realloc(ptr, allocated_size);
+  void  *ret            = realloc(ptr, allocated_size);
   if (!ret) {
     s_panic("Out of memory!\n");
   }
@@ -407,7 +407,7 @@ static void merge(void *data, int esize, int i, int j, int k,
                   arg_comparefn *comparefn) {
   char *a = (char *)data;
   char *m;
-  int ipos, jpos, mpos;
+  int   ipos, jpos, mpos;
 
   /* Initialize the counters used in merging. */
   ipos = i;
@@ -559,7 +559,7 @@ static const unsigned int primes[] = {
     786433,    1572869,   3145739,   6291469,   12582917,  25165843, 50331653,
     100663319, 201326611, 402653189, 805306457, 1610612741};
 const unsigned int prime_table_length = sizeof(primes) / sizeof(primes[0]);
-const float max_load_factor = (float)0.65;
+const float        max_load_factor    = (float)0.65;
 
 static unsigned int enhanced_hash(arg_hashtable_t *h, const void *k) {
   /*
@@ -583,8 +583,8 @@ arg_hashtable_t *arg_hashtable_create(unsigned int minsize,
                                       unsigned int (*hashfn)(const void *),
                                       int (*eqfn)(const void *, const void *)) {
   arg_hashtable_t *h;
-  unsigned int pindex;
-  unsigned int size = primes[0];
+  unsigned int     pindex;
+  unsigned int     size = primes[0];
 
   /* Check requested hash table isn't too large */
   if (minsize > (1u << 30))
@@ -602,26 +602,26 @@ arg_hashtable_t *arg_hashtable_create(unsigned int minsize,
     }
   }
 
-  h = (arg_hashtable_t *)xmalloc(sizeof(arg_hashtable_t));
+  h        = (arg_hashtable_t *)xmalloc(sizeof(arg_hashtable_t));
   h->table = (struct arg_hashtable_entry **)xmalloc(
       sizeof(struct arg_hashtable_entry *) * size);
   memset(h->table, 0, size * sizeof(struct arg_hashtable_entry *));
   h->tablelength = size;
-  h->primeindex = pindex;
-  h->entrycount = 0;
-  h->hashfn = hashfn;
-  h->eqfn = eqfn;
-  h->loadlimit = (unsigned int)ceil(size * (double)max_load_factor);
+  h->primeindex  = pindex;
+  h->entrycount  = 0;
+  h->hashfn      = hashfn;
+  h->eqfn        = eqfn;
+  h->loadlimit   = (unsigned int)ceil(size * (double)max_load_factor);
   return h;
 }
 
 static int arg_hashtable_expand(arg_hashtable_t *h) {
   /* Double the size of the table to accommodate more entries */
   struct arg_hashtable_entry **newtable;
-  struct arg_hashtable_entry *e;
-  unsigned int newsize;
-  unsigned int i;
-  unsigned int index;
+  struct arg_hashtable_entry  *e;
+  unsigned int                 newsize;
+  unsigned int                 i;
+  unsigned int                 index;
 
   /* Check we're not hitting max capacity */
   if (h->primeindex == (prime_table_length - 1))
@@ -637,17 +637,17 @@ static int arg_hashtable_expand(arg_hashtable_t *h) {
    */
   for (i = 0; i < h->tablelength; i++) {
     while (NULL != (e = h->table[i])) {
-      h->table[i] = e->next;
-      index = index_for(newsize, e->h);
-      e->next = newtable[index];
+      h->table[i]     = e->next;
+      index           = index_for(newsize, e->h);
+      e->next         = newtable[index];
       newtable[index] = e;
     }
   }
 
   xfree(h->table);
-  h->table = newtable;
+  h->table       = newtable;
   h->tablelength = newsize;
-  h->loadlimit = (unsigned int)ceil(newsize * (double)max_load_factor);
+  h->loadlimit   = (unsigned int)ceil(newsize * (double)max_load_factor);
   return -1;
 }
 
@@ -657,7 +657,7 @@ unsigned int arg_hashtable_count(arg_hashtable_t *h) {
 
 void arg_hashtable_insert(arg_hashtable_t *h, void *k, void *v) {
   /* This method allows duplicate keys - but they shouldn't be used */
-  unsigned int index;
+  unsigned int                index;
   struct arg_hashtable_entry *e;
   if ((h->entrycount + 1) > h->loadlimit) {
     /*
@@ -669,23 +669,23 @@ void arg_hashtable_insert(arg_hashtable_t *h, void *k, void *v) {
     arg_hashtable_expand(h);
   }
   e = (struct arg_hashtable_entry *)xmalloc(sizeof(struct arg_hashtable_entry));
-  e->h = enhanced_hash(h, k);
-  index = index_for(h->tablelength, e->h);
-  e->k = k;
-  e->v = v;
-  e->next = h->table[index];
+  e->h            = enhanced_hash(h, k);
+  index           = index_for(h->tablelength, e->h);
+  e->k            = k;
+  e->v            = v;
+  e->next         = h->table[index];
   h->table[index] = e;
   h->entrycount++;
 }
 
 void *arg_hashtable_search(arg_hashtable_t *h, const void *k) {
   struct arg_hashtable_entry *e;
-  unsigned int hashvalue;
-  unsigned int index;
+  unsigned int                hashvalue;
+  unsigned int                index;
 
   hashvalue = enhanced_hash(h, k);
-  index = index_for(h->tablelength, hashvalue);
-  e = h->table[index];
+  index     = index_for(h->tablelength, hashvalue);
+  e         = h->table[index];
   while (e != NULL) {
     /* Check hash value to short circuit heavier comparison */
     if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
@@ -701,15 +701,15 @@ void arg_hashtable_remove(arg_hashtable_t *h, const void *k) {
    *       or provide a 'compact' method.
    */
 
-  struct arg_hashtable_entry *e;
+  struct arg_hashtable_entry  *e;
   struct arg_hashtable_entry **pE;
-  unsigned int hashvalue;
-  unsigned int index;
+  unsigned int                 hashvalue;
+  unsigned int                 index;
 
   hashvalue = enhanced_hash(h, k);
-  index = index_for(h->tablelength, hashvalue);
-  pE = &(h->table[index]);
-  e = *pE;
+  index     = index_for(h->tablelength, hashvalue);
+  pE        = &(h->table[index]);
+  e         = *pE;
   while (NULL != e) {
     /* Check hash value to short circuit heavier comparison */
     if ((hashvalue == e->h) && (h->eqfn(k, e->k))) {
@@ -721,13 +721,13 @@ void arg_hashtable_remove(arg_hashtable_t *h, const void *k) {
       return;
     }
     pE = &(e->next);
-    e = e->next;
+    e  = e->next;
   }
 }
 
 void arg_hashtable_destroy(arg_hashtable_t *h, int free_values) {
-  unsigned int i;
-  struct arg_hashtable_entry *e, *f;
+  unsigned int                 i;
+  struct arg_hashtable_entry  *e, *f;
   struct arg_hashtable_entry **table = h->table;
   if (free_values) {
     for (i = 0; i < h->tablelength; i++) {
@@ -761,17 +761,17 @@ arg_hashtable_itr_t *arg_hashtable_itr_create(arg_hashtable_t *h) {
 
   arg_hashtable_itr_t *itr =
       (arg_hashtable_itr_t *)xmalloc(sizeof(arg_hashtable_itr_t));
-  itr->h = h;
-  itr->e = NULL;
+  itr->h      = h;
+  itr->e      = NULL;
   itr->parent = NULL;
   tablelength = h->tablelength;
-  itr->index = tablelength;
+  itr->index  = tablelength;
   if (0 == h->entrycount)
     return itr;
 
   for (i = 0; i < tablelength; i++) {
     if (h->table[i] != NULL) {
-      itr->e = h->table[i];
+      itr->e     = h->table[i];
       itr->index = i;
       break;
     }
@@ -792,10 +792,10 @@ void *arg_hashtable_itr_value(arg_hashtable_itr_t *i) {
 }
 
 int arg_hashtable_itr_advance(arg_hashtable_itr_t *itr) {
-  unsigned int j;
-  unsigned int tablelength;
+  unsigned int                 j;
+  unsigned int                 tablelength;
   struct arg_hashtable_entry **table;
-  struct arg_hashtable_entry *next;
+  struct arg_hashtable_entry  *next;
 
   if (itr->e == NULL)
     return 0; /* stupidity check */
@@ -803,7 +803,7 @@ int arg_hashtable_itr_advance(arg_hashtable_itr_t *itr) {
   next = itr->e->next;
   if (NULL != next) {
     itr->parent = itr->e;
-    itr->e = next;
+    itr->e      = next;
     return -1;
   }
 
@@ -818,20 +818,20 @@ int arg_hashtable_itr_advance(arg_hashtable_itr_t *itr) {
   while (NULL == (next = table[j])) {
     if (++j >= tablelength) {
       itr->index = tablelength;
-      itr->e = NULL;
+      itr->e     = NULL;
       return 0;
     }
   }
 
   itr->index = j;
-  itr->e = next;
+  itr->e     = next;
   return -1;
 }
 
 int arg_hashtable_itr_remove(arg_hashtable_itr_t *itr) {
   struct arg_hashtable_entry *remember_e;
   struct arg_hashtable_entry *remember_parent;
-  int ret;
+  int                         ret;
 
   /* Do the removal */
   if ((itr->parent) == NULL) {
@@ -849,7 +849,7 @@ int arg_hashtable_itr_remove(arg_hashtable_itr_t *itr) {
 
   /* Advance the iterator, correcting the parent */
   remember_parent = itr->parent;
-  ret = arg_hashtable_itr_advance(itr);
+  ret             = arg_hashtable_itr_advance(itr);
   if (itr->parent == remember_e) {
     itr->parent = remember_parent;
   }
@@ -861,37 +861,37 @@ int arg_hashtable_itr_search(arg_hashtable_itr_t *itr, arg_hashtable_t *h,
                              void *k) {
   struct arg_hashtable_entry *e;
   struct arg_hashtable_entry *parent;
-  unsigned int hashvalue;
-  unsigned int index;
+  unsigned int                hashvalue;
+  unsigned int                index;
 
   hashvalue = enhanced_hash(h, k);
-  index = index_for(h->tablelength, hashvalue);
+  index     = index_for(h->tablelength, hashvalue);
 
-  e = h->table[index];
+  e      = h->table[index];
   parent = NULL;
   while (e != NULL) {
     /* Check hash value to short circuit heavier comparison */
     if ((hashvalue == e->h) && (h->eqfn(k, e->k))) {
-      itr->index = index;
-      itr->e = e;
+      itr->index  = index;
+      itr->e      = e;
       itr->parent = parent;
-      itr->h = h;
+      itr->h      = h;
       return -1;
     }
     parent = e;
-    e = e->next;
+    e      = e->next;
   }
   return 0;
 }
 
 int arg_hashtable_change(arg_hashtable_t *h, void *k, void *v) {
   struct arg_hashtable_entry *e;
-  unsigned int hashvalue;
-  unsigned int index;
+  unsigned int                hashvalue;
+  unsigned int                index;
 
   hashvalue = enhanced_hash(h, k);
-  index = index_for(h->tablelength, hashvalue);
-  e = h->table[index];
+  index     = index_for(h->tablelength, hashvalue);
+  e         = h->table[index];
   while (e != NULL) {
     /* Check hash value to short circuit heavier comparison */
     if ((hashvalue == e->h) && (h->eqfn(k, e->k))) {
@@ -999,12 +999,12 @@ int arg_hashtable_change(arg_hashtable_t *h, void *k, void *v) {
  */
 
 typedef struct _internal_arg_dstr {
-  char *data;
+  char            *data;
   arg_dstr_freefn *free_proc;
-  char sbuf[ARG_DSTR_SIZE + 1];
-  char *append_data;
-  int append_data_size;
-  int append_used;
+  char             sbuf[ARG_DSTR_SIZE + 1];
+  char            *append_data;
+  int              append_data_size;
+  int              append_used;
 } _internal_arg_dstr_t;
 
 static void setup_append_buf(arg_dstr_t res, int newSpace);
@@ -1013,8 +1013,8 @@ arg_dstr_t arg_dstr_create(void) {
   _internal_arg_dstr_t *h =
       (_internal_arg_dstr_t *)xmalloc(sizeof(_internal_arg_dstr_t));
   memset(h, 0, sizeof(_internal_arg_dstr_t));
-  h->sbuf[0] = 0;
-  h->data = h->sbuf;
+  h->sbuf[0]   = 0;
+  h->data      = h->sbuf;
   h->free_proc = ARG_DSTR_STATIC;
   return h;
 }
@@ -1029,26 +1029,26 @@ void arg_dstr_destroy(arg_dstr_t ds) {
 }
 
 void arg_dstr_set(arg_dstr_t ds, char *str, arg_dstr_freefn *free_proc) {
-  int length;
+  int                       length;
   register arg_dstr_freefn *old_free_proc = ds->free_proc;
-  char *old_result = ds->data;
+  char                     *old_result    = ds->data;
 
   if (str == NULL) {
-    ds->sbuf[0] = 0;
-    ds->data = ds->sbuf;
+    ds->sbuf[0]   = 0;
+    ds->data      = ds->sbuf;
     ds->free_proc = ARG_DSTR_STATIC;
   } else if (free_proc == ARG_DSTR_VOLATILE) {
     length = (int)strlen(str);
     if (length > ARG_DSTR_SIZE) {
-      ds->data = (char *)xmalloc((unsigned)length + 1);
+      ds->data      = (char *)xmalloc((unsigned)length + 1);
       ds->free_proc = ARG_DSTR_DYNAMIC;
     } else {
-      ds->data = ds->sbuf;
+      ds->data      = ds->sbuf;
       ds->free_proc = ARG_DSTR_STATIC;
     }
     strcpy(ds->data, str);
   } else {
-    ds->data = str;
+    ds->data      = str;
     ds->free_proc = free_proc;
   }
 
@@ -1068,7 +1068,7 @@ void arg_dstr_set(arg_dstr_t ds, char *str, arg_dstr_freefn *free_proc) {
 
   if ((ds->append_data != NULL) && (ds->append_data_size > 0)) {
     xfree(ds->append_data);
-    ds->append_data = NULL;
+    ds->append_data      = NULL;
     ds->append_data_size = 0;
   }
 }
@@ -1124,9 +1124,9 @@ void arg_dstr_catc(arg_dstr_t ds, char c) {
  */
 void arg_dstr_catf(arg_dstr_t ds, const char *fmt, ...) {
   va_list arglist;
-  char *buff;
-  int n, r;
-  size_t slen;
+  char   *buff;
+  int     n, r;
+  size_t  slen;
 
   if (fmt == NULL)
     return;
@@ -1180,7 +1180,7 @@ static void setup_append_buf(arg_dstr_t ds, int new_space) {
      */
     if (ds->append_data_size > 500) {
       xfree(ds->append_data);
-      ds->append_data = NULL;
+      ds->append_data      = NULL;
       ds->append_data_size = 0;
     }
     ds->append_used = (int)strlen(ds->data);
@@ -1208,7 +1208,7 @@ static void setup_append_buf(arg_dstr_t ds, int new_space) {
     if (ds->append_data != NULL) {
       xfree(ds->append_data);
     }
-    ds->append_data = newbuf;
+    ds->append_data      = newbuf;
     ds->append_data_size = total_space;
   } else if (ds->data != ds->append_data) {
     strcpy(ds->append_data, ds->data);
@@ -1233,11 +1233,11 @@ void arg_dstr_reset(arg_dstr_t ds) {
   arg_dstr_free(ds);
   if ((ds->append_data != NULL) && (ds->append_data_size > 0)) {
     xfree(ds->append_data);
-    ds->append_data = NULL;
+    ds->append_data      = NULL;
     ds->append_data_size = 0;
   }
 
-  ds->data = ds->sbuf;
+  ds->data    = ds->sbuf;
   ds->sbuf[0] = 0;
 }
 
@@ -1287,7 +1287,7 @@ void arg_dstr_reset(arg_dstr_t ds) {
      * GNU-like getopt_long()/getopt_long_only() with 4.4BSD optreset extension.
      * getopt() is declared here too for GNU programs.
      */
-    #define no_argument 0
+    #define no_argument       0
     #define required_argument 1
     #define optional_argument 2
 
@@ -1317,7 +1317,7 @@ int getopt_long_only(int, char *const *, const char *, const struct option *,
 int getopt(int, char *const[], const char *);
 
 extern char *optarg; /* getopt(3) external variables */
-extern int optind, opterr, optopt;
+extern int   optind, opterr, optopt;
     #endif
     #ifndef _OPTRESET_DECLARED
       #define _OPTRESET_DECLARED
@@ -1396,60 +1396,60 @@ extern int optreset; /* getopt(3) external variable */
 
   #define GNU_COMPATIBLE /* Be more compatible, configure's use us! */
 
-int opterr = 1;   /* if error message should be printed */
-int optind = 1;   /* index into parent argv vector */
-int optopt = '?'; /* character checked for validity */
-int optreset;     /* reset getopt */
-char *optarg;     /* argument associated with option */
+int   opterr = 1;   /* if error message should be printed */
+int   optind = 1;   /* index into parent argv vector */
+int   optopt = '?'; /* character checked for validity */
+int   optreset;     /* reset getopt */
+char *optarg;       /* argument associated with option */
 
   #define PRINT_ERROR ((opterr) && (*options != ':'))
 
-  #define FLAG_PERMUTE 0x01  /* permute non-options to the end of argv */
-  #define FLAG_ALLARGS 0x02  /* treat non-options as args to option "-1" */
+  #define FLAG_PERMUTE  0x01 /* permute non-options to the end of argv */
+  #define FLAG_ALLARGS  0x02 /* treat non-options as args to option "-1" */
   #define FLAG_LONGONLY 0x04 /* operate as getopt_long_only */
 
   /* return values */
-  #define BADCH (int)'?'
-  #define BADARG ((*options == ':') ? (int)':' : (int)'?')
+  #define BADCH   (int)'?'
+  #define BADARG  ((*options == ':') ? (int)':' : (int)'?')
   #define INORDER (int)1
 
   #define EMSG ""
 
   #ifdef GNU_COMPATIBLE
     #define NO_PREFIX (-1)
-    #define D_PREFIX 0
+    #define D_PREFIX  0
     #define DD_PREFIX 1
-    #define W_PREFIX 2
+    #define W_PREFIX  2
   #endif
 
-static int getopt_internal(int, char *const *, const char *,
-                           const struct option *, int *, int);
-static int parse_long_options(char *const *, const char *,
-                              const struct option *, int *, int, int);
-static int gcd(int, int);
+static int  getopt_internal(int, char *const *, const char *,
+                            const struct option *, int *, int);
+static int  parse_long_options(char *const *, const char *,
+                               const struct option *, int *, int, int);
+static int  gcd(int, int);
 static void permute_args(int, int, int, char *const *);
 
 static char *place = EMSG; /* option letter processing */
 
 /* XXX: set optreset to 1 rather than these two */
 static int nonopt_start = -1; /* first non option argument (for permute) */
-static int nonopt_end = -1;   /* first option after non options (for permute) */
+static int nonopt_end   = -1; /* first option after non options (for permute) */
 
 /* Error messages */
 static const char recargchar[] = "option requires an argument -- %c";
 static const char illoptchar[] = "illegal option -- %c"; /* From P1003.2 */
   #ifdef GNU_COMPATIBLE
-static int dash_prefix = NO_PREFIX;
+static int        dash_prefix  = NO_PREFIX;
 static const char gnuoptchar[] = "invalid option -- %c";
 
 static const char recargstring[] = "option `%s%s' requires an argument";
-static const char ambig[] = "option `%s%.*s' is ambiguous";
-static const char noarg[] = "option `%s%.*s' doesn't allow an argument";
+static const char ambig[]        = "option `%s%.*s' is ambiguous";
+static const char noarg[]        = "option `%s%.*s' doesn't allow an argument";
 static const char illoptstring[] = "unrecognized option `%s%s'";
   #else
 static const char recargstring[] = "option requires an argument -- %s";
-static const char ambig[] = "ambiguous option -- %.*s";
-static const char noarg[] = "option doesn't take an argument -- %.*s";
+static const char ambig[]        = "ambiguous option -- %.*s";
+static const char noarg[]        = "option doesn't take an argument -- %.*s";
 static const char illoptstring[] = "unknown option -- %s";
   #endif
 
@@ -1522,20 +1522,20 @@ static int gcd(int a, int b) {
  */
 static void permute_args(int panonopt_start, int panonopt_end, int opt_end,
                          char *const *nargv) {
-  int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
+  int   cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
   char *swap;
 
   /*
    * compute lengths of blocks and number and size of cycles
    */
   nnonopts = panonopt_end - panonopt_start;
-  nopts = opt_end - panonopt_end;
-  ncycle = gcd(nnonopts, nopts);
+  nopts    = opt_end - panonopt_end;
+  ncycle   = gcd(nnonopts, nopts);
   cyclelen = (opt_end - panonopt_start) / ncycle;
 
   for (i = 0; i < ncycle; i++) {
     cstart = panonopt_end + i;
-    pos = cstart;
+    pos    = cstart;
     for (j = 0; j < cyclelen; j++) {
       if (pos >= panonopt_end)
         pos -= nnonopts;
@@ -1563,7 +1563,7 @@ static int parse_long_options(char *const *nargv, const char *options,
   char *current_dash;
   #endif
   size_t current_argv_len;
-  int i, match, exact_match, second_partial_match;
+  int    i, match, exact_match, second_partial_match;
 
   current_argv = place;
   #ifdef GNU_COMPATIBLE
@@ -1582,8 +1582,8 @@ static int parse_long_options(char *const *nargv, const char *options,
     break;
   }
   #endif
-  match = -1;
-  exact_match = 0;
+  match                = -1;
+  exact_match          = 0;
   second_partial_match = 0;
 
   optind++;
@@ -1602,7 +1602,7 @@ static int parse_long_options(char *const *nargv, const char *options,
 
     if (strlen(long_options[i].name) == current_argv_len) {
       /* exact match */
-      match = i;
+      match       = i;
       exact_match = 1;
       break;
     }
@@ -1716,8 +1716,8 @@ static int parse_long_options(char *const *nargv, const char *options,
 static int getopt_internal(int nargc, char *const *nargv, const char *options,
                            const struct option *long_options, int *idx,
                            int flags) {
-  char *oli; /* option letter list index */
-  int optchar, short_too;
+  char      *oli; /* option letter list index */
+  int        optchar, short_too;
   static int posixly_correct = -1;
 
   if (options == NULL)
@@ -1803,7 +1803,7 @@ start:
       else if (nonopt_end != -1) {
         permute_args(nonopt_start, nonopt_end, optind, nargv);
         nonopt_start = optind - (nonopt_end - nonopt_start);
-        nonopt_end = -1;
+        nonopt_end   = -1;
       }
       optind++;
       /* process next argument */
@@ -1899,7 +1899,7 @@ start:
     dash_prefix = W_PREFIX;
   #endif
     optchar = parse_long_options(nargv, options, long_options, idx, 0, flags);
-    place = EMSG;
+    place   = EMSG;
     return (optchar);
   }
   if (*++oli != ':') { /* doesn't take argument */
@@ -2027,7 +2027,7 @@ static int arg_date_scanfn(struct arg_date *parent, const char *argval) {
     parent->count++;
   } else {
     const char *pend;
-    struct tm tm = parent->tmval[parent->count];
+    struct tm   tm = parent->tmval[parent->count];
 
     /* parse the given argument value, store result in parent->tmval[] */
     pend = arg_strptime(argval, parent->format, &tm);
@@ -2052,8 +2052,8 @@ static void arg_date_errorfn(struct arg_date *parent, arg_dstr_t ds,
                              int errorcode, const char *argval,
                              const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -2072,7 +2072,7 @@ static void arg_date_errorfn(struct arg_date *parent, arg_dstr_t ds,
 
   case ARG_ERR_BADDATE: {
     struct tm tm;
-    char buff[200];
+    char      buff[200];
 
     arg_dstr_catf(ds, "illegal timestamp format \"%s\"\n", argval);
     memset(&tm, 0, sizeof(tm));
@@ -2099,7 +2099,7 @@ struct arg_date *arg_date1(const char *shortopts, const char *longopts,
 struct arg_date *arg_daten(const char *shortopts, const char *longopts,
                            const char *format, const char *datatype,
                            int mincount, int maxcount, const char *glossary) {
-  size_t nbytes;
+  size_t           nbytes;
   struct arg_date *result;
 
   /* foolproof things by ensuring maxcount is not less than mincount */
@@ -2118,24 +2118,24 @@ struct arg_date *arg_daten(const char *shortopts, const char *longopts,
   result = (struct arg_date *)xcalloc(1, nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_HASVALUE;
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = datatype ? datatype : format;
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_date_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_date_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_date_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_date_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = datatype ? datatype : format;
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_date_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_date_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_date_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_date_errorfn;
 
   /* store the tmval[maxcount] array immediately after the arg_date struct */
   result->tmval = (struct tm *)(result + 1);
 
   /* init the remaining arg_date member variables */
-  result->count = 0;
+  result->count  = 0;
   result->format = format;
 
   ARG_TRACE(("arg_daten() returns %p\n", result));
@@ -2231,10 +2231,10 @@ static int arg_strncasecmp(const char *s1, const char *s2, size_t n) {
 }
 
 char *arg_strptime(const char *buf, const char *fmt, struct tm *tm) {
-  char c;
+  char        c;
   const char *bp;
-  size_t len = 0;
-  int alt_format, i, split_year = 0;
+  size_t      len = 0;
+  int         alt_format, i, split_year = 0;
 
   bp = buf;
 
@@ -2387,7 +2387,7 @@ char *arg_strptime(const char *buf, const char *fmt, struct tm *tm) {
         tm->tm_year = (tm->tm_year % 100) + (i * 100);
       } else {
         tm->tm_year = i * 100;
-        split_year = 1;
+        split_year  = 1;
       }
       break;
 
@@ -2608,7 +2608,7 @@ static int arg_dbl_scanfn(struct arg_dbl *parent, const char *argval) {
     parent->count++;
   } else {
     double val;
-    char *end;
+    char  *end;
 
     /* extract double from argval into val */
     val = strtod(argval, &end);
@@ -2636,8 +2636,8 @@ static void arg_dbl_errorfn(struct arg_dbl *parent, arg_dstr_t ds,
                             int errorcode, const char *argval,
                             const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -2674,10 +2674,10 @@ struct arg_dbl *arg_dbl1(const char *shortopts, const char *longopts,
 struct arg_dbl *arg_dbln(const char *shortopts, const char *longopts,
                          const char *datatype, int mincount, int maxcount,
                          const char *glossary) {
-  size_t nbytes;
+  size_t          nbytes;
   struct arg_dbl *result;
-  size_t addr;
-  size_t rem;
+  size_t          addr;
+  size_t          rem;
 
   /* foolproof things by ensuring maxcount is not less than mincount */
   maxcount = (maxcount < mincount) ? mincount : maxcount;
@@ -2690,26 +2690,26 @@ struct arg_dbl *arg_dbln(const char *shortopts, const char *longopts,
   result = (struct arg_dbl *)xmalloc(nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_HASVALUE;
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = datatype ? datatype : "<double>";
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_dbl_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_dbl_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_dbl_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_dbl_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = datatype ? datatype : "<double>";
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_dbl_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_dbl_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_dbl_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_dbl_errorfn;
 
   /* Store the dval[maxcount] array on the first double boundary that
    * immediately follows the arg_dbl struct. We do the memory alignment
    * purely for SPARC and Motorola systems. They require floats and
    * doubles to be aligned on natural boundaries.
    */
-  addr = (size_t)(result + 1);
-  rem = addr % sizeof(double);
+  addr         = (size_t)(result + 1);
+  rem          = addr % sizeof(double);
   result->dval = (double *)(addr + sizeof(double) - rem);
   ARG_TRACE(("addr=%p, dval=%p, sizeof(double)=%d rem=%d\n", addr, result->dval,
              (int)sizeof(double), (int)rem));
@@ -2770,7 +2770,7 @@ static void arg_end_errorfn(void *parent, arg_dstr_t ds, int error,
   (void)parent;
 
   progname = progname ? progname : "";
-  argval = argval ? argval : "";
+  argval   = argval ? argval : "";
 
   arg_dstr_catf(ds, "%s: ", progname);
   switch (error) {
@@ -2798,7 +2798,7 @@ static void arg_end_errorfn(void *parent, arg_dstr_t ds, int error,
 }
 
 struct arg_end *arg_end(int maxcount) {
-  size_t nbytes;
+  size_t          nbytes;
   struct arg_end *result;
 
   nbytes =
@@ -2812,18 +2812,18 @@ struct arg_end *arg_end(int maxcount) {
   result = (struct arg_end *)xmalloc(nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_TERMINATOR;
+  result->hdr.flag      = ARG_TERMINATOR;
   result->hdr.shortopts = NULL;
-  result->hdr.longopts = NULL;
-  result->hdr.datatype = NULL;
-  result->hdr.glossary = NULL;
-  result->hdr.mincount = 1;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_end_resetfn;
-  result->hdr.scanfn = NULL;
-  result->hdr.checkfn = NULL;
-  result->hdr.errorfn = (arg_errorfn *)arg_end_errorfn;
+  result->hdr.longopts  = NULL;
+  result->hdr.datatype  = NULL;
+  result->hdr.glossary  = NULL;
+  result->hdr.mincount  = 1;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_end_resetfn;
+  result->hdr.scanfn    = NULL;
+  result->hdr.checkfn   = NULL;
+  result->hdr.errorfn   = (arg_errorfn *)arg_end_errorfn;
 
   /* store error[maxcount] array immediately after struct arg_end */
   result->error = (int *)(result + 1);
@@ -2973,8 +2973,8 @@ static int arg_file_scanfn(struct arg_file *parent, const char *argval) {
     /* leave parent arguiment value unaltered but still count the argument. */
     parent->count++;
   } else {
-    parent->filename[parent->count] = argval;
-    parent->basename[parent->count] = arg_basename(argval);
+    parent->filename[parent->count]  = argval;
+    parent->basename[parent->count]  = arg_basename(argval);
     parent->extension[parent->count] = arg_extension(
         parent->basename[parent->count]); /* only seek extensions within the
                                              basename (not the file path)*/
@@ -2996,8 +2996,8 @@ static void arg_file_errorfn(struct arg_file *parent, arg_dstr_t ds,
                              int errorcode, const char *argval,
                              const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -3032,9 +3032,9 @@ struct arg_file *arg_file1(const char *shortopts, const char *longopts,
 struct arg_file *arg_filen(const char *shortopts, const char *longopts,
                            const char *datatype, int mincount, int maxcount,
                            const char *glossary) {
-  size_t nbytes;
+  size_t           nbytes;
   struct arg_file *result;
-  int i;
+  int              i;
 
   /* foolproof things by ensuring maxcount is not less than mincount */
   maxcount = (maxcount < mincount) ? mincount : maxcount;
@@ -3050,30 +3050,30 @@ struct arg_file *arg_filen(const char *shortopts, const char *longopts,
   result = (struct arg_file *)xmalloc(nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_HASVALUE;
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.glossary = glossary;
-  result->hdr.datatype = datatype ? datatype : "<file>";
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_file_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_file_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_file_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_file_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.glossary  = glossary;
+  result->hdr.datatype  = datatype ? datatype : "<file>";
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_file_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_file_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_file_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_file_errorfn;
 
   /* store the filename,basename,extension arrays immediately after the arg_file
    * struct */
-  result->filename = (const char **)(result + 1);
-  result->basename = result->filename + maxcount;
+  result->filename  = (const char **)(result + 1);
+  result->basename  = result->filename + maxcount;
   result->extension = result->basename + maxcount;
-  result->count = 0;
+  result->count     = 0;
 
   /* foolproof the string pointers by initialising them with empty strings */
   for (i = 0; i < maxcount; i++) {
-    result->filename[i] = "";
-    result->basename[i] = "";
+    result->filename[i]  = "";
+    result->basename[i]  = "";
     result->extension[i] = "";
   }
 
@@ -3139,8 +3139,8 @@ static void arg_int_resetfn(struct arg_int *parent) {
 /* Failure of conversion is indicated by result where *endptr==str. */
 static long int strtol0X(const char *str, const char **endptr, char X,
                          int base) {
-  long int val;          /* stores result */
-  int s = 1;             /* sign is +1 or -1 */
+  long int    val;       /* stores result */
+  int         s   = 1;   /* sign is +1 or -1 */
   const char *ptr = str; /* ptr to current position in str */
 
   /* skip leading whitespace */
@@ -3231,7 +3231,7 @@ static int arg_int_scanfn(struct arg_int *parent, const char *argval) {
     /* leave parent arguiment value unaltered but still count the argument. */
     parent->count++;
   } else {
-    long int val;
+    long int    val;
     const char *end;
 
     /* attempt to extract hex integer (eg: +0x123) from argval into val
@@ -3305,8 +3305,8 @@ static void arg_int_errorfn(struct arg_int *parent, arg_dstr_t ds,
                             int errorcode, const char *argval,
                             const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -3349,7 +3349,7 @@ struct arg_int *arg_int1(const char *shortopts, const char *longopts,
 struct arg_int *arg_intn(const char *shortopts, const char *longopts,
                          const char *datatype, int mincount, int maxcount,
                          const char *glossary) {
-  size_t nbytes;
+  size_t          nbytes;
   struct arg_int *result;
 
   /* foolproof things by ensuring maxcount is not less than mincount */
@@ -3362,21 +3362,21 @@ struct arg_int *arg_intn(const char *shortopts, const char *longopts,
   result = (struct arg_int *)xmalloc(nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_HASVALUE;
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = datatype ? datatype : "<int>";
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_int_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_int_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_int_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_int_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = datatype ? datatype : "<int>";
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_int_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_int_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_int_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_int_errorfn;
 
   /* store the ival[maxcount] array immediately after the arg_int struct */
-  result->ival = (int *)(result + 1);
+  result->ival  = (int *)(result + 1);
   result->count = 0;
 
   ARG_TRACE(("arg_intn() returns %p\n", result));
@@ -3449,8 +3449,8 @@ static void arg_lit_errorfn(struct arg_lit *parent, arg_dstr_t ds,
                             int errorcode, const char *argval,
                             const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   switch (errorcode) {
   case ARG_ERR_MINCOUNT:
@@ -3489,18 +3489,18 @@ struct arg_lit *arg_litn(const char *shortopts, const char *longopts,
   result = (struct arg_lit *)xmalloc(sizeof(struct arg_lit));
 
   /* init the arg_hdr struct */
-  result->hdr.flag = 0;
+  result->hdr.flag      = 0;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = NULL;
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_lit_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_lit_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_lit_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_lit_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = NULL;
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_lit_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_lit_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_lit_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_lit_errorfn;
 
   /* init local variables */
   result->count = 0;
@@ -3551,18 +3551,18 @@ struct arg_lit *arg_litn(const char *shortopts, const char *longopts,
 struct arg_rem *arg_rem(const char *datatype, const char *glossary) {
   struct arg_rem *result = (struct arg_rem *)xmalloc(sizeof(struct arg_rem));
 
-  result->hdr.flag = 0;
+  result->hdr.flag      = 0;
   result->hdr.shortopts = NULL;
-  result->hdr.longopts = NULL;
-  result->hdr.datatype = datatype;
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = 1;
-  result->hdr.maxcount = 1;
-  result->hdr.parent = result;
-  result->hdr.resetfn = NULL;
-  result->hdr.scanfn = NULL;
-  result->hdr.checkfn = NULL;
-  result->hdr.errorfn = NULL;
+  result->hdr.longopts  = NULL;
+  result->hdr.datatype  = datatype;
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = 1;
+  result->hdr.maxcount  = 1;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = NULL;
+  result->hdr.scanfn    = NULL;
+  result->hdr.checkfn   = NULL;
+  result->hdr.errorfn   = NULL;
 
   ARG_TRACE(("arg_rem() returns %p\n", result));
   return result;
@@ -3642,9 +3642,9 @@ struct arg_rem *arg_rem(const char *datatype, const char *glossary) {
 extern "C" {
   #endif
 
-  #define TRexChar char
-  #define MAX_CHAR 0xFF
-  #define _TREXC(c) (c)
+  #define TRexChar    char
+  #define MAX_CHAR    0xFF
+  #define _TREXC(c)   (c)
   #define trex_strlen strlen
   #define trex_printf printf
 
@@ -3652,17 +3652,17 @@ extern "C" {
     #define TREX_API extern
   #endif
 
-  #define TRex_True 1
+  #define TRex_True  1
   #define TRex_False 0
 
   #define TREX_ICASE ARG_REX_ICASE
 
 typedef unsigned int TRexBool;
-typedef struct TRex TRex;
+typedef struct TRex  TRex;
 
 typedef struct {
   const TRexChar *begin;
-  int len;
+  int             len;
 } TRexMatch;
 
   #if defined(__clang__)
@@ -3675,16 +3675,16 @@ TREX_API TRex *trex_compile(const TRexChar *pattern, const TRexChar **error,
 TREX_API TRex *trex_compile(const TRexChar *pattern, const TRexChar **error,
                             int flags);
   #endif
-TREX_API void trex_free(TRex *exp);
+TREX_API void     trex_free(TRex *exp);
 TREX_API TRexBool trex_match(TRex *exp, const TRexChar *text);
 TREX_API TRexBool trex_search(TRex *exp, const TRexChar *text,
                               const TRexChar **out_begin,
                               const TRexChar **out_end);
 TREX_API TRexBool trex_searchrange(TRex *exp, const TRexChar *text_begin,
-                                   const TRexChar *text_end,
+                                   const TRexChar  *text_end,
                                    const TRexChar **out_begin,
                                    const TRexChar **out_end);
-TREX_API int trex_getsubexpcount(TRex *exp);
+TREX_API int      trex_getsubexpcount(TRex *exp);
 TREX_API TRexBool trex_getsubexp(TRex *exp, int n, TRexMatch *subexp);
 
   #ifdef __cplusplus
@@ -3695,7 +3695,7 @@ TREX_API TRexBool trex_getsubexp(TRex *exp, int n, TRexMatch *subexp);
 
 struct privhdr {
   const char *pattern;
-  int flags;
+  int         flags;
 };
 
 static void arg_rex_resetfn(struct arg_rex *parent) {
@@ -3704,10 +3704,10 @@ static void arg_rex_resetfn(struct arg_rex *parent) {
 }
 
 static int arg_rex_scanfn(struct arg_rex *parent, const char *argval) {
-  int errorcode = 0;
-  const TRexChar *error = NULL;
-  TRex *rex = NULL;
-  TRexBool is_match = TRex_False;
+  int             errorcode = 0;
+  const TRexChar *error     = NULL;
+  TRex           *rex       = NULL;
+  TRexBool        is_match  = TRex_False;
 
   if (parent->count == parent->hdr.maxcount) {
     /* maximum number of arguments exceeded */
@@ -3725,7 +3725,7 @@ static int arg_rex_scanfn(struct arg_rex *parent, const char *argval) {
     /* if a match is detected, record the argument value in the arg_rex struct
      */
 
-    rex = trex_compile(priv->pattern, &error, priv->flags);
+    rex      = trex_compile(priv->pattern, &error, priv->flags);
     is_match = trex_match(rex, argval);
     if (!is_match)
       errorcode = ARG_ERR_REGNOMATCH;
@@ -3756,8 +3756,8 @@ static void arg_rex_errorfn(struct arg_rex *parent, arg_dstr_t ds,
                             int errorcode, const char *argval,
                             const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -3807,12 +3807,12 @@ struct arg_rex *arg_rexn(const char *shortopts, const char *longopts,
                          const char *pattern, const char *datatype,
                          int mincount, int maxcount, int flags,
                          const char *glossary) {
-  size_t nbytes;
+  size_t          nbytes;
   struct arg_rex *result;
   struct privhdr *priv;
-  int i;
+  int             i;
   const TRexChar *error = NULL;
-  TRex *rex = NULL;
+  TRex           *rex   = NULL;
 
   if (!pattern) {
     printf("argtable: ERROR - illegal regular expression pattern \"(NULL)\"\n");
@@ -3829,28 +3829,28 @@ struct arg_rex *arg_rexn(const char *shortopts, const char *longopts,
                  sizeof(char *); /* storage for sval[maxcount] array */
 
   /* init the arg_hdr struct */
-  result = (struct arg_rex *)xmalloc(nbytes);
-  result->hdr.flag = ARG_HASVALUE;
+  result                = (struct arg_rex *)xmalloc(nbytes);
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = datatype ? datatype : pattern;
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_rex_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_rex_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_rex_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_rex_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = datatype ? datatype : pattern;
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_rex_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_rex_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_rex_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_rex_errorfn;
 
   /* store the arg_rex_priv struct immediately after the arg_rex struct */
   result->hdr.priv = result + 1;
-  priv = (struct privhdr *)(result->hdr.priv);
-  priv->pattern = pattern;
-  priv->flags = flags;
+  priv             = (struct privhdr *)(result->hdr.priv);
+  priv->pattern    = pattern;
+  priv->flags      = flags;
 
   /* store the sval[maxcount] array immediately after the arg_rex_priv struct */
-  result->sval = (const char **)(priv + 1);
+  result->sval  = (const char **)(priv + 1);
   result->count = 0;
 
   /* foolproof the string pointers by initializing them to reference empty
@@ -3885,14 +3885,14 @@ struct arg_rex *arg_rexn(const char *shortopts, const char *longopts,
 
 #ifdef _UINCODE
   #define scisprint iswprint
-  #define scstrlen wcslen
-  #define scprintf wprintf
-  #define _SC(x) L(x)
+  #define scstrlen  wcslen
+  #define scprintf  wprintf
+  #define _SC(x)    L(x)
 #else
   #define scisprint isprint
-  #define scstrlen strlen
-  #define scprintf printf
-  #define _SC(x) (x)
+  #define scstrlen  strlen
+  #define scprintf  printf
+  #define _SC(x)    (x)
 #endif
 
 #ifdef ARG_REX_DEBUG
@@ -3905,60 +3905,60 @@ static const TRexChar *g_nnames[] = {
     _SC("OP_BOL"),       _SC("OP_WB")};
 
 #endif
-#define OP_GREEDY (MAX_CHAR + 1) /*  * + ? {n} */
-#define OP_OR (MAX_CHAR + 2)
-#define OP_EXPR (MAX_CHAR + 3)      /* parentesis () */
+#define OP_GREEDY    (MAX_CHAR + 1) /*  * + ? {n} */
+#define OP_OR        (MAX_CHAR + 2)
+#define OP_EXPR      (MAX_CHAR + 3) /* parentesis () */
 #define OP_NOCAPEXPR (MAX_CHAR + 4) /* parentesis (?:) */
-#define OP_DOT (MAX_CHAR + 5)
-#define OP_CLASS (MAX_CHAR + 6)
-#define OP_CCLASS (MAX_CHAR + 7)
-#define OP_NCLASS (MAX_CHAR + 8) /* negates class the [^ */
-#define OP_RANGE (MAX_CHAR + 9)
-#define OP_CHAR (MAX_CHAR + 10)
-#define OP_EOL (MAX_CHAR + 11)
-#define OP_BOL (MAX_CHAR + 12)
-#define OP_WB (MAX_CHAR + 13)
+#define OP_DOT       (MAX_CHAR + 5)
+#define OP_CLASS     (MAX_CHAR + 6)
+#define OP_CCLASS    (MAX_CHAR + 7)
+#define OP_NCLASS    (MAX_CHAR + 8) /* negates class the [^ */
+#define OP_RANGE     (MAX_CHAR + 9)
+#define OP_CHAR      (MAX_CHAR + 10)
+#define OP_EOL       (MAX_CHAR + 11)
+#define OP_BOL       (MAX_CHAR + 12)
+#define OP_WB        (MAX_CHAR + 13)
 
-#define TREX_SYMBOL_ANY_CHAR ('.')
-#define TREX_SYMBOL_GREEDY_ONE_OR_MORE ('+')
+#define TREX_SYMBOL_ANY_CHAR            ('.')
+#define TREX_SYMBOL_GREEDY_ONE_OR_MORE  ('+')
 #define TREX_SYMBOL_GREEDY_ZERO_OR_MORE ('*')
-#define TREX_SYMBOL_GREEDY_ZERO_OR_ONE ('?')
-#define TREX_SYMBOL_BRANCH ('|')
-#define TREX_SYMBOL_END_OF_STRING ('$')
+#define TREX_SYMBOL_GREEDY_ZERO_OR_ONE  ('?')
+#define TREX_SYMBOL_BRANCH              ('|')
+#define TREX_SYMBOL_END_OF_STRING       ('$')
 #define TREX_SYMBOL_BEGINNING_OF_STRING ('^')
-#define TREX_SYMBOL_ESCAPE_CHAR ('\\')
+#define TREX_SYMBOL_ESCAPE_CHAR         ('\\')
 
 typedef int TRexNodeType;
 
 typedef struct tagTRexNode {
   TRexNodeType type;
-  int left;
-  int right;
-  int next;
+  int          left;
+  int          right;
+  int          next;
 } TRexNode;
 
 struct TRex {
-  const TRexChar *_eol;
-  const TRexChar *_bol;
-  const TRexChar *_p;
-  int _first;
-  int _op;
-  TRexNode *_nodes;
-  int _nallocated;
-  int _nsize;
-  int _nsubexpr;
-  TRexMatch *_matches;
-  int _currsubexp;
-  void *_jmpbuf;
+  const TRexChar  *_eol;
+  const TRexChar  *_bol;
+  const TRexChar  *_p;
+  int              _first;
+  int              _op;
+  TRexNode        *_nodes;
+  int              _nallocated;
+  int              _nsize;
+  int              _nsubexpr;
+  TRexMatch       *_matches;
+  int              _currsubexp;
+  void            *_jmpbuf;
   const TRexChar **_error;
-  int _flags;
+  int              _flags;
 };
 
 static int trex_list(TRex *exp);
 
 static int trex_newnode(TRex *exp, TRexNodeType type) {
   TRexNode n;
-  int newid;
+  int      newid;
   n.type = type;
   n.next = n.right = n.left = -1;
   if (type == OP_EXPR)
@@ -3969,7 +3969,7 @@ static int trex_newnode(TRex *exp, TRexNodeType type) {
                                                         sizeof(TRexNode));
   }
   exp->_nodes[exp->_nsize++] = n;
-  newid = exp->_nsize - 1;
+  newid                      = exp->_nsize - 1;
   return (int)newid;
 }
 
@@ -4013,7 +4013,7 @@ static TRexChar trex_escapechar(TRex *exp) {
 }
 
 static int trex_charclass(TRex *exp, int classid) {
-  int n = trex_newnode(exp, OP_CCLASS);
+  int n               = trex_newnode(exp, OP_CCLASS);
   exp->_nodes[n].left = classid;
   return n;
 }
@@ -4061,7 +4061,7 @@ static int trex_charnode(TRex *exp, TRexBool isclass) {
     case 'b':
     case 'B':
       if (!isclass) {
-        int node = trex_newnode(exp, OP_WB);
+        int node               = trex_newnode(exp, OP_WB);
         exp->_nodes[node].left = *exp->_p;
         exp->_p++;
         return node;
@@ -4080,7 +4080,7 @@ static int trex_charnode(TRex *exp, TRexBool isclass) {
   return trex_newnode(exp, t);
 }
 static int trex_class(TRex *exp) {
-  int ret = -1;
+  int ret   = -1;
   int first = -1, chain;
   if (*exp->_p == TREX_SYMBOL_BEGINNING_OF_STRING) {
     ret = trex_newnode(exp, OP_NCLASS);
@@ -4101,28 +4101,28 @@ static int trex_class(TRex *exp) {
         trex_error(exp, _SC("invalid range"));
       if (exp->_nodes[first].type == OP_CCLASS)
         trex_error(exp, _SC("cannot use character classes in ranges"));
-      exp->_nodes[r].left = exp->_nodes[first].type;
-      t = trex_escapechar(exp);
-      exp->_nodes[r].right = t;
+      exp->_nodes[r].left     = exp->_nodes[first].type;
+      t                       = trex_escapechar(exp);
+      exp->_nodes[r].right    = t;
       exp->_nodes[chain].next = r;
-      chain = r;
-      first = -1;
+      chain                   = r;
+      first                   = -1;
     } else {
       if (first != -1) {
-        int c = first;
+        int c                   = first;
         exp->_nodes[chain].next = c;
-        chain = c;
-        first = trex_charnode(exp, TRex_True);
+        chain                   = c;
+        first                   = trex_charnode(exp, TRex_True);
       } else {
         first = trex_charnode(exp, TRex_True);
       }
     }
   }
   if (first != -1) {
-    int c = first;
+    int c                   = first;
     exp->_nodes[chain].next = c;
-    chain = c;
-    first = -1;
+    chain                   = c;
+    first                   = -1;
   }
   /* hack? */
   exp->_nodes[ret].left = exp->_nodes[ret].next;
@@ -4131,7 +4131,7 @@ static int trex_class(TRex *exp) {
 }
 
 static int trex_parsenumber(TRex *exp) {
-  int ret = *exp->_p - '0';
+  int ret       = *exp->_p - '0';
   int positions = 10;
   exp->_p++;
   while (isdigit((int)(*exp->_p))) {
@@ -4156,9 +4156,9 @@ static int trex_element(TRex *exp) {
       expr = trex_newnode(exp, OP_NOCAPEXPR);
     } else
       expr = trex_newnode(exp, OP_EXPR);
-    newn = trex_list(exp);
+    newn                   = trex_list(exp);
     exp->_nodes[expr].left = newn;
-    ret = expr;
+    ret                    = expr;
     trex_expect(exp, ')');
   } break;
   case '[':
@@ -4180,7 +4180,7 @@ static int trex_element(TRex *exp) {
   }
 
   {
-    TRexBool isgreedy = TRex_False;
+    TRexBool       isgreedy = TRex_False;
     unsigned short p0 = 0, p1 = 0;
     switch (*exp->_p) {
     case TREX_SYMBOL_GREEDY_ZERO_OR_MORE:
@@ -4228,16 +4228,16 @@ static int trex_element(TRex *exp) {
       break;
     }
     if (isgreedy) {
-      int nnode = trex_newnode(exp, OP_GREEDY);
-      exp->_nodes[nnode].left = ret;
+      int nnode                = trex_newnode(exp, OP_GREEDY);
+      exp->_nodes[nnode].left  = ret;
       exp->_nodes[nnode].right = ((p0) << 16) | p1;
-      ret = nnode;
+      ret                      = nnode;
     }
   }
   if ((*exp->_p != TREX_SYMBOL_BRANCH) && (*exp->_p != ')') &&
       (*exp->_p != TREX_SYMBOL_GREEDY_ZERO_OR_MORE) &&
       (*exp->_p != TREX_SYMBOL_GREEDY_ONE_OR_MORE) && (*exp->_p != '\0')) {
-    int nnode = trex_element(exp);
+    int nnode             = trex_element(exp);
     exp->_nodes[ret].next = nnode;
   }
 
@@ -4259,11 +4259,11 @@ static int trex_list(TRex *exp) {
   if (*exp->_p == TREX_SYMBOL_BRANCH) {
     int temp, tright;
     exp->_p++;
-    temp = trex_newnode(exp, OP_OR);
-    exp->_nodes[temp].left = ret;
-    tright = trex_list(exp);
+    temp                    = trex_newnode(exp, OP_OR);
+    exp->_nodes[temp].left  = ret;
+    tright                  = trex_list(exp);
     exp->_nodes[temp].right = tright;
-    ret = temp;
+    ret                     = temp;
   }
   return ret;
 }
@@ -4346,7 +4346,7 @@ static const TRexChar *trex_matchnode(TRex *exp, TRexNode *node,
      * NULL; */
     TRexNode *greedystop = NULL;
     int p0 = (node->right >> 16) & 0x0000FFFF, p1 = node->right & 0x0000FFFF,
-        nmaches = 0;
+        nmaches       = 0;
     const TRexChar *s = str, *good = str;
 
     if (node->next != -1) {
@@ -4399,15 +4399,15 @@ static const TRexChar *trex_matchnode(TRex *exp, TRexNode *node,
     return NULL;
   }
   case OP_OR: {
-    const TRexChar *asd = str;
-    TRexNode *temp = &exp->_nodes[node->left];
+    const TRexChar *asd  = str;
+    TRexNode       *temp = &exp->_nodes[node->left];
     while ((asd = trex_matchnode(exp, temp, asd, NULL)) != NULL) {
       if (temp->next != -1)
         temp = &exp->_nodes[temp->next];
       else
         return asd;
     }
-    asd = str;
+    asd  = str;
     temp = &exp->_nodes[node->right];
     while ((asd = trex_matchnode(exp, temp, asd, NULL)) != NULL) {
       if (temp->next != -1)
@@ -4420,11 +4420,11 @@ static const TRexChar *trex_matchnode(TRex *exp, TRexNode *node,
   }
   case OP_EXPR:
   case OP_NOCAPEXPR: {
-    TRexNode *n = &exp->_nodes[node->left];
-    const TRexChar *cur = str;
-    int capture = -1;
+    TRexNode       *n       = &exp->_nodes[node->left];
+    const TRexChar *cur     = str;
+    int             capture = -1;
     if (node->type != OP_NOCAPEXPR && node->right == exp->_currsubexp) {
-      capture = exp->_currsubexp;
+      capture                      = exp->_currsubexp;
       exp->_matches[capture].begin = cur;
       exp->_currsubexp++;
     }
@@ -4439,7 +4439,7 @@ static const TRexChar *trex_matchnode(TRex *exp, TRexNode *node,
       if ((cur = trex_matchnode(exp, n, cur, subnext)) == NULL) {
         if (capture != -1) {
           exp->_matches[capture].begin = 0;
-          exp->_matches[capture].len = 0;
+          exp->_matches[capture].len   = 0;
         }
         return NULL;
       }
@@ -4501,19 +4501,19 @@ static const TRexChar *trex_matchnode(TRex *exp, TRexNode *node,
 TRex *trex_compile(const TRexChar *pattern, const TRexChar **error, int flags) {
   TRex *exp = (TRex *)xmalloc(sizeof(TRex));
   exp->_eol = exp->_bol = NULL;
-  exp->_p = pattern;
-  exp->_nallocated = (int)(scstrlen(pattern) * sizeof(TRexChar));
+  exp->_p               = pattern;
+  exp->_nallocated      = (int)(scstrlen(pattern) * sizeof(TRexChar));
   exp->_nodes =
       (TRexNode *)xmalloc((size_t)exp->_nallocated * sizeof(TRexNode));
-  exp->_nsize = 0;
-  exp->_matches = 0;
+  exp->_nsize    = 0;
+  exp->_matches  = 0;
   exp->_nsubexpr = 0;
-  exp->_first = trex_newnode(exp, OP_EXPR);
-  exp->_error = error;
-  exp->_jmpbuf = xmalloc(sizeof(jmp_buf));
-  exp->_flags = flags;
+  exp->_first    = trex_newnode(exp, OP_EXPR);
+  exp->_error    = error;
+  exp->_jmpbuf   = xmalloc(sizeof(jmp_buf));
+  exp->_flags    = flags;
   if (setjmp(*((jmp_buf *)exp->_jmpbuf)) == 0) {
-    int res = trex_list(exp);
+    int res                       = trex_list(exp);
     exp->_nodes[exp->_first].left = res;
     if (*exp->_p != '\0')
       trex_error(exp, _SC("unexpected character"));
@@ -4555,10 +4555,10 @@ void trex_free(TRex *exp) {
 
 TRexBool trex_match(TRex *exp, const TRexChar *text) {
   const TRexChar *res = NULL;
-  exp->_bol = text;
-  exp->_eol = text + scstrlen(text);
-  exp->_currsubexp = 0;
-  res = trex_matchnode(exp, exp->_nodes, text, NULL);
+  exp->_bol           = text;
+  exp->_eol           = text + scstrlen(text);
+  exp->_currsubexp    = 0;
+  res                 = trex_matchnode(exp, exp->_nodes, text, NULL);
   if (res == NULL || res != exp->_eol)
     return TRex_False;
   return TRex_True;
@@ -4567,8 +4567,8 @@ TRexBool trex_match(TRex *exp, const TRexChar *text) {
 TRexBool trex_searchrange(TRex *exp, const TRexChar *text_begin,
                           const TRexChar *text_end, const TRexChar **out_begin,
                           const TRexChar **out_end) {
-  const TRexChar *cur = NULL;
-  int node = exp->_first;
+  const TRexChar *cur  = NULL;
+  int             node = exp->_first;
   if (text_begin >= text_end)
     return TRex_False;
   exp->_bol = text_begin;
@@ -4577,7 +4577,7 @@ TRexBool trex_searchrange(TRex *exp, const TRexChar *text_begin,
     cur = text_begin;
     while (node != -1) {
       exp->_currsubexp = 0;
-      cur = trex_matchnode(exp, &exp->_nodes[node], cur, NULL);
+      cur              = trex_matchnode(exp, &exp->_nodes[node], cur, NULL);
       if (!cur)
         break;
       node = exp->_nodes[node].next;
@@ -4692,8 +4692,8 @@ static void arg_str_errorfn(struct arg_str *parent, arg_dstr_t ds,
                             int errorcode, const char *argval,
                             const char *progname) {
   const char *shortopts = parent->hdr.shortopts;
-  const char *longopts = parent->hdr.longopts;
-  const char *datatype = parent->hdr.datatype;
+  const char *longopts  = parent->hdr.longopts;
+  const char *datatype  = parent->hdr.datatype;
 
   /* make argval NULL safe */
   argval = argval ? argval : "";
@@ -4725,9 +4725,9 @@ struct arg_str *arg_str1(const char *shortopts, const char *longopts,
 struct arg_str *arg_strn(const char *shortopts, const char *longopts,
                          const char *datatype, int mincount, int maxcount,
                          const char *glossary) {
-  size_t nbytes;
+  size_t          nbytes;
   struct arg_str *result;
-  int i;
+  int             i;
 
   /* should not allow this stupid error */
   /* we should return an error code warning this logic error */
@@ -4741,21 +4741,21 @@ struct arg_str *arg_strn(const char *shortopts, const char *longopts,
   result = (struct arg_str *)xmalloc(nbytes);
 
   /* init the arg_hdr struct */
-  result->hdr.flag = ARG_HASVALUE;
+  result->hdr.flag      = ARG_HASVALUE;
   result->hdr.shortopts = shortopts;
-  result->hdr.longopts = longopts;
-  result->hdr.datatype = datatype ? datatype : "<string>";
-  result->hdr.glossary = glossary;
-  result->hdr.mincount = mincount;
-  result->hdr.maxcount = maxcount;
-  result->hdr.parent = result;
-  result->hdr.resetfn = (arg_resetfn *)arg_str_resetfn;
-  result->hdr.scanfn = (arg_scanfn *)arg_str_scanfn;
-  result->hdr.checkfn = (arg_checkfn *)arg_str_checkfn;
-  result->hdr.errorfn = (arg_errorfn *)arg_str_errorfn;
+  result->hdr.longopts  = longopts;
+  result->hdr.datatype  = datatype ? datatype : "<string>";
+  result->hdr.glossary  = glossary;
+  result->hdr.mincount  = mincount;
+  result->hdr.maxcount  = maxcount;
+  result->hdr.parent    = result;
+  result->hdr.resetfn   = (arg_resetfn *)arg_str_resetfn;
+  result->hdr.scanfn    = (arg_scanfn *)arg_str_scanfn;
+  result->hdr.checkfn   = (arg_checkfn *)arg_str_checkfn;
+  result->hdr.errorfn   = (arg_errorfn *)arg_str_errorfn;
 
   /* store the sval[maxcount] array immediately after the arg_str struct */
-  result->sval = (const char **)(result + 1);
+  result->sval  = (const char **)(result + 1);
   result->count = 0;
 
   /* foolproof the string pointers by initializing them to reference empty
@@ -4810,19 +4810,19 @@ struct arg_str *arg_strn(const char *shortopts, const char *longopts,
 
 #define MAX_MODULE_VERSION_SIZE 128
 
-static arg_hashtable_t *s_hashtable = NULL;
-static char *s_module_name = NULL;
-static int s_mod_ver_major = 0;
-static int s_mod_ver_minor = 0;
-static int s_mod_ver_patch = 0;
-static char *s_mod_ver_tag = NULL;
-static char *s_mod_ver = NULL;
+static arg_hashtable_t *s_hashtable     = NULL;
+static char            *s_module_name   = NULL;
+static int              s_mod_ver_major = 0;
+static int              s_mod_ver_minor = 0;
+static int              s_mod_ver_patch = 0;
+static char            *s_mod_ver_tag   = NULL;
+static char            *s_mod_ver       = NULL;
 
 void arg_set_module_name(const char *name) {
   size_t slen;
 
   xfree(s_module_name);
-  slen = strlen(name);
+  slen          = strlen(name);
   s_module_name = (char *)xmalloc(slen + 1);
   memset(s_module_name, 0, slen + 1);
 
@@ -4835,7 +4835,7 @@ void arg_set_module_name(const char *name) {
 }
 
 void arg_set_module_version(int major, int minor, int patch, const char *tag) {
-  size_t slen_tag, slen_ds;
+  size_t     slen_tag, slen_ds;
   arg_dstr_t ds;
 
   s_mod_ver_major = major;
@@ -4843,7 +4843,7 @@ void arg_set_module_version(int major, int minor, int patch, const char *tag) {
   s_mod_ver_patch = patch;
 
   xfree(s_mod_ver_tag);
-  slen_tag = strlen(tag);
+  slen_tag      = strlen(tag);
   s_mod_ver_tag = (char *)xmalloc(slen_tag + 1);
   memset(s_mod_ver_tag, 0, slen_tag + 1);
 
@@ -4861,7 +4861,7 @@ void arg_set_module_version(int major, int minor, int patch, const char *tag) {
   arg_dstr_cat(ds, s_mod_ver_tag);
 
   xfree(s_mod_ver);
-  slen_ds = strlen(arg_dstr_cstr(ds));
+  slen_ds   = strlen(arg_dstr_cstr(ds));
   s_mod_ver = (char *)xmalloc(slen_ds + 1);
   memset(s_mod_ver, 0, slen_ds + 1);
 
@@ -4876,8 +4876,8 @@ void arg_set_module_version(int major, int minor, int patch, const char *tag) {
 }
 
 static unsigned int hash_key(const void *key) {
-  const char *str = (const char *)key;
-  int c;
+  const char  *str = (const char *)key;
+  int          c;
   unsigned int hash = 5381;
 
   while ((c = *str++) != 0)
@@ -4903,8 +4903,8 @@ void arg_cmd_uninit(void) {
 void arg_cmd_register(const char *name, arg_cmdfn *proc,
                       const char *description) {
   arg_cmd_info_t *cmd_info;
-  size_t slen_name;
-  void *k;
+  size_t          slen_name;
+  void           *k;
 
   assert(strlen(name) < ARG_CMD_NAME_LEN);
   assert(strlen(description) < ARG_CMD_DESCRIPTION_LEN);
@@ -4934,7 +4934,7 @@ void arg_cmd_register(const char *name, arg_cmdfn *proc,
   cmd_info->proc = proc;
 
   slen_name = strlen(name);
-  k = xmalloc(slen_name + 1);
+  k         = xmalloc(slen_name + 1);
   memset(k, 0, slen_name + 1);
 
 #if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) ||         \
@@ -5121,12 +5121,12 @@ static void arg_register_error(struct arg_end *end, void *parent, int error,
                                const char *argval) {
   /* printf("arg_register_error(%p,%p,%d,%s)\n",end,parent,error,argval); */
   if (end->count < end->hdr.maxcount) {
-    end->error[end->count] = error;
+    end->error[end->count]  = error;
     end->parent[end->count] = parent;
     end->argval[end->count] = argval;
     end->count++;
   } else {
-    end->error[end->hdr.maxcount - 1] = ARG_ELIMIT;
+    end->error[end->hdr.maxcount - 1]  = ARG_ELIMIT;
     end->parent[end->hdr.maxcount - 1] = end;
     end->argval[end->hdr.maxcount - 1] = NULL;
   }
@@ -5147,8 +5147,8 @@ static int find_shortoption(struct arg_hdr **table, char shortopt) {
 }
 
 struct longoptions {
-  int getoptval;
-  int noptions;
+  int            getoptval;
+  int            noptions;
   struct option *options;
 };
 
@@ -5173,12 +5173,12 @@ void dump_longoptions(struct longoptions * longoptions)
 
 static struct longoptions *alloc_longoptions(struct arg_hdr **table) {
   struct longoptions *result;
-  size_t nbytes;
-  int noptions = 1;
-  size_t longoptlen = 0;
-  int tabindex;
-  int option_index = 0;
-  char *store;
+  size_t              nbytes;
+  int                 noptions   = 1;
+  size_t              longoptlen = 0;
+  int                 tabindex;
+  int                 option_index = 0;
+  char               *store;
 
   /*
    * Determine the total number of option structs required
@@ -5209,9 +5209,9 @@ static struct longoptions *alloc_longoptions(struct arg_hdr **table) {
   result = (struct longoptions *)xmalloc(nbytes);
 
   result->getoptval = 0;
-  result->noptions = noptions;
-  result->options = (struct option *)(result + 1);
-  store = (char *)(result->options + noptions);
+  result->noptions  = noptions;
+  result->options   = (struct option *)(result + 1);
+  store             = (char *)(result->options + noptions);
 
   for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
     const char *longopts = table[tabindex]->longopts;
@@ -5229,7 +5229,7 @@ static struct longoptions *alloc_longoptions(struct arg_hdr **table) {
 
       result->options[option_index].name = storestart;
       result->options[option_index].flag = &(result->getoptval);
-      result->options[option_index].val = tabindex;
+      result->options[option_index].val  = tabindex;
       if (table[tabindex]->flag & ARG_HASOPTVALUE)
         result->options[option_index].has_arg = 2;
       else if (table[tabindex]->flag & ARG_HASVALUE)
@@ -5241,20 +5241,20 @@ static struct longoptions *alloc_longoptions(struct arg_hdr **table) {
     }
   }
   /* terminate the options array with a zero-filled entry */
-  result->options[option_index].name = 0;
+  result->options[option_index].name    = 0;
   result->options[option_index].has_arg = 0;
-  result->options[option_index].flag = 0;
-  result->options[option_index].val = 0;
+  result->options[option_index].flag    = 0;
+  result->options[option_index].val     = 0;
 
   /*dump_longoptions(result);*/
   return result;
 }
 
 static char *alloc_shortoptions(struct arg_hdr **table) {
-  char *result;
+  char  *result;
   size_t len = 2;
-  int tabindex;
-  char *res;
+  int    tabindex;
+  char  *res;
 
   /* determine the total number of option chars required */
   for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
@@ -5271,8 +5271,8 @@ static char *alloc_shortoptions(struct arg_hdr **table) {
   *res++ = ':';
 
   for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
-    struct arg_hdr *hdr = table[tabindex];
-    const char *shortopts = hdr->shortopts;
+    struct arg_hdr *hdr       = table[tabindex];
+    const char     *shortopts = hdr->shortopts;
     while (shortopts && *shortopts) {
       *res++ = *shortopts++;
       if (hdr->flag & ARG_HASVALUE)
@@ -5299,14 +5299,14 @@ static int arg_endindex(struct arg_hdr **table) {
 static void arg_parse_tagged(int argc, char **argv, struct arg_hdr **table,
                              struct arg_end *endtable) {
   struct longoptions *longoptions;
-  char *shortoptions;
-  int copt;
+  char               *shortoptions;
+  int                 copt;
 
   /*printf("arg_parse_tagged(%d,%p,%p,%p)\n",argc,argv,table,endtable);*/
 
   /* allocate short and long option arrays for the given opttable[].   */
   /* if the allocs fail then put an error msg in the last table entry. */
-  longoptions = alloc_longoptions(table);
+  longoptions  = alloc_longoptions(table);
   shortoptions = alloc_shortoptions(table);
 
   /*dump_longoptions(longoptions);*/
@@ -5331,8 +5331,8 @@ static void arg_parse_tagged(int argc, char **argv, struct arg_hdr **table,
      */
     switch (copt) {
     case 0: {
-      int tabindex = longoptions->getoptval;
-      void *parent = table[tabindex]->parent;
+      int   tabindex = longoptions->getoptval;
+      void *parent   = table[tabindex]->parent;
       /*printf("long option detected from argtable[%d]\n", tabindex);*/
       if (optarg && optarg[0] == 0 && (table[tabindex]->flag & ARG_HASVALUE)) {
         /* printf(": long option %s requires an argument\n",argv[optind-1]); */
@@ -5383,8 +5383,8 @@ static void arg_parse_tagged(int argc, char **argv, struct arg_hdr **table,
         arg_register_error(endtable, endtable, copt, NULL);
       } else {
         if (table[tabindex]->scanfn) {
-          void *parent = table[tabindex]->parent;
-          int errorcode = table[tabindex]->scanfn(parent, optarg);
+          void *parent    = table[tabindex]->parent;
+          int   errorcode = table[tabindex]->scanfn(parent, optarg);
           if (errorcode != 0)
             arg_register_error(endtable, parent, errorcode, optarg);
         }
@@ -5400,15 +5400,15 @@ static void arg_parse_tagged(int argc, char **argv, struct arg_hdr **table,
 
 static void arg_parse_untagged(int argc, char **argv, struct arg_hdr **table,
                                struct arg_end *endtable) {
-  int tabindex = 0;
-  int errorlast = 0;
+  int         tabindex   = 0;
+  int         errorlast  = 0;
   const char *optarglast = NULL;
-  void *parentlast = NULL;
+  void       *parentlast = NULL;
 
   /*printf("arg_parse_untagged(%d,%p,%p,%p)\n",argc,argv,table,endtable);*/
   while (!(table[tabindex]->flag & ARG_TERMINATOR)) {
     void *parent;
-    int errorcode;
+    int   errorcode;
 
     /* if we have exhausted our argv[optind] entries then we have finished */
     if (optind >= argc) {
@@ -5436,7 +5436,7 @@ static void arg_parse_untagged(int argc, char **argv, struct arg_hdr **table,
     /* attempt to scan the current argv[optind] with the current     */
     /* table[tabindex] entry. If it succeeds then keep it, otherwise */
     /* try again with the next table[] entry.                        */
-    parent = table[tabindex]->parent;
+    parent    = table[tabindex]->parent;
     errorcode = table[tabindex]->scanfn(parent, argv[optind]);
     if (errorcode == 0) {
       /* success, move onto next argv[optind] but stay with same table[tabindex]
@@ -5453,7 +5453,7 @@ static void arg_parse_untagged(int argc, char **argv, struct arg_hdr **table,
       tabindex++;
 
       /* remember this as a tentative error we may wish to reinstate later */
-      errorlast = errorcode;
+      errorlast  = errorcode;
       optarglast = argv[optind];
       parentlast = parent;
     }
@@ -5482,8 +5482,8 @@ static void arg_parse_check(struct arg_hdr **table, struct arg_end *endtable) {
   /* printf("arg_parse_check()\n"); */
   do {
     if (table[tabindex]->checkfn) {
-      void *parent = table[tabindex]->parent;
-      int errorcode = table[tabindex]->checkfn(parent);
+      void *parent    = table[tabindex]->parent;
+      int   errorcode = table[tabindex]->checkfn(parent);
       if (errorcode != 0)
         arg_register_error(endtable, parent, errorcode, NULL);
     }
@@ -5491,8 +5491,8 @@ static void arg_parse_check(struct arg_hdr **table, struct arg_end *endtable) {
 }
 
 static void arg_reset(void **argtable) {
-  struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int tabindex = 0;
+  struct arg_hdr **table    = (struct arg_hdr **)argtable;
+  int              tabindex = 0;
   /*printf("arg_reset(%p)\n",argtable);*/
   do {
     if (table[tabindex]->resetfn)
@@ -5502,10 +5502,10 @@ static void arg_reset(void **argtable) {
 
 int arg_parse(int argc, char **argv, void **argtable) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  struct arg_end *endtable;
-  int endindex;
-  char **argvcopy = NULL;
-  int i;
+  struct arg_end  *endtable;
+  int              endindex;
+  char           **argvcopy = NULL;
+  int              i;
 
   /*printf("arg_parse(%d,%p,%p)\n",argc,argv,argtable);*/
 
@@ -5578,7 +5578,7 @@ int arg_parse(int argc, char **argv, void **argtable) {
  */
 static void arg_cat(char **pdest, const char *src, size_t *pndest) {
   char *dest = *pdest;
-  char *end = dest + *pndest;
+  char *end  = dest + *pndest;
 
   /*locate null terminator of dest string */
   while (dest < end - 1 && *dest != 0)
@@ -5593,7 +5593,7 @@ static void arg_cat(char **pdest, const char *src, size_t *pndest) {
 
   /* update *pdest and *pndest */
   *pndest = (size_t)(end - dest);
-  *pdest = dest;
+  *pdest  = dest;
 }
 
 static void arg_cat_option(char *dest, size_t ndest, const char *shortopts,
@@ -5724,7 +5724,7 @@ void arg_print_option_ds(arg_dstr_t ds, const char *shortopts,
                          const char *longopts, const char *datatype,
                          const char *suffix) {
   char syntax[200] = "";
-  suffix = suffix ? suffix : "";
+  suffix           = suffix ? suffix : "";
 
   /* there is no way of passing the proper optvalue for optional argument values
    * here, so we must ignore it */
@@ -5751,10 +5751,10 @@ void arg_print_option(FILE *fp, const char *shortopts, const char *longopts,
  * in: -xvfsd, or -xvf[sd], or [-xvsfd]
  */
 static void arg_print_gnuswitch_ds(arg_dstr_t ds, struct arg_hdr **table) {
-  int tabindex;
+  int         tabindex;
   const char *format1 = " -%c";
   const char *format2 = " [-%c";
-  const char *suffix = "";
+  const char *suffix  = "";
 
   /* print all mandatory switches that are without argument values */
   for (tabindex = 0;
@@ -5798,7 +5798,7 @@ static void arg_print_gnuswitch_ds(arg_dstr_t ds, struct arg_hdr **table) {
     /* print first short option */
     arg_dstr_catf(ds, format2, table[tabindex]->shortopts[0]);
     format2 = "%c";
-    suffix = "]";
+    suffix  = "]";
   }
 
   arg_dstr_catf(ds, "%s", suffix);
@@ -5806,7 +5806,7 @@ static void arg_print_gnuswitch_ds(arg_dstr_t ds, struct arg_hdr **table) {
 
 void arg_print_syntax_ds(arg_dstr_t ds, void **argtable, const char *suffix) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int i, tabindex;
+  int              i, tabindex;
 
   /* print GNU style [OPTION] string */
   arg_print_gnuswitch_ds(ds, table);
@@ -5815,7 +5815,7 @@ void arg_print_syntax_ds(arg_dstr_t ds, void **argtable, const char *suffix) {
   for (tabindex = 0;
        table[tabindex] && !(table[tabindex]->flag & ARG_TERMINATOR);
        tabindex++) {
-    char syntax[200] = "";
+    char        syntax[200] = "";
     const char *shortopts, *longopts, *datatype;
 
     /* skip short options without arg values (they were printed by
@@ -5824,8 +5824,8 @@ void arg_print_syntax_ds(arg_dstr_t ds, void **argtable, const char *suffix) {
       continue;
 
     shortopts = table[tabindex]->shortopts;
-    longopts = table[tabindex]->longopts;
-    datatype = table[tabindex]->datatype;
+    longopts  = table[tabindex]->longopts;
+    datatype  = table[tabindex]->datatype;
     arg_cat_option(syntax, sizeof(syntax) - 1, shortopts, longopts, datatype,
                    table[tabindex]->flag & ARG_HASOPTVALUE);
 
@@ -5876,18 +5876,18 @@ void arg_print_syntax(FILE *fp, void **argtable, const char *suffix) {
 
 void arg_print_syntaxv_ds(arg_dstr_t ds, void **argtable, const char *suffix) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int i, tabindex;
+  int              i, tabindex;
 
   /* print remaining options in abbreviated style */
   for (tabindex = 0;
        table[tabindex] && !(table[tabindex]->flag & ARG_TERMINATOR);
        tabindex++) {
-    char syntax[200] = "";
+    char        syntax[200] = "";
     const char *shortopts, *longopts, *datatype;
 
     shortopts = table[tabindex]->shortopts;
-    longopts = table[tabindex]->longopts;
-    datatype = table[tabindex]->datatype;
+    longopts  = table[tabindex]->longopts;
+    datatype  = table[tabindex]->datatype;
     arg_cat_optionv(syntax, sizeof(syntax) - 1, shortopts, longopts, datatype,
                     table[tabindex]->flag & ARG_HASOPTVALUE, "|");
 
@@ -5936,16 +5936,16 @@ void arg_print_syntaxv(FILE *fp, void **argtable, const char *suffix) {
 
 void arg_print_glossary_ds(arg_dstr_t ds, void **argtable, const char *format) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int tabindex;
+  int              tabindex;
 
   format = format ? format : "  %-20s %s\n";
   for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
     if (table[tabindex]->glossary) {
-      char syntax[200] = "";
-      const char *shortopts = table[tabindex]->shortopts;
-      const char *longopts = table[tabindex]->longopts;
-      const char *datatype = table[tabindex]->datatype;
-      const char *glossary = table[tabindex]->glossary;
+      char        syntax[200] = "";
+      const char *shortopts   = table[tabindex]->shortopts;
+      const char *longopts    = table[tabindex]->longopts;
+      const char *datatype    = table[tabindex]->datatype;
+      const char *glossary    = table[tabindex]->glossary;
       arg_cat_optionv(syntax, sizeof(syntax) - 1, shortopts, longopts, datatype,
                       table[tabindex]->flag & ARG_HASOPTVALUE, ", ");
       arg_dstr_catf(ds, format, syntax, glossary);
@@ -5994,10 +5994,10 @@ void arg_print_glossary(FILE *fp, void **argtable, const char *format) {
  */
 static void arg_print_formatted_ds(arg_dstr_t ds, const unsigned lmargin,
                                    const unsigned rmargin, const char *text) {
-  const unsigned int textlen = (unsigned int)strlen(text);
-  unsigned int line_start = 0;
-  unsigned int line_end = textlen;
-  const unsigned int colwidth = (rmargin - lmargin) + 1;
+  const unsigned int textlen    = (unsigned int)strlen(text);
+  unsigned int       line_start = 0;
+  unsigned int       line_end   = textlen;
+  const unsigned int colwidth   = (rmargin - lmargin) + 1;
 
   assert(strlen(text) < UINT_MAX);
 
@@ -6080,15 +6080,15 @@ static void arg_print_formatted_ds(arg_dstr_t ds, const unsigned lmargin,
  */
 void arg_print_glossary_gnu_ds(arg_dstr_t ds, void **argtable) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int tabindex;
+  int              tabindex;
 
   for (tabindex = 0; !(table[tabindex]->flag & ARG_TERMINATOR); tabindex++) {
     if (table[tabindex]->glossary) {
-      char syntax[200] = "";
-      const char *shortopts = table[tabindex]->shortopts;
-      const char *longopts = table[tabindex]->longopts;
-      const char *datatype = table[tabindex]->datatype;
-      const char *glossary = table[tabindex]->glossary;
+      char        syntax[200] = "";
+      const char *shortopts   = table[tabindex]->shortopts;
+      const char *longopts    = table[tabindex]->longopts;
+      const char *datatype    = table[tabindex]->datatype;
+      const char *glossary    = table[tabindex]->glossary;
 
       if (!shortopts && longopts) {
         /* Indent trailing line by 4 spaces... */
@@ -6126,7 +6126,7 @@ void arg_print_glossary_gnu(FILE *fp, void **argtable) {
  */
 int arg_nullcheck(void **argtable) {
   struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int tabindex;
+  int              tabindex;
   /*printf("arg_nullcheck(%p)\n",argtable);*/
 
   if (!table)
@@ -6154,9 +6154,9 @@ int arg_nullcheck(void **argtable) {
  * compatibility.
  */
 void arg_free(void **argtable) {
-  struct arg_hdr **table = (struct arg_hdr **)argtable;
-  int tabindex = 0;
-  int flag;
+  struct arg_hdr **table    = (struct arg_hdr **)argtable;
+  int              tabindex = 0;
+  int              flag;
   /*printf("arg_free(%p)\n",argtable);*/
   do {
     /*
@@ -6179,8 +6179,8 @@ void arg_free(void **argtable) {
 /* frees each non-NULL element of argtable[], where n is the size of the number
  * of entries in the array */
 void arg_freetable(void **argtable, size_t n) {
-  struct arg_hdr **table = (struct arg_hdr **)argtable;
-  size_t tabindex = 0;
+  struct arg_hdr **table    = (struct arg_hdr **)argtable;
+  size_t           tabindex = 0;
   /*printf("arg_freetable(%p)\n",argtable);*/
   for (tabindex = 0; tabindex < n; tabindex++) {
     if (table[tabindex] == NULL)

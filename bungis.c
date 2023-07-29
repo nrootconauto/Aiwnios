@@ -12,7 +12,7 @@ struct CHeapCtrl;
 struct CHashTable;
 __thread struct CTask *Fs;
 __thread struct CTask *HolyFs;
-void TaskExit() {
+void                   TaskExit() {
   // TODO implement me
   exit(0);
 }
@@ -22,9 +22,9 @@ void TaskInit(CTask *task, void *addr, int64_t stk_sz) {
     stk_sz = 512 * (1 << 9);
   CExcept *except;
   memset(task, 0, sizeof(CTask));
-  task->heap = HeapCtrlInit(NULL, task, 1);
+  task->heap   = HeapCtrlInit(NULL, task, 1);
   task->except = A_MALLOC(sizeof(CQue), task);
-  task->stack = A_MALLOC(stk_sz, task);
+  task->stack  = A_MALLOC(stk_sz, task);
   QueInit(task->except);
   except = A_MALLOC(sizeof(CExcept), task);
   AIWNIOS_makecontext(

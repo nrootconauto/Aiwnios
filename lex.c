@@ -26,7 +26,7 @@ int64_t LexAdvChr(CLexer *lex) {
   }
 enter:;
   CLexFile *file = lex->file, *last;
-  int64_t ret;
+  int64_t   ret;
   if (!lex->file)
     return 0;
   // We terminate the silly sauces with 0 as per ASCII nul character
@@ -59,7 +59,7 @@ enter:;
 }
 static void LexErr(CLexer *lex, char *fmt, ...) {
   va_list lst;
-  char buffer[STR_LEN];
+  char    buffer[STR_LEN];
   va_start(lst, fmt);
   vsprintf(buffer, fmt, lst);
   va_end(lst);
@@ -74,7 +74,7 @@ static void LexErr(CLexer *lex, char *fmt, ...) {
 
 static void LexWarn(CLexer *lex, char *fmt, ...) {
   va_list lst;
-  char buffer[STR_LEN];
+  char    buffer[STR_LEN];
   va_start(lst, fmt);
   vsprintf(buffer, fmt, lst);
   va_end(lst);
@@ -210,7 +210,7 @@ static int64_t LexString(CLexer *lex, int64_t till) {
     }
   }
 fin:
-  lex->str_len = idx;
+  lex->str_len       = idx;
   lex->string[idx++] = 0;
   return 0;
 }
@@ -251,14 +251,14 @@ static int64_t LexInt(CLexer *lex, int64_t base) {
 }
 int64_t Lex(CLexer *lex) {
 re_enter:;
-  int64_t chr1 = LexAdvChr(lex), chr2;
+  int64_t chr1     = LexAdvChr(lex), chr2;
   int64_t has_base = 0, base = 10, integer = 0, decimal = 0, exponet = 0,
           zeros = 0, idx = 0, old_flags, in_else;
-  FILE *f;
-  char macro_name[STR_LEN];
+  FILE           *f;
+  char            macro_name[STR_LEN];
   CHashDefineStr *define;
-  CLexFile *new_file, *actual_file;
-  char *dir;
+  CLexFile       *new_file, *actual_file;
+  char           *dir;
   switch (chr1) {
     break;
   case '`':
@@ -316,7 +316,7 @@ re_enter:;
         }
       exponet:
         exponet = 0;
-        base = 1; // This holds the multipler for the exponet
+        base    = 1; // This holds the multipler for the exponet
         if ('+' == (chr1 = LexAdvChr(lex))) {
         } else if ('-' == chr1) {
           base = -1;
@@ -363,7 +363,7 @@ re_enter:;
         break;
       default:
         lex->flags |= LEXF_USE_LAST_CHAR;
-        lex->integer = integer;
+        lex->integer        = integer;
         return lex->cur_tok = TK_I64;
       }
     } else
@@ -567,7 +567,7 @@ re_enter:;
       LexErr(lex, "String constant too long!");
       return ERR;
     }
-    lex->integer = *(uint64_t *)lex->string;
+    lex->integer        = *(uint64_t *)lex->string;
     return lex->cur_tok = TK_CHR;
     break;
   case '_':
@@ -606,17 +606,17 @@ re_enter:;
             // We dont want to use the last charactor now that we are in a macro
             lex->flags &= ~LEXF_USE_LAST_CHAR;
             //
-            new_file = A_MALLOC(sizeof(CLexFile), NULL);
-            new_file->dir = NULL;
-            new_file->last = lex->file;
+            new_file           = A_MALLOC(sizeof(CLexFile), NULL);
+            new_file->dir      = NULL;
+            new_file->last     = lex->file;
             new_file->filename = A_STRDUP(define->base.str, NULL);
             new_file->pos = new_file->col = new_file->ln = 0;
             new_file->text = A_STRDUP(define->data, NULL);
-            lex->file = new_file;
+            lex->file      = new_file;
             goto re_enter;
           }
         }
-        lex->str_len = idx;
+        lex->str_len        = idx;
         return lex->cur_tok = TK_NAME;
       }
     }
@@ -731,9 +731,9 @@ re_enter:;
                 snprintf(NULL, 0, "%s/%s", actual_file->dir, lex->string);
             char buf[len + 1];
             sprintf(buf, "%s/%s", actual_file->dir, lex->string);
-            dir = __AIWNIOS_StrDup(buf, NULL);
+            dir                = __AIWNIOS_StrDup(buf, NULL);
             *strrchr(dir, '/') = 0;
-            f = fopen(buf, "rb");
+            f                  = fopen(buf, "rb");
           } else
             goto normal;
         } else {
@@ -742,7 +742,7 @@ re_enter:;
           if (!strrchr(lex->string, '/')) {
             dir = __AIWNIOS_StrDup(".", NULL);
           } else {
-            dir = __AIWNIOS_StrDup(lex->string, NULL);
+            dir                = __AIWNIOS_StrDup(lex->string, NULL);
             *strrchr(dir, '/') = 0;
           }
         }
@@ -755,17 +755,17 @@ re_enter:;
         idx = ftell(f);
         fseek(f, 0, SEEK_SET);
         idx -= ftell(f);
-        new_file = A_MALLOC(sizeof(CLexFile), NULL);
-        new_file->text = A_MALLOC(idx + 1, NULL);
+        new_file            = A_MALLOC(sizeof(CLexFile), NULL);
+        new_file->text      = A_MALLOC(idx + 1, NULL);
         new_file->text[idx] = 0;
-        new_file->dir = dir;
+        new_file->dir       = dir;
         fread(new_file->text, 1, idx, f);
         fclose(f);
-        new_file->is_file = 1;
-        new_file->last = lex->file;
+        new_file->is_file  = 1;
+        new_file->last     = lex->file;
         new_file->filename = A_STRDUP(lex->string, NULL);
         new_file->pos = new_file->col = new_file->ln = 0;
-        lex->file = new_file;
+        lex->file                                    = new_file;
         goto re_enter;
       } else if (!strcmp(lex->string, "define")) {
         lex->flags |= LEXF_NO_EXPAND;
@@ -776,11 +776,11 @@ re_enter:;
         lex->flags &= ~LEXF_NO_EXPAND;
         strcpy(macro_name, lex->string);
         strcpy(lex->string, "");
-        define = A_CALLOC(sizeof(CHashDefineStr), NULL);
-        define->base.str = A_STRDUP(macro_name, NULL);
+        define            = A_CALLOC(sizeof(CHashDefineStr), NULL);
+        define->base.str  = A_STRDUP(macro_name, NULL);
         define->base.type = HTT_DEFINE_STR;
-        define->src_link = LexSrcLink(lex, NULL);
-        idx = 0;
+        define->src_link  = LexSrcLink(lex, NULL);
+        idx               = 0;
         while (chr1 = LexAdvChr(lex)) {
           switch (chr1) {
             break;
@@ -793,7 +793,7 @@ re_enter:;
               LexSkipTillNewLine(lex);
             add_macro:
               lex->string[idx++] = 0;
-              define->data = A_STRDUP(lex->string, NULL);
+              define->data       = A_STRDUP(lex->string, NULL);
               HashAdd(&define->base, Fs->hash_table);
               // Lex next item
               goto re_enter;
@@ -833,11 +833,11 @@ re_enter:;
 CLexer *LexerNew(char *filename, char *text) {
   CLexFile *file = A_CALLOC(sizeof(CLexFile), NULL);
   file->filename = A_STRDUP(filename, NULL);
-  file->text = A_STRDUP(text, NULL);
-  CLexer *new = A_CALLOC(sizeof(CLexer), NULL);
-  new->file = file;
+  file->text     = A_STRDUP(text, NULL);
+  CLexer *new    = A_CALLOC(sizeof(CLexer), NULL);
+  new->file      = file;
   struct {
-    char *name;
+    char   *name;
     int64_t tok;
   } kws[] = {
       //{"include",TK_KW_INCLUDE},
@@ -889,13 +889,13 @@ CLexer *LexerNew(char *filename, char *text) {
       {"argpop", TK_KW_ARGPOP},
       {"noargpop", TK_KW_NOARGPOP},
   };
-  int64_t i;
+  int64_t       i;
   CHashKeyword *kw;
   for (i = 0; i != sizeof(kws) / sizeof(*kws); i++) {
-    kw = A_CALLOC(sizeof(CHashKeyword), NULL);
+    kw            = A_CALLOC(sizeof(CHashKeyword), NULL);
     kw->base.type = HTT_KEYWORD;
-    kw->base.str = A_STRDUP(kws[i].name, NULL);
-    kw->tk = kws[i].tok;
+    kw->base.str  = A_STRDUP(kws[i].name, NULL);
+    kw->tk        = kws[i].tok;
     HashAdd(kw, Fs->hash_table);
   }
   return new;

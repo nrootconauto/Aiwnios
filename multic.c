@@ -19,27 +19,27 @@ typedef struct {
   #include <unistd.h>
 typedef struct {
   pthread_t pt;
-  int wake_futex;
+  int       wake_futex;
   void (*profiler_int)(void *fs);
-  int64_t profiler_freq;
+  int64_t          profiler_freq;
   struct itimerval profile_timer;
 } CCPU;
 #elif defined(_WIN32) || defined(WIN32)
+  #include <windows.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
   #include <sysinfoapi.h>
   #include <time.h>
-  #include <windows.h>
 typedef struct {
-  HANDLE thread;
-  HANDLE event;
-  HANDLE restore_ctx_event;
-  HANDLE mtx;
+  HANDLE  thread;
+  HANDLE  event;
+  HANDLE  restore_ctx_event;
+  HANDLE  mtx;
   CONTEXT ctx;
   int64_t awake_at;
   void (*profiler_int)(void *fs);
   int64_t profiler_freq, profiler_last_tick;
-  char profile_poop_stk[0x1000];
+  char    profile_poop_stk[0x1000];
 } CCPU;
 #endif
 static __thread core_num = 0;
@@ -57,7 +57,7 @@ static void threadrt(CorePair *pair) {
 #if defined(__linux__) || defined(__FreeBSD__)
 static CCPU cores[128];
 CHashTable *glbl_table;
-void InteruptCore(int64_t core) {
+void        InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
 }
 static void InteruptRt(int ul) {
@@ -77,7 +77,7 @@ static void ExitCoreRt(int s) {
 }
 
 static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
-  int64_t c = core_num;
+  int64_t  c = core_num;
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPROF);
@@ -112,22 +112,22 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     FFI_CALL_TOS_1(cores[c].profiler_int, _ctx->uc_mcontext.gregs[REG_RIP]);
     #endif
   #endif
-    cores[c].profile_timer.it_value.tv_usec = cores[c].profiler_freq;
+    cores[c].profile_timer.it_value.tv_usec    = cores[c].profiler_freq;
     cores[c].profile_timer.it_interval.tv_usec = cores[c].profiler_freq;
   }
 }
 
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   struct sigaction sa;
-  char buf[144];
-  CorePair pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
+  char             buf[144];
+  CorePair         pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
   pthread_create(&cores[core].pt, NULL, threadrt, ptr);
   signal(SIGUSR1, InteruptRt);
   signal(SIGUSR2, ExitCoreRt);
   memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler = SIG_IGN;
-  sa.sa_flags = SA_SIGINFO;
+  sa.sa_handler   = SIG_IGN;
+  sa.sa_flags     = SA_SIGINFO;
   sa.sa_sigaction = ProfRt;
   sigaction(SIGPROF, &sa, NULL);
 }
@@ -170,27 +170,27 @@ void __ShutdownCore(int core) {
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
   if (!fp) {
     struct itimerval none;
-    none.it_value.tv_sec = 0;
+    none.it_value.tv_sec  = 0;
     none.it_value.tv_usec = 0;
     setitimer(ITIMER_PROF, &none, NULL);
   } else {
-    cores[c].profiler_int = fp;
-    cores[c].profiler_freq = f;
-    cores[c].profile_timer.it_value.tv_sec = 0;
-    cores[c].profile_timer.it_value.tv_usec = f;
-    cores[c].profile_timer.it_interval.tv_sec = 0;
+    cores[c].profiler_int                      = fp;
+    cores[c].profiler_freq                     = f;
+    cores[c].profile_timer.it_value.tv_sec     = 0;
+    cores[c].profile_timer.it_value.tv_usec    = f;
+    cores[c].profile_timer.it_interval.tv_sec  = 0;
     cores[c].profile_timer.it_interval.tv_usec = f;
     setitimer(ITIMER_PROF, &cores[c].profile_timer, NULL);
   }
 }
 #else
-static CCPU cores[128];
-CHashTable *glbl_table;
-static int64_t ticks = 0;
+static CCPU    cores[128];
+CHashTable    *glbl_table;
+static int64_t ticks    = 0;
 static int64_t tick_inc = 1;
-static void WindowsProfileCode(int c);
-static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
-                         void *ul2) {
+static void    WindowsProfileCode(int c);
+static void    update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
+                            void *ul2) {
   int64_t period;
   ticks += tick_inc;
   for (int64_t idx = 0; idx < mp_cnt(NULL); ++idx) {
@@ -204,7 +204,7 @@ static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
 }
 int64_t GetTicksHP() {
   static int64_t init;
-  TIMECAPS tc;
+  TIMECAPS       tc;
   if (!init) {
     init = 1;
     timeGetDevCaps(&tc, sizeof tc);
@@ -215,11 +215,11 @@ int64_t GetTicksHP() {
 }
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   CorePair pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
-  *ptr = pair;
-  cores[core].mtx = CreateMutex(NULL, FALSE, NULL);
-  cores[core].event = CreateEvent(NULL, 0, 0, NULL);
+  *ptr                          = pair;
+  cores[core].mtx               = CreateMutex(NULL, FALSE, NULL);
+  cores[core].event             = CreateEvent(NULL, 0, 0, NULL);
   cores[core].restore_ctx_event = CreateEvent(NULL, 0, 0, NULL);
-  cores[core].thread = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
+  cores[core].thread            = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
 }
 void MPSleepHP(int64_t us) {
@@ -232,14 +232,14 @@ void MPSleepHP(int64_t us) {
 }
 void InteruptCore(int64_t core) {
   CHashExport *y = HashFind("Yield", glbl_table, HTT_EXPORT_SYS_SYM, 1);
-  CONTEXT ctx;
+  CONTEXT      ctx;
   memset(&ctx, 0, sizeof ctx);
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
   ctx.Rsp -= 8;
   ((int64_t *)ctx.Rsp)[0] = ctx.Rip;
-  ctx.Rip = y;
+  ctx.Rip                 = y;
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);
 }
@@ -260,7 +260,7 @@ void __ShutdownCore(int core) {
 }
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
   WaitForSingleObject(cores[c].mtx, INFINITE);
-  cores[c].profiler_int = fp;
+  cores[c].profiler_int  = fp;
   cores[c].profiler_freq = f * 1000. / 1000000.;
   if (!cores[c].profiler_freq)
     cores[c].profiler_freq = 1;

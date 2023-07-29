@@ -21,12 +21,12 @@ struct CMemUnused;
 // bytes wide) Beacuse the address space will be 2 GB,we can have a fixed length
 // bitmap of 2GB/8/64 int64_t's and i can Misc_Bt it to check if it is valid
 //
-int64_t bc_enable = 0;
+int64_t      bc_enable = 0;
 static char *bc_good_bitmap;
-void InitBoundsChecker() {
-  int64_t want = (1ll << 31) / 8;
+void         InitBoundsChecker() {
+  int64_t want   = (1ll << 31) / 8;
   bc_good_bitmap = calloc(want, 1);
-  bc_enable = 1;
+  bc_enable      = 1;
 }
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   QueRem(blk);
@@ -35,7 +35,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   VirtualFree(blk, 0, MEM_RELEASE);
 #else
   static int64_t ps;
-  int64_t b;
+  int64_t        b;
   if (!ps)
     ps = sysconf(_SC_PAGE_SIZE);
   b = blk->pags * MEM_PAG_SIZE;
@@ -46,13 +46,13 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   munmap(blk, b);
 #endif
 }
-static int64_t Hex2I64(char *ptr, char **_res);
-static void *GetAvailRegion32(int64_t b);
+static int64_t  Hex2I64(char *ptr, char **_res);
+static void    *GetAvailRegion32(int64_t b);
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
 #if defined(_WIN32) || defined(WIN32)
-  CMemBlk *ret = NULL;
+  CMemBlk       *ret = NULL;
   static int64_t dwAllocationGranularity;
   if (!dwAllocationGranularity) {
     SYSTEM_INFO si;
@@ -76,12 +76,12 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     return NULL;
 #else
   #if defined(__x86_64__)
-  int64_t add_flags = bc_enable || hc->is_code_heap ? MAP_32BIT : 0;
+  int64_t        add_flags = bc_enable || hc->is_code_heap ? MAP_32BIT : 0;
   #else
   int64_t add_flags = 0;
   #endif
   static int64_t ps;
-  int64_t b;
+  int64_t        b;
   if (!ps) {
     ps = sysconf(_SC_PAGE_SIZE);
   }
@@ -94,7 +94,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
       mmap(NULL, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
 #endif
-  int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
+  int64_t      threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
   CMemUnused **unm, *tmp, *tmp2;
   QueIns(&ret->base, hc->mem_blks.last);
 
@@ -105,8 +105,8 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     unm = &hc->malloc_free_lst;
     while (tmp = *unm) {
       if (tmp->sz < threshold) {
-        *unm = tmp->next;
-        tmp->next = hc->heap_hash[tmp->sz / 8];
+        *unm                       = tmp->next;
+        tmp->next                  = hc->heap_hash[tmp->sz / 8];
         hc->heap_hash[tmp->sz / 8] = tmp;
       } else {
         cnt++;
@@ -129,8 +129,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     t = Fs->heap;
   int64_t orig = cnt;
   cnt += 16;
-  CHeapCtrl *hc = t;
-  int64_t pags;
+  CHeapCtrl  *hc = t;
+  int64_t     pags;
   CMemUnused *ret;
   if (hc->hc_signature != 'H')
     hc = ((CTask *)hc)->heap;
@@ -145,7 +145,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
   if (hc->heap_hash[cnt / 8]) {
-    ret = hc->heap_hash[cnt / 8];
+    ret                    = hc->heap_hash[cnt / 8];
     hc->heap_hash[cnt / 8] = ret->next;
     goto almost_done;
   } else
@@ -155,8 +155,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     // Make a new lunk
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
-    ret = (char *)ret + sizeof(CMemBlk);
-    ret->sz = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
+    ret                 = (char *)ret + sizeof(CMemBlk);
+    ret->sz             = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     hc->malloc_free_lst = ret;
   }
   // Chip off
@@ -164,15 +164,15 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // We must make sure there is room for another CMemUnused
   //
   if ((int64_t)(ret->sz - sizeof(CMemUnused)) >= cnt) {
-    hc->malloc_free_lst = (char *)ret + cnt;
+    hc->malloc_free_lst     = (char *)ret + cnt;
     hc->malloc_free_lst->sz = ret->sz - cnt;
-    ret->sz = cnt;
+    ret->sz                 = cnt;
     goto almost_done;
   } else
     goto new_lunk;
 big:
-  ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
-  ret = (char *)ret + sizeof(CMemBlk);
+  ret     = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
+  ret     = (char *)ret + sizeof(CMemBlk);
   ret->sz = cnt;
   goto almost_done;
 almost_done:
@@ -193,8 +193,8 @@ almost_done:
 
 void __AIWNIOS_Free(void *ptr) {
   CMemUnused *un = ptr, *hash;
-  CHeapCtrl *hc;
-  int64_t cnt;
+  CHeapCtrl  *hc;
+  int64_t     cnt;
   if (!ptr)
     return;
   un--; // Area before ptr is CMemUnused*
@@ -214,10 +214,10 @@ void __AIWNIOS_Free(void *ptr) {
     ;
   hc->used_u8s -= un->sz;
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
-    hash = hc->heap_hash[un->sz / 8];
-    un->next = hash;
+    hash                      = hc->heap_hash[un->sz / 8];
+    un->next                  = hash;
     hc->heap_hash[un->sz / 8] = un;
-    un->hc = NULL;
+    un->hc                    = NULL;
   } else {
     // CMemUnused
     // CMemBlk
@@ -230,7 +230,7 @@ fin:
 
 int64_t MSize(void *ptr) {
   CMemUnused *un = ptr;
-  int64_t cnt;
+  int64_t     cnt;
   if (!ptr)
     return 0;
   un--;
@@ -250,9 +250,9 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
     ct = calloc(sizeof(CHeapCtrl), 1);
   if (!task)
     task = Fs;
-  ct->is_code_heap = is_code_heap;
-  ct->hc_signature = 'H';
-  ct->mem_task = task;
+  ct->is_code_heap    = is_code_heap;
+  ct->hc_signature    = 'H';
+  ct->mem_task        = task;
   ct->malloc_free_lst = NULL;
   QueInit(&ct->mem_blks);
   return ct;
@@ -269,7 +269,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     VirtualFree(m, 0, MEM_RELEASE);
 #else
     static int64_t ps;
-    int64_t b;
+    int64_t        b;
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);
     b = m->pags * MEM_PAG_SIZE;
@@ -287,7 +287,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   if (!str)
     return NULL;
   int64_t cnt = strlen(str);
-  char *ret = A_MALLOC(cnt + 1, t);
+  char   *ret = A_MALLOC(cnt + 1, t);
   memcpy(ret, str, cnt + 1);
   return ret;
 }
@@ -308,9 +308,9 @@ int64_t IsValidPtr(char *chk) {
 
 static void *GetAvailRegion32(int64_t len) {
   static int64_t dwAllocationGranularity;
-  static void *try_page = 0x100000;
-  void *start_page = try_page;
-  int64_t wrapped_around = 0, sz;
+  static void   *try_page       = 0x100000;
+  void          *start_page     = try_page;
+  int64_t        wrapped_around = 0, sz;
   if (!dwAllocationGranularity) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
@@ -330,7 +330,7 @@ static void *GetAvailRegion32(int64_t len) {
       else
         try_page = (char *)mbi.BaseAddress + mbi.RegionSize;
       if (try_page > (void *)(1ll << 31)) {
-        try_page = 0x100000;
+        try_page       = 0x100000;
         wrapped_around = 1;
       }
     } else
@@ -399,8 +399,8 @@ void *BoundsCheck(void *ptr, int64_t *after) {
   if (!bc_enable)
     return INVALID_PTR;
   int64_t waste = 0;
-  int64_t optr = ptr;
-  ptr = ((int64_t)ptr) & ~7ll;
+  int64_t optr  = ptr;
+  ptr           = ((int64_t)ptr) & ~7ll;
   if (after)
     *after = 0;
   // TOO big
