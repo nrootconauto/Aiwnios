@@ -98,7 +98,6 @@ static int64_t LdStRegPairPostImm(int64_t opc, int64_t l, int64_t r, int64_t r2,
   return (opc << 30) | (0x5 << 27) | (1 << 23) | (l << 22) | imm7 | (r2 << 10) |
          (pre->n << 5) | r;
 }
-
 static int64_t LdStRegPairPre(int64_t opc, int64_t L, int64_t rt1, int64_t rt2,
                               CARMAdrPreImm *adr) {
   int64_t imm   = adr->off;
@@ -796,22 +795,22 @@ int64_t ARM_ldpPreImmX(int64_t r, int64_t r2, int64_t b, int64_t off) {
 }
 
 int64_t ARM_stpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off) {
-  CARMAdrPreImm adr = {b, off};
+  CARMAdrPostImm adr = {b, off};
   return LdStRegPairPostImm(0, 0, r, r2, &adr);
 }
 
 int64_t ARM_stpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off) {
-  CARMAdrPreImm adr = {b, off};
+  CARMAdrPostImm adr = {b, off};
   return LdStRegPairPostImm(2, 0, r, r2, &adr);
 }
 
 int64_t ARM_ldpPostImm(int64_t r, int64_t r2, int64_t b, int64_t off) {
-  CARMAdrPreImm adr = {b, off};
+  CARMAdrPostImm adr = {b, off};
   return LdStRegPairPostImm(0, 1, r, r2, &adr);
 }
 
 int64_t ARM_ldpPostImmX(int64_t r, int64_t r2, int64_t b, int64_t off) {
-  CARMAdrPreImm adr = {b, off};
+  CARMAdrPostImm adr = {b, off};
   return LdStRegPairPostImm(2, 1, r, r2, &adr);
 }
 
