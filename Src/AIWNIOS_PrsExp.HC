@@ -1290,7 +1290,7 @@ found_end_paren:;
         PrsPop(cc->ps);
         PrsPop2(cc->ps);
         next=cc->coc.coc_head.next;
-        if(next->ic_class->type&HTT_FUN) {
+        if(next!=&cc->coc.coc_head.next&&next->ic_class->type&HTT_FUN) {
 	  flags|=PEF_FUN_BEFORE;
         } else
 	  flags&=~PEF_FUN_BEFORE;
@@ -1320,6 +1320,8 @@ found_end_square:
         PrsPop2(cc->ps);
         Lex(cc);
         next=cc->coc.coc_head.next;
+        if(next==&cc->coc.coc_head.next)
+          LexExcept(cc,"Expected not empty '[]' at ");
         if(next->ic_class->raw_type==RT_F64)
 	  RPNAddNew(cc,IC_TO_I64);
         RPNAddNew(cc,IC_ADD);
@@ -1636,7 +1638,7 @@ U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL)
     if(_type) *_type=AssignRawTypeToNode(cc->coc.coc_head.next)->raw_type; 
   } else
     res=NULL;
-  COCPop(cc);
+  COCPop(cc);
   if(old_trace)
     LBts(&cc->flags,CCf_PASS_TRACE_PRESENT);
   else
