@@ -3600,7 +3600,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         }
         if (bin)
           CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4)->offset =
-              dst->off;
+              src->off;
       }
       return code_off;
     } else
