@@ -150,6 +150,8 @@ if (BUILD_HCRT)
 endif ()
 
 set(COMP_OPTS
+  -Wno-all
+  -Wno-int-conversion
   -fno-math-errno
   -fno-trapping-math
   -fno-exceptions
