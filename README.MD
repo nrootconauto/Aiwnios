@@ -23,14 +23,16 @@ Once you have the dependencies installed, building Aiwnios is straightforward:
 
 ```sh
 # Build Aiwnios
-cmake .
-make 
+mkdir build;cd build;
+cmake ..;
+make -j$(nproc);
+cd ..;
 
 # Bootstrap the HCRT2.BIN to run it
-./aiwnios -b
+./aiwnios -b;
 
 # Run the HCRT2.BIN
-./aiwnios
+./aiwnios;
 ```
 
 If you want to create a package for your system, you can use the [ESP Package Manager](https://github.com/jimjag/epm/). Simply run `epm aiwnios` to make a cool package for your system.
