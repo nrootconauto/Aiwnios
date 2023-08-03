@@ -131,57 +131,43 @@ set_target_properties(aiwnios
 
 if (BUILD_HCRT)
   set (USE_WINE NO)
-  if(NOT (CMAKE_SYSTEM MATCHES Windows))
-    if(WIN32)
+  if (NOT CMAKE_SYSTEM MATCHES Windows)
+    if (WIN32)
       set(USE_WINE YES)
-    endif()
-  endif()
-
-  if (NOT USE_WINE)
-    add_custom_target(HCRT2.BIN
-      ALL
-      COMMAND aiwnios -b
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-  else ()
-    add_custom_target(HCRT2.BIN
-      ALL
-      COMMAND wine64 aiwnios -b
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
-      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
+    endif ()
   endif ()
+
+  set(BUILD_CMD aiwnios -b)
+  if (USE_WINE)
+    list(PREPEND BUILD_CMD wine64)
+  endif ()
+  add_custom_target(HCRT2.BIN
+    ALL
+    COMMAND ${BUILD_CMD}
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
 endif ()
 
-if (ARCH STREQUAL x86_64)
+set(COMP_OPTS
+  -fno-math-errno
+  -fno-trapping-math
+  -fno-exceptions
+  -fno-omit-frame-pointer
+  -fno-signaling-nans
+  -fno-stack-protector
+  -fno-unwind-tables
+  -fno-asynchronous-unwind-tables
+  -fcf-protection=none
+)
+if (ARCH STREQUAL "x86_64")
+  list(APPEND COMP_OPTS -mno-shstk)
+endif ()
 target_compile_options(aiwnios
   PRIVATE
-    -fno-math-errno
-    -fno-trapping-math
-    -fno-exceptions
-    -fno-omit-frame-pointer
-    -fno-signaling-nans
-    -fno-stack-protector
-    -fno-unwind-tables
-    -fno-asynchronous-unwind-tables
-    -fcf-protection=none
-    -mno-shstk
+    ${COMP_OPTS}
 )
-elseif (ARCH STREQUAL arm64) 
-target_compile_options(aiwnios
-  PRIVATE
-    -fno-math-errno
-    -fno-trapping-math
-    -fno-exceptions
-    -fno-omit-frame-pointer
-    -fno-signaling-nans
-    -fno-stack-protector
-    -fno-unwind-tables
-    -fno-asynchronous-unwind-tables
-    -fcf-protection=none
-)
-endif()
+
 #
 # Install section
 #
