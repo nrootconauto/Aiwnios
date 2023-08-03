@@ -2275,9 +2275,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     lst = cctrl->cur_fun->base.members_lst;
     for (i = 0; i != cctrl->cur_fun->argc; i++) {
       if (lst->member_class->raw_type == RT_F64) {
-#ifdef USE_TEMPLEOS_ABI
         goto stk;
-#endif
         if (freg_arg_cnt < 8) {
           fun_arg.mode     = MD_REG;
           fun_arg.raw_type = RT_F64;
@@ -2289,9 +2287,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
           fun_arg.off      = to_push + stk_arg_cnt++ * 8;
         }
       } else {
-#ifdef USE_TEMPLEOS_ABI
         goto stk;
-#endif
         if (ireg_arg_cnt < 8) {
           fun_arg.mode     = MD_REG;
           fun_arg.raw_type = RT_I64i;
@@ -2320,9 +2316,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
          rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.last) {
       if (rpn->type == __IC_ARG) {
         if ((arg = ICArgN(rpn, 0))->raw_type == RT_F64) {
-#ifdef USE_TEMPLEOS_ABI
           goto stk2;
-#endif
           if (freg_arg_cnt < 8) {
             fun_arg.mode     = MD_REG;
             fun_arg.raw_type = RT_F64;
@@ -2336,9 +2330,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
             fun_arg.off = to_push + stk_arg_cnt++ * 8;
           }
         } else {
-#ifdef USE_TEMPLEOS_ABI
           goto stk2;
-#endif
           if (ireg_arg_cnt < 8) {
             fun_arg.mode     = MD_REG;
             fun_arg.raw_type = RT_I64i;

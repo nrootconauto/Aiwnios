@@ -1,7 +1,6 @@
 #include "aiwn.h"
 #if defined(_WIN32) || defined(WIN32)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  #ifdef USE_TEMPLEOS_ABI
   /*
   0:  55                      push   rbp
   1:  48 89 e5                mov    rbp,rsp
@@ -27,9 +26,6 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   *(int64_t *)(ret + 0x12) = fptr;
   *(int16_t *)(ret + 0x2a) = arity * 8;
   return ret;
-  #else
-  return fptr;
-  #endif
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   /*
@@ -40,18 +36,13 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   */
   const char *ffi_binding =
       "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  #ifdef USE_TEMPLEOS_ABI
   char *ret = A_MALLOC(0x12, NULL);
   memcpy(ret, ffi_binding, 0x12);
   *(int64_t *)(ret + 0x7) = fptr;
   return ret;
-  #else
-  return fptr;
-  #endif
 }
 #elif (defined(__linux__) || defined(__FreeBSD__)) && defined(__x86_64__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  #ifdef USE_TEMPLEOS_ABI
   /*
 0:  55                      push   rbp
 1:  48 89 e5                mov    rbp,rsp
@@ -112,9 +103,6 @@ b6: c2 22 11                ret    0x1122
   *(int64_t *)(ret + 0x5c) = fptr;
   *(int16_t *)(ret + 0xb7) = arity * 8;
   return ret;
-  #else
-  return fptr;
-  #endif
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   /*
@@ -123,20 +111,15 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   a:  ff e0 					jmp rax
   */
   const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  #ifdef USE_TEMPLEOS_ABI
   char       *ret         = A_MALLOC(0xd, NULL);
   memcpy(ret, ffi_binding, 0xd);
   *(int64_t *)(ret + 0x2) = fptr;
   return ret;
-  #else
-  return fptr;
-  #endif
 }
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  #ifdef USE_TEMPLEOS_ABI
   // 0:  stp x29,x30[sp,-16]!
   // 4:  add x0,sp,16
   // 8:  ldr x1,label
@@ -153,9 +136,6 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   blob[5]              = ARM_ret();
   *(void **)(blob + 6) = fptr;
   return blob;
-  #else
-  return fptr;
-  #endif
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   // TODO

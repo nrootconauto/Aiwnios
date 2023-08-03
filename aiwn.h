@@ -1145,7 +1145,6 @@ extern CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr);
 extern void          __HC_CodeMiscInterateThroughRefs(
              CCodeMisc *cm, void (*fptr)(void *addr, void *user_data), void *user_data);
 
-#define USE_TEMPLEOS_ABI 1
 extern int64_t FFI_CALL_TOS_0(void *fptr);
 extern int64_t FFI_CALL_TOS_1(void *fptr, int64_t);
 extern int64_t FFI_CALL_TOS_2(void *fptr, int64_t, int64_t);

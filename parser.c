@@ -4339,11 +4339,7 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
                                       void *user_data) {
   CCodeMiscRef *refs = cm->refs;
   while (refs) {
-#ifdef USE_TEMPLEOS_ABI
     FFI_CALL_TOS_2(fptr, refs->add_to, user_data);
-#else
-    fptr(refs->add_to, user_data);
-#endif
     refs = refs->next;
   }
 }
