@@ -10,9 +10,10 @@
 //
 struct CHeapCtrl;
 struct CHashTable;
-__thread struct CTask *Fs;
-__thread struct CTask *HolyFs;
-void                   TaskExit() {
+_Thread_local struct CTask *Fs;
+_Thread_local struct CTask *HolyFs;
+
+void TaskExit() {
   // TODO implement me
   exit(0);
 }

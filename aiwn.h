@@ -634,8 +634,8 @@ struct CRPN {
   char stuff_in_reg;
 };
 extern char *Compile(struct CCmpCtrl *cctrl, int64_t *sz, char **dbg_info);
-extern __thread struct CTask *Fs;
-void                          AIWNIOS_throw(uint64_t code);
+extern _Thread_local struct CTask *Fs;
+void                               AIWNIOS_throw(uint64_t code);
 #define throw AIWNIOS_throw
 void    QueDel(CQue *f);
 int64_t QueCnt(CQue *head);
@@ -713,12 +713,12 @@ CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
                     CHashFun **fun, CArrayDim *dim);
 void        PrsTests();
 
-void                          TaskInit(CTask *task, void *addr, int64_t stk_sz);
-struct CHeapCtrl             *HeapCtrlInit(struct CHeapCtrl *ct, CTask *task,
-                                           int64_t is_code_heap);
-void                          TaskExit();
-extern __thread struct CTask *HolyFs;
-extern __thread struct CTask *Fs;
+void              TaskInit(CTask *task, void *addr, int64_t stk_sz);
+struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct, CTask *task,
+                               int64_t is_code_heap);
+void              TaskExit();
+extern _Thread_local struct CTask *HolyFs;
+extern _Thread_local struct CTask *Fs;
 
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info);
 

@@ -321,8 +321,9 @@ static void __SleepHP(int64_t us) {
 void *GetHolyFs() {
   return HolyFs;
 }
-static __thread void *HolyGs;
-void                 *GetHolyGs() {
+static _Thread_local void *HolyGs;
+
+void *GetHolyGs() {
   return HolyGs;
 }
 void SetHolyGs(void *ptr) {
@@ -1370,26 +1371,25 @@ static void    ExitAiwnios() {
   #undef main
 #endif
 int main(int argc, char **argv) {
-  t_drive = NULL;
-  int64_t errors, idx;
-  void   *argtable[] = {
+  void *argtable[] = {
       arg_help = arg_lit0("h", "help", "Show the help message"),
       arg_overwrite =
           arg_lit0("o", "overwrite",
-                     "Overwrite the T directory with the installed T template."),
+                   "Overwrite the T directory with the installed T template."),
       arg_t_dir = arg_file0("t", NULL, "Directory",
-                              "Specify the boot drive(dft is current dir)."),
+                            "Specify the boot drive(dft is current dir)."),
       arg_bootstrap_bin =
           arg_lit0("b", "bootstrap",
-                     "Build a new binary with the \"slim\" compiler of aiwnios."),
+                   "Build a new binary with the \"slim\" compiler of aiwnios."),
       arg_asan_enable =
           arg_lit0("a", "address-sanitize", "Enable bounds checking."),
       arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
-                                    "Create a new boot directory(backs up old "
-                                      "boot directory if present)."),
+                                  "Create a new boot directory(backs up old "
+                                  "boot directory if present)."),
       sixty_fps        = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       _arg_end         = arg_end(20),
   };
+  int64_t errors, idx;
   errors = arg_parse(argc, argv, argtable);
   if (errors || arg_help->count) {
     if (errors)
@@ -1398,6 +1398,7 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
+  t_drive = NULL;
   if (arg_asan_enable->count)
     InitBoundsChecker();
   if (arg_t_dir->count)

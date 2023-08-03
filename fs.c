@@ -69,10 +69,10 @@ char *FileRead(char *fn, int64_t *sz) {
   return ret;
 }
 
-// From 3Days(also by nroot)
-__thread char thrd_pwd[1024];
-__thread char thrd_drv;
-void          VFsThrdInit() {
+_Thread_local char thrd_pwd[1024];
+_Thread_local char thrd_drv;
+
+void VFsThrdInit() {
   strcpy(thrd_pwd, "/");
   thrd_drv = 'T';
 }
@@ -134,7 +134,8 @@ int64_t VFsDel(char *p) {
 }
 
 static char *mount_points['z' - 'a' + 1];
-char        *__VFsFileNameAbs(char *name) {
+
+char *__VFsFileNameAbs(char *name) {
   char computed[1024];
   strcpy(computed, mount_points[toupper(thrd_drv) - 'A']);
   computed[strlen(computed) + 1] = 0;

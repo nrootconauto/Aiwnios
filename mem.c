@@ -23,7 +23,8 @@ struct CMemUnused;
 //
 int64_t      bc_enable = 0;
 static char *bc_good_bitmap;
-void         InitBoundsChecker() {
+
+void InitBoundsChecker() {
   int64_t want   = (1ll << 31) / 8;
   bc_good_bitmap = calloc(want, 1);
   bc_enable      = 1;
@@ -46,8 +47,10 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   munmap(blk, b);
 #endif
 }
-static int64_t  Hex2I64(char *ptr, char **_res);
-static void    *GetAvailRegion32(int64_t b);
+
+static int64_t Hex2I64(char *ptr, char **_res);
+static void   *GetAvailRegion32(int64_t b);
+
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;

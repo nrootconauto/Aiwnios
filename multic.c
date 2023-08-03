@@ -42,7 +42,8 @@ typedef struct {
   char    profile_poop_stk[0x1000];
 } CCPU;
 #endif
-static __thread core_num = 0;
+static _Thread_local core_num = 0;
+
 static void threadrt(CorePair *pair) {
   Fs = calloc(sizeof(CTask), 1);
   VFsThrdInit();
@@ -57,7 +58,8 @@ static void threadrt(CorePair *pair) {
 #if defined(__linux__) || defined(__FreeBSD__)
 static CCPU cores[128];
 CHashTable *glbl_table;
-void        InteruptCore(int64_t core) {
+
+void InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
 }
 static void InteruptRt(int ul) {
