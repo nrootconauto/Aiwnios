@@ -3036,29 +3036,18 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next2 = ICArgN(rpn, 1);
     if (next->type == IC_I64 && next2->raw_type != RT_F64) {
       if (__builtin_popcountll(next->integer) == 1) {
-        PushTmp(cctrl, next2, &rpn->res);
-        code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-        code_off = PutICArgIntoReg(cctrl, &next2->res, next2->raw_type, 1, bin,
-                                   code_off);
-        PopTmp(cctrl, next2);
         switch (next2->raw_type) {
         case RT_I8i:
         case RT_I16i:
         case RT_I32i:
         case RT_I64i:
-          if (rpn->res.mode == MD_REG) {
-            AIWNIOS_ADD_CODE(ARM_asrImmX(rpn->res.reg, next2->res.reg,
-                                         __builtin_ffsll(next->integer) - 1));
-          } else {
-            AIWNIOS_ADD_CODE(ARM_asrImmX(1, next2->res.reg,
-                                         __builtin_ffsll(next->integer) - 1));
-            tmp.raw_type = RT_I64i;
-            tmp.reg      = 1;
-            tmp.mode     = MD_REG;
-            code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-          }
-          break;
+          goto div_normal;
         default:
+          PushTmp(cctrl, next2, &rpn->res);
+          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+          code_off = PutICArgIntoReg(cctrl, &next2->res, next2->raw_type, 1,
+                                     bin, code_off);
+          PopTmp(cctrl, next2);
           if (rpn->res.mode == MD_REG) {
             AIWNIOS_ADD_CODE(ARM_lsrImmX(rpn->res.reg, next2->res.reg,
                                          __builtin_ffsll(next->integer) - 1));
@@ -3074,6 +3063,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         break;
       }
     }
+  div_normal:
     if (rpn->raw_type == RT_U64i) {
       BACKEND_BINOP(ARM_fdivReg, ARM_udivX);
     } else {
