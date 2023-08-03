@@ -5,12 +5,12 @@
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
 // backend_user_data7 is the number of Fregs
 //
-// I called CrunkLord420's stuff Voluptous - April 30,2024
-// I found a duck statue while voluentering - May 3,2024
-// I got bored and played with a color chooser May 7,2024
-// I am going to get off my ass and document this file May 14,2024
+// I called CrunkLord420's stuff Voluptous - April 30,2023
+// I found a duck statue while voluentering - May 3,2023
+// I got bored and played with a color chooser May 7,2023
+// I am going to get off my ass and document this file May 14,2023
 //
-// I am putting in the pooping computed goto's May 27,2024
+// I am putting in the pooping computed goto's May 27,2023
 //
 static int64_t IsCompoundCompare(CRPN *r);
 static int64_t IsSavedFReg(int64_t r) {
