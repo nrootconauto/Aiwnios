@@ -565,14 +565,12 @@ static void UserEvHandler(void *ul, SDL_Event *ev) {
 void InputLoop(void *ul) {
   SDL_Event e;
   for (; !*(int64_t *)ul;) {
-    if (SDL_WaitEvent(&e)) {
-      if (e.type == SDL_QUIT) {
-        break;
-      }
-      if (e.type == SDL_USEREVENT)
-        UserEvHandler(NULL, &e);
-    } else
-      puts(SDL_GetError());
+    if (!SDL_WaitEvent(&e))
+      continue;
+    if (e.type == SDL_QUIT)
+      break;
+    if (e.type == SDL_USEREVENT)
+      UserEvHandler(NULL, &e);
   }
 }
 

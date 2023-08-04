@@ -6,6 +6,7 @@
   #include <sysinfoapi.h>
 #else
   #include <sys/mman.h>
+  #include <unistd.h>
 #endif
 //
 // Dec 8, I volenterreed today
@@ -38,7 +39,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   static int64_t ps;
   int64_t        b;
   if (!ps)
-    ps = sysconf(_SC_PAGE_SIZE);
+    ps = sysconf(_SC_PAGESIZE);
   b = blk->pags * MEM_PAG_SIZE;
   if (b % ps)
     b += ps;
@@ -276,10 +277,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);
     b = m->pags * MEM_PAG_SIZE;
-    if (b % ps)
-      b += ps;
-    b /= ps;
-    b *= ps;
+    b = (b + ps - 1) & ~(ps - 1);
     munmap(m, b);
 #endif
   }
@@ -298,7 +296,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
 int64_t IsValidPtr(char *chk) {
   MEMORY_BASIC_INFORMATION mbi;
   memset(&mbi, 0, sizeof mbi);
-  if (VirtualQuery(chk, &mbi, sizeof(mbi))) {
+  if (VirtualQuery(chk, &mbi, sizeof mbi)) {
     // https://stackoverflow.com/questions/496034/most-efficient-replacement-for-isbadreadptr
     DWORD mask =
         (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
@@ -360,9 +358,8 @@ int64_t IsValidPtr(char *chk) {
   static int64_t ps;
   int64_t mptr = chk;
   if (!ps)
-    ps = getpagesize();
-  mptr /= ps;
-  mptr *= ps;
+    ps = sysconf(_SC_PAGESIZE);
+  mptr &= ~(ps - 1);
   // https://renatocunha.com/2015/12/msync-pointer-validity/
   return -1 != msync(mptr, ps, MS_ASYNC);
   int64_t ok = 0, sz = 0x1000;

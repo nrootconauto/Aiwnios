@@ -100,7 +100,7 @@ b6: c2 22 11                ret    0x1122
       "\xC0\xC9\xC2\x22\x11";
   char *ret = A_MALLOC(0xb9, NULL);
   memcpy(ret, ffi_binding, 0xb9);
-  *(int64_t *)(ret + 0x5c) = fptr; // in place of 0x1122334455
+  *(int64_t *)(ret + 0x5c) = fptr;      // in place of 0x1122334455
   *(int16_t *)(ret + 0xb7) = arity * 8; // in place of 0x1122
   return ret;
 }

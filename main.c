@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
@@ -27,7 +28,7 @@ static int64_t STK_PrintF(double *);
 static int64_t STK_PrintPtr(int64_t *stk) {
   PrintPtr((char *)(stk[0]), (void *)stk[1]);
 }
-static void ExitAiwnios();
+static void ExitAiwnios(int64_t *);
 static void PrsAddSymbol(char *name, void *ptr, int64_t arity) {
   PrsBindCSymbol(name, ptr, arity);
 }
@@ -1300,7 +1301,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SndFreq", STK_SndFreq, 1);
     PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
-    PrsAddSymbol("ExitAiwnios", ExitAiwnios, 0);
+    PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);
     PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 0);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
@@ -1357,14 +1358,10 @@ static void        Boot() {
     Load(bin);
 }
 static int64_t quit = 0;
-static void    ExitAiwnios() {
+
+static void ExitAiwnios(int64_t *stk) {
   quit = 1;
-  SDL_Event q;
-  memset(&q, 0, sizeof q);
-  while (1) {
-    SDL_PushEvent(&q);
-    __Sleep(1000);
-  }
+  exit(stk[0]);
 }
 
 #ifdef main

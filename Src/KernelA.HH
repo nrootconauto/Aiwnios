@@ -3821,7 +3821,7 @@ class CProgress
 import U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
 import U8 *BoundsCheck(U8 *ptr,I64 *oob_bytes);
 import I64 Call(U8 *,I64 argc,I64 *argv);
-import U0 ExitAiwnios();
+import U0 ExitAiwnios(I32 ec=0);
 import U0 TaskContextSetRIP(U8 *,U8 *);
 import U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 import U8 *AiwniosGetClipboard();
@@ -3923,7 +3923,7 @@ import U0 MPAwake(I64);
 #else
 extern U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
 extern I64 Call(U8 *,I64 argc,I64 *argv);
-extern U0 ExitAiwnios();
+extern U0 ExitAiwnios(I32 ec=0);
 extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 extern F64 Ln(F64);
 extern U8 *AiwniosGetClipboard();
