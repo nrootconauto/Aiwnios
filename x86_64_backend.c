@@ -3142,7 +3142,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_I64i:
       case RT_FUNC:
       case RT_F64:
-        indir_off2 = 8;
+        indir_off2 = 4;
         AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 1000);
         break;
       default:
@@ -3593,14 +3593,14 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         case RT_PTR:
         case RT_FUNC:
         case RT_I64i:
-          AIWNIOS_ADD_CODE(X86MovRegIndirI64, dst->reg, -1, -1, RIP, 0);
+          AIWNIOS_ADD_CODE(X86MovRegIndirI64, dst->reg, -1, -1, RIP, 1000);
           break;
         case RT_F64:
-          AIWNIOS_ADD_CODE(X86MovRegIndirF64, dst->reg, -1, -1, RIP, 0);
+          AIWNIOS_ADD_CODE(X86MovRegIndirF64, dst->reg, -1, -1, RIP, 1000);
         }
         if (bin)
           CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4)->offset =
-              src->off;
+              dst->off;
       }
       return code_off;
     } else
