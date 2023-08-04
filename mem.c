@@ -45,8 +45,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
 #endif
 }
 
-static int64_t Hex2I64(char *ptr, char **_res);
-static void   *GetAvailRegion32(int64_t b);
+static void *GetAvailRegion32(int64_t b);
 
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
@@ -330,20 +329,7 @@ static void *GetAvailRegion32(int64_t len) {
   return NULL;
 }
 #else
-static int64_t Hex2I64(char *s, char **end) {
-  int64_t ret = 0;
-  while (isxdigit(*s)) {
-    ret <<= 4;
-    if (isdigit(*s))
-      ret += *s - '0';
-    else
-      ret += toupper(*s) - 'A' + 10;
-    s++;
-  }
-  if (end)
-    *end = s;
-  return ret;
-}
+
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;
   int64_t mptr = chk;
