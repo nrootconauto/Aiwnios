@@ -40,11 +40,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   int64_t        b;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
-  b = blk->pags * MEM_PAG_SIZE;
-  if (b % ps)
-    b += ps;
-  b /= ps;
-  b *= ps;
+  b = (blk->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   munmap(blk, b);
 #endif
 }
@@ -86,14 +82,9 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   #endif
   static int64_t ps;
   int64_t        b;
-  if (!ps) {
-    ps = sysconf(_SC_PAGE_SIZE);
-  }
-  b = pags * MEM_PAG_SIZE;
-  if (b % ps)
-    b += ps;
-  b /= ps;
-  b *= ps;
+  if (!ps)
+    ps = sysconf(_SC_PAGESIZE);
+  b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   CMemBlk *ret =
       mmap(NULL, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
@@ -275,9 +266,8 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     static int64_t ps;
     int64_t        b;
     if (!ps)
-      ps = sysconf(_SC_PAGE_SIZE);
-    b = m->pags * MEM_PAG_SIZE;
-    b = (b + ps - 1) & ~(ps - 1);
+      ps = sysconf(_SC_PAGESIZE);
+    b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
     munmap(m, b);
 #endif
   }
@@ -362,34 +352,6 @@ int64_t IsValidPtr(char *chk) {
   mptr &= ~(ps - 1);
   // https://renatocunha.com/2015/12/msync-pointer-validity/
   return -1 != msync(mptr, ps, MS_ASYNC);
-  int64_t ok = 0, sz = 0x1000;
-  char buffer[0x1000];
-  char *ptr = buffer;
-  char *start, *end;
-  FILE *f = fopen("/proc/self/maps", "rb");
-  while (-1 != getline(&ptr, &sz, f)) {
-    start = Hex2I64(ptr, &ptr);
-    if (*ptr++ != '-')
-      break;
-    end = Hex2I64(ptr, &ptr);
-    if (start <= chk) {
-      if (chk < end) {
-        if (*ptr++ != ' ')
-          break;
-        while (*ptr++ != ' ')
-          if (*ptr == 'w') {
-            ok = 1;
-            break;
-          }
-        break;
-      }
-    } else if (start > chk) // These appear to be sorted
-      break;
-    ptr = buffer;
-    sz = 0x1000;
-  }
-  fclose(f);
-  return ok;
 }
 
 #endif
