@@ -1,4 +1,5 @@
 #include "aiwn.h"
+#include <string.h>
 #if defined(_WIN32) || defined(WIN32)
 void *GenFFIBinding(void *fptr, int64_t arity) {
   /*
@@ -23,8 +24,9 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
       "\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
   char *ret = A_MALLOC(0x2c, NULL);
   memcpy(ret, ffi_binding, 0x2c);
-  *(int64_t *)(ret + 0x12) = fptr;
-  *(int16_t *)(ret + 0x2a) = arity * 8;
+  memcpy(ret + 0x12, &fptr, 0x8);
+  arity *= 8;
+  memcpy(ret + 0x2a, &arity, 0x2);
   return ret;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
@@ -38,7 +40,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
       "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
   char *ret = A_MALLOC(0x12, NULL);
   memcpy(ret, ffi_binding, 0x12);
-  *(int64_t *)(ret + 0x7) = fptr;
+  memcpy(ret + 0x7, &fptr, 0x8);
   return ret;
 }
 #elif (defined(__linux__) || defined(__FreeBSD__)) && defined(__x86_64__)
@@ -100,8 +102,9 @@ b6: c2 22 11                ret    0x1122
       "\xC0\xC9\xC2\x22\x11";
   char *ret = A_MALLOC(0xb9, NULL);
   memcpy(ret, ffi_binding, 0xb9);
-  *(int64_t *)(ret + 0x5c) = fptr;      // in place of 0x1122334455
-  *(int16_t *)(ret + 0xb7) = arity * 8; // in place of 0x1122
+  memcpy(ret + 0x5c, &fptr, 0x8); // in place of 0x1122334455
+  arity *= 8;
+  memcpy(ret + 0xb7, &arity, 0x2); // in place of 0x1122
   return ret;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
@@ -113,7 +116,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
   char       *ret         = A_MALLOC(0xd, NULL);
   memcpy(ret, ffi_binding, 0xd);
-  *(int64_t *)(ret + 0x2) = fptr;
+  memcpy(ret + 0x2, &fptr, 0x8);
   return ret;
 }
 #endif
@@ -127,14 +130,14 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   // 10: ldp x29,x30[sp],16
   // 14: ret
   // 18: label: fptr
-  int32_t *blob        = A_MALLOC(0x18 + 8, NULL);
-  blob[0]              = ARM_stpPreImmX(29, 30, 31, -16);
-  blob[1]              = ARM_addImmX(0, 31, 16);
-  blob[2]              = ARM_ldrLabelX(1, 0x18 - 0x8);
-  blob[3]              = ARM_blr(1);
-  blob[4]              = ARM_ldpPostImmX(29, 30, 31, 16);
-  blob[5]              = ARM_ret();
-  *(void **)(blob + 6) = fptr;
+  int32_t *blob = A_MALLOC(0x18 + 8, NULL);
+  blob[0]       = ARM_stpPreImmX(29, 30, 31, -16);
+  blob[1]       = ARM_addImmX(0, 31, 16);
+  blob[2]       = ARM_ldrLabelX(1, 0x18 - 0x8);
+  blob[3]       = ARM_blr(1);
+  blob[4]       = ARM_ldpPostImmX(29, 30, 31, 16);
+  blob[5]       = ARM_ret();
+  memcpy(blob + 6, &fptr, sizeof(void *));
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {

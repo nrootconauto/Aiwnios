@@ -154,7 +154,6 @@ void MPSleepHP(int64_t ns) {
 }
 
 void MPAwake(int64_t core) {
-
   if (Misc_Bt(&cores[core].wake_futex, 0)) {
   #if defined(__linux__)
     syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);

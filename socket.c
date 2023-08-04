@@ -13,7 +13,8 @@
   #include <ws2tcpip.h>
 static int64_t was_init = 0;
 WSADATA        ws_data;
-static void    InitWS2() {
+
+static void InitWS2() {
   WSAStartup(MAKEWORD(2, 2), &ws_data);
   was_init = 1;
 }

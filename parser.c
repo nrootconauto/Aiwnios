@@ -3231,7 +3231,7 @@ static void PrsMembers(CCmpCtrl *cctrl, CHashClass *bungis, int64_t flags,
   union_end = *off;
   if (cctrl->lex->cur_tok == '{') {
     Lex(cctrl->lex);
-    for (; cctrl->lex->cur_tok != '}';) {
+    while (cctrl->lex->cur_tok != '}') {
       if (cctrl->lex->cur_tok == ';') {
         Lex(cctrl->lex);
       } else if (PrsKw(cctrl, TK_KW_UNION)) {
@@ -4034,7 +4034,6 @@ CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc, CCodeMisc *cm) {
 static CHashClass *rt2cls(int64_t rt, int64_t ptr_cnt) {
   CHashClass *ic_class;
   switch (rt) {
-    break;
   case 3:
     ic_class = HashFind("U0", Fs->hash_table, HTT_CLASS, 1);
     break;
@@ -4349,7 +4348,6 @@ void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl) {
        rpn = rpn->base.next) {
     rpn->ic_fwd = ICFwd(rpn);
     switch (rpn->type) {
-      break;
     case IC_GOTO:
     unop:
       rpn->tree1 = rpn->base.next;
