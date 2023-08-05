@@ -1,12 +1,16 @@
 #include "aiwn.h"
 #include <dirent.h>
 #include <stdio.h>
+// clang-format off
+#include <sys/types.h>
 #include <sys/stat.h>
+// clang-format on
 #include <unistd.h>
 #if defined(_WIN32) || defined(WIN32)
   #include <windows.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
+  #define stat _stati64
 static void MakePathSane(char *ptr) {
   char *ptr2 = ptr;
 enter:
@@ -150,28 +154,15 @@ char *__VFsFileNameAbs(char *name) {
   }
   return A_STRDUP(computed, NULL);
 }
-#if defined(_WIN32) || defined(WIN32)
-static int64_t FILETIME2Unix(FILETIME *t) {
-  // https://www.frenk.com/2009/12/convert-filetime-to-unix-timestamp/
-  int64_t time = t->dwLowDateTime | ((int64_t)t->dwHighDateTime << 32), adj;
-  adj          = 10000 * (int64_t)11644473600000ll;
-  time -= adj;
-  return time / 10000000ll;
-}
+
 int64_t VFsUnixTime(char *name) {
-  char    *fn = __VFsFileNameAbs(name);
-  FILETIME t;
-  if (!fn)
-    return 0;
-  if (!__FExists(fn))
-    return 0;
-  HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  GetFileTime(fh, NULL, NULL, &t);
+  char       *fn = __VFsFileNameAbs(name);
+  struct stat s;
+  stat(fn, &s);
   A_FREE(fn);
-  CloseHandle(fh);
-  return FILETIME2Unix(&t);
+  return s.st_mtime;
 }
+#if defined(_WIN32) || defined(WIN32)
 
 int64_t VFsFSize(char *name) {
   char   *fn = __VFsFileNameAbs(name), *delim;
@@ -271,15 +262,6 @@ char **VFsDir(char *fn) {
   A_FREE(fn);
   closedir(dir);
   return ret;
-}
-
-int64_t VFsUnixTime(char *name) {
-  char *fn = __VFsFileNameAbs(name);
-  struct stat s;
-  stat(fn, &s);
-  int64_t r = mktime(localtime(&s.st_ctime));
-  A_FREE(fn);
-  return r;
 }
 
 int64_t VFsFSize(char *name) {
