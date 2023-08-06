@@ -4,8 +4,10 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_video.h>
+#include "logo.c"
 static SDL_Palette  *sdl_p;
 static SDL_Surface  *screen;
+static SDL_Surface  *window_icon;
 static SDL_Window   *window;
 static SDL_Rect      view_port;
 static SDL_Renderer *renderer;
@@ -23,6 +25,16 @@ static void _DrawWindowNew() {
     return;
   }
   int rends;
+  window_icon= SDL_CreateRGBSurfaceWithFormat(
+	0,
+	aiwnios_logo.width,
+	aiwnios_logo.height,
+	aiwnios_logo.bytes_per_pixel*8,
+	SDL_PIXELFORMAT_ABGR8888
+  );
+  SDL_LockSurface(window_icon);
+  memcpy(window_icon->pixels,aiwnios_logo.pixel_data,sizeof(aiwnios_logo.pixel_data));
+  SDL_UnlockSurface(window_icon);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
@@ -35,6 +47,7 @@ static void _DrawWindowNew() {
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  SDL_SetWindowIcon(window,window_icon);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);

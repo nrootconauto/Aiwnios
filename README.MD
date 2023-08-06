@@ -99,6 +99,8 @@ ___
 
 # Devloper Manual (WIP)
 This is intended for developes working on the C side,it is intended to be a companion to the source code,not a replacment for reading it.
+**You may be wondering why im putting this in the README.MD**,im putting this here so people actaully read it
+
 # Aiwnios Lexer
 ## What is a Lexer
 A Lexer turns the source code into **tokens**. Tokens are like the atoms of source code. They are things like variable names,numbers,strings and characters. For example,the following source code 
@@ -128,7 +130,7 @@ typedef struct CLexFile {
   int64_t ln, col, pos;
 } CLexFile;
 ```
-In our Compile,we will handle 1 token at a time. The token will be stored in cur_tok. The values will also be stored in the `CLexer` struct too.
+In our Compiler,we will handle 1 token at a time. The token will be stored in cur_tok. The values will also be stored in the `CLexer` struct too.
 ```c
 typedef struct {
   CLexFile *file;
