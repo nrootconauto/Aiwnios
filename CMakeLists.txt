@@ -48,7 +48,7 @@ endif ()
     misc.c
     optpass.c
     parser.c
-    arm_loader.c
+    loader.c
     windows.c
     sound.c
     dbg.c
@@ -81,7 +81,7 @@ elseif ("${ARCH}" STREQUAL "arm64")
     misc.c
     optpass.c
     parser.c
-    arm_loader.c
+    loader.c
     windows.c
     sound.c
     dbg.c

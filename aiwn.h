@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <assert.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
