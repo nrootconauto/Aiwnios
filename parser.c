@@ -4,12 +4,14 @@
 #include <limits.h>
 #include <stdarg.h>
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp) {
-  CCodeCtrl *cctrl               = A_MALLOC(sizeof(CCodeCtrl), ccmp->hc);
-  cctrl->hc                      = ccmp->hc;
-  cctrl->next                    = ccmp->code_ctrl;
-  cctrl->ir_code                 = A_MALLOC(sizeof(CRPN), cctrl->hc);
+  CCodeCtrl *cctrl;
+  *(cctrl = A_CALLOC(sizeof(CCodeCtrl), ccmp->hc)) = (CCodeCtrl){
+      .hc        = ccmp->hc,
+      .next      = ccmp->code_ctrl,
+      .ir_code   = A_CALLOC(sizeof(CRPN), cctrl->hc),
+      .code_misc = A_CALLOC(sizeof(CQue), cctrl->hc),
+  };
   ((CRPN *)cctrl->ir_code)->type = IC_NOP;
-  cctrl->code_misc               = A_MALLOC(sizeof(CQue), cctrl->hc);
   QueInit(cctrl->ir_code);
   QueInit(cctrl->code_misc);
   ccmp->code_ctrl = cctrl;
@@ -134,9 +136,11 @@ CCmpCtrl   *CmpCtrlDel(CCmpCtrl *d) {
 CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   int64_t     idx, idx2;
   CHashClass *cls;
-  CCmpCtrl   *ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL);
-  ccmp->lex        = lex;
-  ccmp->hc         = HeapCtrlInit(NULL, Fs, 1);
+  CCmpCtrl   *ccmp;
+  *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) = (CCmpCtrl){
+      .lex = lex,
+      .hc  = HeapCtrlInit(NULL, Fs, 1),
+  };
   struct {
     char   *name;
     int64_t rt;
@@ -149,30 +153,42 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   };
   for (idx = 0; idx != sizeof(raw_types) / sizeof(*raw_types); idx++) {
     if (!HashFind(raw_types[idx].name, Fs->hash_table, HTT_CLASS, 1)) {
-      cls            = A_CALLOC(sizeof(CHashClass) * STAR_CNT, NULL);
-      cls->base.type = HTT_CLASS;
-      cls->sz        = raw_types[idx].sz;
+      *(cls = A_CALLOC(sizeof(CHashClass) * STAR_CNT, NULL)) = (CHashClass){
+          .base =
+              {
+                  .type = HTT_CLASS,
+              },
+          .sz = raw_types[idx].sz,
+      };
       for (idx2 = 0; idx2 != STAR_CNT; idx2++) {
         cls[idx2].base.str = A_STRDUP(raw_types[idx].name, NULL);
-        if (!idx2)
-          cls[idx2].raw_type = raw_types[idx].rt,
+        if (!idx2) {
+          cls[idx2].raw_type = raw_types[idx].rt;
           cls[idx2].sz       = raw_types[idx].sz;
-        else
-          cls[idx2].raw_type = RT_PTR, cls[idx2].sz = sizeof(void *);
+        } else {
+          cls[idx2].raw_type = RT_PTR;
+          cls[idx2].sz       = sizeof(void *);
+        }
         cls[idx2].ptr_star_cnt = idx2;
         cls[idx2].use_cnt++;
       }
       HashAdd(cls, Fs->hash_table);
-      cls            = A_CALLOC(sizeof(CHashClass) * STAR_CNT, NULL);
-      cls->base.type = HTT_CLASS;
-      cls->sz        = raw_types[idx].sz;
+      *(cls = A_CALLOC(sizeof(CHashClass) * STAR_CNT, NULL)) = (CHashClass){
+          .base =
+              {
+                  .type = HTT_CLASS,
+              },
+          .sz = raw_types[idx].sz,
+      };
       for (idx2 = 0; idx2 != STAR_CNT; idx2++) {
         cls[idx2].base.str = A_STRDUP(raw_types[idx].name, NULL);
-        if (!idx2)
-          cls[idx2].raw_type = raw_types[idx].rt,
+        if (!idx2) {
+          cls[idx2].raw_type = raw_types[idx].rt;
           cls[idx2].sz       = raw_types[idx].sz;
-        else
-          cls[idx2].raw_type = RT_PTR, cls[idx2].sz = sizeof(void *);
+        } else {
+          cls[idx2].raw_type = RT_PTR;
+          cls[idx2].sz       = sizeof(void *);
+        }
         cls[idx2].ptr_star_cnt = idx2;
         cls[idx2].use_cnt++;
       }
@@ -449,7 +465,7 @@ static char *PrsString(CCmpCtrl *ccmp, int64_t *sz) {
   int64_t len = 0;
   while (ccmp->lex->cur_tok == TK_STR) {
     len += ccmp->lex->str_len;
-    tmp = A_MALLOC(len + 1, NULL);
+    tmp = A_CALLOC(len + 1, NULL);
     if (ret)
       memcpy(tmp, ret, len - ccmp->lex->str_len);
     A_FREE(ret);
@@ -931,8 +947,7 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     abort();
   }
   //???
-  abort();
-  return NULL;
+  __builtin_unreachable();
 ret:
   return ICFwd(orig_rpn);
 }
@@ -1095,9 +1110,7 @@ next:
         arg      = tc_class->sz * dummy_dim.total_cnt;
         if (dummy_dim.next)
           ArrayDimDel(dummy_dim.next);
-        type     = IC_I64;
-        ic       = A_CALLOC(sizeof(CRPN), NULL);
-        ic->type = type;
+        (ic = A_CALLOC(sizeof(CRPN), NULL))->type = type = IC_I64;
         QueInit(&ic->base);
         ic->integer = arg;
         QueIns(ic, ccmp->code_ctrl->ir_code);
@@ -1112,9 +1125,7 @@ next:
           ParseErr(ccmp, "Expected a typename.");
         arg = tc_class->sz;
         Lex(ccmp->lex);
-        type     = IC_I64;
-        ic       = A_CALLOC(sizeof(CRPN), NULL);
-        ic->type = type;
+        (ic = A_CALLOC(sizeof(CRPN), NULL))->type = type = IC_I64;
         QueInit(&ic->base);
         ic->integer = arg;
         QueIns(ic, ccmp->code_ctrl->ir_code);
@@ -1254,24 +1265,25 @@ next:
             ic2 = ccmp->code_ctrl->ir_code->next;
             if (ic2->type == IC_GLOBAL) {
               if (ic2->global_var->base.type & HTT_FUN) {
-                ic       = A_CALLOC(sizeof(CRPN), NULL);
-                ic->type = IC_CALL;
+                (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
                 QueIns(ic, ccmp->code_ctrl->ir_code);
                 AssignRawTypeToNode(ccmp, ic);
               }
             }
-
             //
             // See ghost ahead
             //
             ic2 = ccmp->code_ctrl->ir_code->next;
-            //
-            ic         = A_CALLOC(sizeof(CRPN), NULL);
-            ic->type   = IC_TYPECAST;
-            ic->ic_dim = A_CALLOC(sizeof(CArrayDim), NULL);
-            ic->ic_dim->total_cnt =
-                INT_MIN; // If still negative,we didint get a dim
-            ic->ic_dim->cnt = 1;
+
+            // eb-lan
+            *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+                .type   = IC_TYPECAST,
+                .ic_dim = A_CALLOC(sizeof(CArrayDim), NULL),
+            };
+            *ic->ic_dim = (CArrayDim){
+                .total_cnt = INT_MIN, // If still negative,we didint get a dim
+                .cnt       = 1,
+            };
             Lex(ccmp->lex);
             ic->ic_class =
                 PrsType(ccmp, tc_class, NULL, &ic->ic_fun, ic->ic_dim);
@@ -1300,8 +1312,7 @@ next:
                 if (ic2->global_var->base.type & HTF_EXTERN)
                   ParseErr(ccmp, "Can't address of extern symbol");
               } else if (ic2->global_var->base.type & HTT_FUN) {
-                ic       = A_CALLOC(sizeof(CRPN), NULL);
-                ic->type = IC_CALL;
+                (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
                 QueIns(ic, ic2->base.last);
               }
             }
@@ -1311,8 +1322,7 @@ next:
         } else {
           // Is func
         is_func_call:
-          ic       = A_CALLOC(sizeof(CRPN), NULL);
-          ic->type = IC_CALL;
+          (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
           for (arg = 0;;) {
             ic2 = ccmp->code_ctrl->ir_code->next;
             ParseExpr(ccmp, PEF_NO_COMMA);
@@ -1324,8 +1334,7 @@ next:
             }
             if (ic2 == ccmp->code_ctrl->ir_code->next) {
               // Found no argument so make a IC_NOP
-              ic2       = A_CALLOC(sizeof(CRPN), NULL);
-              ic2->type = IC_NOP;
+              (ic2 = A_CALLOC(sizeof(CRPN), NULL))->type = IC_NOP;
               QueIns(ic2, ccmp->code_ctrl->ir_code);
               arg++;
             }
@@ -1350,8 +1359,7 @@ next:
         if (ic_stk[idx] == IC_PAREN) {
           Lex(ccmp->lex);
           while (ic_stk[--stk_ptr] != IC_PAREN) {
-            ic       = A_CALLOC(sizeof(CRPN), NULL);
-            ic->type = ic_stk[stk_ptr];
+            (ic = A_CALLOC(sizeof(CRPN), NULL))->type = ic_stk[stk_ptr];
             QueIns(ic, ccmp->code_ctrl->ir_code);
             AssignRawTypeToNode(ccmp, ic);
             if (ic->type == IC_PRE_DEC || ic->type == IC_PRE_INC)
@@ -1375,15 +1383,13 @@ next:
         if (ic_stk[idx] == IC_ARRAY_ACC) {
           Lex(ccmp->lex);
           while (ic_stk[--stk_ptr] != IC_ARRAY_ACC) {
-            ic       = A_CALLOC(sizeof(CRPN), NULL);
-            ic->type = ic_stk[stk_ptr];
+            (ic = A_CALLOC(sizeof(CRPN), NULL))->type = ic_stk[stk_ptr];
             QueIns(ic, ccmp->code_ctrl->ir_code);
             AssignRawTypeToNode(ccmp, ic);
             if (ic->type == IC_PRE_DEC || ic->type == IC_PRE_INC)
               SetIncAmt(ccmp, ic);
           }
-          ic       = A_CALLOC(sizeof(CRPN), NULL);
-          ic->type = IC_ARRAY_ACC;
+          (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_ARRAY_ACC;
           QueIns(ic, ccmp->code_ctrl->ir_code);
           AssignRawTypeToNode(ccmp, ic);
           POST_XXX_CHECK;
@@ -1393,11 +1399,9 @@ next:
       goto fin;
       break;
     case TK_I64:
-      binop_before = 0;
-      prec         = -2;
-      type         = IC_I64;
-      ic           = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type     = type;
+      binop_before                              = 0;
+      prec                                      = -2;
+      (ic = A_CALLOC(sizeof(CRPN), NULL))->type = type = IC_I64;
       QueInit(&ic->base);
       ic->integer = ccmp->lex->integer;
       QueIns(ic, ccmp->code_ctrl->ir_code);
@@ -1405,11 +1409,9 @@ next:
       goto next;
       break;
     case TK_F64:
-      binop_before = 0;
-      prec         = -2;
-      type         = IC_F64;
-      ic           = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type     = type;
+      binop_before                              = 0;
+      prec                                      = -2;
+      (ic = A_CALLOC(sizeof(CRPN), NULL))->type = type = IC_F64;
       QueInit(&ic->base);
       ic->flt = ccmp->lex->flt;
       QueIns(ic, ccmp->code_ctrl->ir_code);
@@ -1454,9 +1456,8 @@ next:
                 ParseWarn(ccmp, "Can't address of extern symbol");
             } else if (ic->global_var->base.type & HTT_FUN) {
               QueIns(ic, ccmp->code_ctrl->ir_code);
-              ic2      = ic;
-              ic       = A_CALLOC(sizeof(CRPN), NULL);
-              ic->type = IC_CALL;
+              ic2                                       = ic;
+              (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
               QueIns(ic, ic2->base.last);
               goto next;
             }
@@ -1649,9 +1650,10 @@ next:
       if (!MemberFind(ccmp->lex->string, ic2->ic_class - 1))
         ParseErr(ccmp, "Class '%s' is missing member '%s'\n",
                  ic2->ic_class[-1].base.str, ccmp->lex->string);
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_ARROW;
-      ic->local_mem = MemberFind(ccmp->lex->string, ic2->ic_class - 1);
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_ARROW,
+          .local_mem = MemberFind(ccmp->lex->string, ic2->ic_class - 1),
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
       ic->ic_fun = ic->local_mem->fun_ptr;
       Lex(ccmp->lex);
@@ -1667,9 +1669,10 @@ next:
       if (!MemberFind(ccmp->lex->string, ic2->ic_class))
         ParseErr(ccmp, "Class '%s' is missing member '%s'\n",
                  ic2->ic_class->base.str, ccmp->lex->string);
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_DOT;
-      ic->local_mem = MemberFind(ccmp->lex->string, ic2->ic_class);
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_DOT,
+          .local_mem = MemberFind(ccmp->lex->string, ic2->ic_class),
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
       Lex(ccmp->lex);
       binop_before = 0;
@@ -1699,8 +1702,7 @@ next:
           goto pass;
         goto fail;
       pass:
-        ic       = A_CALLOC(sizeof(CRPN), NULL);
-        ic->type = ic_stk[stk_ptr - 1];
+        (ic = A_CALLOC(sizeof(CRPN), NULL))->type = ic_stk[stk_ptr - 1];
         QueIns(ic, ccmp->code_ctrl->ir_code);
         AssignRawTypeToNode(ccmp, ic);
         if (ic->type == IC_PRE_DEC || ic->type == IC_PRE_INC)
@@ -1981,15 +1983,15 @@ not_label:
     }
   }
   if (ccmp->lex->cur_tok == TK_STR) {
-    string          = PrsString(ccmp, &str_len);
-    rpn             = A_CALLOC(sizeof(CRPN), NULL);
-    rpn->type       = IC_GLOBAL;
-    rpn->global_var = HashFind("Print", Fs->hash_table, HTT_FUN, 1);
+    string                                = PrsString(ccmp, &str_len);
+    *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type       = IC_GLOBAL,
+        .global_var = HashFind("Print", Fs->hash_table, HTT_FUN, 1),
+    };
     if (!rpn->global_var)
       ParseErr(ccmp, "'Print' function doesnt exist yet.");
     QueIns(rpn, ccmp->code_ctrl->ir_code);
-    rpn       = A_CALLOC(sizeof(CRPN), NULL);
-    rpn->type = IC_STR;
+    (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_STR;
     for (misc = ccmp->code_ctrl->code_misc->next;
          ccmp->code_ctrl->code_misc != misc; misc = misc->base.next) {
       if (misc->type == CMT_STRING)
@@ -2024,16 +2026,16 @@ not_label:
       }
     }
   fin_str:
-    rpn         = A_CALLOC(sizeof(CRPN), NULL);
-    rpn->type   = IC_CALL;
-    rpn->length = argc;
+    *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type   = IC_CALL,
+        .length = argc,
+    };
     QueIns(rpn, ccmp->code_ctrl->ir_code);
     return 1;
   }
   if (ccmp->lex->cur_tok == ';') {
     Lex(ccmp->lex);
-    rpn       = A_CALLOC(sizeof(CRPN), NULL);
-    rpn->type = IC_NOP;
+    (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_NOP;
     QueIns(rpn, ccmp->code_ctrl->ir_code);
     return 1;
   }
@@ -2050,8 +2052,7 @@ int64_t PrsStmt(CCmpCtrl *ccmp) {
   CRPN *old = ccmp->code_ctrl->ir_code->next, *cur, *new;
   char  ret = _PrsStmt(ccmp);
   if (old == ccmp->code_ctrl->ir_code->next) {
-    old       = A_CALLOC(sizeof(CRPN), 0);
-    old->type = IC_NOP;
+    (old = A_CALLOC(sizeof(CRPN), 0))->type = IC_NOP;
     QueIns(old, ccmp->code_ctrl->ir_code);
   } else if (ICFwd(cur = ccmp->code_ctrl->ir_code->next) != old) {
   }
@@ -2132,7 +2133,7 @@ int64_t PrsArrayDim(CCmpCtrl *ccmp, CArrayDim *to) {
       return 0;
     } else
       Lex(ccmp->lex);
-    to->next            = A_MALLOC(sizeof(CArrayDim), NULL);
+    to->next            = A_CALLOC(sizeof(CArrayDim), NULL);
     to->next->total_cnt = 1;
     to->next->cnt       = dim;
     to->total_cnt *= dim;
@@ -2252,7 +2253,7 @@ CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
     } else
       Lex(ccmp->lex);
     assert(fun);
-    *fun = A_CALLOC(sizeof(CHashFun), NULL);
+    fun[0] = A_CALLOC(sizeof(CHashFun), NULL);
     fun[0]->base.flags |= CLSF_FUNPTR;
     fun[0]->return_class      = base + star_cnt;
     fun[0]->base.raw_type     = RT_FUNC;
@@ -2475,14 +2476,14 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
         case RT_FUNC: // func ptr
           tmpi = lst->dft_val = PrsI64(ccmp);
           if (flags & PRSF_STATIC) {
-            lst->static_bytes             = A_MALLOC(8, NULL);
+            lst->static_bytes             = A_CALLOC(8, NULL);
             *(int64_t *)lst->static_bytes = tmpi;
           }
           break;
         case RT_F64:
           tmpf = lst->dft_val_flt = PrsF64(ccmp);
           if (flags & PRSF_STATIC) {
-            lst->static_bytes = A_MALLOC(lst->member_class->sz, NULL);
+            lst->static_bytes = A_CALLOC(lst->member_class->sz, NULL);
             *(double *)lst->static_bytes = tmpf;
           }
           break;
@@ -2498,13 +2499,13 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
       }
     } else if (add_to) { // TODO is a local???
       Lex(ccmp->lex);
-      rpn            = A_CALLOC(sizeof(CRPN), NULL);
-      rpn->type      = IC_LOCAL;
-      rpn->local_mem = lst;
+      *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LOCAL,
+          .local_mem = lst,
+      };
       QueIns(rpn, ccmp->code_ctrl->ir_code);
       ParseExpr(ccmp, PEF_NO_COMMA);
-      rpn       = A_CALLOC(sizeof(CRPN), NULL);
-      rpn->type = IC_EQ;
+      (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_EQ;
       QueIns(rpn, ccmp->code_ctrl->ir_code);
     }
   }
@@ -2521,7 +2522,7 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
     lst->fun_ptr        = NULL; // We steal this
     // lst will be Free'd at ret
     glbl_var->data_addr =
-        A_MALLOC(glbl_var->var_class->sz * glbl_var->dim.total_cnt, NULL);
+        A_CALLOC(glbl_var->var_class->sz * glbl_var->dim.total_cnt, NULL);
     if (flags & PRSF_IMPORT) {
       glbl_var->base.type |= HTF_IMPORT;
       goto set_import_name;
@@ -2559,13 +2560,13 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
         PrsArray(ccmp, glbl_var->var_class, glbl_var->dim.next,
                  glbl_var->data_addr);
       } else {
-        rpn             = A_CALLOC(sizeof(CRPN), NULL);
-        rpn->type       = IC_GLOBAL;
-        rpn->global_var = glbl_var;
+        *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+            .type       = IC_GLOBAL,
+            .global_var = glbl_var,
+        };
         QueIns(rpn, ccmp->code_ctrl->ir_code);
         ParseExpr(ccmp, PEF_NO_COMMA);
-        rpn       = A_CALLOC(sizeof(CRPN), NULL);
-        rpn->type = IC_EQ;
+        (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_EQ;
         QueIns(rpn, ccmp->code_ctrl->ir_code);
       }
     }
@@ -2584,21 +2585,22 @@ int64_t PrsWhile(CCmpCtrl *ccmp) { // YES
     old_break_to = ccmp->code_ctrl->break_to; // Restored
     break_to = ccmp->code_ctrl->break_to = CodeMiscNew(ccmp, CMT_LABEL);
     enter_label                          = CodeMiscNew(ccmp, CMT_LABEL);
-    ic                                   = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type                             = IC_LABEL;
-    ic->code_misc                        = enter_label;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     if (ccmp->lex->cur_tok != '(')
       ParseErr(ccmp, "Expected a '('.");
     Lex(ccmp->lex);
     if (!ParseExpr(ccmp, 0))
       ParseErr(ccmp, "Expected expression.");
-    ic       = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type = IC_LNOT;
+    (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_LNOT;
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_GOTO_IF;
-    ic->code_misc = break_to;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_GOTO_IF,
+        .code_misc = break_to,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     if (ccmp->lex->cur_tok != ')')
       ParseErr(ccmp, "Expected a ')'.");
@@ -2606,13 +2608,15 @@ int64_t PrsWhile(CCmpCtrl *ccmp) { // YES
     if (!PrsStmt(ccmp)) {
       ParseErr(ccmp, "Expected expression.");
     }
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_GOTO;
-    ic->code_misc = enter_label;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_GOTO,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_LABEL;
-    ic->code_misc = break_to;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = break_to,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     ccmp->code_ctrl->break_to = old_break_to;
     return 1;
@@ -2624,11 +2628,12 @@ int64_t PrsDo(CCmpCtrl *ccmp) {
   CRPN      *ic;
   CCodeMisc *old_break_to, *enter_label;
   if (PrsKw(ccmp, TK_KW_DO)) {
-    enter_label   = CodeMiscNew(ccmp, CMT_LABEL);
-    old_break_to  = ccmp->code_ctrl->break_to; // Restored
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_LABEL;
-    ic->code_misc = enter_label;
+    enter_label  = CodeMiscNew(ccmp, CMT_LABEL);
+    old_break_to = ccmp->code_ctrl->break_to; // Restored
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     ccmp->code_ctrl->break_to = CodeMiscNew(ccmp, CMT_LABEL);
     PrsStmt(ccmp);
@@ -2645,14 +2650,15 @@ int64_t PrsDo(CCmpCtrl *ccmp) {
     if (ccmp->lex->cur_tok != ';')
       ParseErr(ccmp, "Expected a ';'.");
     Lex(ccmp->lex);
-
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_GOTO_IF;
-    ic->code_misc = enter_label;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_GOTO_IF,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_LABEL;
-    ic->code_misc = ccmp->code_ctrl->break_to;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = ccmp->code_ctrl->break_to,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     ccmp->code_ctrl->break_to = old_break_to;
     return 1;
@@ -2678,20 +2684,21 @@ int64_t PrsFor(CCmpCtrl *ccmp) { // YES
     if (ccmp->lex->cur_tok != ';')
       ParseErr(ccmp, "Expected a ';'.");
     Lex(ccmp->lex);
-    enter_label   = CodeMiscNew(ccmp, CMT_LABEL);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_LABEL;
-    ic->code_misc = enter_label;
+    enter_label                          = CodeMiscNew(ccmp, CMT_LABEL);
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     if (!ParseExpr(ccmp, 0)) {
       ParseErr(ccmp, "Expected a condition.");
     }
-    ic       = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type = IC_LNOT;
+    (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_LNOT;
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_GOTO_IF;
-    ic->code_misc = break_to;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_GOTO_IF,
+        .code_misc = break_to,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     if (ccmp->lex->cur_tok != ';')
       ParseErr(ccmp, "Expected a ';'.");
@@ -2709,13 +2716,15 @@ int64_t PrsFor(CCmpCtrl *ccmp) { // YES
       CodeCtrlAppend(ccmp, cctrl);
       CodeCtrlDel(cctrl);
     }
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_GOTO;
-    ic->code_misc = enter_label;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_GOTO,
+        .code_misc = enter_label,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic            = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type      = IC_LABEL;
-    ic->code_misc = break_to;
+    *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = break_to,
+    };
     QueIns(ic, ccmp->code_ctrl->ir_code);
     ccmp->code_ctrl->break_to = old_break_to;
     return 1;
@@ -2731,11 +2740,9 @@ int64_t PrsIf(CCmpCtrl *ccmp) {
       ParseErr(ccmp, "Expected a '('.");
     Lex(ccmp->lex);
     ParseExpr(ccmp, 0);
-    ic       = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type = IC_LNOT;
+    (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_LNOT;
     QueIns(ic, ccmp->code_ctrl->ir_code);
-    ic       = A_CALLOC(sizeof(CRPN), NULL);
-    ic->type = IC_GOTO_IF;
+    (ic = A_CALLOC(sizeof(CRPN), NULL))->type = IC_GOTO_IF;
     QueIns(ic, ccmp->code_ctrl->ir_code);
     misc          = CodeMiscNew(ccmp, CMT_LABEL);
     ic->code_misc = misc;
@@ -2744,24 +2751,28 @@ int64_t PrsIf(CCmpCtrl *ccmp) {
     Lex(ccmp->lex);
     PrsStmt(ccmp);
     if (PrsKw(ccmp, TK_KW_ELSE)) {
-      misc2         = CodeMiscNew(ccmp, CMT_LABEL);
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_GOTO;
-      ic->code_misc = misc2;
+      misc2                                = CodeMiscNew(ccmp, CMT_LABEL);
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_GOTO,
+          .code_misc = misc2,
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_LABEL;
-      ic->code_misc = misc;
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LABEL,
+          .code_misc = misc,
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
       PrsStmt(ccmp);
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_LABEL;
-      ic->code_misc = misc2;
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LABEL,
+          .code_misc = misc2,
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
     } else {
-      ic            = A_CALLOC(sizeof(CRPN), NULL);
-      ic->type      = IC_LABEL;
-      ic->code_misc = misc;
+      *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LABEL,
+          .code_misc = misc,
+      };
       QueIns(ic, ccmp->code_ctrl->ir_code);
     }
     return 1;
@@ -3523,7 +3534,7 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
         };
         QueIns(tmpir, cctrl->code_ctrl->ir_code);
       }
-      tmps = A_MALLOC(sizeof(CSwitchCase), NULL);
+      tmps = A_CALLOC(sizeof(CSwitchCase), NULL);
 #define INS_TMPSS                                                              \
   {                                                                            \
     tmps->next = header;                                                       \
@@ -3550,7 +3561,7 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
             k_hi = hi;
           INS_TMPSS;
           for (lo = lo + 1; lo <= hi; lo++) {
-            tmps = A_MALLOC(sizeof(CSwitchCase), NULL);
+            tmps = A_CALLOC(sizeof(CSwitchCase), NULL);
             last = tmps->val = lo;
             tmps->label      = label->code_misc;
             INS_TMPSS;
@@ -3579,13 +3590,13 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
       lb_dft->flags |= CMF_DEFINED;
       Lex(cctrl->lex);
       // We provide a IC_NOP as label's consume a statemnet
-      tmpir       = A_CALLOC(sizeof(CRPN), NULL);
-      tmpir->type = IC_NOP;
+      (tmpir = A_CALLOC(sizeof(CRPN), NULL))->type = IC_NOP;
       QueIns(tmpir, cctrl->code_ctrl->ir_code);
       // Make a start label(IC_LABEL consumed the next ir)
-      label            = A_CALLOC(sizeof(CRPN), NULL);
-      label->type      = IC_LABEL;
-      label->code_misc = lb_dft; // See me
+      *(label = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LABEL,
+          .code_misc = lb_dft, // See me
+      };
       QueIns(label, cctrl->code_ctrl->ir_code);
       goto add_stmt;
     } else if (PrsKw(cctrl, TK_KW_START)) {
@@ -3595,18 +3606,17 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
       } else
         Lex(cctrl->lex);
       cctrl->flags |= CCF_IN_SUBSWITCH_START_BLOCK;
-      tmpss                = A_CALLOC(sizeof(CSubSwitch), NULL);
-      tmpss->prev_break_to = cctrl->code_ctrl->break_to;
-      tmpss->lb_exit       = CodeMiscNew(cctrl, CMT_LABEL);
+      *(tmpss = A_CALLOC(sizeof(CSubSwitch), NULL)) = (CSubSwitch){
+          .prev_break_to = cctrl->code_ctrl->break_to,
+          .lb_exit       = CodeMiscNew(cctrl, CMT_LABEL),
+      };
       QueIns(tmpss, subs.base.last);
       // set cctrl->code_ctrl->break_to to the exit of the subswitch
-      cctrl->code_ctrl->break_to = tmpss->lb_exit;
-      tmpir                      = A_CALLOC(sizeof(CRPN), NULL);
-      tmpir->type                = IC_SUB_PROLOG;
+      cctrl->code_ctrl->break_to                   = tmpss->lb_exit;
+      (tmpir = A_CALLOC(sizeof(CRPN), NULL))->type = IC_SUB_PROLOG;
       QueIns(tmpir, cctrl->code_ctrl->ir_code);
       // Make a start label(IC_LABEL consumed the next ir)
-      label           = A_CALLOC(sizeof(CRPN), NULL);
-      label->type     = IC_LABEL;
+      (label = A_CALLOC(sizeof(CRPN), NULL))->type = IC_LABEL;
       tmpss->lb_start = label->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
       QueIns(label, cctrl->code_ctrl->ir_code);
       // look here
@@ -3621,13 +3631,13 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
       }
       QueRem(tmpss = subs.base.last);
       // We provide a IC_NOP as label's consume a statemnet
-      tmpir       = A_CALLOC(sizeof(CRPN), NULL);
-      tmpir->type = IC_NOP;
+      (tmpir = A_CALLOC(sizeof(CRPN), NULL))->type = IC_NOP;
       QueIns(tmpir, cctrl->code_ctrl->ir_code);
       // Make a end label
-      label            = A_CALLOC(sizeof(CRPN), NULL);
-      label->type      = IC_LABEL;
-      label->code_misc = tmpss->lb_exit;
+      *(label = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+          .type      = IC_LABEL,
+          .code_misc = tmpss->lb_exit,
+      };
       QueIns(label, cctrl->code_ctrl->ir_code);
       cctrl->code_ctrl->break_to = tmpss->prev_break_to;
       A_FREE(tmpss);
@@ -3647,19 +3657,21 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
 ret:
   if (!(lb_dft->flags & CMF_DEFINED)) {
     // Make a end label
-    label       = A_CALLOC(sizeof(CRPN), NULL);
-    label->type = IC_LABEL;
-    lb_dft = label->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
+    *(label = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+        .type      = IC_LABEL,
+        .code_misc = lb_dft = CodeMiscNew(cctrl, CMT_LABEL),
+    };
     QueIns(label, cctrl->code_ctrl->ir_code);
-    switch_ir->length++;
+    ++switch_ir->length;
   }
   // Define lb_exit
   // Make a end label
-  label            = A_CALLOC(sizeof(CRPN), NULL);
-  label->type      = IC_LABEL;
-  label->code_misc = lb_exit;
+  *(label = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type      = IC_LABEL,
+      .code_misc = lb_exit,
+  };
   QueIns(label, cctrl->code_ctrl->ir_code);
-  switch_ir->length++;
+  ++switch_ir->length;
 
   Lex(cctrl->lex);
   cctrl->code_ctrl->break_to = old_break_to;
@@ -3667,7 +3679,7 @@ ret:
   gen_tab:
     jmp_tab          = CodeMiscNew(cctrl, CMT_JMP_TAB);
     jmp_tab->jmp_tab = A_CALLOC((k_hi - k_low + 1) * sizeof(CCodeMisc *), NULL);
-    for (; header;) {
+    while (header) {
       tmps                                  = header->next;
       jmp_tab->jmp_tab[header->val - k_low] = header->label;
       A_FREE(header);
@@ -3745,59 +3757,63 @@ int64_t PrsTry(CCmpCtrl *cctrl) {
       .global_var = HashFind("AIWNIOS_SetJmp", Fs->hash_table, HTT_FUN, 1),
   };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn             = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type       = IC_GLOBAL;
-  rpn->global_var = HashFind("SysTry", Fs->hash_table, HTT_FUN, 1);
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type       = IC_GLOBAL,
+      .global_var = HashFind("SysTry", Fs->hash_table, HTT_FUN, 1),
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn       = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type = IC_CALL;
+  (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn         = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type   = IC_CALL;
-  rpn->length = 1;
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type   = IC_CALL,
+      .length = 1,
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn            = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type      = IC_GOTO_IF;
-  rpn->code_misc = catch_misc;
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type      = IC_GOTO_IF,
+      .code_misc = catch_misc,
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
   // See below note
   PrsStmt(cctrl);
   // We will call SysUntry if we succesful got through the try block
-  rpn             = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type       = IC_GLOBAL;
-  rpn->global_var = HashFind("SysUntry", Fs->hash_table, HTT_FUN, 1);
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type       = IC_GLOBAL,
+      .global_var = HashFind("SysUntry", Fs->hash_table, HTT_FUN, 1),
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn       = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type = IC_CALL;
+  (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn            = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type      = IC_GOTO;
-  rpn->code_misc = exit_misc;
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type      = IC_GOTO,
+      .code_misc = exit_misc,
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
   //
   if (!PrsKw(cctrl, TK_KW_CATCH))
     ParseErr(cctrl, "Expected 'catch'.");
   // Catch label is here
-  rpn            = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type      = IC_LABEL;
-  rpn->code_misc = catch_misc;
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type      = IC_LABEL,
+      .code_misc = catch_misc,
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
   // Our catch block
   PrsStmt(cctrl);
   // Call EndCatch
-  rpn             = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type       = IC_GLOBAL;
-  rpn->global_var = HashFind("EndCatch", Fs->hash_table, HTT_FUN, 1);
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type       = IC_GLOBAL,
+      .global_var = HashFind("EndCatch", Fs->hash_table, HTT_FUN, 1),
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-  rpn       = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type = IC_CALL;
+  (rpn = A_CALLOC(sizeof(CRPN), NULL))->type = IC_CALL;
   QueIns(rpn, cctrl->code_ctrl->ir_code);
   // Exit label is here
-  rpn            = A_CALLOC(sizeof(CRPN), NULL);
-  rpn->type      = IC_LABEL;
-  rpn->code_misc = exit_misc;
+  *(rpn = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
+      .type      = IC_LABEL,
+      .code_misc = exit_misc,
+  };
   QueIns(rpn, cctrl->code_ctrl->ir_code);
-
   return 1;
 }
 #ifdef AIWNIOS_TESTS
@@ -3898,8 +3914,8 @@ void PrsTests() {
 //
 #define HC_IC_BINDING(name, op)                                                \
   CRPN *__##name(CCodeCtrl *cc) {                                              \
-    CRPN *rpn = A_CALLOC(sizeof(CRPN), cc->hc);                                \
-    rpn->type = op;                                                            \
+    CRPN *rpn;                                                                 \
+    (rpn = A_CALLOC(sizeof(CRPN), cc->hc))->type = op;                         \
     QueIns(rpn, cc->ir_code);                                                  \
     return rpn;                                                                \
   }
@@ -3932,44 +3948,56 @@ HC_IC_BINDING(HC_ICAdd_And, IC_AND);
 HC_IC_BINDING(HC_ICAdd_Ret, IC_RET);
 
 CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = __IC_SET_FRAME_SIZE;
-  rpn->integer = arg;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = __IC_SET_FRAME_SIZE,
+      .integer = arg,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc, int64_t arg) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = __IC_ARG;
-  rpn->integer = arg;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = __IC_ARG,
+      .integer = arg,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc, int64_t amt) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = IC_POST_INC;
-  rpn->integer = amt;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = IC_POST_INC,
+      .integer = amt,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc, int64_t amt) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = IC_POST_DEC;
-  rpn->integer = amt;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = IC_POST_DEC,
+      .integer = amt,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_PreInc(CCodeCtrl *cc, int64_t amt) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = IC_PRE_INC;
-  rpn->integer = amt;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = IC_PRE_INC,
+      .integer = amt,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc, int64_t amt) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = IC_PRE_DEC;
-  rpn->integer = amt;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = IC_PRE_DEC,
+      .integer = amt,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
@@ -3986,51 +4014,61 @@ HC_IC_BINDING(HC_ICAdd_ModEq, IC_MOD_EQ);
 HC_IC_BINDING(HC_ICAdd_ToI64, IC_TO_I64);
 HC_IC_BINDING(HC_ICAdd_ToF64, IC_TO_F64);
 CRPN *__HC_ICAdd_I64(CCodeCtrl *cc, int64_t integer) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = IC_I64;
-  rpn->integer = integer;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = IC_I64,
+      .integer = integer,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_F64(CCodeCtrl *cc, double f) {
-  CRPN *rpn = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type = IC_F64;
-  rpn->flt  = f;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type = IC_F64,
+      .flt  = f,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_Switch(CCodeCtrl *cc, CCodeMisc *misc, CCodeMisc *dft) {
-  CRPN *rpn               = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type               = IC_BOUNDED_SWITCH;
-  rpn->code_misc          = misc;
-  rpn->code_misc->dft_lab = dft;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_BOUNDED_SWITCH,
+      .code_misc = misc,
+  };
+  misc->dft_lab = dft;
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_UnboundedSwitch(CCodeCtrl *cc, CCodeMisc *misc) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_UNBOUNDED_SWITCH;
-  rpn->code_misc = misc;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_UNBOUNDED_SWITCH,
+      .code_misc = misc,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_SubRet(CCodeCtrl *cc) {
-  CRPN *rpn = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type = IC_SUB_RET;
+  CRPN *rpn;
+  (rpn = A_CALLOC(sizeof(CRPN), cc->hc))->type = IC_SUB_RET;
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_SubProlog(CCodeCtrl *cc) {
-  CRPN *rpn = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type = IC_SUB_PROLOG;
+  CRPN *rpn;
+  (rpn = A_CALLOC(sizeof(CRPN), cc->hc))->type = IC_SUB_PROLOG;
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc, CCodeMisc *cm) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_SUB_CALL;
-  rpn->code_misc = cm;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_SUB_CALL,
+      .code_misc = cm,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
@@ -4074,49 +4112,57 @@ static CHashClass *rt2cls(int64_t rt, int64_t ptr_cnt) {
 }
 CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *acc, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_SHORT_ADDR;
-  rpn->code_misc = ptr;
-  ptr->type      = CMT_SHORT_ADDR;
-  rpn->ic_class  = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_SHORT_ADDR,
+      .code_misc = ptr,
+  };
+  ptr->type     = CMT_SHORT_ADDR;
+  rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
   rpn->ic_class++;
   rpn->raw_type = RT_PTR;
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_DEREF;
-  rpn->ic_class = rt2cls(rt, ptr_cnt);
-  rpn->raw_type = rpn->ic_class->raw_type;
-  QueIns(rpn, cc->ir_code);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_DEREF,
+      .ic_class = rt2cls(rt, ptr_cnt),
+  };
+  rpn->raw_type = rpn->ic_class->raw_type, QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_Call(CCodeCtrl *cc, int64_t arity, int64_t rt,
                       int64_t ptr_cnt) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = __IC_CALL;
-  rpn->length   = arity;
-  rpn->ic_class = rt2cls(rt, ptr_cnt);
-  rpn->raw_type = rpn->ic_class->raw_type;
-  QueIns(rpn, cc->ir_code);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = __IC_CALL,
+      .length   = arity,
+      .ic_class = rt2cls(rt, ptr_cnt),
+  };
+  rpn->raw_type = rpn->ic_class->raw_type, QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc, int64_t r) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_FREG;
-  rpn->integer  = r;
-  rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
-  rpn->raw_type = RT_F64;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_FREG,
+      .integer  = r,
+      .ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1),
+      .raw_type = RT_F64,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc, int64_t r, int64_t rt, int64_t ptr_cnt) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_IREG;
-  rpn->integer  = r;
-  rpn->ic_class = rt2cls(rt, ptr_cnt);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_IREG,
+      .integer  = r,
+      .ic_class = rt2cls(rt, ptr_cnt),
+  };
   if (ptr_cnt)
     rt = RT_PTR;
   rpn->raw_type = rpn->ic_class->raw_type;
@@ -4126,10 +4172,12 @@ CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc, int64_t r, int64_t rt, int64_t ptr_cnt) {
 
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc, int64_t off, int64_t rt,
                        int64_t ptr_cnt) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_BASE_PTR;
-  rpn->integer  = off;
-  rpn->ic_class = rt2cls(rt, ptr_cnt);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_BASE_PTR,
+      .integer  = off,
+      .ic_class = rt2cls(rt, ptr_cnt),
+  };
   if (ptr_cnt)
     rt = RT_PTR;
   rpn->raw_type = rpn->ic_class->raw_type;
@@ -4137,9 +4185,11 @@ CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc, int64_t off, int64_t rt,
   return rpn;
 }
 CRPN *__HC_ICAdd_Typecast(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_TYPECAST;
-  rpn->ic_class = rt2cls(rt, ptr_cnt);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_TYPECAST,
+      .ic_class = rt2cls(rt, ptr_cnt),
+  };
   if (ptr_cnt)
     rt = RT_PTR;
   rpn->raw_type = rpn->ic_class->raw_type;
@@ -4160,13 +4210,13 @@ char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info) {
   return Compile(ccmp, sz, dbg_info);
 }
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp, void **patch_addr) {
-  CCodeMisc *misc  = CodeMiscNew(ccmp, CMT_LABEL);
-  misc->patch_addr = patch_addr;
+  CCodeMisc *misc;
+  (misc = CodeMiscNew(ccmp, CMT_LABEL))->patch_addr = patch_addr;
   return misc;
 }
 CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp, char *str, int64_t sz) {
-  CCodeMisc *misc = CodeMiscNew(ccmp, CMT_STRING);
-  misc->str       = A_CALLOC(sz + 1, NULL);
+  CCodeMisc *misc;
+  (misc = CodeMiscNew(ccmp, CMT_STRING))->str = A_CALLOC(sz + 1, NULL);
   memcpy(misc->str, str, sz);
   misc->str_len = sz;
   return misc;
@@ -4174,7 +4224,7 @@ CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp, char *str, int64_t sz) {
 CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp, CCodeMisc *labels,
                                     void **table_address, int64_t hi) {
   CCodeMisc *misc = CodeMiscNew(ccmp, CMT_JMP_TAB);
-  misc->jmp_tab   = A_MALLOC((hi - 0) * sizeof(CCodeMisc *), NULL);
+  misc->jmp_tab   = A_CALLOC((hi - 0) * sizeof(CCodeMisc *), NULL);
   memcpy(misc->jmp_tab, labels, (hi - 0) * sizeof(CCodeMisc *));
   misc->hi         = hi - 1;
   misc->lo         = 0;
@@ -4187,51 +4237,62 @@ CRPN *__HC_ICAdd_Label(CCodeCtrl *cc, CCodeMisc *misc) {
   rpn->type = IC_NOP;
   // Label must consume something
   QueIns(rpn, cc->ir_code);
-  rpn            = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_LABEL;
-  rpn->code_misc = misc;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_LABEL,
+      .code_misc = misc,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_GOTO;
-  rpn->code_misc = cm;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_GOTO,
+      .code_misc = cm,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_GOTO_IF;
-  rpn->code_misc = cm;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_GOTO_IF,
+      .code_misc = cm,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_RAW_BYTES;
-  rpn->length    = cnt;
-  rpn->raw_bytes = A_MALLOC(cnt, cc->hc);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_RAW_BYTES,
+      .length    = cnt,
+      .raw_bytes = A_CALLOC(cnt, cc->hc),
+  };
   memcpy(rpn->raw_bytes, bytes, cnt);
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_Vargs(CCodeCtrl *cc, int64_t arity) {
-  CRPN *rpn   = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type   = __IC_VARGS;
-  rpn->length = arity;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type   = __IC_VARGS,
+      .length = arity,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm) {
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = IC_STR;
-  rpn->code_misc = cm;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_STR,
+      .code_misc = cm,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
@@ -4254,10 +4315,12 @@ void __HC_ICSetLine(CRPN *r, int64_t ln) {
 
 CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
                        char *sym, int64_t rt, int64_t ptrs) {
-  CRPN *rpn                  = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type                  = IC_RELOC;
-  rpn->ic_class              = rt2cls(rt, ptrs);
-  rpn->code_misc             = AddRelocMisc(cmpc, sym);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_RELOC,
+      .ic_class  = rt2cls(rt, ptrs),
+      .code_misc = AddRelocMisc(cmpc, sym),
+  };
   rpn->code_misc->patch_addr = pat_addr;
   QueIns(rpn, cc->ir_code);
   return rpn;
@@ -4280,28 +4343,34 @@ CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp, CCodeCtrl *cc, int64_t at, char *d,
   CCodeMisc *misc = CodeMiscNew(cmp, CMT_STATIC_DATA);
   misc->integer   = at;
   misc->str_len   = len;
-  memcpy(misc->str = A_MALLOC(len, cmp->hc), d, len);
-  CRPN *rpn      = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type      = __IC_SET_STATIC_DATA;
-  rpn->code_misc = misc;
+  memcpy(misc->str = A_CALLOC(len, cmp->hc), d, len);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = __IC_SET_STATIC_DATA,
+      .code_misc = misc,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl *cc, int64_t len) {
-  CRPN *rpn    = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type    = __IC_STATICS_SIZE;
-  rpn->integer = len;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type    = __IC_STATICS_SIZE,
+      .integer = len,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
 
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
                            int64_t ptrs) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = __IC_STATIC_REF;
-  rpn->integer  = off;
-  rpn->ic_class = rt2cls(rt, ptrs);
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = __IC_STATIC_REF,
+      .integer  = off,
+      .ic_class = rt2cls(rt, ptrs),
+  };
   rpn->raw_type = rpn->ic_class->raw_type;
   QueIns(rpn, cc->ir_code);
   return rpn;
@@ -4320,18 +4389,22 @@ HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
 HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
 
 CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr) {
-  CCodeMiscRef *ref = A_CALLOC(sizeof(CCodeMiscRef), NULL);
-  ref->add_to       = addr;
-  ref->next         = misc->refs;
-  misc->refs        = ref;
+  CCodeMiscRef *ref;
+  *(ref = A_CALLOC(sizeof(CCodeMiscRef), NULL)) = (CCodeMiscRef){
+      .add_to = addr,
+      .next   = misc->refs,
+  };
+  misc->refs = ref;
   return ref;
 }
 
 void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) {
-  CRPN *rpn     = A_CALLOC(sizeof(CRPN), cc->hc);
-  rpn->type     = IC_GET_VARGS_PTR;
-  rpn->ic_class = NULL;
-  rpn->raw_type = RT_I64i;
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type     = IC_GET_VARGS_PTR,
+      .ic_class = NULL,
+      .raw_type = RT_I64i,
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
