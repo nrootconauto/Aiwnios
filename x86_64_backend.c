@@ -6642,10 +6642,16 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
           *(void **)(bin + code_off) = &DoNothing;
         code_off += 8;
         if (run) {
-          import            = A_CALLOC(sizeof(CHashImport), NULL);
-          import->base.type = HTT_IMPORT_SYS_SYM;
-          import->base.str  = A_STRDUP(misc->str, NULL);
-          import->address   = misc->addr;
+          // designated inits fuck yeah
+          // eb-lan
+          *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
+              .base =
+                  {
+                      .type = HTT_IMPORT_SYS_SYM,
+                      .str  = A_STRDUP(misc->str, NULL),
+                  },
+              .address = misc->addr,
+          };
           HashAdd(import, Fs->hash_table);
         }
         if (run && misc->patch_addr) {

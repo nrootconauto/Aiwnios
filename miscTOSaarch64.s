@@ -11,13 +11,13 @@ TempleOS_CallN:
   add x1,x1,x3 /* If remainder of x1 is 1,add 1 to align to 2(we multiply by 8 to align to 16) */
   lsl x5,x1,3 /* times 8 */
   sub sp,sp,x5
-  cbz x1,bye
-loop:
+  cbz x1,.L_bye
+.L_loop:
   sub x1,x1,1
   ldr x5,[x2,x1,LSL 3]
   str x5,[sp,x1,LSL 3]
-  cbnz x1,loop
-bye:
+  cbnz x1,.L_loop
+.L_bye:
   blr x0
   mov sp,x29
   ldp x29,x30,[sp],16
