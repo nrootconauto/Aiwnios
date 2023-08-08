@@ -648,44 +648,45 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
   }
   if(b==-1&&i!=-1) {
     disp_sz=4;
-    modrm=0b00000100|r<<3;
+    modrm=0b00000100|(r&0b111)<<3;
     switch(s) {
-      case 1: sib=0b00000101|i<<3; break;
-      case 2: sib=0b01000101|i<<3; break;
-      case 4: sib=0b10000101|i<<3; break;
-      case 8: sib=0b11000101|i<<3; break;
+      case -1:
+      case 1: sib=0b00000101|((i&0b111)<<3); break;
+      case 2: sib=0b01000101|((i&0b111)<<3); break;
+      case 4: sib=0b10000101|((i&0b111)<<3); break;
+      case 8: sib=0b11000101|((i&0b111)<<3); break;
     }
     goto fin;
   }
   if(i==-1&&b==-1) {
     disp_sz=4;
-    modrm=0b00000100|r<<3;
+    modrm=0b00000100|((r&0b111)<<3);
     sib=0b00100101;
     goto fin;
   }
   if(b==REG_RSP&&i==-1) {
     sib=0b00100100;
     if(!off) {
-      modrm=0b00000100|r<<3;
+      modrm=0b00000100|((r&0b111)<<3);
     } else if(I8_MIN<=off<=I8_MAX) {
-      modrm=0b01000100|r<<3;
+      modrm=0b01000100|((r&0b111)<<3);
       disp_sz=1;
     }
-    modrm=0b10000100|r<<3;
+    modrm=0b10000100|(r&0b111)<<3;
     disp_sz=4;
     goto fin;
   }
   if(!off&&i==-1) {
     if(b&0b111==0b100) {
-      modrm=0b01000101|r<<3;
+      modrm=0b01000101|((r&0b111)<<3);
       sib=0b00100000|(b&0b111);
       goto fin;
     } else if(b&0b111==0b101) {
       disp_sz=1;
-      modrm=0b01000101|r<<3;
+      modrm=0b01000101|((r&0b111)<<3);
       goto fin;
     }
-    modrm=(b&0b111)|r<<3;
+    modrm=(b&0b111)|((r&0b111)<<3);
     goto fin;
   }
   if(i==-1) {
@@ -697,23 +698,24 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
       modrm=0b10000000;
     }
     if(b&0b111==0b100) {
-      modrm=0b01000101|r<<3;
+      modrm=0b01000101|((r&0b111)<<3);
       sib=0b00100000|(b&0b111);
       if(b&0b111==0b101)
         disp_sz=1;
       goto fin;
     }
-    modrm|=(b&0b111)|r<<3;
+    modrm|=(b&0b111)|((r&0b111)<<3);
     goto fin;
   }
   if(i!=-1&&b==-1) {
     disp_sz=4;
-    modrm=0b01000100|r<<3;
-    sib=0b00000101|i<<3;
+    modrm=0b01000100|((r&0b111)<<3);
+    sib=0b00000101|((i&0b111)<<3);
     goto fin;
   }
   if(i!=-1||b!=-1) {
     switch(s) {
+      case -1:
       case 1: sib=0b00000000; break;
       case 2: sib=0b01000000; break;
       case 4: sib=0b10000000; break;
@@ -721,22 +723,22 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
     }
     if((b==REG_RBP||b==13)&&I8_MIN<=off<=I8_MAX) {
       disp_sz=1;
-      modrm=0b01000100|r<<3;
-      sib|=b|(i<<3);
+      modrm=0b01000100|(r&0b111)<<3;
+      sib|=(b&0b111)|((i&0b111)<<3);
       goto fin;
     } else if(!(b==REG_RBP||b==13)&&!off) {
-      modrm=0b00000100|r<<3;
-      sib|=b|(i<<3);
+      modrm=0b00000100|(r&0b111)<<3;
+      sib|=(b&0b111)|((i&0b111)<<3);
       goto fin;
     }
-    sib|=b|(i<<3);
+    sib|=(b&0b111)|((i&0b111)<<3);
     if(I8_MIN<=off<=I8_MAX) {
       disp_sz=1;
-      modrm=0b01000100|r<<3;
+      modrm=0b01000100|((r&0b111)<<3);
       goto fin;
     } else {
       disp_sz=4;
-      modrm=0b10000100|r<<3;
+      modrm=0b10000100|((r&0b111)<<3);
       goto fin;
     }
     goto fin;
