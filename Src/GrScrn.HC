@@ -302,7 +302,7 @@ U0 DCBlotColor8(CDC *dc,CDC *img)
 {
   U64  *src=img->body,*b0=dc->body;
   U64 j,k,d0=img->width_internal*img->height/8;
-  U64 mask;
+  U64 mask,mask2;
   for (k=0;k<d0;k++) {
     j=*src++;
     //Transparent is 0xff,if we take the upper 4 bits and invert them we
@@ -311,9 +311,11 @@ U0 DCBlotColor8(CDC *dc,CDC *img)
     //num^0 == num (upper 4 is 0 if regular COLOR)
     //0xf^0xf == 0  (upper 4 is 0xf if TRANSPARENT)
     j=j^mask;
+    //If both dst and src are TRANSPARENT,keep the upper 0xf
+    mask2=*b0&0xf0f0f0f0F0F0F0F0&j;
     //Discard(&0) the things from our dest image
     //Keep(&15) the items from our *img*
-    *b0=(j&~mask)|(*b0&mask);
+    *b0=(((j&~mask)|(*b0&mask))&0x0f0f0f0f0F0F0F0F)|mask2;
     b0++;
   }
 }
