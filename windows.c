@@ -25,13 +25,15 @@ static void _DrawWindowNew() {
     return;
   }
   int rends;
-  window_icon = SDL_CreateRGBSurfaceWithFormat(
+  SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
-  SDL_LockSurface(window_icon);
-  memcpy(window_icon->pixels, aiwnios_logo.pixel_data,
+  SDL_LockSurface(window_icon_proto);
+  memcpy(window_icon_proto->pixels, aiwnios_logo.pixel_data,
          sizeof(aiwnios_logo.pixel_data));
-  SDL_UnlockSurface(window_icon);
+  SDL_UnlockSurface(window_icon_proto);
+  window_icon=SDL_ConvertSurfaceFormat(window_icon_proto,SDL_PIXELFORMAT_RGB888,0);
+  SDL_FreeSurface(window_icon_proto);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
