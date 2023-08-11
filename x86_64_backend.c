@@ -2280,14 +2280,17 @@ static void PopTmp(CCmpCtrl *cctrl, CRPN *rpn) {
     if (raw_type != RT_F64) {
     indir:
       if (rpn->flags & (ICF_SIB | ICF_INDIR_REG)) {
-        assert((cctrl->backend_user_data2 -= rpn->res.pop_n_tmp_regs) >= 0);
+        cctrl->backend_user_data2 -= rpn->res.pop_n_tmp_regs;
+        assert(cctrl->backend_user_data2 >= 0);
       } else {
-        assert(--cctrl->backend_user_data2 >= 0);
+        --cctrl->backend_user_data2;
+        assert(cctrl->backend_user_data2 >= 0);
       }
     } else {
       if (rpn->flags & (ICF_SIB | ICF_INDIR_REG))
         goto indir;
-      assert(--cctrl->backend_user_data3 >= 0);
+      --cctrl->backend_user_data3;
+      assert(cctrl->backend_user_data3 >= 0);
     }
   }
   assert(cctrl->backend_user_data1 >= 0);
