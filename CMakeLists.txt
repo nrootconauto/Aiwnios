@@ -205,7 +205,7 @@ if(WIN32)
   set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe'"
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' 'logo.ico' 0"
 )
 endif()
 include (CPack)
