@@ -103,7 +103,12 @@ target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
 if (ARCH STREQUAL arm64)
   target_link_libraries(aiwnios PRIVATE ${SDL2_LIBRARIES})
 elseif (ARCH STREQUAL x86_64)
-  target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
+  if(!WIN32)
+    target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
+  else()
+    #Try packaging SDL2 for cpack,please dont change this
+    target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
+  endif()
 endif ()
 
 target_compile_options(aiwnios PRIVATE -w)
@@ -193,6 +198,16 @@ set (CPACK_DEBIAN_PACKAGE_DESCRIPTION "A HolyC Compiler/Runtime for Linux,Window
 set (CPACK_DEBIAN_PACKAGE_MAINTAINER "nrootconauto@gmail.com")
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "libsdl2-2.0-0")
 set (CPACK_DEBIAN_PACKAGE_VERSION "${AIWNIOS_VERSION}")
+
+#Windows
+if(WIN32)
+  set(CPACK_NSIS_IGNORE_LICENSE_PAGE)
+  set (CPACK_RESOURCE_FILE_LICENSE
+     "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+  set(CPACK_NSIS_CREATE_ICONS_EXTRA
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe'"
+)
+endif()
 include (CPack)
 
 set(
@@ -213,22 +228,40 @@ set(
   ACWords.DATA
 )
 
-install(PROGRAMS aiwnios TYPE BIN)
-
-foreach(F IN LISTS TEMPLATE_FILES)
-  if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
-    install(
-      DIRECTORY 
-      "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
-      DESTINATION share/aiwnios
-    )
-  else()
-    install (
-      FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
-      DESTINATION share/aiwnios
-    )
-  endif()
-endforeach()
+if(!WIN32)
+  install(PROGRAMS aiwnios TYPE BIN)
+  foreach(F IN LISTS TEMPLATE_FILES)
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
+      install(
+        DIRECTORY 
+        "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
+        DESTINATION share/aiwnios
+      )
+    else()
+       install (
+         FILES
+          "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
+         DESTINATION share/aiwnios
+       )
+    endif()
+  endforeach()
+else()
+  install(PROGRAMS aiwnios.exe TYPE BIN)
+  foreach(F IN LISTS TEMPLATE_FILES)
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
+      install(
+        DIRECTORY 
+        "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
+        DESTINATION T
+      )
+     else()
+       install (
+         FILES
+         "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
+         DESTINATION T
+       )
+     endif()
+   endforeach()     
+endif()
 
 # vim: set expandtab ts=2 sw=2 :

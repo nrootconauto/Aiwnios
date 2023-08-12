@@ -10,6 +10,7 @@
   #include <windows.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
+  #include <libloaderapi.h>
   #define stat _stati64
 static void MakePathSane(char *ptr) {
   char *ptr2 = ptr;
@@ -32,7 +33,11 @@ enter:
 }
 #endif
 static int __FExists(char *path) {
+#if defined(_WIN32) || defined(WIN32)
+  return PathFileExistsA(path);
+#else
   return access(path, F_OK) == 0;
+#endif
 }
 static int __FIsDir(char *path) {
 #if defined(_WIN32) || defined(WIN32)
@@ -487,7 +492,7 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
   if (!__FExists(template)) {
     fprintf(AIWNIOS_OSTREAM,
             "Template directory %s doesn't exist. You probably didnt install "
-            "Aiwnios",
+            "Aiwnios\n",
             template);
     return 0;
   }
@@ -541,7 +546,18 @@ const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
   }
   if (!make_new_dir)
     goto fail;
+#if !defined(_WIN32) && !defined(WIN32)
   if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR, overwrite)) {
+#else
+  char exe_name[0x10000];
+  int64_t len;
+  GetModuleFileNameA(NULL,exe_name,sizeof(exe_name));
+  PathRemoveFileSpecA(exe_name); //Remove aiwnios.exe
+  PathRemoveFileSpecA(exe_name); //Remove /bin
+  len=strlen(exe_name);
+  sprintf(exe_name+len,"\\T");
+  if (!CreateTemplateBootDrv(use, exe_name, overwrite)) {
+#endif  
   fail:
     fprintf(AIWNIOS_OSTREAM, "I don't know where the HCRT2.BIN is!!!\n");
     fprintf(AIWNIOS_OSTREAM, "Use \"aiwnios -b\" in the root of the source "

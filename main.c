@@ -1384,9 +1384,11 @@ int main(int argc, char **argv) {
                    "Build a new binary with the \"slim\" compiler of aiwnios."),
       arg_asan_enable =
           arg_lit0("a", "address-sanitize", "Enable bounds checking."),
+#if !defined(WIN32) && !defined(_WIN32)
       arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
                                   "Create a new boot directory(backs up old "
                                   "boot directory if present)."),
+#endif
       sixty_fps        = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       _arg_end         = arg_end(20),
   };
@@ -1406,9 +1408,15 @@ int main(int argc, char **argv) {
     t_drive = arg_t_dir->filename[0];
   else if (arg_bootstrap_bin->count)
     t_drive = "."; // Bootstrap in current directory
+#if !defined(WIN32) && !defined(_WIN32)
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count,
                              arg_new_boot_dir->count);
+#else
+  if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
+    t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count,
+                             1);
+#endif
   SDL_Init(SDL_INIT_TIMER);
   SDL_Init(SDL_INIT_EVENTS);
   InitSound();
