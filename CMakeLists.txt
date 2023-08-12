@@ -205,11 +205,9 @@ if(WIN32)
   set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'"
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'")
   set(CPACK_NSIS_DELETE_ICONS_EXTRA
-    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk'"
-)
-)
+    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk'" )
 endif()
 include (CPack)
 
