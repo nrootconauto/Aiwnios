@@ -55,7 +55,7 @@ endif ()
     multic.c
     ffi_gen.c
     argtable3.c
-#    socket.c
+    socket.c
   )
 elseif ("${ARCH}" STREQUAL "arm64")
   #For SDL2 cmake modules

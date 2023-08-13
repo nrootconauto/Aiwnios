@@ -7,8 +7,9 @@
   #include <sys/types.h>
   #include <unistd.h>
 #else
-  #include <winsock2.h>
+  #define _WIN32_WINNT 0x603
   #include <windows.h>
+  #include <winsock2.h>
   #include <iphlpapi.h>
   #include <ws2tcpip.h>
 static int64_t was_init = 0;
@@ -58,6 +59,10 @@ CNetAddr *NetAddrNew(char *host, int64_t port) {
 void NetAddrDel(CNetAddr *addr) {
   freeaddrinfo(addr->ai);
   A_FREE(addr);
+}
+
+void NetConnect(int64_t socket, CNetAddr *address) {
+  connect(socket, address->ai->ai_addr, address->ai->ai_addrlen);
 }
 
 void NetBindIn(int64_t socket, CNetAddr *address) {

@@ -1041,7 +1041,6 @@ static int64_t STK_BoundsCheck(int64_t *stk) {
   return BoundsCheck((void *)stk[0], (int64_t *)stk[1]);
 }
 
-#if 0
 static int64_t STK_NetPollForHangup(int64_t *stk) {
   return NetPollForHangup(stk[0], stk[1]);
 }
@@ -1090,7 +1089,9 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
 static int64_t STK_NetAddrDel(int64_t *stk) {
   NetAddrDel(stk[0]);
 }
-#endif
+static int64_t STK_NetConnect(int64_t *stk) {
+  NetConnect(stk[0],stk[1]);
+}
 static int64_t STK_MPSetProfilerInt(int64_t *stk) {
   MPSetProfilerInt((void *)stk[0], stk[1], stk[2]);
 }
@@ -1304,7 +1305,6 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
     PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);
-#if 0
     PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 0);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
@@ -1317,7 +1317,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetPollForWrite", STK_NetPollForWrite, 2);
     PrsAddSymbol("NetAddrDel", STK_NetAddrDel, 1);
     PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 2);
-#endif
+    PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
   }
 }

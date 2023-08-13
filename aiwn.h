@@ -1179,6 +1179,7 @@ extern void             NetClose(int64_t s);
 extern int64_t          NetAccept(int64_t socket, struct CNetAddr **addr);
 extern void             NetListen(int64_t socket, int64_t max);
 extern void             NetBindIn(int64_t socket, struct CNetAddr *);
+extern void             NetConnect(int64_t socket, struct CNetAddr *);
 extern int64_t          NetSocketNew();
 extern struct CNetAddr *NetAddrNew(char *host, int64_t port);
 extern void             NetAddrDel(struct CNetAddr *);

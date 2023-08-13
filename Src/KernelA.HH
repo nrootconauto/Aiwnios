@@ -7011,5 +7011,6 @@ extern U0 NetClose(I64 s);
 extern I64 NetAccept(I64 socket,CNetAddr **addr);
 extern U0 NetListen(I64 socket,I64 max);
 extern U0 NetBindIn(I64 socket,CNetAddr *);
+extern U0 NetConnect(I64 socket,CNetAddr *);
 extern I64 NetSocketNew(); 
 extern U0 NetShutdown(I64); 
