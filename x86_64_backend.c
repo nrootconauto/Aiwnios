@@ -5596,7 +5596,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp2.raw_type = RT_F64;
       code_off      = ICMov(cctrl, &tmp2, &next->res, bin, code_off);
       AIWNIOS_ADD_CODE(X86DivSDReg, tmp2.reg, next2->res.reg);
-      AIWNIOS_ADD_CODE(X86CVTTSD2SIRegReg, RAX,tmp2.reg);
+      AIWNIOS_ADD_CODE(X86CVTTSD2SIRegReg, RAX, tmp2.reg);
       AIWNIOS_ADD_CODE(X86CVTTSI2SDRegReg, tmp2.reg, RAX);
       AIWNIOS_ADD_CODE(X86MulSDReg, tmp2.reg, next2->res.reg);
       tmp.reg      = 3;

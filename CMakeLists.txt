@@ -103,7 +103,7 @@ target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
 if (ARCH STREQUAL arm64)
   target_link_libraries(aiwnios PRIVATE ${SDL2_LIBRARIES})
 elseif (ARCH STREQUAL x86_64)
-  if(!WIN32)
+  if(NOT WIN32)
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
   else()
     #Try packaging SDL2 for cpack,please dont change this
