@@ -1,5 +1,6 @@
 #include "aiwn.h"
 #include <SDL2/SDL.h>
+#include <inttypes.h>
 typedef struct {
   void (*fp)(), *gs;
   int64_t num;
