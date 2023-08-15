@@ -1183,3 +1183,4 @@ extern void             NetConnect(int64_t socket, struct CNetAddr *);
 extern int64_t          NetSocketNew();
 extern struct CNetAddr *NetAddrNew(char *host, int64_t port);
 extern void             NetAddrDel(struct CNetAddr *);
+extern void Misc_ForceYield();

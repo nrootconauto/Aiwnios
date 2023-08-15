@@ -236,8 +236,13 @@ void MPSleepHP(int64_t us) {
   ReleaseMutex(cores[core_num].mtx);
   WaitForSingleObject(cores[core_num].event, INFINITE);
 }
-void InteruptCore(int64_t core) {
+//Dont make this static,used for miscWIN.s
+void ForceYield0() {
   CHashExport *y = HashFind("Yield", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+  FFI_CALL_TOS_0(y->val);
+}
+
+void InteruptCore(int64_t core) {
   CONTEXT      ctx;
   memset(&ctx, 0, sizeof ctx);
   ctx.ContextFlags = CONTEXT_FULL;
@@ -245,10 +250,11 @@ void InteruptCore(int64_t core) {
   GetThreadContext(cores[core].thread, &ctx);
   ctx.Rsp -= 8;
   ((int64_t *)ctx.Rsp)[0] = ctx.Rip;
-  ctx.Rip                 = y;
+  ctx.Rip                 = &Misc_ForceYield; //THIS ONE SAVES ALL THE REGISTERS
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);
 }
+
 
 int64_t mp_cnt() {
   SYSTEM_INFO info;
