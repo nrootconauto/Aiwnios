@@ -354,7 +354,9 @@ U0 KBCb(I64 c,I64 s) {
   I64 initial_time,freeze_time=100;
   while(LBts(&kb_mtx,0))
     ; //TODO ATOMIC WAIT
-  kbd.cnt++;
+  if(!(s&SCF_KEY_UP))
+    kbd.cnt++;
+  kbd.last_down_scan_code=s;
   FifoI64Ins(kbd.scan_code_fifo2,s);
   kbd.timestamp=__GetTicks;
   c=ScanCode2Char(s&0x7f);
@@ -379,8 +381,6 @@ U0 CheckForKBData() {
 loop:
   if(!FifoI64Rem(kbd.scan_code_fifo2,&s)) return;
   FifoI64Ins(kbd.scan_code_fifo,s);
-  if(!(s&SCF_KEY_UP))
-    kbd.last_down_scan_code=s;
   kbd.scan_code=s;
   switch(s&0xff) {
     break; case 0x0 ... 0x7f:

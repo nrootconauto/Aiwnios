@@ -323,7 +323,7 @@ CDoc *WinCursorPosSet(CTask *task,I64 msx,I64 msy,Bool set_cursor=TRUE)
   I64 x0,y0;
   if (!task) task=Fs;
   if (WinInside(msx,msy,task)) {
-    if ((res=DocDisplay(task)) && res->flags&DOCF_DONT_SHOW)
+     if ((res=DocDisplay(task)) && res->flags&DOCF_DONT_SHOW)
       res=NULL;
     else if (set_cursor) {
       unlock=DocLock(res);
@@ -350,7 +350,8 @@ CDoc *WinCursorPosSet(CTask *task,I64 msx,I64 msy,Bool set_cursor=TRUE)
 
 Bool WinKeyNavMenu()
 {
-  I64 i,old_key_cnt;
+  I64 i,old_key_cnt=kbd.cnt;
+  Bool has_new_key;
   CD3I64 old_pos,new_pos;
   CMenu *m;
   CMenuEntry *tmpme;
@@ -361,11 +362,12 @@ Bool WinKeyNavMenu()
     old_pos.x=ms.pos.x; old_pos.y=ms.pos.y;
     ms.pos.x=new_pos.x=ms.pos.y=new_pos.y=0;
     while (Bt(kbd.down_bitmap,SC_ALT)) {
+      has_new_key=kbd.cnt!=old_key_cnt;
       old_key_cnt=kbd.cnt;
       if (Bt(kbd.down_bitmap,SC_CURSOR_LEFT)) {
-	while (Bt(kbd.down_bitmap,SC_CURSOR_LEFT) && kbd.cnt==old_key_cnt)
+        while (Bt(kbd.down_bitmap,SC_CURSOR_LEFT) && kbd.cnt==old_key_cnt)
 	  WinMgrSleep(TRUE);
-	if (new_pos.x) {
+        if (new_pos.x) {
 	  i=0;
 	  tmpme=m->sub;
 	  while (tmpme) {
@@ -376,14 +378,14 @@ Bool WinKeyNavMenu()
 	    i+=MenuEntryWidth(tmpme)*FONT_WIDTH;
 	    tmpme=tmpme->next;
 	  }
-	}
-	new_pos.y=0;
+        }
+        new_pos.y=0;
       } else if (Bt(kbd.down_bitmap,SC_CURSOR_RIGHT)) {
-	while (Bt(kbd.down_bitmap,SC_CURSOR_RIGHT) && kbd.cnt==old_key_cnt)
+        while (Bt(kbd.down_bitmap,SC_CURSOR_RIGHT) && kbd.cnt==old_key_cnt)
 	  WinMgrSleep(TRUE);
-	i=0;
-	tmpme=m->sub;
-	while (tmpme) {
+        i=0;
+        tmpme=m->sub;
+        while (tmpme) {
 	  if (i==new_pos.x) {
 	    if (tmpme->next)
 	      new_pos.x=i+MenuEntryWidth(tmpme)*FONT_WIDTH;
@@ -391,23 +393,41 @@ Bool WinKeyNavMenu()
 	  }
 	  i+=MenuEntryWidth(tmpme)*FONT_WIDTH;
 	  tmpme=tmpme->next;
-	}
-	new_pos.y=0;
+        }
+        new_pos.y=0;
       } else if (Bt(kbd.down_bitmap,SC_CURSOR_UP)) {
-	while (Bt(kbd.down_bitmap,SC_CURSOR_UP) && kbd.cnt==old_key_cnt)
+        while (Bt(kbd.down_bitmap,SC_CURSOR_UP) && kbd.cnt==old_key_cnt)
 	  WinMgrSleep(TRUE);
-	new_pos.y-=FONT_HEIGHT;
+        new_pos.y-=FONT_HEIGHT;
       } else if (Bt(kbd.down_bitmap,SC_CURSOR_DOWN)) {
-	while (Bt(kbd.down_bitmap,SC_CURSOR_DOWN) && kbd.cnt==old_key_cnt)
+        while (Bt(kbd.down_bitmap,SC_CURSOR_DOWN) && kbd.cnt==old_key_cnt)
 	  WinMgrSleep(TRUE);
-	new_pos.y+=FONT_HEIGHT;
+        new_pos.y+=FONT_HEIGHT;
+      } else if(has_new_key) {
+//Here's the deal,I remapped ALT to the windows key(triggers this menu)
+        // but Alt+A also triggets autocomplete,$BK,1$So if we get a non-arrow key,continue as usual$BK,0$
+        switch(kbd.last_down_scan_code.u8[0]) {
+//Avoid checking repeat of ALT,see below note
+	  case SC_CURSOR_RIGHT:
+	  case SC_CURSOR_LEFT:
+	  case SC_CURSOR_UP:
+	  case SC_CURSOR_DOWN:
+	  case SC_ALT:
+	    break;
+	  default:
+	    TaskMsg(sys_focus_task,0,MSG_KEY_DOWN,
+		  ScanCode2Char(kbd.last_down_scan_code),kbd.last_down_scan_code,0);
+	    winmgr.show_menu=FALSE;
+	    ms.pos.x=old_pos.x; ms.pos.y=old_pos.y;
+	    return TRUE;
+        }
       }
       new_pos.x=ClampI64(new_pos.x,0,GR_WIDTH-1);
       new_pos.y=ClampI64(new_pos.y,0,GR_HEIGHT-1);
       ms.pos.x=new_pos.x; ms.pos.y=new_pos.y;
       WinMgrSleep(TRUE);
       if (!sys_cur_submenu_entry)
-	ms.pos.y=new_pos.y=0;
+        ms.pos.y=new_pos.y=0;
     }
     if (sys_cur_submenu_entry)
       TaskMsg(sys_focus_task,0,sys_cur_submenu_entry->msg_code,
@@ -862,5 +882,5 @@ public F64 SetFPS(F64 target) {
   if (target>100.)
     target=99.;
   target_fps=target;
-  return target_fps;
+  return target_fps;
 }
