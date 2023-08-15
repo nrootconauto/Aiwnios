@@ -147,7 +147,8 @@ int64_t mp_cnt() {
 
 void MPSleepHP(int64_t ns) {
   struct timespec ts = {0};
-  ts.tv_nsec += ns * 1000U;
+  ts.tv_nsec         = (ns % 1000000) * 1000U;
+  ts.tv_sec          = us / 1000000;
   Misc_LBts(&cores[core_num].wake_futex, 0);
   #if defined(__linux__)
   syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
