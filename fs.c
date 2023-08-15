@@ -8,9 +8,9 @@
 #include <unistd.h>
 #if defined(_WIN32) || defined(WIN32)
   #include <windows.h>
+  #include <libloaderapi.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
-  #include <libloaderapi.h>
   #define stat _stati64
 static void MakePathSane(char *ptr) {
   char *ptr2 = ptr;
@@ -551,13 +551,13 @@ const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
 #else
   char exe_name[0x10000];
   int64_t len;
-  GetModuleFileNameA(NULL,exe_name,sizeof(exe_name));
-  PathRemoveFileSpecA(exe_name); //Remove aiwnios.exe
-  PathRemoveFileSpecA(exe_name); //Remove /bin
-  len=strlen(exe_name);
-  sprintf(exe_name+len,"\\T");
+  GetModuleFileNameA(NULL, exe_name, sizeof(exe_name));
+  PathRemoveFileSpecA(exe_name); // Remove aiwnios.exe
+  PathRemoveFileSpecA(exe_name); // Remove /bin
+  len = strlen(exe_name);
+  sprintf(exe_name + len, "\\T");
   if (!CreateTemplateBootDrv(use, exe_name, overwrite)) {
-#endif  
+#endif
   fail:
     fprintf(AIWNIOS_OSTREAM, "I don't know where the HCRT2.BIN is!!!\n");
     fprintf(AIWNIOS_OSTREAM, "Use \"aiwnios -b\" in the root of the source "

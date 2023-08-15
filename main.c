@@ -1081,7 +1081,6 @@ static int64_t STK_NetSocketNew(int64_t *stk) {
   return NetSocketNew();
 }
 
-
 static int64_t STK_NetAddrNew(int64_t *stk) {
   return NetAddrNew(stk[0], stk[1]);
 }
@@ -1090,7 +1089,7 @@ static int64_t STK_NetAddrDel(int64_t *stk) {
   NetAddrDel(stk[0]);
 }
 static int64_t STK_NetConnect(int64_t *stk) {
-  NetConnect(stk[0],stk[1]);
+  NetConnect(stk[0], stk[1]);
 }
 static int64_t STK_MPSetProfilerInt(int64_t *stk) {
   MPSetProfilerInt((void *)stk[0], stk[1], stk[2]);
@@ -1373,24 +1372,24 @@ static void ExitAiwnios(int64_t *stk) {
 #endif
 int main(int argc, char **argv) {
   void *argtable[] = {
-      arg_help = arg_lit0("h", "help", "Show the help message"),
-      arg_overwrite =
-          arg_lit0("o", "overwrite",
-                   "Overwrite the T directory with the installed T template."),
-      arg_t_dir = arg_file0("t", NULL, "Directory",
-                            "Specify the boot drive(dft is current dir)."),
-      arg_bootstrap_bin =
-          arg_lit0("b", "bootstrap",
-                   "Build a new binary with the \"slim\" compiler of aiwnios."),
-      arg_asan_enable =
-          arg_lit0("a", "address-sanitize", "Enable bounds checking."),
+    arg_help = arg_lit0("h", "help", "Show the help message"),
+    arg_overwrite =
+        arg_lit0("o", "overwrite",
+                 "Overwrite the T directory with the installed T template."),
+    arg_t_dir = arg_file0("t", NULL, "Directory",
+                          "Specify the boot drive(dft is current dir)."),
+    arg_bootstrap_bin =
+        arg_lit0("b", "bootstrap",
+                 "Build a new binary with the \"slim\" compiler of aiwnios."),
+    arg_asan_enable =
+        arg_lit0("a", "address-sanitize", "Enable bounds checking."),
 #if !defined(WIN32) && !defined(_WIN32)
-      arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
-                                  "Create a new boot directory(backs up old "
-                                  "boot directory if present)."),
+    arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
+                                "Create a new boot directory(backs up old "
+                                "boot directory if present)."),
 #endif
-      sixty_fps        = arg_lit0("6", "60fps", "Run in 60 fps mode."),
-      _arg_end         = arg_end(20),
+    sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+    _arg_end  = arg_end(20),
   };
   int64_t errors, idx;
   errors = arg_parse(argc, argv, argtable);
@@ -1414,8 +1413,7 @@ int main(int argc, char **argv) {
                              arg_new_boot_dir->count);
 #else
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count,
-                             1);
+    t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count, 1);
 #endif
   SDL_Init(SDL_INIT_TIMER);
   SDL_Init(SDL_INIT_EVENTS);

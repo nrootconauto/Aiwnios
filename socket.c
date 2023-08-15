@@ -8,8 +8,8 @@
   #include <unistd.h>
 #else
   #define _WIN32_WINNT 0x603
-  #include <windows.h>
   #include <winsock2.h>
+  #include <windows.h>
   #include <iphlpapi.h>
   #include <ws2tcpip.h>
 static int64_t was_init = 0;

@@ -1,5 +1,6 @@
 #include "aiwn.h"
 #include <SDL2/SDL.h>
+#include <inttypes.h>
 typedef struct {
   void (*fp)(), *gs;
   int64_t num;
@@ -125,6 +126,10 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   CorePair         pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
   pthread_create(&cores[core].pt, NULL, threadrt, ptr);
+  // eb-lan
+  char nambuf[16] = {0};
+  snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
+  pthread_setname_np(cores[core].pt, nambuf);
   signal(SIGUSR1, InteruptRt);
   signal(SIGUSR2, ExitCoreRt);
   memset(&sa, 0, sizeof(struct sigaction));

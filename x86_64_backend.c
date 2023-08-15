@@ -5596,13 +5596,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp2.raw_type = RT_F64;
       code_off      = ICMov(cctrl, &tmp2, &next->res, bin, code_off);
       AIWNIOS_ADD_CODE(X86DivSDReg, tmp2.reg, next2->res.reg);
-      code_off = PushToStack(cctrl, &tmp2, bin, code_off);
-      AIWNIOS_ADD_CODE(X86CVTTSD2SIRegSIB64, RAX, -1, -1, RSP, 0);
-      AIWNIOS_ADD_CODE(X86MovIndirRegI64, RAX, -1, -1, RSP, 0);
-      AIWNIOS_ADD_CODE(X86CVTTSI2SDRegSIB64, tmp2.reg, -1, -1, RSP, 0);
-      AIWNIOS_ADD_CODE(X86PopReg, RAX);
+      AIWNIOS_ADD_CODE(X86CVTTSD2SIRegReg, RAX, tmp2.reg);
+      AIWNIOS_ADD_CODE(X86CVTTSI2SDRegReg, tmp2.reg, RAX);
       AIWNIOS_ADD_CODE(X86MulSDReg, tmp2.reg, next2->res.reg);
-      tmp.reg      = 0;
+      tmp.reg      = 3;
       tmp.mode     = MD_REG;
       tmp.raw_type = RT_F64;
       code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off); // tmp.reg==0
