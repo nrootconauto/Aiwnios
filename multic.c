@@ -127,7 +127,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   *ptr = pair;
   pthread_create(&cores[core].pt, NULL, threadrt, ptr);
   // eb-lan
-  char nambuf[16] = {0};
+  char nambuf[16];
   snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
   pthread_setname_np(cores[core].pt, nambuf);
   signal(SIGUSR1, InteruptRt);
