@@ -1188,3 +1188,5 @@ extern int64_t NetUDPSendTo(int64_t s,char *buf,int64_t len,struct CInAddr *to);
 extern int64_t NetUDPRecvFrom(int64_t s,char *buf,int64_t len,struct CInAddr **from);
 extern int64_t NetUDPSocketNew();
 extern struct CInAddr *NetUDPAddrNew(char *host,int64_t port);
+
+extern void Misc_ForceYield();

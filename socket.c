@@ -153,6 +153,11 @@ int64_t NetUDPSocketNew() {
     InitWS2();
 #endif
   int64_t s = socket(AF_INET, SOCK_DGRAM, 0);
+#if defined(_WIN32) || defined(WIN32)
+//https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
+  u_long mode = 1;  // 1 to enable non-blocking socket
+  ioctlsocket(s, FIONBIO, &mode);
+#endif
 #if defined(__FreeBSD__) || defined(__linux__)
   int yes = 1;
   //https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
