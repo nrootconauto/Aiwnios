@@ -522,9 +522,11 @@ static void PopTmp(CCmpCtrl *cctrl, CRPN *rpn) {
     cctrl->backend_user_data1 -= 8;
   } else {
     if (raw_type != RT_F64) {
-      assert(--cctrl->backend_user_data2 >= 0);
+	  --cctrl->backend_user_data2;
+      assert(cctrl->backend_user_data2 >= 0);
     } else {
-      assert(--cctrl->backend_user_data3 >= 0);
+	  --cctrl->backend_user_data3;
+      assert(cctrl->backend_user_data3 >= 0);
     }
   }
   assert(cctrl->backend_user_data1 >= 0);
@@ -3063,7 +3065,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         break;
       }
     }
-  div_normal:
+ div_normal:
     if (rpn->raw_type == RT_U64i) {
       BACKEND_BINOP(ARM_fdivReg, ARM_udivX);
     } else {
