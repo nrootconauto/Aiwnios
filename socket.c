@@ -45,12 +45,15 @@ int64_t NetSocketNew() {
 }
 
 CNetAddr *NetAddrNew(char *host, int64_t port) {
+#if defined(_WIN32) || defined(WIN32)
+  if(!was_init) InitWS2();
+#endif
   CNetAddr       *ret = A_CALLOC(sizeof(CNetAddr), NULL);
   char            buf[1024];
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_family   = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_socktype = 0;
   hints.ai_flags    = AI_PASSIVE;
   sprintf(buf, "%d", port);
   getaddrinfo(host, buf, &hints, &ret->ai);
@@ -186,6 +189,9 @@ int64_t NetUDPRecvFrom(int64_t s,char *buf,int64_t len,CInAddr **from) {
 }
 
 CInAddr *NetUDPAddrNew(char *host,int64_t port) {
+#if defined(_WIN32) || defined(WIN32)
+	if(!was_init) InitWS2();
+#endif
 	CInAddr *ret=A_CALLOC(sizeof(CInAddr),NULL);
 	struct hostent *hoste=gethostbyname(host);
 	ret->sa.sin_family=AF_INET;
