@@ -35,6 +35,10 @@ U0 PutS(U8 *st)
   if (!st) return;
   CKeyDevEntry *tmpk=keydev.put_key_head.next;
   if (!Bt(&(Fs->display_flags),DISPLAYf_SILENT)) {
+    if(IsCmdLineMode) {
+      PutS2(st);
+      return;
+    }
     if (kbd.scan_code & SCF_SCROLL && sys_focus_task==Fs)
       while (kbd.scan_code & SCF_SCROLL)
 	Yield;

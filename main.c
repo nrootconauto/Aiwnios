@@ -9,8 +9,8 @@
 #include <time.h>
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps;
-struct arg_file       *arg_t_dir, *arg_bootstrap_bin;
+    *sixty_fps,*arg_cmd_line;
+struct arg_file       *arg_t_dir, *arg_bootstrap_bin,*arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -612,6 +612,11 @@ static int64_t STK_DbgPutS(int64_t *stk) {
 static int64_t STK_PutS(int64_t *stk) {
   puts((char *)stk[0]);
 }
+
+static void STK_PutS2(int64_t *stk) {
+  printf("%s",(char *)stk[0]);
+}
+
 static int64_t STK_SetHolyFs(int64_t *stk) {
   SetHolyFs((void *)stk[0]);
 }
@@ -1110,6 +1115,23 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
 	NetUDPAddrDel(stk[0]);
 }
 
+int64_t IsCmdLineMode() {
+	return arg_cmd_line->count!=0;
+}
+
+char *CmdLineGetStr() {
+	char buf[2048];
+	gets(buf);
+	return A_STRDUP(buf,NULL);
+}
+
+char **CmdLineBootFiles() {
+	return arg_boot_files->filename;
+}
+int64_t CmdLineBootFileCnt() {
+	return arg_boot_files->count;
+}
+
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer   *lex  = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1124,6 +1146,9 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("CmdLineBootFiles",CmdLineBootFiles,0);
+    PrsAddSymbol("CmdLineBootFileCnt",CmdLineBootFileCnt,0);
+    PrsAddSymbol("CmdLineGetStr",CmdLineGetStr,0);
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
@@ -1182,6 +1207,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Bsr", STK_Bsr, 1);
     PrsAddSymbol("DbgPutS", STK_PutS, 1);
     PrsAddSymbol("PutS", STK_PutS, 1);
+    PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", GetHolyFs, 0); // Gs just calls Thread local storage on
                                       // linux(not mutations in saved registers)
@@ -1338,6 +1364,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 2);
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
+    PrsAddSymbol("IsCmdLineMode",IsCmdLineMode,0);
   }
 }
 static const char *t_drive;
@@ -1409,6 +1436,9 @@ int main(int argc, char **argv) {
                                 "boot directory if present)."),
 #endif
     sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+    arg_cmd_line = arg_lit0("c",NULL,"Run in command line mode."),
+    arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files",0,100000,
+                          "Files to run on  boot in command line mode."),
     _arg_end  = arg_end(20),
   };
   int64_t errors, idx;
@@ -1435,15 +1465,19 @@ int main(int argc, char **argv) {
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count, 1);
 #endif
-  SDL_Init(SDL_INIT_TIMER);
-  SDL_Init(SDL_INIT_EVENTS);
-  InitSound();
-  user_ev_num = SDL_RegisterEvents(1);
-  SpawnCore(&Boot, NULL, 0);
-  InputLoop(&quit);
-  for (idx = 0; idx != mp_cnt(); idx++)
-    __ShutdownCore(idx);
-  SDL_Quit();
+  if(!arg_cmd_line->count) {
+	  SDL_Init(SDL_INIT_TIMER);
+	  SDL_Init(SDL_INIT_EVENTS);
+	  InitSound();
+	  user_ev_num = SDL_RegisterEvents(1);
+	  SpawnCore(&Boot, NULL, 0);
+	  InputLoop(&quit);
+	  for (idx = 0; idx != mp_cnt(); idx++)
+		__ShutdownCore(idx);
+	  SDL_Quit();
+  } else {
+	  Boot();
+  }
   arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
   return EXIT_SUCCESS;
 }

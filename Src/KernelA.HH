@@ -3818,6 +3818,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import Bool IsCmdLineMode();
 import U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
 import U8 *BoundsCheck(U8 *ptr,I64 *oob_bytes);
 import I64 Call(U8 *,I64 argc,I64 *argv);
@@ -3920,7 +3921,14 @@ import I64 mp_cnt();
 import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
+import U0 PutS2(U8*);
+import U8 *CmdLineGetStr();
+import U8 **CmdLineBootFiles(); //DONT FREE
+import I64 CmdLineBootFileCnt();
 #else
+extern U8 *CmdLineGetStr();
+extern U0 PutS2(U8*);
+extern Bool IsCmdLineMode();
 extern U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 extern U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);
 extern I64 Call(U8 *,I64 argc,I64 *argv);

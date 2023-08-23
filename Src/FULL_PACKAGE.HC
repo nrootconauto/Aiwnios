@@ -250,12 +250,14 @@ U0 InitSymbols() {
   #endif
 }
 InitSymbols;
-DrawWindowNew;
+if(!IsCmdLineMode)
+  DrawWindowNew;
 #ifdef GEN_HEADERS
 #include "GenHeader.HC";;
 #endif
 Gs->seth_task=adam_task;
-sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
+if(!IsCmdLineMode)
+  sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 UserStartUp()
 {//Run each time a user a spawned
   DocTermNew;
@@ -268,12 +270,27 @@ U0 UserStartUp()
   //CPURep;
 }
 PaletteSetStd;
-WinMax(User);
-ACInit("T:/Src/Kernel*.HH*");
-ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
-ExePrint2("#include \"T:/Src/AMouse.HC\";");
-if (_SixtyFPS)
-  SetFPS(60.);
-
+U8 *_CmdLineGetStr() {
+  return CmdLineGetStr; 
+}
+U0 CmdLine(I64) {
+  I64 cnt=0;
+  for(cnt=0;cnt!=CmdLineBootFileCnt;cnt++)
+     ExePrint2("#include \"%s\";;",CmdLineBootFiles[cnt]);
+  UserCmdLine;
+}
+if(IsCmdLineMode) {
+  fp_getstr2=&_CmdLineGetStr;
+  DeathWait(Spawn(&CmdLine));
+} else 
+  WinMax(User);
+if(!IsCmdLineMode) {
+  ACInit("T:/Src/Kernel*.HH*");
+  ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
+  ExePrint2("#include \"T:/Src/AMouse.HC\";");
+  if (_SixtyFPS)
+    SetFPS(60.);
+} else
+  ExitAiwnios;
 CoreAPSethTask;
 #endif;
