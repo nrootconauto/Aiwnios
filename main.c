@@ -1085,6 +1085,10 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
   return NetAddrNew(stk[0], stk[1]);
 }
 
+static int64_t STK_NetUDPAddrNew(int64_t *stk) {
+	return NetUDPAddrNew(stk[0],stk[1]);
+}
+
 static int64_t STK_NetAddrDel(int64_t *stk) {
   NetAddrDel(stk[0]);
 }
@@ -1093,6 +1097,17 @@ static int64_t STK_NetConnect(int64_t *stk) {
 }
 static int64_t STK_MPSetProfilerInt(int64_t *stk) {
   MPSetProfilerInt((void *)stk[0], stk[1], stk[2]);
+}
+
+static int64_t STK_NetUDPRecvFrom(int64_t *stk) {
+  return NetUDPRecvFrom(stk[0], stk[1],stk[2],stk[3]);
+}
+
+static int64_t STK_NetUDPSendTo(int64_t *stk) {
+  return NetUDPSendTo(stk[0], stk[1],stk[2],stk[3]);
+}
+static int64_t STK_NetUDPAddrDel(int64_t *stk) {
+	NetUDPAddrDel(stk[0]);
 }
 
 void BootAiwnios(char *bootstrap_text) {
@@ -1305,6 +1320,11 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
     PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);
     PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 0);
+    PrsAddSymbol("NetUDPAddrNew",STK_NetUDPAddrNew,2);
+    PrsAddSymbol("NetUDPSocketNew", NetUDPSocketNew, 0);
+    PrsAddSymbol("NetUDPRecvFrom",STK_NetUDPRecvFrom,4);
+    PrsAddSymbol("NetUDPSendTo",STK_NetUDPSendTo,4);
+    PrsAddSymbol("NetUDPAddrDel",STK_NetUDPAddrDel,1);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
     PrsAddSymbol("NetAccept", STK_NetAccept, 2);
