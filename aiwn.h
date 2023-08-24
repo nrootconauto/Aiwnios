@@ -434,6 +434,8 @@ typedef struct CCmpCtrl {
   int64_t    backend_user_data10;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
+  //In SysV,the fregs are not saved,so i will make a mini function to save them
+  CCodeMisc *fregs_save_label,*fregs_restore_label;
   CHeapCtrl *hc;
 } CCmpCtrl;
 #define PRSF_CLASS    1
