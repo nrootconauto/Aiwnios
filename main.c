@@ -1121,7 +1121,7 @@ int64_t IsCmdLineMode() {
 
 char *CmdLineGetStr() {
 	char buf[2048];
-	gets(buf);
+	fgets(buf,2048,stdin);
 	return A_STRDUP(buf,NULL);
 }
 
