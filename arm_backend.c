@@ -1066,6 +1066,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
+		  //TODO unaligned version
         // 5 is one of our poop registers
         code_off =
             __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin, code_off);
@@ -1079,10 +1080,16 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
+		//Try unaligned version
+		opc=ARM_sturb(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
         code_off =
             __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin, code_off);
         AIWNIOS_ADD_CODE(
             ARM_strbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
+        }
       }
       break;
     case RT_U16i:
@@ -1091,10 +1098,16 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
+		  //Try unaligned version
+		opc=ARM_sturh(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
         code_off =
             __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin, code_off);
         AIWNIOS_ADD_CODE(
             ARM_strhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
+          }
       }
       break;
     case RT_U32i:
@@ -1103,11 +1116,17 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
+		  //Try unaligned version
+		opc=ARM_sturw(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
         // 5 is one of our poop registers
         code_off =
             __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin, code_off);
         AIWNIOS_ADD_CODE(
             ARM_strRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
+           }
       }
       break;
     case RT_U64i:
@@ -1118,11 +1137,17 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
+		  //Try unaligned version
+		opc=ARM_stur(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
         // 5 is one of our poop registers
         code_off =
             __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin, code_off);
         AIWNIOS_ADD_CODE(
             ARM_strRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
+           }
       }
       break;
     default:
@@ -1299,12 +1324,18 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
+			//Try unaligned version
+		opc=ARM_ldursbX(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
           // 5 is one of our poop registers
           code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                  code_off);
           AIWNIOS_ADD_CODE(
               ARM_ldrbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
+	}
         AIWNIOS_ADD_CODE(ARM_sxtbX(use_reg, use_reg));
         break;
       case RT_U16i:
@@ -1325,12 +1356,18 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
+			//Try unaligned version
+		opc=ARM_ldurshX(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
           // 5 is one of our poop registers
           code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                  code_off);
           AIWNIOS_ADD_CODE(
               ARM_ldrhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
+	}
         AIWNIOS_ADD_CODE(ARM_sxthX(use_reg, use_reg));
         break;
       case RT_U32i:
@@ -1351,12 +1388,18 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
+			//Try unaligned version
+		opc=ARM_ldurswX(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
           // 5 is one of our poop registers
           code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                  code_off);
           AIWNIOS_ADD_CODE(
               ARM_ldrRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
+	}
         AIWNIOS_ADD_CODE(ARM_sxtwX(use_reg, use_reg));
         break;
       case RT_U64i:
@@ -1367,12 +1410,18 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
+			//Try unaligned version
+		opc=ARM_ldur(use_reg,use_reg2,indir_off);
+		if(opc!=ARM_ERR_INV_OFF) {
+			AIWNIOS_ADD_CODE(opc);
+		} else  {
           // 5 is one of our poop registers
           code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                  code_off);
           AIWNIOS_ADD_CODE(
               ARM_ldrRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
+	}
 
         break;
       default:
