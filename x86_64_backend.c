@@ -2927,12 +2927,16 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   }
   rpn2 = ICArgN(rpn, rpn->length);
+#if !(defined(WIN32) || defined(_WIN32))
 #define SAVE_FREGS                                                             \
   if (cctrl->backend_user_data8) {                                             \
     AIWNIOS_ADD_CODE(X86Call32, 1000);                                         \
     if (bin)                                                                   \
       CodeMiscAddRef(cctrl->fregs_save_label, bin + code_off - 4);             \
   }
+#else
+#define SAVE_FREGS //Nothing to do
+#endif
   if (rpn2->type == IC_SHORT_ADDR) {
     SAVE_FREGS;
     AIWNIOS_ADD_CODE(X86Call32, 0)
@@ -2979,11 +2983,13 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   }
 after_call:
+#if !(defined(WIN32) || defined(_WIN32))
   if (cctrl->backend_user_data8) {
     AIWNIOS_ADD_CODE(X86Call32, 1000);
     if (bin)
       CodeMiscAddRef(cctrl->fregs_restore_label, bin + code_off - 4);
   }
+#endif
   if (has_vargs)
     AIWNIOS_ADD_CODE(X86AddImm32, RSP, to_pop);
   if (rpn->raw_type != RT_U0 && rpn->res.mode != MD_NULL) {
