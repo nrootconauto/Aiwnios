@@ -834,6 +834,12 @@ enum {
     AIWNIOS_ExitCatch();                                                       \
   }                                                                            \
   }
+int64_t ARM_ldrsbRegRegX(int64_t r,int64_t a,int64_t b);
+int64_t ARM_ldrshRegRegX(int64_t r,int64_t a,int64_t b);
+int64_t ARM_ldrswRegRegX(int64_t r,int64_t a,int64_t b);
+int64_t ARM_ldrsbX(int64_t r,int64_t a,int64_t off);
+int64_t ARM_ldrshX(int64_t r,int64_t a,int64_t off);
+int64_t ARM_ldrswX(int64_t r,int64_t a,int64_t off);
 int64_t ARM_ldur(int64_t r,int64_t a,int64_t off);
 int64_t ARM_stur(int64_t r,int64_t a,int64_t off);
 int64_t ARM_ldurswX(int64_t r,int64_t a,int64_t off);
