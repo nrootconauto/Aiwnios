@@ -182,9 +182,9 @@ int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
   int     alen = sizeof(tmp.sa);
   int64_t r    = recvfrom(s, buf, len, 0, &tmp.sa, &alen);
 #if defined(WIN32) || defined(_WIN32)
-  char buf[2048];
-  inet_ntop(tmp.sa.sin_family, &tmp.sa.sin_addr, buf, 2048);
-  tmp.address = A_STRDUP(buf, NULL);
+  char buf2[2048];
+  inet_ntop(tmp.sa.sin_family, &tmp.sa.sin_addr, buf2, 2048);
+  tmp.address = A_STRDUP(buf2, NULL);
 #else
   tmp.address = A_STRDUP(inet_ntoa(tmp.sa.sin_addr), NULL);
 #endif
