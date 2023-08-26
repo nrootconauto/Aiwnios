@@ -1,5 +1,6 @@
 #include "aiwn.h"
 #if !defined(_WIN32) && !defined(WIN32)
+  #include <arpa/inet.h>
   #include <netdb.h>
   #include <netinet/in.h>
   #include <poll.h>
@@ -46,7 +47,8 @@ int64_t NetSocketNew() {
 
 CNetAddr *NetAddrNew(char *host, int64_t port) {
 #if defined(_WIN32) || defined(WIN32)
-  if(!was_init) InitWS2();
+  if (!was_init)
+    InitWS2();
 #endif
   CNetAddr       *ret = A_CALLOC(sizeof(CNetAddr), NULL);
   char            buf[1024];
@@ -149,7 +151,7 @@ int64_t NetPollForHangup(int64_t argc, int64_t *argv) {
 // UDP section
 //
 
-//http://matrixsust.blogspot.com/2011/10/udp-server-client-in-c.html
+// http://matrixsust.blogspot.com/2011/10/udp-server-client-in-c.html
 int64_t NetUDPSocketNew() {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
@@ -157,15 +159,15 @@ int64_t NetUDPSocketNew() {
 #endif
   int64_t s = socket(AF_INET, SOCK_DGRAM, 0);
 #if defined(_WIN32) || defined(WIN32)
-//https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
-  u_long mode = 1;  // 1 to enable non-blocking socket
+  // https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
+  u_long mode = 1; // 1 to enable non-blocking socket
   ioctlsocket(s, FIONBIO, &mode);
 #endif
 #if defined(__FreeBSD__) || defined(__linux__)
   int yes = 1;
-  //https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
+  // https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
   struct timeval read_timeout;
-  read_timeout.tv_sec = 0;
+  read_timeout.tv_sec  = 0;
   read_timeout.tv_usec = 15000;
   setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
   // On FreeBSD the port will stay in use for awhile after death,so reuse the
@@ -175,39 +177,47 @@ int64_t NetUDPSocketNew() {
   return s;
 }
 
-int64_t NetUDPRecvFrom(int64_t s,char *buf,int64_t len,CInAddr **from) {
-	CInAddr tmp;
-	int alen=sizeof(tmp.sa);
-	int64_t r=recvfrom(s,buf,len,0,&tmp.sa,&alen);
-	tmp.address=A_STRDUP("something",NULL);
-	tmp.port=ntohs(tmp.sa.sin_port);
-	if(from) {
-		*from=A_CALLOC(sizeof(CInAddr),NULL);
-		**from=tmp;
-	}
-	return r;
-}
-
-CInAddr *NetUDPAddrNew(char *host,int64_t port) {
-#if defined(_WIN32) || defined(WIN32)
-	if(!was_init) InitWS2();
+int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
+  CInAddr tmp;
+  int     alen = sizeof(tmp.sa);
+  int64_t r    = recvfrom(s, buf, len, 0, &tmp.sa, &alen);
+#if defined(WIN32) || defined(_WIN32)
+  char buf[2048];
+  inet_ntop(tmp.sa.sin_family, &tmp.sa.sin_addr, buf, 2048);
+  tmp.address = A_STRDUP(buf, NULL);
+#else
+  tmp.address = A_STRDUP(inet_ntoa(tmp.sa.sin_addr), NULL);
 #endif
-	CInAddr *ret=A_CALLOC(sizeof(CInAddr),NULL);
-	struct hostent *hoste=gethostbyname(host);
-	ret->sa.sin_family=AF_INET;
-	ret->sa.sin_port=htons(port);
-	ret->sa.sin_addr=*((struct in_addr *)hoste->h_addr);
-	ret->port=port;
-	ret->address=A_STRDUP(host,NULL);
-	memset(&ret->sa.sin_zero,0,8);
-	return ret;
+  tmp.port = ntohs(tmp.sa.sin_port);
+  if (from) {
+    *from  = A_CALLOC(sizeof(CInAddr), NULL);
+    **from = tmp;
+  } else
+	A_FREE(tmp.address);
+  return r;
 }
 
-int64_t NetUDPSendTo(int64_t s,char *buf,int64_t len,CInAddr *to) {
-	sendto(s,buf,len,0,&to->sa,sizeof(to->sa));
+CInAddr *NetUDPAddrNew(char *host, int64_t port) {
+#if defined(_WIN32) || defined(WIN32)
+  if (!was_init)
+    InitWS2();
+#endif
+  CInAddr        *ret   = A_CALLOC(sizeof(CInAddr), NULL);
+  struct hostent *hoste = gethostbyname(host);
+  ret->sa.sin_family    = AF_INET;
+  ret->sa.sin_port      = htons(port);
+  ret->sa.sin_addr      = *((struct in_addr *)hoste->h_addr);
+  ret->port             = port;
+  ret->address          = A_STRDUP(host, NULL);
+  memset(&ret->sa.sin_zero, 0, 8);
+  return ret;
+}
+
+int64_t NetUDPSendTo(int64_t s, char *buf, int64_t len, CInAddr *to) {
+  sendto(s, buf, len, 0, &to->sa, sizeof(to->sa));
 }
 
 void NetUDPAddrDel(CInAddr *a) {
-	A_FREE(a->address);
-	A_FREE(a);
+  A_FREE(a->address);
+  A_FREE(a);
 }
