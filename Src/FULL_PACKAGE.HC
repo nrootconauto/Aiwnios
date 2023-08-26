@@ -282,7 +282,7 @@ U0 CmdLine(I64) {
 }
 if(IsCmdLineMode) {
   fp_getstr2=&_CmdLineGetStr;
-  CTask *u=Spawn(&CmdLine);
+  Spawn(&CmdLine);
   CoreAPSethTask;
 } else 
   WinMax(User);
