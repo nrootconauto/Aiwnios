@@ -277,11 +277,13 @@ U0 CmdLine(I64) {
   I64 cnt=0;
   for(cnt=0;cnt!=CmdLineBootFileCnt;cnt++)
      ExePrint2("#include \"%s\";;",CmdLineBootFiles[cnt]);
+  Fs->task_end_cb=&ExitAiwnios;
   UserCmdLine;
 }
 if(IsCmdLineMode) {
   fp_getstr2=&_CmdLineGetStr;
-  DeathWait(Spawn(&CmdLine));
+  Spawn(&CmdLine);
+  CoreAPSethTask;
 } else 
   WinMax(User);
 if(!IsCmdLineMode) {
@@ -290,7 +292,6 @@ if(!IsCmdLineMode) {
   ExePrint2("#include \"T:/Src/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
-} else
-  ExitAiwnios;
+}
 CoreAPSethTask;
 #endif;

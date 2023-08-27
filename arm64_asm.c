@@ -1116,3 +1116,76 @@ int64_t ARM_udivX(int64_t d, int64_t n, int64_t m) {
 int64_t ARM_umullX(int64_t d, int64_t n, int64_t m) {
   return DataProc3RegX(0, 5, 0, d, n, m, 31);
 }
+
+static int64_t LdStRegUnsImm(int64_t size,int64_t opc,int64_t rt,int64_t adr_reg,int64_t off) {
+	if(-256>off)
+		return ARM_ERR_INV_OFF;
+	if(255<off)
+		return ARM_ERR_INV_OFF;	
+	return (size<<30)|(7<<27)|(opc<<22)|MASKn(off,9,12)|(adr_reg<<5)|rt;
+}
+
+
+int64_t ARM_sturb(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(0,0,r,a,off);
+}
+
+int64_t ARM_sturh(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(1,0,r,a,off);
+}
+
+int64_t ARM_sturw(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(2,0,r,a,off);
+}
+
+
+int64_t ARM_ldursbX(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(0,2,r,a,off);
+}
+int64_t ARM_ldurshX(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(1,2,r,a,off);
+}
+int64_t ARM_ldurswX(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(2,2,r,a,off);
+}
+
+int64_t ARM_stur(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(3,0,r,a,off);
+}
+int64_t ARM_ldur(int64_t r,int64_t a,int64_t off) {
+	return LdStRegUnsImm(3,1,r,a,off);
+}
+
+int64_t ARM_ldrsbX(int64_t r,int64_t a,int64_t off) {
+	CARMAdrRegImm addr={a,off};
+	return LdStRegUnImm(0,2,r,&addr);
+}
+int64_t ARM_ldrshX(int64_t r,int64_t a,int64_t off) {
+	CARMAdrRegImm addr={a,off};
+	return LdStRegUnImm(1,2,r,&addr);
+}
+int64_t ARM_ldrswX(int64_t r,int64_t a,int64_t off) {
+	CARMAdrRegImm addr={a,off};
+	return LdStRegUnImm(2,2,r,&addr);
+}
+
+
+int64_t ARM_ldrsbRegRegX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(0,2,r,a,b,0);
+}
+int64_t ARM_ldrshRegRegX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(1,2,r,a,b,0);
+}
+int64_t ARM_ldrswRegRegX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(2,2,r,a,b,0);
+}
+
+int64_t ARM_ldrsbRegRegShiftX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(0,2,r,a,b,1);
+}
+int64_t ARM_ldrshRegRegShiftX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(1,2,r,a,b,1);
+}
+int64_t ARM_ldrswRegRegShiftX(int64_t r,int64_t a,int64_t b) {
+	return LdStRegReg(2,2,r,a,b,1);
+}
