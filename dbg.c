@@ -1,11 +1,12 @@
 #include "aiwn.h"
-#include <windows.h>
-#include <errhandlingapi.h>
 #include <signal.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #if defined(__linux__) || defined(__FreeBSD__)
   #include <ucontext.h>
+#else
+#include <windows.h>
+#include <errhandlingapi.h>
 #endif
 static void UnblockSignals() {
 #if defined(__linux__) || defined(__FreeBSD__)
