@@ -228,6 +228,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   cores[core].restore_ctx_event = CreateEvent(NULL, 0, 0, NULL);
   cores[core].thread            = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
+  InstallDbgSignalsForThread();
 }
 void MPSleepHP(int64_t us) {
   int64_t s, e;
