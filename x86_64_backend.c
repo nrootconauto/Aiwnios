@@ -4778,7 +4778,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           break;                                                               \
         case RT_I32i:                                                          \
         case RT_U32i:                                                          \
-          AIWNIOS_ADD_CODE(X86CmpSIB16Imm, next3->integer, tmp.__SIB_scale,    \
+          AIWNIOS_ADD_CODE(X86CmpSIB32Imm, next3->integer, tmp.__SIB_scale,    \
                            tmp.reg2, tmp.reg, tmp.off);                        \
           break;                                                               \
         default:                                                               \
