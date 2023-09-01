@@ -209,7 +209,6 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
     Mat4x4RotY(mat,.5*1.9);
     Mat4x4RotX(mat,.5);
     SpriteExtentsTransform(mat,doc->bin_data->data,&min_x,&max_x,&min_y,&max_y);
-DbgPrint("PR:%x,%x,%x,%x",min_x,min_y,max_x,max_y);
   } else
     SpriteExtents(doc->bin_data->data,&min_x,&max_x,&min_y,&max_y);
   res=DCNew(max_x-min_x+1,max_y-min_y+1);

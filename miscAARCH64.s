@@ -23,13 +23,13 @@ Misc_LBts:
   and x1,x1,0x7
   add x0,x3,x0
 .L_Bts_0:
-  ldxrb w3,[x0]
+  ldaxrb w3,[x0]
   mov x4,1
   lslv w4,w4,w1
   tst w3,w4
   cset x5, ne
   orr w3,w3,w4
-  stxrb w4,w3,[x0]
+  stlxrb w4,w3,[x0]
   cbnz w4,.L_Bts_0
   mov x0,x5
   ret
@@ -83,13 +83,13 @@ Misc_LBtc:
   and x1,x1,0x7
   add x0,x3,x0
 .L_Btc_0:
-  ldxrb w3,[x0]
+  ldaxrb w3,[x0]
   mov x4,1
   lslv w4,w4,w1
   tst w3,w4
   cset x5, ne
   eor w3,w3,w4
-  stxrb w4,w3,[x0]
+  stlxrb w4,w3,[x0]
   cbnz w4,.L_Btc_0
   mov x0,x5
   ret
@@ -100,14 +100,14 @@ Misc_LBtr:
   and x1,x1,0x7
   add x0,x3,x0
 .L_Btr_0:
-  ldxrb w3,[x0]
+  ldaxrb w3,[x0]
   mov w4,1
   lslv w4,w4,w1
   tst w3,w4
   cset x5, ne
   mvn w4,w4
   and w3,w3,w4
-  stxrb w4,w3,[x0]
+  stlxrb w4,w3,[x0]
   cbnz w4,.L_Btr_0
   mov x0,x5
   ret
