@@ -367,7 +367,7 @@ static void *GetAvailRegion32(int64_t len) {
     ps = sysconf(_SC_PAGESIZE);
   }
   void *last_gap_end = NULL;
-  void *start, *end;
+  void *start;
   void *retv = NULL, *ptr;
   int   fd   = open("/proc/self/maps", O_RDONLY);
   if (fd == -1)
@@ -379,12 +379,12 @@ static void *GetAvailRegion32(int64_t len) {
     while (pos < n) {
       char *ptr = buf + pos;
       start     = Str2Ptr(ptr, &ptr);
-      if (last_gap_end) {
-        if (start - last_gap_end >= len)
-          goto ret;
+      if (last_gap_end && start - last_gap_end >= len) {
+        retv = last_gap_end;
+        goto ret;
       }
       ++ptr;
-      retv = last_gap_end = end = Str2Ptr(ptr, &ptr);
+      last_gap_end = Str2Ptr(ptr, &ptr);
       while (pos < n && buf[pos] != '\n')
         ++pos;
       ++pos;
