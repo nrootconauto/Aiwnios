@@ -9,8 +9,8 @@
 #include <time.h>
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps,*arg_cmd_line;
-struct arg_file       *arg_t_dir, *arg_bootstrap_bin,*arg_boot_files;
+    *sixty_fps, *arg_cmd_line;
+struct arg_file       *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -614,7 +614,7 @@ static int64_t STK_PutS(int64_t *stk) {
 }
 
 static void STK_PutS2(int64_t *stk) {
-  printf("%s",(char *)stk[0]);
+  printf("%s", (char *)stk[0]);
 }
 
 static int64_t STK_SetHolyFs(int64_t *stk) {
@@ -1091,7 +1091,7 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
 }
 
 static int64_t STK_NetUDPAddrNew(int64_t *stk) {
-	return NetUDPAddrNew(stk[0],stk[1]);
+  return NetUDPAddrNew(stk[0], stk[1]);
 }
 
 static int64_t STK_NetAddrDel(int64_t *stk) {
@@ -1105,31 +1105,31 @@ static int64_t STK_MPSetProfilerInt(int64_t *stk) {
 }
 
 static int64_t STK_NetUDPRecvFrom(int64_t *stk) {
-  return NetUDPRecvFrom(stk[0], stk[1],stk[2],stk[3]);
+  return NetUDPRecvFrom(stk[0], stk[1], stk[2], stk[3]);
 }
 
 static int64_t STK_NetUDPSendTo(int64_t *stk) {
-  return NetUDPSendTo(stk[0], stk[1],stk[2],stk[3]);
+  return NetUDPSendTo(stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK_NetUDPAddrDel(int64_t *stk) {
-	NetUDPAddrDel(stk[0]);
+  NetUDPAddrDel(stk[0]);
 }
 
 int64_t IsCmdLineMode() {
-	return arg_cmd_line->count!=0;
+  return arg_cmd_line->count != 0;
 }
 
 char *CmdLineGetStr() {
-	char buf[2048];
-	fgets(buf,2048,stdin);
-	return A_STRDUP(buf,NULL);
+  char buf[2048];
+  fgets(buf, 2048, stdin);
+  return A_STRDUP(buf, NULL);
 }
 
 char **CmdLineBootFiles() {
-	return arg_boot_files->filename;
+  return arg_boot_files->filename;
 }
 int64_t CmdLineBootFileCnt() {
-	return arg_boot_files->count;
+  return arg_boot_files->count;
 }
 
 void BootAiwnios(char *bootstrap_text) {
@@ -1146,9 +1146,9 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
-    PrsAddSymbol("CmdLineBootFiles",CmdLineBootFiles,0);
-    PrsAddSymbol("CmdLineBootFileCnt",CmdLineBootFileCnt,0);
-    PrsAddSymbol("CmdLineGetStr",CmdLineGetStr,0);
+    PrsAddSymbol("CmdLineBootFiles", CmdLineBootFiles, 0);
+    PrsAddSymbol("CmdLineBootFileCnt", CmdLineBootFileCnt, 0);
+    PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 0);
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
@@ -1346,11 +1346,11 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
     PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);
     PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 0);
-    PrsAddSymbol("NetUDPAddrNew",STK_NetUDPAddrNew,2);
+    PrsAddSymbol("NetUDPAddrNew", STK_NetUDPAddrNew, 2);
     PrsAddSymbol("NetUDPSocketNew", NetUDPSocketNew, 0);
-    PrsAddSymbol("NetUDPRecvFrom",STK_NetUDPRecvFrom,4);
-    PrsAddSymbol("NetUDPSendTo",STK_NetUDPSendTo,4);
-    PrsAddSymbol("NetUDPAddrDel",STK_NetUDPAddrDel,1);
+    PrsAddSymbol("NetUDPRecvFrom", STK_NetUDPRecvFrom, 4);
+    PrsAddSymbol("NetUDPSendTo", STK_NetUDPSendTo, 4);
+    PrsAddSymbol("NetUDPAddrDel", STK_NetUDPAddrDel, 1);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
     PrsAddSymbol("NetAccept", STK_NetAccept, 2);
@@ -1364,7 +1364,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 2);
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
-    PrsAddSymbol("IsCmdLineMode",IsCmdLineMode,0);
+    PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
   }
 }
 static const char *t_drive;
@@ -1435,11 +1435,11 @@ int main(int argc, char **argv) {
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
 #endif
-    sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
-    arg_cmd_line = arg_lit0("c",NULL,"Run in command line mode."),
-    arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files",0,100000,
-                          "Files to run on  boot in command line mode."),
-    _arg_end  = arg_end(20),
+    sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+    arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
+    arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
+                               "Files to run on  boot in command line mode."),
+    _arg_end       = arg_end(20),
   };
   int64_t errors, idx;
   errors = arg_parse(argc, argv, argtable);
@@ -1465,18 +1465,18 @@ int main(int argc, char **argv) {
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count, 1);
 #endif
-  if(!arg_cmd_line->count) {
-	  SDL_Init(SDL_INIT_TIMER);
-	  SDL_Init(SDL_INIT_EVENTS);
-	  InitSound();
-	  user_ev_num = SDL_RegisterEvents(1);
-	  SpawnCore(&Boot, NULL, 0);
-	  InputLoop(&quit);
-	  for (idx = 0; idx != mp_cnt(); idx++)
-		__ShutdownCore(idx);
-	  SDL_Quit();
+  if (!arg_cmd_line->count) {
+    SDL_Init(SDL_INIT_TIMER);
+    SDL_Init(SDL_INIT_EVENTS);
+    InitSound();
+    user_ev_num = SDL_RegisterEvents(1);
+    SpawnCore(&Boot, NULL, 0);
+    InputLoop(&quit);
+    for (idx = 0; idx != mp_cnt(); idx++)
+      __ShutdownCore(idx);
+    SDL_Quit();
   } else {
-	  Boot();
+    Boot();
   }
   arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
   return EXIT_SUCCESS;

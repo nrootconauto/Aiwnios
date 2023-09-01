@@ -5,6 +5,7 @@
   #include <memoryapi.h>
   #include <sysinfoapi.h>
 #else
+  #include <fcntl.h>
   #include <sys/mman.h>
   #include <unistd.h>
 #endif
@@ -50,7 +51,7 @@ static void *GetAvailRegion32(int64_t b);
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
-  void *at=NULL;
+  void *at = NULL;
 #if defined(_WIN32) || defined(WIN32)
   CMemBlk       *ret = NULL;
   static int64_t dwAllocationGranularity;
@@ -86,17 +87,22 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   #if defined(__aarch64__) || defined(_M_ARM64)
-  if(bc_enable)
-	at=GetAvailRegion32(b);
+  if (bc_enable)
+    at = GetAvailRegion32(b);
   #endif
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+  if (ret == MAP_FAILED && bc_enable)
+    ret = mmap(GetAvailRegion32(b), b,
+               (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
+               MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+  if (ret == MAP_FAILED)
+    return NULL;
 #endif
   int64_t      threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
   CMemUnused **unm, *tmp, *tmp2;
   QueIns(&ret->base, hc->mem_blks.last);
-
   ret->pags = pags;
   // Move silly willies malloc_free_lst,in to the heap_hash
   do {
@@ -170,7 +176,9 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   } else
     goto new_lunk;
 big:
-  ret     = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
+  ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
+  if (!ret)
+    return NULL;
   ret     = (char *)ret + sizeof(CMemBlk);
   ret->sz = cnt;
   goto almost_done;
@@ -334,67 +342,62 @@ static void *GetAvailRegion32(int64_t len) {
   return NULL;
 }
 #else
-#if (defined(_M_ARM64) || defined(__aarch64__))
-static void *Str2Ptr(char *ptr,char **end) {
-	int64_t v=0;
-	char c;
-	while(isxdigit(*ptr)) {
-		v<<=4;
-		switch(c=toupper(*ptr)) {
-			case '0'...'9':
-			v+=c-'0';
-			break;
-			case 'A'...'F':
-			v+=c-'A'+10;
-			break;
-		}
-		ptr++;
-	}
-	if(end) *end=ptr;
-	return (void*)v;
+static void *Str2Ptr(char *ptr, char **end) {
+  int64_t v = 0;
+  char    c;
+  while (isxdigit(*ptr)) {
+    v <<= 4;
+    switch (c = toupper(*ptr)) {
+    case '0' ... '9':
+      v += c - '0';
+      break;
+    case 'A' ... 'F':
+      v += c - 'A' + 10;
+      break;
+    }
+    ptr++;
+  }
+  if (end)
+    *end = ptr;
+  return (void *)v;
 }
 static void *GetAvailRegion32(int64_t len) {
   static int64_t ps;
-  void *last_gap_end=0x10000;
-  void *start,*end;
-  void *retv=NULL,*ptr;
-  char *buf;
-  size_t n;
-  FILE *f=fopen("/proc/self/maps","rb");
   if (!ps) {
-    ps=sysconf(_SC_PAGESIZE);
+    ps = sysconf(_SC_PAGESIZE);
   }
-  do {
-	  buf=NULL;
-	  n=0;
-	  if(!getline(&buf,&n,f)) {
-		  if(buf) free(buf);
-		  break;
-	  }
-	  //start-end ....
-	  ptr=buf;
-	  start=Str2Ptr(ptr,&ptr);
-	  ptr++;
-	  end=Str2Ptr(ptr,&ptr);
-	  if(last_gap_end>(1ul<<31))
-		goto ret;
-	  if(last_gap_end<start)
-		if(start-last_gap_end>=len) {
-			retv=last_gap_end;
-			goto ret;
-		}
-	  last_gap_end=end;
-	if(buf) free(buf);
-  } while(1);
+  void *last_gap_end = NULL;
+  void *start, *end;
+  void *retv = NULL, *ptr;
+  int   fd   = open("/proc/self/maps", O_RDONLY);
+  if (fd == -1)
+    return NULL;
+  char    buf[BUFSIZ];
+  ssize_t n;
+  while ((n = read(fd, buf, BUFSIZ)) > 0) {
+    ssize_t pos = 0;
+    while (pos < n) {
+      char *ptr = buf + pos;
+      start     = Str2Ptr(ptr, &ptr);
+      if (last_gap_end) {
+        if (start - last_gap_end >= len)
+          goto ret;
+      }
+      ++ptr;
+      retv = last_gap_end = end = Str2Ptr(ptr, &ptr);
+      while (pos < n && buf[pos] != '\n')
+        ++pos;
+      ++pos;
+    }
+  }
 ret:
-if(buf) free(buf);
-  fclose(f);
-  return retv;
+  close(fd);
+  return ((int64_t)retv + ps - 1) & ~(ps - 1);
 }
-#endif
+
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;
-  int64_t mptr = chk;
+  int64_t        mptr = chk;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   mptr &= ~(ps - 1);
@@ -424,6 +427,6 @@ void *BoundsCheck(void *ptr, int64_t *after) {
   if (!waste || (optr - (int64_t)(ptr + waste)) == 0)
     return ptr;
   if (after)
-    *after = optr - (int64_t)(ptr + waste)-8;
+    *after = optr - (int64_t)(ptr + waste) - 8;
   return NULL;
 }

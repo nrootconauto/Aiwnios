@@ -434,8 +434,8 @@ typedef struct CCmpCtrl {
   int64_t    backend_user_data10;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
-  //In SysV,the fregs are not saved,so i will make a mini function to save them
-  CCodeMisc *fregs_save_label,*fregs_restore_label;
+  // In SysV,the fregs are not saved,so i will make a mini function to save them
+  CCodeMisc *fregs_save_label, *fregs_restore_label;
   CHeapCtrl *hc;
 } CCmpCtrl;
 #define PRSF_CLASS    1
@@ -834,20 +834,20 @@ enum {
     AIWNIOS_ExitCatch();                                                       \
   }                                                                            \
   }
-int64_t ARM_ldrsbRegRegX(int64_t r,int64_t a,int64_t b);
-int64_t ARM_ldrshRegRegX(int64_t r,int64_t a,int64_t b);
-int64_t ARM_ldrswRegRegX(int64_t r,int64_t a,int64_t b);
-int64_t ARM_ldrsbX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldrshX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldrswX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldur(int64_t r,int64_t a,int64_t off);
-int64_t ARM_stur(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldurswX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldurshX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_ldursbX(int64_t r,int64_t a,int64_t off);
-int64_t ARM_sturw(int64_t r,int64_t a,int64_t off);
-int64_t ARM_sturh(int64_t r,int64_t a,int64_t off);
-int64_t ARM_sturb(int64_t r,int64_t a,int64_t off);
+int64_t    ARM_ldrsbRegRegX(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrshRegRegX(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrswRegRegX(int64_t r, int64_t a, int64_t b);
+int64_t    ARM_ldrsbX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldrshX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldrswX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldur(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_stur(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldurswX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldurshX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_ldursbX(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_sturw(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_sturh(int64_t r, int64_t a, int64_t off);
+int64_t    ARM_sturb(int64_t r, int64_t a, int64_t off);
 int64_t    ARM_fmovF64I64(int64_t d, int64_t s);
 int64_t    ARM_fmovI64F64(int64_t d, int64_t s);
 int64_t    ARM_ldrRegRegF64(int64_t d, int64_t n, int64_t m);
@@ -1200,9 +1200,11 @@ extern int64_t          NetSocketNew();
 extern struct CNetAddr *NetAddrNew(char *host, int64_t port);
 extern void             NetAddrDel(struct CNetAddr *);
 struct CInAddr;
-extern int64_t NetUDPSendTo(int64_t s,char *buf,int64_t len,struct CInAddr *to);
-extern int64_t NetUDPRecvFrom(int64_t s,char *buf,int64_t len,struct CInAddr **from);
-extern int64_t NetUDPSocketNew();
-extern struct CInAddr *NetUDPAddrNew(char *host,int64_t port);
+extern int64_t         NetUDPSendTo(int64_t s, char *buf, int64_t len,
+                                    struct CInAddr *to);
+extern int64_t         NetUDPRecvFrom(int64_t s, char *buf, int64_t len,
+                                      struct CInAddr **from);
+extern int64_t         NetUDPSocketNew();
+extern struct CInAddr *NetUDPAddrNew(char *host, int64_t port);
 
 extern void Misc_ForceYield();

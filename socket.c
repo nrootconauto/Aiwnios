@@ -193,7 +193,7 @@ int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
     *from  = A_CALLOC(sizeof(CInAddr), NULL);
     **from = tmp;
   } else
-	A_FREE(tmp.address);
+    A_FREE(tmp.address);
   return r;
 }
 

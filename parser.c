@@ -1275,7 +1275,6 @@ next:
             //
             ic2 = ccmp->code_ctrl->ir_code->next;
 
-            // eb-lan
             *(ic = A_CALLOC(sizeof(CRPN), NULL)) = (CRPN){
                 .type   = IC_TYPECAST,
                 .ic_dim = A_CALLOC(sizeof(CArrayDim), NULL),

@@ -37,7 +37,6 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   CHashExport *tmpex = NULL;
   int64_t      first = 1;
   // GNU extension, copied from TINE(https://github.com/eb-lan/TINE)
-  // by eb-lan to avoid strict aliaing problems
   // it compiles down to a mov call anyway so it doesn't hurt speed
 #define READ_NUM(x, T)                                                         \
   ({                                                                           \
@@ -61,7 +60,6 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
                            HTT_FUN | HTT_GLBL_VAR | HTT_EXPORT_SYS_SYM, 1))) {
           printf("Unresolved Reference:%s\n", st_ptr);
           _CHashImport *tmpiss;
-          // cool designated inits. eb-lan
           *(tmpiss = A_MALLOC(sizeof(_CHashImport), NULL)) = (_CHashImport){
               .base =
                   {
@@ -75,7 +73,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         }
       }
     }
-// same thing as above(avoiding strict aliaing stuff). eb-lan
+// same thing as above(avoiding strict aliaing stuff).
 #define OFF(T) (i - (int64_t)ptr2 - sizeof(T))
 #define REL(T)                                                                 \
   {                                                                            \
@@ -174,9 +172,6 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         ptr2 = module_base + READ_NUM(src, int32_t);
         src += 4;
         // Changed to 64bit by nroot
-        //
-        // this part compiles down to
-        // `add QWORD PTR[ptr2],module_base`. eb-lan
         int64_t off;
         memcpy(&off, ptr2, sizeof(int64_t));
         off += (intptr_t)module_base;
@@ -203,7 +198,6 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       for (j = 0; j < cnt; j++) {
         ptr2 = module_base + READ_NUM(src, int32_t);
         src += 4;
-        // compiles down to `add DWORD PTR[ptr2],ptr3`. eb-lan
         int32_t off;
         memcpy(&off, ptr2, sizeof(int32_t));
         off += (intptr_t)ptr3;

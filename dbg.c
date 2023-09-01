@@ -5,8 +5,8 @@
 #if defined(__linux__) || defined(__FreeBSD__)
   #include <ucontext.h>
 #else
-#include <windows.h>
-#include <errhandlingapi.h>
+  #include <windows.h>
+  #include <errhandlingapi.h>
 #endif
 static void UnblockSignals() {
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -91,7 +91,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -167,39 +167,39 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 }
 #endif
 #if defined(WIN32) || defined(_WIN32)
-static void VectorHandler (struct _EXCEPTION_POINTERS *einfo) {
-	 CONTEXT *ctx=einfo->ContextRecord;
-	 int64_t actx[23];
-	 actx[0]=ctx->Rip;
-	 actx[1]=ctx->Rsp;
-	 actx[2]=ctx->Rbp;
-	 actx[3]=ctx->R11;
-	 actx[4]=ctx->R12;
-	 actx[5]=ctx->R13;
-	 actx[6]=ctx->R14;
-	 actx[7]=ctx->R15;
-	 actx[20]=ctx->R10;
-	 actx[21]=ctx->Rdi;
-	 actx[22]=ctx->Rsi;
-	CHashExport *exp;
-	if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
-		FFI_CALL_TOS_2(exp->val, 0, actx);
-	} else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-		FFI_CALL_TOS_0(exp->val);
-	else 
-		abort();
-	 ctx->Rsp=actx[1];
-	 ctx->Rbp=actx[2];
-	 ctx->R11=actx[3];
-	 ctx->R12=actx[4];
-	 ctx->R13=actx[5];
-	 ctx->R14=actx[6];
-	 ctx->R15=actx[7];
-	 ctx->R10=actx[20];
-	 ctx->Rdi=actx[21];
-	 ctx->Rsi=actx[22];
-     ctx->Rip=actx[0];
-	return EXCEPTION_CONTINUE_EXECUTION;
+static void VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
+  CONTEXT *ctx = einfo->ContextRecord;
+  int64_t  actx[23];
+  actx[0]  = ctx->Rip;
+  actx[1]  = ctx->Rsp;
+  actx[2]  = ctx->Rbp;
+  actx[3]  = ctx->R11;
+  actx[4]  = ctx->R12;
+  actx[5]  = ctx->R13;
+  actx[6]  = ctx->R14;
+  actx[7]  = ctx->R15;
+  actx[20] = ctx->R10;
+  actx[21] = ctx->Rdi;
+  actx[22] = ctx->Rsi;
+  CHashExport *exp;
+  if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+    FFI_CALL_TOS_2(exp->val, 0, actx);
+  } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+    FFI_CALL_TOS_0(exp->val);
+  else
+    abort();
+  ctx->Rsp = actx[1];
+  ctx->Rbp = actx[2];
+  ctx->R11 = actx[3];
+  ctx->R12 = actx[4];
+  ctx->R13 = actx[5];
+  ctx->R14 = actx[6];
+  ctx->R15 = actx[7];
+  ctx->R10 = actx[20];
+  ctx->Rdi = actx[21];
+  ctx->Rsi = actx[22];
+  ctx->Rip = actx[0];
+  return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif
 void InstallDbgSignalsForThread() {
@@ -214,6 +214,6 @@ void InstallDbgSignalsForThread() {
   sigaction(SIGTRAP, &sa, NULL);
   sigaction(SIGFPE, &sa, NULL);
 #else
-  AddVectoredExceptionHandler(1,VectorHandler);
+  AddVectoredExceptionHandler(1, VectorHandler);
 #endif
 }

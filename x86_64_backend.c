@@ -2928,14 +2928,14 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   }
   rpn2 = ICArgN(rpn, rpn->length);
 #if !(defined(WIN32) || defined(_WIN32))
-#define SAVE_FREGS                                                             \
-  if (cctrl->backend_user_data8) {                                             \
-    AIWNIOS_ADD_CODE(X86Call32, 1000);                                         \
-    if (bin)                                                                   \
-      CodeMiscAddRef(cctrl->fregs_save_label, bin + code_off - 4);             \
-  }
+  #define SAVE_FREGS                                                           \
+    if (cctrl->backend_user_data8) {                                           \
+      AIWNIOS_ADD_CODE(X86Call32, 1000);                                       \
+      if (bin)                                                                 \
+        CodeMiscAddRef(cctrl->fregs_save_label, bin + code_off - 4);           \
+    }
 #else
-#define SAVE_FREGS //Nothing to do
+  #define SAVE_FREGS // Nothing to do
 #endif
   if (rpn2->type == IC_SHORT_ADDR) {
     SAVE_FREGS;
@@ -6696,8 +6696,6 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
           *(void **)(bin + code_off) = &DoNothing;
         code_off += 8;
         if (run) {
-          // designated inits fuck yeah
-          // eb-lan
           *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
               .base =
                   {

@@ -242,7 +242,7 @@ char **VFsDir(char *name) {
 
 char **VFsDir(char *fn) {
   int64_t sz;
-  char **ret;
+  char  **ret;
   fn = __VFsFileNameAbs("");
   while (strlen(fn) && fn[strlen(fn) - 1] == '/')
     fn[strlen(fn) - 1] = 0;
@@ -257,7 +257,7 @@ char **VFsDir(char *fn) {
     sz++;
   rewinddir(dir);
   ret = A_MALLOC((sz + 1) * sizeof(char *), NULL);
-  sz = 0;
+  sz  = 0;
   while (ent = readdir(dir)) {
     // CDIR_FILENAME_LEN  is 38(includes nul terminator)
     if (strlen(ent->d_name) <= 37)
@@ -271,14 +271,14 @@ char **VFsDir(char *fn) {
 
 int64_t VFsFSize(char *name) {
   struct stat s;
-  long cnt;
-  DIR *d;
-  char *fn = __VFsFileNameAbs(name);
+  long        cnt;
+  DIR        *d;
+  char       *fn = __VFsFileNameAbs(name);
   if (!__FExists(fn)) {
     A_FREE(fn);
     return -1;
   } else if (__FIsDir(fn)) {
-    d = opendir(fn);
+    d   = opendir(fn);
     cnt = 0;
     while (readdir(d))
       cnt++;
@@ -471,13 +471,13 @@ static int __FIsNewer(char *fn, char *fn2) {
   else
     return 0;
 #else
-  int32_t h32;
-  int64_t s64, s64_2;
+  int32_t  h32;
+  int64_t  s64, s64_2;
   FILETIME t;
-  HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
-         fh2 = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+  HANDLE   fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
+                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
+         fh2  = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
+                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
   GetFileTime(fh, NULL, NULL, &t);
   s64 = t.dwLowDateTime | ((int64_t)t.dwHighDateTime << 32);
   GetFileTime(fh2, NULL, NULL, &t);
@@ -549,7 +549,7 @@ const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
 #if !defined(_WIN32) && !defined(WIN32)
   if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR, overwrite)) {
 #else
-  char exe_name[0x10000];
+  char    exe_name[0x10000];
   int64_t len;
   GetModuleFileNameA(NULL, exe_name, sizeof(exe_name));
   PathRemoveFileSpecA(exe_name); // Remove aiwnios.exe
