@@ -7033,3 +7033,4 @@ extern I64 NetUDPRecvFrom(I64,U8*,I64,CUDPAddr*);
 extern U0 NetUDPSendTo(I64,U8*,I64,CUDPAddr*);
 extern U0 NetUDPAddrDel(CUDPAddr*);
 extern CUDPAddr *NetUDPAddrNew(U8 *,I64);
+extern Bool Man(U8 *st,I64 edf_dof_flags=0);
