@@ -460,7 +460,7 @@ public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
     out_name=ExtChg(_in_name,"html");
 
   doc_in=DocRead(in_name);
-  Collapse(doc_in,FALSE); //Added by nroot
+  DocCollapse(FALSE,doc_in); //Added by nroot
   doc_out=Doc2Html(doc_in,html_header,body_header,body_footer,html_footer,
 	line_anchors,link_cvt,line_nums);
   StrCpy(&doc_out->filename.name,out_name);
