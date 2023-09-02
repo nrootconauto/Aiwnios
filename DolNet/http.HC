@@ -690,6 +690,6 @@ U0 Serve(CServer *srv) {
   "Press a button to quit serving\n";
   srv_task=Spawn(&ServeTask,srv,"Server",core);
   PressAKey;
-  Kill(srv_task);
+  Kill(srv_task);
 }
 

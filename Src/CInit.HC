@@ -421,6 +421,6 @@ U0 CMiscInit() {
   CmpAddKw(cmp.asm_hash,"DU8",48);
   CmpAddKw(cmp.asm_hash,"DU16",49);
   CmpAddKw(cmp.asm_hash,"DU32",50);
-  CmpAddKw(cmp.asm_hash,"DU64",51);
+  CmpAddKw(cmp.asm_hash,"DU64",51);
   adam_task->hash_table->next=cmp.asm_hash;
 }

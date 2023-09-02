@@ -727,7 +727,7 @@ I64 EncodeSib(U8 *to,I64 r,I64 s,I64 i,I64 b,I64 off=0,I64 *_disp_sz=NULL) {
       sib|=(b&0b111)|((i&0b111)<<3);
       goto fin;
     } else if(!(b==REG_RBP||b==13)&&!off) {
-      modrm=0b00000100|(r&0b111)<<3;
+      modrm=0b00000100|(r&0b111)<<3;
       sib|=(b&0b111)|((i&0b111)<<3);
       goto fin;
     }

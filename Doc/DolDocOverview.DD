@@ -18,7 +18,7 @@ See $LK,"::/Doc/Widget.DD"$, $LK,"::/Demo/DolDoc/DemoDoc.DD"$, and $LK,"::/Demo/
 <$LK,"TwoLetterCmd",A="FF:::/Adam/DolDoc/DocInit.HC,ST_DOC_CMDS"$>  See $LK,"Type Defines",A="MN:DOCT_TEXT"$ and $LK,"PrsDollarCmd",A="MN:PrsDollarCmd"$().
 $TR,"TX Text"$
 $ID,2$Normally, text is not bracketed with '$FG,2$$$$FG$', but if you wish to specify flag attr, such as centering text, you can bracket them with '$FG,2$$$$FG$' and enter flags such as "$FG,2$+CX$FG$".  You can't edit them normally if they are bracketed by '$FG,2$$$$FG$' unless you toggle to plain text mode with $FG,2$<CTRL-t>$FG$.
-$ID,-2$$TR,"CR Hard New Line"$
+$ID,-2$$TR,"CR Hard New Line"$
 $ID,2$New lines are normally not bracketed with '$FG,2$$$$FG$'.
 $ID,-2$$TR,"SR Soft New Line"$
 $ID,2$Word wrap uses temporary soft new lines.  Users never place soft new lines.

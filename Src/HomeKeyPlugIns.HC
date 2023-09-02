@@ -25,7 +25,7 @@ Bool MyPutKey(I64 ch,I64 sc)
   I64 i;
   U8 *st1,*st2;
   if (sc&SCF_ALT && !(sc&SCF_CTRL)) {
-    switch (ch) {
+    switch (ch) {
       case 0:
 	switch (sc.u8[0]) {
 	  case SC_F1:

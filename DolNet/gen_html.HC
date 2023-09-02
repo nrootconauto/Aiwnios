@@ -17,7 +17,7 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     else if(!StrICmp(dot,".JPG")||!StrICmp(dot,".JPG.Z")) mime="image/jpg";
     else if(!StrICmp(dot,".PNG")||!StrICmp(dot,".PNG.Z"))  mime="image/png";
     else if(!StrICmp(dot,".BMP")||!StrICmp(dot,".BMP.Z"))  mime="image/bmp";
-    else if(!StrICmp(dot,".CSS")||!StrICmp(dot,".CSS.Z"))  mime="text/css";
+    else if(!StrICmp(dot,".CSS")||!StrICmp(dot,".CSS.Z"))  mime="text/css";
     else if(!StrICmp(dot,".MIN.CSS")||!StrICmp(dot,".MIN.CSS.Z"))  mime="text/css";
     else mime="text/plain";
     f=FileRead(link,&len);
@@ -79,7 +79,7 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       if(IsDir(path))
         DirGet(srv,stream,url,req);
       else if(!FileFind(html_name,&html_file)) {
-	EnsurePathExists(html_name);
+	EnsurePathExists(tmp);
         ToHtml(tmp,html_name);
       } else if(html_file.datetime<dol_file.datetime) {
 	EnsurePathExists(html_name);

@@ -232,7 +232,7 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
   }
   #endif
 }
-#include "HomeKeyPlugIns.HC"
+#include "HomeKeyPlugIns.HC"
 U0 InitSymbols() {
 #ifdef TARGET_X86
   ExePrint("#define TARGET_X86\n;");

@@ -74,13 +74,16 @@ public U0 ClipCut(CDoc *doc)
 
 public U0 ClipPaste(CDoc *doc)
 {//Insert copy of clip at insert pt, cur_entry.
-  CDoc *doc2=sys_clip_doc;
+  CDoc *doc2=sys_clip_doc,*tdoc;
   U8 *cb;
   Bool unlock_doc=DocLock(doc),
 	unlock_doc2=DocLock(doc2);
   CDocEntry *doc_ce=doc->cur_entry,*doc_e;
   if(cb=AiwniosGetClipboard) {
-    DocPrintPartial(doc,"%s",cb);
+    tdoc=DocNew;
+    DocLoad(tdoc,cb,StrLen(cb));
+    DocInsDoc(doc,tdoc);
+    DocDel(tdoc);
     Free(cb);
   }
   if (unlock_doc2)

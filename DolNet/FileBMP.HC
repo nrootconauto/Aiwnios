@@ -164,18 +164,13 @@ public I64 BMPWrite(U8 *filename,CDC *dc,I64 bits=4)
       bmp=BMP4To(dc);
     else {
       bmp=BMPRLE4To(dc);
-      if (bmp->file_size>sizeof(CFileBMP)+dc->width*dc->height>>1) {
-	Free(bmp);
-	bmp=BMP4To(dc);
-      }
-    }
+    }
   } else if (bits==24)
     bmp=BMP24To(dc);
   else {
     "Format Not Supported.\n";
     return 0;
   }
-  size=bmp->file_size;
   FileWrite(filename,bmp,bmp->file_size);
   Free(bmp);
   return size;

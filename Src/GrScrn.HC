@@ -315,7 +315,7 @@ U0 DCBlotColor8(CDC *dc,CDC *img)
     mask2=*b0&0xf0f0f0f0F0F0F0F0&j;
     //Discard(&0) the things from our dest image
     //Keep(&15) the items from our *img*
-    *b0=(((j&~mask)|(*b0&mask))&0x0f0f0f0f0F0F0F0F)|mask2;
+    *b0=(((j&~mask)|(*b0&mask))&0x0f0f0f0f0F0F0F0F)|mask2;
     b0++;
   }
 }
@@ -386,5 +386,5 @@ U0 GrUpdateScrn()
   }
   
   UpdateScreen(dc->body,dc->width,dc->height,dc->width_internal);
-  MemCpy(gr.scrn_image->body,dc->body,640*480);
+  MemCpy(gr.scrn_image->body,dc->body,dc->width_internal*dc->height);
 }

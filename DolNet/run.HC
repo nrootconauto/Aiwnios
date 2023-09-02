@@ -63,7 +63,7 @@ U8 *ChrootFile(U8 *fn,U8 *prefix=SERVER_WWW) {
       StrCpy(t2,t1+3); //Include the last '/'
       t1=t2;
       }
-    } else if(!StrNCmp(t2,"//",2)) {
+    } else if(!StrNCmp(t2,"//",2)) {
       StrCpy(fn,t2+1);
       t1=fn;
     } else

@@ -184,7 +184,7 @@ U0 SpriteExtentsTransform(I64 *mat,U8 *elems,I64 *min_x=NULL,I64 *max_x=NULL,
     if (min_x) *min_x=dc->min_x-GR_WIDTH/2;
     if (max_x) *max_x=dc->max_x-GR_WIDTH/2;
     if (min_y) *min_y=dc->min_y-GR_HEIGHT/2;
-    if (max_y) *max_y=dc->max_y-GR_HEIGHT/2;
+    if (max_y) *max_y=dc->max_y-GR_HEIGHT/2;
   } else  {
     if (min_x) *min_x=0;
     if (max_x) *max_x=0;
@@ -223,7 +223,6 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
     Sprite3(res,0,0,0,doc->bin_data->data);
   } else 
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
-
   EnsurePathExists(to);
   BMPWrite(to,res);
 //https://stackoverflow.com/questions/6040005/relatively-position-an-element-without-it-taking-up-space-in-document-flow
@@ -461,6 +460,7 @@ public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
     out_name=ExtChg(_in_name,"html");
 
   doc_in=DocRead(in_name);
+  Collapse(doc_in,FALSE); //Added by nroot
   doc_out=Doc2Html(doc_in,html_header,body_header,body_footer,html_footer,
 	line_anchors,link_cvt,line_nums);
   StrCpy(&doc_out->filename.name,out_name);
