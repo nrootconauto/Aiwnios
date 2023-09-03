@@ -8,7 +8,9 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	U8 *st,I64 *_col,U8 *style_bitmap=NULL)
 {
   U8 *ch,*ptr;
+  I64 cnt;
   u32_attr&=0xFFFFFF00;
+  U32 old_attr=*_old_u32_attr;
   if (u32_attr&DOCET_INVERT)
     u32_attr.u8[1]=(u32_attr.u8[1]&15)<<4|u32_attr.u8[1]>>4;
   if (underline_update &&
@@ -22,7 +24,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
   if (u32_attr&0xFF00!=*_old_u32_attr&0xFF00) {
     if (!(*_old_u32_attr&DOCET_UNDEF_COLOR))
       DocPrint(doc,"</span>");
-    DocPrint(doc,"<span class=c%02X>",u32_attr.u8[1]);
+    DocPrint(doc,"<span class=\"c%02X\">",u32_attr.u8[1]);
     if (style_bitmap)
       LBts(style_bitmap,u32_attr.u8[1]);
   }
@@ -69,9 +71,23 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	break;
 
       default:
-	if (CH_SPACE<=ch<0x7F || ch=='\n')
+	if (CH_SPACE<=ch<0x7F || ch=='\n') {
+	  //Added by nroot,if non white background,be sure to fill it up
+	  //TextBase puts background color in bits 12-16
+          if((u32_attr.u8[1]>>4)!=0xf)
+	    if(ch=='\n'&&!(old_attr&DOCET_UNDEF_COLOR)) { 
+	      //Dont underline the whitesapce
+	      if(u32_attr&DOCET_UNDERLINE)
+	        DocPrint(doc,"</u>");
+	      //Here's the deal,I (nrootconauto) use table-cell as it works,I dont know why though
+	      if(TEXT_COLS-*_col)
+	        DocPrint(doc,"<span style=\"display:table-cell;width:%dch;height:1ch\"></span>",TEXT_COLS-*_col);
+	      //restore
+	      if(u32_attr&DOCET_UNDERLINE)
+	        DocPrint(doc,"<u>");
+            }
 	  DocPutKey(doc,ch,0);
-	else
+	} else
 	  DocPrint(doc,".");
 	*_col=*_col+1;
     }
@@ -428,7 +444,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
   for (i=0;i<256;i++)
     if (Bt(style_bitmap,i))
       DocPrint(doc_out,
-	    ".c%02X{color:#%02x%02x%02x;background-color:#%02x%02x%02x;}\n",
+	    ".c%02X{color:#%02x%02x%02x;background:#%02x%02x%02x;}\n",
 	    i,p[i&15].r>>8,p[i&15].g>>8,p[i&15].b>>8,
 	    p[i/16].r>>8,p[i/16].g>>8,p[i/16].b>>8);
   doc_out->cur_entry=&doc_out->head;
