@@ -156,7 +156,10 @@ I64 TaskInit(CTask *task,I64 stk_size)
 U0 CallPooPoo() {
   U8 (*foo)(I64);
   foo=Fs->user_data;
-  (*foo)(Fs->user_data2);
+  try {
+    (*foo)(Fs->user_data2);
+  } catch
+   Fs->catch_except=TRUE;
   Exit;
 }
 

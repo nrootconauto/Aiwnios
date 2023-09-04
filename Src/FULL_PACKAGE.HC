@@ -287,7 +287,7 @@ if(IsCmdLineMode) {
 } else 
   WinMax(User);
 if(!IsCmdLineMode) {
-  ACInit("T:/Src/Kernel*.HH*");
+  ACInit("T:/*.HH*;*.HC*");
   ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
   ExePrint2("#include \"T:/Src/AMouse.HC\";");
   if (_SixtyFPS)

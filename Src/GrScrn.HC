@@ -84,7 +84,7 @@ U0 GrUpdateTasks()
       } while (task!=task1);
     }
   } catch {
-    PutExcept(FALSE);
+    PutExcept(TRUE);
     //Dbg("Exception in WinMgr"); TODO RESTORE
   }
   winmgr.last_ode_time=winmgr.ode_time;

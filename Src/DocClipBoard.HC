@@ -77,12 +77,20 @@ public U0 ClipPaste(CDoc *doc)
   CDoc *doc2=sys_clip_doc,*tdoc;
   U8 *cb;
   Bool unlock_doc=DocLock(doc),
-	unlock_doc2=DocLock(doc2);
+        unlock_doc2=DocLock(doc2);
   CDocEntry *doc_ce=doc->cur_entry,*doc_e;
   if(cb=AiwniosGetClipboard) {
     tdoc=DocNew;
     DocLoad(tdoc,cb,StrLen(cb));
-    DocInsDoc(doc,tdoc);
+    if (doc_ce->type_u8==DOCT_DATA) {
+      doc_e=doc2->head.next;
+      while (doc_e!=doc2) {
+        if (doc_e->de_flags&DOCEF_TAG)
+	  DocPrintPartial(doc,"%s",doc_e->tag);
+        doc_e=doc_e->next;
+      }
+    } else
+      DocInsDoc(doc,doc2);
     DocDel(tdoc);
     Free(cb);
   }
