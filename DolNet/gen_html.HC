@@ -48,9 +48,9 @@ U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   DocPrint(tmpd,"$$ID,2$$");
   for(cur=root;cur;cur=cur->next) {
     if(IsDir(cur->full_name)) {
-      DocPrint(tmpd,"$$LK,\"%Q/\",A=\"FL:%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
+      DocPrint(tmpd,"$$LK,\"%Q/\",A=\"FL:/%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
     } else 
-      DocPrint(tmpd,"$$LK,\"%Q\",A=\"FL:%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
+      DocPrint(tmpd,"$$LK,\"%Q\",A=\"FL:/%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
   }
   DocPrint(tmpd,"$$ID,-2$$");
   html=Doc2Html(tmpd);
@@ -103,6 +103,11 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   U8 *dot=FileExtDot(url->abs_path),*np;
+  if(!StrCmp(url->abs_path,"/")) {
+    Free(url->abs_path);
+    url->abs_path=StrNew("/index.DD");
+  }
+  
   if(!dot) {
    DolDocGet(srv,stream,url,req);
    goto fin;
