@@ -1,8 +1,8 @@
 Cd("T:/");; //We are not serving from RootFS
-Cd("/DolNet");;
-#define SERVER_HTML "/HTML"
-#define SERVER_WWW "/WWW"
-#define SERVER_PORT 8080
+Cd("/DolNet");
+#define SERVER_HTML "../HTML"
+#define SERVER_WWW "../WWW"
+#define SERVER_PORT 80
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
   if(to) {
@@ -22,7 +22,6 @@ class CHTTPRequest {
 	#define HTTP_UNDEF 0
 	#define HTTP_GET 1
 	#define HTTP_POST 2
-	
 	I64 method;
 };
 class CServer {

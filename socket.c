@@ -7,6 +7,11 @@
   #include <sys/socket.h>
   #include <sys/types.h>
   #include <unistd.h>
+#include <signal.h>
+static void InitSock() {
+  //These are not my freind
+  signal(SIGPIPE, SIG_IGN);
+}
 #else
   #define _WIN32_WINNT 0x603
   #include <winsock2.h>
@@ -31,9 +36,12 @@ typedef struct CNetAddr {
   struct addrinfo *ai;
 } CNetAddr;
 int64_t NetSocketNew() {
+
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
+#else
+  InitSock();
 #endif
   int64_t s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #if defined(__FreeBSD__) || defined(__linux__)
@@ -49,6 +57,8 @@ CNetAddr *NetAddrNew(char *host, int64_t port) {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
+#else
+  InitSock();
 #endif
   CNetAddr       *ret = A_CALLOC(sizeof(CNetAddr), NULL);
   char            buf[1024];
@@ -156,6 +166,8 @@ int64_t NetUDPSocketNew() {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
+#else
+  InitSock();
 #endif
   int64_t s = socket(AF_INET, SOCK_DGRAM, 0);
 #if defined(_WIN32) || defined(WIN32)
@@ -201,6 +213,8 @@ CInAddr *NetUDPAddrNew(char *host, int64_t port) {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
+#else
+  InitSock();
 #endif
   CInAddr        *ret   = A_CALLOC(sizeof(CInAddr), NULL);
   struct hostent *hoste = gethostbyname(host);

@@ -9,7 +9,7 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
 U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con;
   U8 *link=ChrootFile(url->abs_path,SERVER_HTML);
-  U8 *f,*mime,*dot=FileExtDot(link);
+  U8 *f,*mime,*dot=FileExtDot(link),*et;
   I64 len;
   if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
     if(!StrICmp(dot,".GIF")||!StrICmp(dot,".GIF.Z")) mime="image/gif";
@@ -20,8 +20,17 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     else if(!StrICmp(dot,".CSS")||!StrICmp(dot,".CSS.Z"))  mime="text/css";
     else if(!StrICmp(dot,".MIN.CSS")||!StrICmp(dot,".MIN.CSS.Z"))  mime="text/css";
     else mime="text/plain";
-    f=FileRead(link,&len);
     con=Fs->user_data;
+    et=HashFileToETag(link);
+    if(con->etag_text&&!StrCmp(et,con->etag_text)) {
+      Free(et);
+      con->response_code=304;
+      return;
+    }
+    con->provided_etag_by_server=TRUE;
+    Free(con->etag_text);
+    con->etag_text=et;
+    f=FileRead(link,&len);
     StrCpy(con->response_mime,mime);
     con->response_code=200;
     WriteNBytes(stream,NULL,f,len);
@@ -62,7 +71,8 @@ U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   DirEntryDel(root);
 }
 U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
-  U8 *path=ChrootFile(url->abs_path),*html_name=MStrPrint("%s.html",url->abs_path),*tmp;
+  U8 *path=ChrootFile(url->abs_path),*html_name=MStrPrint("%s.html",url->abs_path),*tmp,*et;
+  CConnection *con=Fs->user_data;
   CDirEntry dol_file,html_file;
   I64 i;
   tmp=ChrootFile(html_name,SERVER_HTML);
@@ -79,12 +89,12 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       if(IsDir(path))
         DirGet(srv,stream,url,req);
       else if(!FileFind(html_name,&html_file)) {
-	EnsurePathExists(tmp);
+        EnsurePathExists(tmp);
         ToHtml(tmp,html_name);
       } else if(html_file.datetime<dol_file.datetime) {
-	EnsurePathExists(html_name);
+        EnsurePathExists(html_name);
         ToHtml(tmp,html_name);
-      } //Html exists and is not newer than the doldoc file
+      } //Htm exists and is not newer than the doldoc file
       Free(tmp);
       break;
     }
@@ -93,6 +103,15 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   if(i==2)
     R404(srv,NULL,"Not found!!!");
   else {
+    et=HashFileToETag(html_name);
+    if(con->etag_text&&!StrCmp(et,con->etag_text)) {
+      Free(et);
+      con->response_code=304;
+      return;
+    }
+    con->provided_etag_by_server=TRUE;
+    Free(con->etag_text);
+    con->etag_text=et;
     tmp=FileRead(html_name,&i);
     WriteNBytes(srv,NULL,tmp,i);
     Free(tmp);
@@ -103,11 +122,10 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   U8 *dot=FileExtDot(url->abs_path),*np;
-  if(!StrCmp(url->abs_path,"/")) {
+  if(!StrCmp(url->abs_path,"/")&&FileFind("/WWW/index.DD")) {
     Free(url->abs_path);
     url->abs_path=StrNew("/index.DD");
   }
-  
   if(!dot) {
    DolDocGet(srv,stream,url,req);
    goto fin;

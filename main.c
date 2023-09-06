@@ -282,7 +282,8 @@ static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
   return dst;
 }
 static void PutS(char *s) {
-  printf("%s", s);
+  fprintf(stdout,"%s", s);
+  fflush(stdout);
 }
 static uint64_t STK_60fps(uint64_t *stk) {
   return sixty_fps->count != 0;
@@ -607,14 +608,18 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DbgPutS(int64_t *stk) {
-  puts((char *)stk[0]);
+  fprintf(stdout,"%s\n",(char *)stk[0]);
+  fflush(stdout);
 }
 static int64_t STK_PutS(int64_t *stk) {
-  puts((char *)stk[0]);
+  fprintf(stdout,"%s\n",(char *)stk[0]);
+  fflush(stdout);
 }
 
 static void STK_PutS2(int64_t *stk) {
-  printf("%s", (char *)stk[0]);
+  fprintf(stdout,"%s\n", (char *)stk[0]);
+  fflush(stdout);
+
 }
 
 static int64_t STK_SetHolyFs(int64_t *stk) {

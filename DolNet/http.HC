@@ -3,6 +3,7 @@ class CUniqueToken {
   CServer *srv;
   CConnection *con;
 };
+#define CON_TIMEOUT 2.
 class CConnection {
 	U8 *buffer;
 	U8 *buffer_ptr;
@@ -33,10 +34,12 @@ class CConnection {
 	I64 is_dead,response_length;
 	U8 *session_cookie,*response_text;
 	I64 response_code,cache_age;
-	Bool etag_changed,provided_etag;
+	Bool provided_etag_by_server;
 	U8 response_mime[STR_LEN];
 	U8 boundary[STR_LEN];
 	U8 field[STR_LEN];
+        U8 *etag_text;
+	F64 last_ts;
 };
 I64 __EncodeQueryValue(U8 *s,U8 *to) {
   I64 i,l=StrLen(s),len2=0;
@@ -255,12 +258,22 @@ CServer *CreateServer(I64 port) {
 	QueInit(&srv->connects);
 	return srv;
 }
+
+U8 *HashFileToETag(U8 *name) {
+  if(!FileFind(name)) return NULL;
+  I64 len,hash=5981;
+  U8 *buf=FileRead(name,&len);
+  while(--len>=0) {
+    hash=hash<<4+hash+buf[len];
+  }
+  Free(buf);
+  return MStrPrint("%x",hash);
+}
+
 U0 SendRequest(I64 s) {
   U8 *tmp,*tmp2,*cookie;
   U8 *msg="200 OK";
   CConnection *con=Fs->user_data;
-  if(con->provided_etag&&!con->etag_changed)
-    con->response_code=304;
   switch(con->response_code) {
       break;case 200: msg="200 OK";
       break;case 404: msg="404 Not Found";
@@ -277,6 +290,11 @@ U0 SendRequest(I64 s) {
         );
   NetWrite(s,tmp,StrLen(tmp));
   Free(tmp);
+  if(con->etag_text&&con->provided_etag_by_server) {
+    tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
+    NetWrite(s,tmp,StrLen(tmp));
+    Free(tmp);
+  }
   NetWrite(s,"\x0d\n",2);
   NetWrite(s,con->response_text,con->response_length);
 }
@@ -288,8 +306,8 @@ U0 EndHttpRequest(I64 s) {
   }
 //SendRequest may set the session cookie,we we do this after we send the request
   SendRequest(s);
-  NetClose(s);
   LBts(&con->is_dead,0);
+  Exit;
 }
 
 U0 CloseConnectionCB() {
@@ -315,14 +333,17 @@ U0 ParseRequest(CConnection *con) {
   CURL *url=con->url;
   switch(con->method) {
     case HTTP_GET:
-      (*con->server->get)(con->server,stream,url,&req);
+      if(con->server->get)
+        (*con->server->get)(con->server,stream,url,&req);
       break;
     case HTTP_POST:
-      (*con->server->post)(con->server,stream,url,&req,con->post_data);
-      NetWrite(stream,"\x0d\n",2);
+      if(con->server->post) {
+        (*con->server->post)(con->server,stream,url,&req,con->post_data);
+        NetWrite(stream,"\x0d\n",2);
+      }
       break;
   }
-  NetClose(stream);
+  EndHttpRequest(stream);
   LBts(&con->is_dead,0);
   Exit;
 }
@@ -358,8 +379,10 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   con->state.u8[0]=CON_S_METHOD;
   con->name=StrNew("",con->hc);
   con->post_data=HashTableNew(0x50,con->hc);
+  con->last_ts=tS;
   ut->con=con;
 found:
+  con->last_ts=tS;
   if(MSize(con->buffer)<=1+(con->buffer_ptr-con->buffer)+len+con->buffer_len) {
     tmp=MAlloc((con->buffer_ptr-con->buffer)+1+2*MSize(con->buffer)+len,con->hc);
     MemCpy(tmp,con->buffer,MSize(con->buffer));
@@ -384,7 +407,8 @@ loop:
        goto loop;
   } else {
     len=con->buffer_len;
-    en=SReadLine(s,con->buffer_ptr,len,ut);
+    if(len)
+      en=SReadLine(s,con->buffer_ptr,len,ut);
 	con->buffer_len-=len;
     con->buffer_ptr+=len;
   }
@@ -456,12 +480,14 @@ qloop:
     }
   }
   if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"If-None-Match",StrLen("If-None-Match"))) {
-    con->provided_etag=TRUE;
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
 etag_loop:
     t1=buf;
-    if(StrOcc(data,'\"')!=2) goto malformed;
+    if(StrOcc(data,'\"')<2) goto malformed;
     data=StrScan(data,"\"%s\"",&t1);
+    if(con->etag_text)
+      Free(con->etag_text);
+    con->etag_text=StrNew(buf,con->hc);
     if(*data==',') {
       data=SkipWhitespace(data+1);
       goto etag_loop;
@@ -588,13 +614,12 @@ en:
   return FALSE;
 malformed:
   Free(buf),Free(buf2);
-  NetClose(s);
   LBts(&con->is_dead,0);
   return TRUE;
 process:
   Free(buf),Free(buf2);
 //If we have content,make sure we recieved all the data
-  if((con->content_len&&con->content_len==con->field_ptr)||!con->content_len){
+  if((con->content_len&&con->content_len==con->field_ptr)||!con->content_len) {
     Spawn(&ParseRequest,con,"Request",,Fs);
   }
   return FALSE;
@@ -616,11 +641,12 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
   }
   if(con->post_data)
     HashTableDel(con->post_data);
+  NetClose(con->stream);
   Kill(con->hc);
   Free(con);
   return;
 }
-#define BACKLOG 128
+#define BACKLOG 1024
 CUniqueToken unique_tokens[BACKLOG];
 I64 fds[BACKLOG];
 U0 ServeExit() {
@@ -634,7 +660,7 @@ U0 ServeExit() {
   Exit;
 }
 U0 ServeTask(CServer *srv) {
-  U8 buf[0x10000];
+  U8 buf[0x10000],found;
   I64 fd_cnt=0,idx;
   I64 sleep_time=10,len;
   MemSetU64(fds,-1,BACKLOG);
@@ -642,45 +668,48 @@ U0 ServeTask(CServer *srv) {
   Fs->task_end_cb=&ServeExit;
   srv->task=Fs;
   srv->s_sock=NetSocketNew;
-  CNetAddr *addr=NetAddrNew("127.0.0.1",srv->port);
+  CNetAddr *addr=NetAddrNew("0.0.0.0",srv->port);
   NetBindIn(srv->s_sock,addr);
   NetAddrDel(addr);
   NetListen(srv->s_sock,BACKLOG-1);
   while (TRUE) {
     if(-1==NetPollForRead(1,&srv->s_sock)) {
+force:
       for(idx=0;idx!=BACKLOG;idx++) {
         if(fds[idx]!=-1&&unique_tokens[idx].con) {
+          if(tS-unique_tokens[idx].con->last_ts>CON_TIMEOUT) {
+	    goto kill;
+          }
 	  if(Bt(&unique_tokens[idx].con->is_dead,0)) {
+kill:
 	    CloseCallback(fds[idx],&unique_tokens[idx]);
 	    fds[idx]=-1;
 	    goto nxt;
 	  }
         }
-        if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
-	  len=NetRead(fds[idx],buf,0x10000);
-	  buf[len]=0;
-	  SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+        if(fds[idx]!=-1&&-1!=NetPollForHangup(1,&fds[idx])) {
+	    CloseCallback(fds[idx],&unique_tokens[idx]);
+	    fds[idx]=-1;
+	  } else if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
+	    len=NetRead(fds[idx],buf,0x10000);
+	    buf[len]=0;
+	    SReadData(fds[idx],buf,len,&unique_tokens[idx]);
         }
 nxt:;
       }
-      for(idx=0;idx!=BACKLOG;idx++) {
-        if(fds[idx]!=-1) {
-	  if(-1!=NetPollForHangup(1,&fds[idx])) {
-	    CloseCallback(fds[idx],&unique_tokens[idx]);
-	    fds[idx]=-1;
-	  }
-        }
-      }
-      Sleep(10);
+      Sleep(100);
     } else {
+      found=FALSE;
       for(idx=0;idx!=BACKLOG;idx++) {
         if(fds[idx]==-1) {
 	  unique_tokens[idx].srv=srv;
 	  unique_tokens[idx].con=NULL;
 	  fds[idx]=NetAccept(srv->s_sock,NULL);
+	  found=TRUE;
 	  break;
         }
       }
+      if(!found) goto force;
     }
   }
 }
