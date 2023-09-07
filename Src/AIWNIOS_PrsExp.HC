@@ -585,7 +585,7 @@ mul:
 	  goto mul;    
         }
         if(b->ic_dim) {
-	  width=b->ic_class->size+b->ic_dim->total_cnt;
+	  width=b->ic_class->size*b->ic_dim->total_cnt;
 	  rpn2=CAlloc(sizeof CRPN);
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
