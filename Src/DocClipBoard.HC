@@ -90,7 +90,7 @@ public U0 ClipPaste(CDoc *doc)
         doc_e=doc_e->next;
       }
     } else
-      DocInsDoc(doc,doc2);
+      DocInsDoc(doc,tdoc);
     DocDel(tdoc);
     Free(cb);
   }
