@@ -63,8 +63,10 @@ char *FileRead(char *fn, int64_t *sz) {
   int64_t s, e;
   FILE   *f = fopen(fn, "rb");
   char   *ret;
-  if (!f)
-    return NULL;
+  if (!f) {
+	if(sz) *sz=0;
+    return A_CALLOC(1,NULL);
+  }
   fseek(f, 0, SEEK_END);
   e = ftell(f);
   fseek(f, 0, SEEK_SET);
@@ -228,8 +230,11 @@ char **VFsDir(char *name) {
       *delim = '\\';
     int64_t s64 = 0;
     dh          = FindFirstFileA(buffer, &data);
-    while (FindNextFileA(dh, &data))
-      ret[s64++] = A_STRDUP(data.cFileName, NULL);
+    while (FindNextFileA(dh, &data)) {
+      // CDIR_FILENAME_LEN  is 38(includes nul terminator)
+      if(strlen(data.cFileName)<=37)
+        ret[s64++] = A_STRDUP(data.cFileName, NULL);
+    }
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
@@ -320,13 +325,11 @@ int64_t VFsFileRead(char *name, int64_t *len) {
   int64_t s, e;
   void   *data = NULL;
   name         = __VFsFileNameAbs(name);
-  if (!name)
-    return (int64_t)NULL;
+  if(!name) goto end;
   if (__FExists(name))
     if (!__FIsDir(name)) {
       f = fopen(name, "rb");
-      if (!f)
-        goto end;
+      if (!f) goto end;
       s = ftell(f);
       fseek(f, 0, SEEK_END);
       e = ftell(f);
@@ -339,6 +342,7 @@ int64_t VFsFileRead(char *name, int64_t *len) {
     }
 end:
   A_FREE(name);
+  if(!data) data=A_CALLOC(1,NULL);
   return (int64_t)data;
 }
 int VFsFileExists(char *path) {
@@ -449,6 +453,11 @@ static void CopyDir(char *dst, char *src) {
       CopyDir(buf, sbuf);
     } else {
       FILE *read = fopen(sbuf, "rb"), *write = fopen(buf, "wb");
+      if(!read||!write) {
+		if(read) fclose(read);
+		if(write) fclose(write);
+		return;
+	  }
       while (r = fread(buffer, 1, sizeof(buffer), read)) {
         if (r < 0)
           break;
