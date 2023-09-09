@@ -13,6 +13,8 @@ Bool TextChar(CTask *task,Bool allow_border=FALSE,I64 x,I64 y,I64 d) {
   if(sx>=TEXT_COLS)
     goto __5;
   sy+=task->win_top;
+  if(sy<task->win_top)
+    goto __5;
   if(sy>task->win_bottom)
     goto __5;
   if(sy>=TEXT_ROWS)
@@ -31,6 +33,8 @@ __10:
     goto __5;
   sy+=task->win_top;
   if(sy>task->win_bottom+1)
+    goto __5;
+  if(sy<task->win_top-1)
     goto __5;
   if(sy>=TEXT_ROWS)
     goto __5;
