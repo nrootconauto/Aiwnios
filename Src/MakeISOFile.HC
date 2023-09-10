@@ -58,7 +58,7 @@ U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let)
   U8	*zero_buf=CAlloc(DVD_BLK_SIZE);
   CFile *out_file=NULL;
 
-  if (out_file=FOpen(iso_filename,"wc+")) {
+  if (out_file=iso_filename) {
     iso_size=FSize(out_file)/DVD_BLK_SIZE;
     for (i=0;i<dv->bd->drv_offset;i+=4)
       FBlkWrite(out_file,zero_buf,i,4);
@@ -106,8 +106,7 @@ U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let)
     et->sect_cnt=4;  //5 seems like the limit, 4 is safer
     et->load_rba=20<<2>>2+1;
     FBlkWrite(out_file,et,20<<2,4);
-    FClose(out_file);
-  }
+  }
   Free(zero_buf);
   Free(et);
   Free(iso_pri);

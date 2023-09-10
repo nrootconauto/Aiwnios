@@ -28,7 +28,7 @@ Bool BlkDevUnlock(CBlkDev *bd,Bool rst=FALSE)
     return FALSE;
 }
 
-Bool BlkDevInit(CBlkDev *bd)
+Bool BlkDevInit(CBlkDev *bd)
 {
   CDirEntry de;
   U8 buf[STR_LEN];
@@ -85,7 +85,7 @@ Bool BlkDevInit(CBlkDev *bd)
 		dv->fs_type=FSt_REDSEA;
 	dv->size=bd->max_blk+1-bd->drv_offset;
 	RedSeaFmt(bd->first_drv_let);
-	CallExtStr("RedSeaISO9660",bd->file_dsk_name,bd->first_drv_let);
+	CallExtStr("RedSeaISO9660",bd->file_dsk,bd->first_drv_let);
 	res=TRUE;
 	break;
     }
