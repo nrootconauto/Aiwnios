@@ -223,9 +223,19 @@ Bool FBlkRead(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
 
 Bool FBlkWrite(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
 {//Write [nth,n+cnt) blks of file.
+  U8 dummy[BLK_SIZE];
   if(f->_3days_virt) {
-    if(blk!=FFB_NEXT_BLK)
-      VFsFSeek(blk<<BLK_SIZE_BITS,f->_3days_virt);
+dummy_fill_loop:
+    if(blk!=FFB_NEXT_BLK) {
+      if(VFsFSeek(blk<<BLK_SIZE_BITS,f->_3days_virt)) { //1 if error
+        MemSet(dummy,BLK_SIZE,0);
+        VFsFSeek(-1,f->_3days_virt); //Dumb hack,see fs.c
+        if(VFsFBlkWrite(dummy,1<<BLK_SIZE_BITS,1,f->_3days_virt))
+          return FALSE;
+        else
+		  goto dummy_fill_loop;
+      }
+    }
     VFsFBlkWrite(buf,1<<BLK_SIZE_BITS,cnt,f->_3days_virt);
     return TRUE;
   }

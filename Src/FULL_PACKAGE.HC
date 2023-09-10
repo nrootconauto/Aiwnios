@@ -214,6 +214,7 @@ U8 *body=
 #include "Diff.HC" 
 #include "Merge.HC" 
 #include "DocUtils.HC" 
+#include "MakeISOFile.HC";
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
 #endif

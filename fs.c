@@ -374,14 +374,20 @@ int64_t VFsFClose(FILE *f) {
   return 0;
 }
 int64_t VFsFBlkRead(void *d, int64_t n, int64_t sz, FILE *f) {
+  fflush(f);
   return 0 != fread(d, n, sz, f);
 }
 int64_t VFsFBlkWrite(void *d, int64_t n, int64_t sz, FILE *f) {
-  return 0 != fwrite(d, n, sz, f);
+  fflush(f);
+  int64_t rc=n*sz != fwrite(d,1,n*sz, f);
+  fflush(f);
+  return rc;
 }
 int64_t VFsFSeek(int64_t off, FILE *f) {
-  fseek(f, off, SEEK_SET);
-  return 0;
+  fflush(f);
+  if(off==-1)
+	return 0!=fseek(f, 0, SEEK_END);
+  return 0!=fseek(f, off, SEEK_SET);
 }
 
 int64_t VFsTrunc(char *fn, int64_t sz) {
@@ -400,7 +406,7 @@ void VFsSetPwd(char *pwd) {
 
 FILE *VFsFOpenW(char *f) {
   char *path = __VFsFileNameAbs(f);
-  FILE *r    = fopen(path, "wb");
+  FILE *r    = fopen(path, "w+b");
   A_FREE(path);
   return r;
 }

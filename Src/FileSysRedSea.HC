@@ -146,8 +146,10 @@ U0 RedSeaFmt(U8 drv_let,Bool quick=TRUE)
     BlkWrite(dv,root_dir,br->root_clus,root_dir_blks);
     RedSeaInit(dv);
     DrvUnlock(dv);
-  } catch
+  } catch {
+PutExcept(0);
     DrvUnlock(dv);
+  }
   Free(br);
   Free(root_dir);
 }

@@ -82,10 +82,10 @@ Bool BlkDevInit(CBlkDev *bd)
 	if (bd->max_blk<7)
 	  bd->max_blk=7;
 	bd->file_dsk=FOpen(bd->file_dsk_name,"wc",bd->max_blk+1,adam_task);
-	dv->fs_type=FSt_REDSEA;
+		dv->fs_type=FSt_REDSEA;
 	dv->size=bd->max_blk+1-bd->drv_offset;
 	RedSeaFmt(bd->first_drv_let);
-	//CallExtStr("RedSeaISO9660",bd->file_dsk_name,bd->first_drv_let); TODO RESTORE
+	CallExtStr("RedSeaISO9660",bd->file_dsk_name,bd->first_drv_let);
 	res=TRUE;
 	break;
     }
