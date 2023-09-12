@@ -2339,7 +2339,8 @@ static CRPN *__AddOffset(CRPN *r, int64_t *const_val) {
       *const_val = mul * ConstVal(n0);
     return n1;
   }
-  if (IsConst(n1) && Is32Bit(ConstVal(n1))) {
+  //Dont do 256-idx(ONLY DO idx-256)
+  if (IsConst(n1) && Is32Bit(ConstVal(n1)) && r->type != IC_SUB) {
     if (const_val)
       *const_val = mul * ConstVal(n1);
     return n0;
