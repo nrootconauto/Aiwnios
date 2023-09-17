@@ -129,7 +129,7 @@ I64 AiwniosDbgCB(I64 sig,I64 *gps) {
   CBpt *bp;
   CTask clone;
   #ifdef TARGET_X86
-  I64 oip=gps[12],rbp=gps[2]; 
+  I64 oip=gps[0],rbp=gps[2]; 
   #else
   I64 oip=gps[0],rbp=gps[11]; 
   #endif

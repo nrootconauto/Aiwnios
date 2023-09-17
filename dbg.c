@@ -12,6 +12,7 @@ static void UnblockSignals() {
 #if defined(__linux__) || defined(__FreeBSD__)
   sigset_t set;
   sigemptyset(&set);
+  sigaddset(&set, SIGILL);
   sigaddset(&set, SIGSEGV);
   sigaddset(&set, SIGBUS);
   sigaddset(&set, SIGTRAP);
@@ -212,6 +213,7 @@ void InstallDbgSignalsForThread() {
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGBUS, &sa, NULL);
   sigaction(SIGTRAP, &sa, NULL);
+  sigaction(SIGILL, &sa, NULL);
   sigaction(SIGFPE, &sa, NULL);
 #else
   AddVectoredExceptionHandler(1, VectorHandler);

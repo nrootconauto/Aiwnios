@@ -106,7 +106,7 @@ U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let)
     et->sect_cnt=4;  //5 seems like the limit, 4 is safer
     et->load_rba=20<<2>>2+1;
     FBlkWrite(out_file,et,20<<2,4);
-  }
+  }
   Free(zero_buf);
   Free(et);
   Free(iso_pri);

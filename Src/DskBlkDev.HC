@@ -28,7 +28,7 @@ Bool BlkDevUnlock(CBlkDev *bd,Bool rst=FALSE)
     return FALSE;
 }
 
-Bool BlkDevInit(CBlkDev *bd)
+Bool BlkDevInit(CBlkDev *bd)
 {
   CDirEntry de;
   U8 buf[STR_LEN];

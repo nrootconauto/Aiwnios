@@ -719,7 +719,7 @@ public Bool BSpline3(U8 *aux_data,CD3I32 *ctrl,I64 cnt,
 }
 
 
-public Bool ClipLine(I64 *_x1,I64 *_y1,I64 *_x2,I64 *_y2,
+public Bool ClipLine(I64 *_x1,I64 *_y1,I64 *_x2,I64 *_y2,
 	I64 left,I64 top,I64 right,I64 bottom)
 {//Clip x1,y1 x2,y2 with left,top,right,bottom.
   I64 x,y,x1=*_x1,y1=*_y1,x2=*_x2,y2=*_y2,

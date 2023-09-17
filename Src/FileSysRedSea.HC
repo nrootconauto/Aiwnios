@@ -149,7 +149,7 @@ U0 RedSeaFmt(U8 drv_let,Bool quick=TRUE)
   } catch {
     DrvUnlock(dv);
   }
-  Free(br);
+  Free(br);
   Free(root_dir);
 }
 

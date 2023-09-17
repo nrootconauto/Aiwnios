@@ -2,7 +2,7 @@ Cd("T:/");; //We are not serving from RootFS
 Cd("/DolNet");
 #define SERVER_HTML "../HTML"
 #define SERVER_WWW "../WWW"
-#define SERVER_PORT 80
+#define SERVER_PORT 8000
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
   if(to) {

@@ -270,6 +270,15 @@ U8 *HashFileToETag(U8 *name) {
   return MStrPrint("%x",hash);
 }
 
+U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
+  CConnection *con=Fs->user_data;
+  if(!len) return;
+  if(-1==NetWrite(s,data,len)) {
+    LBts(&con->is_dead,0);
+    Exit;
+  }
+}
+
 U0 SendRequest(I64 s) {
   U8 *tmp,*tmp2,*cookie;
   U8 *msg="200 OK";
@@ -288,15 +297,15 @@ U0 SendRequest(I64 s) {
         "Content-Length: %d\x0d\n"
         ,msg,con->response_mime,con->response_length
         );
-  NetWrite(s,tmp,StrLen(tmp));
+  NetWriteWErr(s,tmp,StrLen(tmp));
   Free(tmp);
   if(con->etag_text&&con->provided_etag_by_server) {
     tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
-    NetWrite(s,tmp,StrLen(tmp));
+    NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
   }
-  NetWrite(s,"\x0d\n",2);
-  NetWrite(s,con->response_text,con->response_length);
+  NetWriteWErr(s,"\x0d\n",2);
+  NetWriteWErr(s,con->response_text,con->response_length);
 }
 
 U0 EndHttpRequest(I64 s) {

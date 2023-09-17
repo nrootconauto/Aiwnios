@@ -7034,4 +7034,4 @@ extern U0 NetUDPSendTo(I64,U8*,I64,CUDPAddr*);
 extern U0 NetUDPAddrDel(CUDPAddr*);
 extern CUDPAddr *NetUDPAddrNew(U8 *,I64);
 extern Bool Man(U8 *st,I64 edf_dof_flags=0);
-extern U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let);
+extern U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let);
