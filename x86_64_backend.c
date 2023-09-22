@@ -2339,7 +2339,7 @@ static CRPN *__AddOffset(CRPN *r, int64_t *const_val) {
       *const_val = mul * ConstVal(n0);
     return n1;
   }
-  //Dont do 256-idx(ONLY DO idx-256)
+  // Dont do 256-idx(ONLY DO idx-256)
   if (IsConst(n1) && Is32Bit(ConstVal(n1)) && r->type != IC_SUB) {
     if (const_val)
       *const_val = mul * ConstVal(n1);
@@ -4037,6 +4037,8 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
 #define X86_COND_GE 0x80
 #define X86_COND_L  0x90
 #define X86_COND_LE 0xa0
+#define X86_COND_S  0xb0
+#define X86_COND_NS 0xb1
 static int64_t X86Jcc(char *to, int64_t cond, int64_t off) {
   int64_t len = 0;
   char    buf[16];
@@ -4074,6 +4076,12 @@ static int64_t X86Jcc(char *to, int64_t cond, int64_t off) {
     break;
   case X86_COND_LE:
     ADD_U8(0x8e);
+    break;
+  case X86_COND_S:
+    ADD_U8(0x88);
+    break;
+  case X86_COND_S | 1:
+    ADD_U8(0x89);
     break;
   case X86_COND_A | 1:
     ADD_U8(0x86);
@@ -5634,6 +5642,50 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next  = ICArgN(rpn, 1);
     next2 = ICArgN(rpn, 0);
     if (rpn->raw_type != RT_F64) {
+      if (IsConst(next2) && rpn->raw_type != RT_U64i) {
+        if (__builtin_popcountll(ConstVal(next2)) == 1) {
+          if (__builtin_ffsll(ConstVal(next2)) <= 31) {
+            // https://compileroptimizations.com/category/integer_mod_optimization.htm
+            int64_t j1;
+            orig_dst = rpn->res;
+            code_off = __OptPassFinal(cctrl, next, bin, code_off);
+            code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+            AIWNIOS_ADD_CODE(X86Test, rpn->res.reg, rpn->res.reg);
+            AIWNIOS_ADD_CODE(X86Jcc, X86_COND_S, 0xffff);
+            reverse = code_off;
+            AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
+                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+            AIWNIOS_ADD_CODE(X86Jmp, 0xffff);
+            j1 = code_off;
+            if (bin)
+              *(int32_t *)(bin + reverse - 4) = code_off - reverse;
+            AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
+                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+            AIWNIOS_ADD_CODE(X86OrImm, rpn->res.reg,
+                             ~((1ll << __builtin_ffsll(ConstVal(next2))) - 1));
+            if (bin)
+              *(int32_t *)(bin + j1 - 4) = code_off - j1;
+            code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
+            break;
+          }
+        }
+      } else {
+        if (__builtin_popcountll(ConstVal(next2)) == 1) {
+          if (__builtin_ffsll(ConstVal(next2)) <= 31) {
+            orig_dst = rpn->res;
+            code_off = __OptPassFinal(cctrl, next, bin, code_off);
+            code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+            AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
+                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+            code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
+            break;
+          }
+        }
+      }
       if (rpn->raw_type == RT_U64i) {
         CQO_OP(RDX, X86DivReg, X86DivSIB64);
       } else {
