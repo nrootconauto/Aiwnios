@@ -288,11 +288,11 @@ if(IsCmdLineMode) {
 } else 
   WinMax(User);
 if(!IsCmdLineMode) {
-  ACInit("T:/*.HH*;*.HC*");
   ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
   ExePrint2("#include \"T:/Src/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
+  ACInit("T:/Src/*.HC*;*.HH.*");
 }
 CoreAPSethTask;
 #endif;
