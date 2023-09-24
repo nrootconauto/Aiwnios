@@ -5656,15 +5656,15 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             AIWNIOS_ADD_CODE(X86Jcc, X86_COND_S, 0xffff);
             reverse = code_off;
             AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
-                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+                             (1ll << (__builtin_ffsll(ConstVal(next2))-1)) - 1);
             AIWNIOS_ADD_CODE(X86Jmp, 0xffff);
             j1 = code_off;
             if (bin)
               *(int32_t *)(bin + reverse - 4) = code_off - reverse;
             AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
-                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+                             (1ll << (__builtin_ffsll(ConstVal(next2))-1)) - 1);
             AIWNIOS_ADD_CODE(X86OrImm, rpn->res.reg,
-                             ~((1ll << __builtin_ffsll(ConstVal(next2))) - 1));
+                             ~((1ll << (__builtin_ffsll(ConstVal(next2))-1)) - 1));
             if (bin)
               *(int32_t *)(bin + j1 - 4) = code_off - j1;
             code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
@@ -5680,7 +5680,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
             AIWNIOS_ADD_CODE(X86AndImm, rpn->res.reg,
-                             (1ll << __builtin_ffsll(ConstVal(next2))) - 1);
+                             (1ll << (__builtin_ffsll(ConstVal(next2))-1)) - 1);
             code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
             break;
           }
