@@ -250,7 +250,7 @@ Bool FifoI64Ins(CFifoI64 *f,I64 q)
   }
 }
 
-Bool FifoI64Rem(CFifoI64 *f,I64 *_q)
+Bool FifoI64Rem(CFifoI64 *f,I64 *_q)
 {//Remove I64 from fifo.
   if (f->in_ptr==f->out_ptr) {
     return FALSE;
