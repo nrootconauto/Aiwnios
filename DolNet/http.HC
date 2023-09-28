@@ -77,7 +77,7 @@ U8 *EncodeQueryValue(U8 *s) {
 }
 U8 *GetQueryValue(U8 *q,U8 *f) {
 	I64 len=StrLen(q),bptr=0;
-	U8 *buf,three[3],name[STR_LEN];
+	U8 *buf,three[3],*name=MAlloc(StrLen(q)+1);
 	U8 *ptr=q,*en;
 	loop:
 	buf=name;
@@ -105,6 +105,7 @@ U8 *GetQueryValue(U8 *q,U8 *f) {
 					buf[bptr++]=*ptr++;
 			}
 			buf[bptr++]=0;
+			Free(name);
 			return buf;
 		} else 
 			return StrNew("");
@@ -114,6 +115,7 @@ U8 *GetQueryValue(U8 *q,U8 *f) {
 			goto loop;
 		}
 	}
+	Free(name);
 	return NULL;
 }
 CURL *ParseURL(U8 *url) {
@@ -459,14 +461,16 @@ qloop:
     buf[t2-data]=0;
     data=t2;
     t1=GetQueryValue(odata,buf);
-    hash=CAlloc(sizeof(CHashGeneric)+StrLen(t1)+1,con->hc);
-    hash->str=StrNew(buf,con->hc);
-    hash->user_data0=StrLen(t1);
-    hash->user_data1=hash+1;
-    StrCpy(hash->user_data1,t1);
-    hash->type=HTT_DICT_WORD;
-    HashAdd(hash,con->post_data);
-    Free(t1);
+    if(t1) {
+      hash=CAlloc(sizeof(CHashGeneric)+StrLen(t1)+1,con->hc);
+      hash->str=StrNew(buf,con->hc);
+      hash->user_data0=StrLen(t1);
+      hash->user_data1=hash+1;
+      StrCpy(hash->user_data1,t1);
+      hash->type=HTT_DICT_WORD;
+      HashAdd(hash,con->post_data);
+      Free(t1);
+    }
     if(*data&&StrFirstOcc(data,"&")) {
       data=StrFirstOcc(data,"&")+1;
       goto qloop;
@@ -523,10 +527,10 @@ cloop:;
       else
         data=StrScan(data,"%s=%s",&t1,&t2);
       if(data)
-      if(*data==' ') {
-        data++;
-	goto cloop;
-      }
+        if(*data==' ') {
+	  data++;
+	  goto cloop;
+        }
     }
   }else if(Bt(&con->state,CONf_AWAIT_BOUNDARY)) {
     t1=buf;
@@ -566,7 +570,7 @@ cloop:;
         hash->type=HTT_DICT_WORD;
         HashAdd(hash,con->post_data);
       }
-      //We hit the boundary: safe to transmit data
+//We hit the boundary: safe to transmit data
       con->field_ptr=con->content_len;
       goto process;
     } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Content-Length",StrLen("Content-Length"))) { 
@@ -603,12 +607,12 @@ loop:
       Bts(&con->state,CONf_DATA);
     } else if(Bt(&con->state,CONf_DATA)) {
       if(!con->fbuffer) {
-	con->fbuffer=MAlloc(len+1,con->hc);
+        con->fbuffer=MAlloc(len+1,con->hc);
       } else if(MSize(con->fbuffer)<=1+len+con->field_ptr) {
         t1=MAlloc(2*con->field_ptr+len+1,con->hc);
-	MemCpy(t1,con->fbuffer,con->field_ptr);
-	Free(con->fbuffer);
-	con->fbuffer=t1;
+        MemCpy(t1,con->fbuffer,con->field_ptr);
+        Free(con->fbuffer);
+        con->fbuffer=t1;
       }
       MemCpy(con->fbuffer+con->field_ptr,data,len);
       con->field_ptr+=len;
@@ -726,7 +730,7 @@ U0 Serve(CServer *srv) {
   I64 core=-1;
   CTask *srv_task;
   "Press a button to quit serving\n";
-  srv_task=Spawn(&ServeTask,srv,"Server",core);
+  srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
   PressAKey;
   Kill(srv_task);
 }
