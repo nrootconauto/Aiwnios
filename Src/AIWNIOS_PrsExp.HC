@@ -29,7 +29,7 @@ U0 RPNDel(CRPN *rpn) {
 }
 //This accounts for CHashClass/CHashFun
 CHashClass *DerefType(CHashClass *cls) {
-  if(!cls->ptr_stars_cnt) return NULL;
+  if(!cls->ptr_stars_cnt) return cmp.internal_types[RT_I64];
   if(cls->type&HTT_FUN)
     return cls(CHashFun*)-1;
   return cls-1;
@@ -662,6 +662,10 @@ pop:
           Free(rpn);
           goto next;
         }
+      } else if(rpn->type==IC_DEREF) {
+         r2=cc->coc.coc_head.next;
+	 if(!r2->ic_dim&&!r2->ic_class->ptr_stars_cnt)
+           LexExcept(cc,"Expected pointer type at ");
       }
       if(rpn)
         RPNAdd(cc,rpn);
@@ -1355,17 +1359,17 @@ found_end_square:
 	  Lex(cc);
 	  break;case TK_CHAR_CONST:
 	  if(finish) break;
-	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64,cmp.internal_types[RT_I64]);
 	  last_consumes_right=0;
 	  Lex(cc);
 	  break;case TK_I64:
 	  if(finish) break;
-	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64);
+	  RPNAddNew(cc,IC_IMM_I64,cc->cur_i64,cmp.internal_types[RT_I64]);
 	  last_consumes_right=0;
 	  Lex(cc);
 	  break;case TK_F64:
 	  if(finish) break;
-	  RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64));
+	  RPNAddNew(cc,IC_IMM_F64,cc->cur_f64(I64),cmp.internal_types[RT_F64]);
 	  last_consumes_right=0;
 	  Lex(cc);
 	  break;case TK_IDENT:
