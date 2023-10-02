@@ -2079,7 +2079,6 @@ static CCodeMisc *GetF64LiteralMisc(CCmpCtrl *cctrl, double imm) {
   misc->type    = CMT_FLOAT_CONST;
   misc->integer = *(int64_t *)&imm;
   QueIns(misc, cctrl->code_ctrl->code_misc->last);
-found:
   return misc;
 }
 static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
@@ -5314,12 +5313,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg      = into_reg;                                                 \
       code_off     = ICMov(cctrl, &tmp, &next->res, bin, code_off);            \
       AIWNIOS_ADD_CODE(f_sib_op, into_reg, -1, -1, RIP, 0xb00b1e5);            \
-      misc = GetF64LiteralMisc(cctrl, next2->res.flt);                         \
+      misc = GetF64LiteralMisc(cctrl, next2->flt);                             \
       if (bin)                                                                 \
         CodeMiscAddRef(misc, bin + code_off - 4);                              \
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
-      \     
-		 break;                                                                    \
+      break;                                                                   \
     }                                                                          \
     code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
     code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
