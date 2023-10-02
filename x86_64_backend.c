@@ -3861,11 +3861,18 @@ enter:;
   case IC_FREG:                                                                \
   case IC_BASE_PTR:                                                            \
     rpn->res = next->res;                                                      \
-    if (use_f64)                                                               \
+    if (use_f64) {                                                             \
+      if (next->res.raw_type != RT_F64) {                                      \
+        rpn->res.raw_type = RT_F64;                                            \
+        rpn->res.reg      = 0;                                                 \
+        rpn->res.mode     = MD_REG;                                            \
+      }                                                                        \
       rpn->raw_type = RT_F64;                                                  \
+    }                                                                          \
     code_off      = __OptPassFinal(cctrl, rpn, bin, code_off);                 \
     set_flags     = rpn->res.set_flags;                                        \
     rpn->raw_type = old_raw_type;                                              \
+    code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);              \
     code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);              \
     break;                                                                     \
   case IC_DEREF:                                                               \
@@ -3888,8 +3895,7 @@ enter:;
     next2->flags  = ICF_PRECOMPUTED;                                           \
     rpn->res.mode = MD_REG;                                                    \
     rpn->res.reg  = use_f64 ? 1 : RAX;                                         \
-    if (use_f64)                                                               \
-      rpn->raw_type = RT_F64;                                                  \
+    if(use_f64)  rpn->raw_type = RT_F64;                                                  \
     rpn->res.raw_type = rpn->raw_type;                                         \
     code_off          = __OptPassFinal(cctrl, rpn, bin, code_off);             \
     set_flags         = rpn->res.set_flags;                                    \
@@ -3909,12 +3915,19 @@ enter:;
     break;                                                                     \
   default:                                                                     \
     rpn->res = next->res;                                                      \
-    if (use_f64)                                                               \
+    if (use_f64) {                                                             \
+      if (next->res.raw_type != RT_F64) {                                      \
+        rpn->res.raw_type = RT_F64;                                            \
+        rpn->res.reg      = 0;                                                 \
+        rpn->res.mode     = MD_REG;                                            \
+      }                                                                        \
       rpn->raw_type = RT_F64;                                                  \
+    }                                                                          \
     code_off      = __OptPassFinal(cctrl, rpn, bin, code_off);                 \
     set_flags     = rpn->res.set_flags;                                        \
     rpn->raw_type = old_raw_type;                                              \
     code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);        \
+    code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);        \
   }                                                                            \
   rpn->type = old_type, rpn->res = old;                                        \
   next->type  = next_old;                                                      \
@@ -5433,8 +5446,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           case RT_I16i:
           case RT_I32i:
           case RT_I64i:
-			if(__builtin_ffsll(next->integer)>=31)
-				goto div_normal;
+            if (__builtin_ffsll(next->integer) >= 31)
+              goto div_normal;
             // Big Brain stuff
             // https://stackoverflow.com/questions/63018450/which-kind-of-signed-integer-division-corresponds-to-bit-shift
             code_off = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -5446,9 +5459,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             tmp.raw_type = RT_I64i;
             tmp.reg      = into_reg;
             code_off     = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
-            AIWNIOS_ADD_CODE(X86LeaSIB, AIWNIOS_TMP_IREG_POOP, 1,-1,into_reg,ConstVal(next)-1);
-			AIWNIOS_ADD_CODE(X86Test,into_reg,into_reg);
-			AIWNIOS_ADD_CODE(X86CMovsRegReg,into_reg,AIWNIOS_TMP_IREG_POOP);
+            AIWNIOS_ADD_CODE(X86LeaSIB, AIWNIOS_TMP_IREG_POOP, 1, -1, into_reg,
+                             ConstVal(next) - 1);
+            AIWNIOS_ADD_CODE(X86Test, into_reg, into_reg);
+            AIWNIOS_ADD_CODE(X86CMovsRegReg, into_reg, AIWNIOS_TMP_IREG_POOP);
             AIWNIOS_ADD_CODE(X86SarImm, into_reg,
                              __builtin_ffsll(next->integer) - 1);
             rpn->res.set_flags = 1;
