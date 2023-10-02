@@ -2067,6 +2067,21 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
   return code_off;
 }
 
+static CCodeMisc *GetF64LiteralMisc(CCmpCtrl *cctrl, double imm) {
+  CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
+  for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
+    if (misc->type == CMT_FLOAT_CONST)
+      if (misc->integer == *(int64_t *)&imm) {
+        return misc;
+      }
+  }
+  misc          = A_CALLOC(sizeof(CCodeMisc), cctrl->hc);
+  misc->type    = CMT_FLOAT_CONST;
+  misc->integer = *(int64_t *)&imm;
+  QueIns(misc, cctrl->code_ctrl->code_misc->last);
+found:
+  return misc;
+}
 static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
                            int64_t code_off) {
   CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
@@ -3872,7 +3887,7 @@ enter:;
     code_off      = __OptPassFinal(cctrl, rpn, bin, code_off);                 \
     set_flags     = rpn->res.set_flags;                                        \
     rpn->raw_type = old_raw_type;                                              \
-    code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);              \
+    code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);        \
     code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);              \
     break;                                                                     \
   case IC_DEREF:                                                               \
@@ -3895,7 +3910,8 @@ enter:;
     next2->flags  = ICF_PRECOMPUTED;                                           \
     rpn->res.mode = MD_REG;                                                    \
     rpn->res.reg  = use_f64 ? 1 : RAX;                                         \
-    if(use_f64)  rpn->raw_type = RT_F64;                                                  \
+    if (use_f64)                                                               \
+      rpn->raw_type = RT_F64;                                                  \
     rpn->res.raw_type = rpn->raw_type;                                         \
     code_off          = __OptPassFinal(cctrl, rpn, bin, code_off);             \
     set_flags         = rpn->res.set_flags;                                    \
@@ -3927,7 +3943,7 @@ enter:;
     set_flags     = rpn->res.set_flags;                                        \
     rpn->raw_type = old_raw_type;                                              \
     code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);        \
-    code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);        \
+    code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);              \
   }                                                                            \
   rpn->type = old_type, rpn->res = old;                                        \
   next->type  = next_old;                                                      \
@@ -5286,6 +5302,24 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         }                                                                      \
         break;                                                                 \
       }                                                                        \
+    } else if (next2->type == IC_F64 && rpn->raw_type == RT_F64) {             \
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);                   \
+      if (rpn->res.mode == MD_REG &&                                           \
+          !DstRegAffectsMode(&rpn->res, &next->res)) {                         \
+        into_reg = rpn->res.reg;                                               \
+      } else                                                                   \
+        into_reg = 0;                                                          \
+      tmp.mode     = MD_REG;                                                   \
+      tmp.raw_type = rpn->raw_type;                                            \
+      tmp.reg      = into_reg;                                                 \
+      code_off     = ICMov(cctrl, &tmp, &next->res, bin, code_off);            \
+      AIWNIOS_ADD_CODE(f_sib_op, into_reg, -1, -1, RIP, 0xb00b1e5);            \
+      misc = GetF64LiteralMisc(cctrl, next2->res.flt);                         \
+      if (bin)                                                                 \
+        CodeMiscAddRef(misc, bin + code_off - 4);                              \
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
+      \     
+		 break;                                                                    \
     }                                                                          \
     code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
     code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
