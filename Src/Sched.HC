@@ -125,7 +125,7 @@ next:
   if(Bt(&task->task_flags,TASKf_KILL_TASK)) {
     SetFs(task);
     task=TaskEnd();
-    goto restore;
+    goto next;
   }
   if(task->wake_jiffy>__GetTicksHP) {
     goto next;

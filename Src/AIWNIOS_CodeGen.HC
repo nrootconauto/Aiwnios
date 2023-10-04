@@ -507,6 +507,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     break;case CMT_LABEL:
       misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_GOTO_LABEL:
+      if(!(misc->flags&CMF_DEFINED)&&misc->str) {
+	PrintErr("Undefined reference to label \"%s\".\n",misc->str);
+	LexExcept(cc,"Undefined label reference");
+      }
       misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_STR_CONST:
       misc->addr=__HC_CodeMiscStrNew(acc,misc->str,misc->st_len);
