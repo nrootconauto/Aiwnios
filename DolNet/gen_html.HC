@@ -8,6 +8,7 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
 
 U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con;
+  if(!url->abs_path) return;
   U8 *link=ChrootFile(url->abs_path,SERVER_HTML);
   U8 *f,*mime,*dot=FileExtDot(link),*et;
   I64 len;
@@ -48,6 +49,7 @@ en:
 }
 U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *tmp;
+  if(!url->abs_path) return;
   U8 *path=ChrootFile(tmp=MStrPrint("%s/*",url->abs_path));
   CDirEntry *root=FilesFind(path),*cur;
   I64 len;
@@ -71,6 +73,7 @@ U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   DirEntryDel(root);
 }
 U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
+  if(!url->abs_path) return;
   U8 *path=ChrootFile(url->abs_path),*html_name=MStrPrint("%s.html",url->abs_path),*tmp,*et;
   CConnection *con=Fs->user_data;
   CDirEntry dol_file,html_file;
@@ -121,6 +124,7 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 }
 
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
+  if(!url->abs_path) return;
   U8 *dot=FileExtDot(url->abs_path),*np;
   if(!StrCmp(url->abs_path,"/")&&FileFind("/WWW/index.DD")) {
     Free(url->abs_path);

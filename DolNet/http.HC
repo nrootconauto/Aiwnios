@@ -160,9 +160,6 @@ CURL *ParseURL(U8 *url) {
 	return NULL;
 }
 
-U0 DumpURL(CURL *url) {
-	if(!url) return;
-}
 U8 *SkipWhitespace(U8 *s) {
 	while(*s&&StrOcc(" \t\n",*s)) s++;
 	return s;
@@ -238,9 +235,9 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
 	WriteLn(s,ptr,"</html>");
 }
 U0 GenericGet(CServer *serv,I64 s,CURL *url,CHTTPRequest *req) {
+        if(!url) return;
 	CDirEntry ent;
 	I64 len=0;
-	DumpURL(url);
 	CConnection *con=Fs->user_data;
 	StrCpy(con->response_mime,"text/html");
 	if(FileFind(url->abs_path,&ent,FUF_JUST_FILES)) {
@@ -342,6 +339,7 @@ U0 ParseRequest(CConnection *con) {
   MemSet(&req,0,sizeof(CHTTPRequest));
   req.method=con->method;
   CURL *url=con->url;
+  if(!url) goto err;
   switch(con->method) {
     case HTTP_GET:
       if(con->server->get)
@@ -354,6 +352,7 @@ U0 ParseRequest(CConnection *con) {
       }
       break;
   }
+err:
   EndHttpRequest(stream);
   LBts(&con->is_dead,0);
   Exit;
@@ -448,6 +447,7 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   } else if(con->state.u8[0]==CON_S_METHOD) {
     con->method.u8[0]=HTTP_UNDEF;
   } else if(!StrNICmp(data,"Content-Length",StrLen("Content-Length"))) {
+    if(!StrOcc(data,':')) goto malformed;
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     con->fbuffer=MAlloc(Str2I64(data),con->hc);
     con->content_len=Str2I64(data);
@@ -471,7 +471,7 @@ qloop:
       HashAdd(hash,con->post_data);
       Free(t1);
     }
-    if(*data&&StrFirstOcc(data,"&")) {
+    if(*data&&StrOcc(data,"&")) {
       data=StrFirstOcc(data,"&")+1;
       goto qloop;
     }
@@ -493,6 +493,7 @@ qloop:
     }
   }
   if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"If-None-Match",StrLen("If-None-Match"))) {
+    if(!StrOcc(data,':')) goto malformed;
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
 etag_loop:
     t1=buf;
@@ -505,13 +506,13 @@ etag_loop:
       data=SkipWhitespace(data+1);
       goto etag_loop;
     }
-  } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Connection",StrLen("Connection"))) {
+  } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Connection",StrLen("Connection"))&&StrOcc(data,':')) {
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     if(StrIMatch("keep-alive",data)) {
       Bts(&con->state,CONf_KEEP_ALIVE);
     } else
       Btr(&con->state,CONf_KEEP_ALIVE);
-  } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Cookie",StrLen("Cookie"))) {
+  } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Cookie",StrLen("Cookie"))&&StrOcc(data,':')) {
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     t1=buf,t2=buf2;
     if(*data) {
@@ -573,9 +574,11 @@ cloop:;
 //We hit the boundary: safe to transmit data
       con->field_ptr=con->content_len;
       goto process;
-    } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Content-Length",StrLen("Content-Length"))) { 
+    } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Content-Length",StrLen("Content-Length"))) {
+      if(!StrOcc(data,':')) goto malformed;
       con->field_length=Str2I64(SkipWhitespace(StrFirstOcc(data,":")+1));
     } else if(!Bt(&con->state,CONf_DATA)&&!StrNICmp(data,"Content-Disposition",StrLen("Content-Disposition"))) {
+      if(!StrOcc(data,':')) goto malformed;
       data=SkipWhitespace(StrFirstOcc(data,":")+1);
       if(!StrNICmp(data,"form-data",StrLen("form-data"))) {
 loop:
