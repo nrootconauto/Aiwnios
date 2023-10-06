@@ -124,7 +124,7 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 }
 
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
-  if(!url->abs_path) return;
+  if(!url||!url->abs_path) return;
   U8 *dot=FileExtDot(url->abs_path),*np;
   if(!StrCmp(url->abs_path,"/")&&FileFind("/WWW/index.DD")) {
     Free(url->abs_path);
