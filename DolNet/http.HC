@@ -118,8 +118,8 @@ U8 *GetQueryValue(U8 *q,U8 *f) {
 	Free(name);
 	return NULL;
 }
-CURL *ParseURL(U8 *url) {
-	CURL *ret=CAlloc(sizeof(CURL));
+CURL *ParseURL(U8 *url,CTask *mem_task) {
+	CURL *ret=CAlloc(sizeof(CURL),mem_task);
 	U8 *r,*q,*p,chr;
 	I64 i,l;
 	if(!(url=StrFind("//",url)))
@@ -132,20 +132,20 @@ CURL *ParseURL(U8 *url) {
 	if(!r) r=StrLen(url)+url;
 	if(!q) q=StrLen(url)+url;
 	if(p<r||p<q) {
-		ret->hostname=MAlloc(l=p-url+1);
+		ret->hostname=MAlloc(l=p-url+1,mem_task);
 		ret->hostname[l-1]=0;
 		MemCpy(ret->hostname,url,l-1);
 		url=p+1;
 		ret->port=Str2I64(url,10,&url);
 	} else {
-		ret->hostname=MAlloc(l=MinI64(p,r)-url+1);
+		ret->hostname=MAlloc(l=MinI64(p,r)-url+1,mem_task);
 		ret->hostname[l-1]=0;
 		MemCpy(ret->hostname,url,l-1);
 		url=MinI64(p,r)+1;
 	}
 	if(!*url) goto retn;
 	if(r<q) {
-		ret->abs_path=MAlloc(l=q-r-1+1);		
+		ret->abs_path=MAlloc(l=q-r-1+1,mem_task);
 		ret->abs_path[l-1]=0;
 		MemCpy(ret->abs_path,r+1,l-1);
 	}
@@ -379,7 +379,7 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     goto found;
   }
   con=CAlloc(sizeof(CConnection));
-  con->hc=Spawn(&DoNothing);
+  con->hc=Spawn(&DoNothing,,,,Fs);
   con->buffer=MAlloc(0xB00,con->hc);
   con->buffer_ptr=con->buffer;
   con->buffer_len=0;
@@ -435,13 +435,13 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   if(con->state.u8[0]==CON_S_METHOD&&!StrNICmp(data,"GET",3)) {
     con->method.u8[0]=HTTP_GET;
     t1=MStrPrint("http://potato.com/%s",Trim(SkipWhitespace(data+3)));
-    con->url=ParseURL(t1);
+    con->url=ParseURL(t1,con->hc);
     Free(t1);
     con->state.u8[0]=CON_S_FIELDS;
   } else if(con->state.u8[0]==CON_S_METHOD&&!StrNICmp(data,"POST",4)) {
     con->method.u8[0]=HTTP_POST;
     t1=MStrPrint("http://potato.com/%s",Trim(SkipWhitespace(data+4)));
-    con->url=ParseURL(t1);
+    con->url=ParseURL(t1,con->hc);
     Free(t1);
     con->state.u8[0]=CON_S_FIELDS;
   } else if(con->state.u8[0]==CON_S_METHOD) {
@@ -647,16 +647,8 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
   if(con->task)
     Kill(con->task,TRUE); //Wait for kill
   con->task=NULL;
+//All memory will be Free'd on killing con->hc
   Free(con->session_cookie);
-  if(con->url) {
-    Free(con->url->query);
-    Free(con->url->abs_path);
-    Free(con->url->hostname);
-    Free(con->url);
-  }
-  Free(con->fbuffer);
-  if(con->post_data)
-    HashTableDel(con->post_data);
   NetClose(con->stream);
   Kill(con->hc);
   Free(con);
@@ -738,4 +730,3 @@ U0 Serve(CServer *srv) {
   Kill(srv_task);
 }
 
-
