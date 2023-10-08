@@ -379,7 +379,7 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     goto found;
   }
   con=CAlloc(sizeof(CConnection));
-  con->hc=Spawn(&DoNothing,,,,Fs);
+  con->hc=Spawn(&DoNothing);
   con->buffer=MAlloc(0xB00,con->hc);
   con->buffer_ptr=con->buffer;
   con->buffer_len=0;
@@ -653,8 +653,8 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
     Free(con->url->abs_path);
     Free(con->url->hostname);
     Free(con->url);
-    Free(con->fbuffer);
   }
+  Free(con->fbuffer);
   if(con->post_data)
     HashTableDel(con->post_data);
   NetClose(con->stream);
@@ -738,3 +738,4 @@ U0 Serve(CServer *srv) {
   Kill(srv_task);
 }
 
+
