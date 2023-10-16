@@ -202,6 +202,7 @@ CIntermediateStruct intermediate_code_table[IC_ICS_NUM]={
   {IS_0_ARG,1,IST_NULL,TRUE,FALSE,{0,0,0},"FRAME"}, //Added by nroot
   {IS_V_ARG,1,IST_NULL,TRUE,FALSE,{0,0,0},"VARGS"}, //Added by nroot
   {IS_0_ARG,1,IST_NULL,TRUE,FALSE,{0,0,0},"STATIC"}, //Added by nroot
+  {IS_1_ARG,1,IST_NULL,TRUE,FALSE,{0,0,0},"LOCK"}, //Added by nroot
 };
 
 //These come from Opcodes.DD in orthodox TempleOS

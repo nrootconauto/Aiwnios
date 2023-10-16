@@ -6826,8 +6826,9 @@ extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
 #define IC_FRAME  0xBB //Added by nroot
 #define IC_VARGS  0xBC //Added by nroot
 #define IC_STATIC  0xBD //Added by nroot
+#define IC_LOCK  0xBE //Added by nroot
 
-#define IC_ICS_NUM		0xBE
+#define IC_ICS_NUM		0xBF
 
 #define KW_INCLUDE	0
 #define KW_DEFINE	1

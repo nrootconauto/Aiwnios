@@ -826,6 +826,9 @@ static int64_t STK___HC_ICAdd_Rsh(int64_t *stk) {
 static int64_t STK___HC_ICAdd_AddEq(int64_t *stk) {
   return (int64_t)__HC_ICAdd_AddEq((CCodeCtrl *)stk[0]);
 }
+static int64_t STK___HC_ICAdd_Lock(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Lock((CCodeCtrl *)stk[0]);
+}
 static int64_t STK___HC_ICAdd_SubEq(int64_t *stk) {
   return (int64_t)__HC_ICAdd_SubEq((CCodeCtrl *)stk[0]);
 }
@@ -1299,6 +1302,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_ICAdd_GotoIf", STK___HC_ICAdd_GotoIf, 2);
     PrsAddSymbol("__HC_ICAdd_Str", STK___HC_ICAdd_Str, 2);
     PrsAddSymbol("__HC_ICAdd_And", STK___HC_ICAdd_And, 1);
+    PrsAddSymbol("__HC_ICAdd_Lock", STK___HC_ICAdd_Lock, 1);
     PrsAddSymbol("__HC_ICAdd_EqEq", STK___HC_ICAdd_EqEq, 1);
     PrsAddSymbol("__HC_ICAdd_Neg", STK___HC_ICAdd_Neg, 1);
     PrsAddSymbol("__HC_ICAdd_Ret", STK___HC_ICAdd_Ret, 1);

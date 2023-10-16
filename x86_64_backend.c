@@ -19,9 +19,14 @@ static int64_t IsSavedFReg(int64_t r) {
       return 1;
   return 0;
 }
+static int64_t IsSavedIReg(int64_t r);
 static int64_t ModeIsDerefToSIB(CRPN *m) {
+  CRPN *next = m->base.next;
   if (m->type == IC_DEREF) {
     if (m->res.mode == __MD_X86_64_SIB || m->res.mode == MD_INDIR_REG)
+      return 1;
+    // Temporary registers may get destroyed
+    if (next->res.mode == MD_REG && IsSavedIReg(next->res.reg))
       return 1;
   } else if (m->res.mode == MD_FRAME)
     return 1;
@@ -311,6 +316,43 @@ int64_t X86MovImm(char *to, int64_t a, int64_t off) {
   ADD_U64(off);
   return len;
 }
+
+static int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(1, r, s, i, b, o);
+  ADD_U8(0x1);
+  SIB_END();
+  return len;
+}
+static int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, r, s, i, b, o);
+  ADD_U8(0x1);
+  SIB_END();
+  return len;
+}
+
+static int64_t X86AddIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, r, s, i, b, o);
+  ADD_U8(0x1);
+  SIB_END();
+  return len;
+}
+
 static int64_t X86MovF64RIP(char *to, int64_t a, int64_t off) {
   int64_t len = 0;
   char    buf[16];
@@ -335,6 +377,144 @@ static int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
   ADD_U32(b);
   return len;
 }
+
+static int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(1, 0, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U32(imm);
+  return len;
+}
+static int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, 0, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U32(imm);
+  return len;
+}
+static int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, 0, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U16(imm);
+  return len;
+}
+static int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                 int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, 0, s, i, b, o);
+  ADD_U8(0x80);
+  SIB_END();
+  ADD_U8(imm);
+  return len;
+}
+//
+static int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(1, 5, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U32(imm);
+  return len;
+}
+static int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, 5, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U32(imm);
+  return len;
+}
+static int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                  int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, 5, s, i, b, o);
+  ADD_U8(0x81);
+  SIB_END();
+  ADD_U16(imm);
+  return len;
+}
+static int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                                 int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, 5, s, i, b, o);
+  ADD_U8(0x80);
+  SIB_END();
+  ADD_U8(imm);
+  return len;
+}
+//
+static int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(1, r, s, i, b, o);
+  ADD_U8(0x29);
+  SIB_END();
+  return len;
+}
+static int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, r, s, i, b, o);
+  ADD_U8(0x29);
+  SIB_END();
+  return len;
+}
+
+static int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
+                                int64_t b, int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, r, s, i, b, o);
+  ADD_U8(0x29);
+  SIB_END();
+  return len;
+}
+
+//
 
 static int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
@@ -1403,6 +1583,55 @@ int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index,
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
   ADD_U8(0x89);
+  SIB_END();
+  return len;
+}
+
+int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x87);
+  SIB_END();
+  return len;
+}
+
+int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index,
+                         int64_t base, int64_t off) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x86);
+  SIB_END();
+  return len;
+}
+
+int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x87);
+  SIB_END();
+  return len;
+}
+
+int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  SIB_BEGIN(1, reg, scale, index, base, off);
+  ADD_U8(0x87);
   SIB_END();
   return len;
 }
@@ -3028,6 +3257,7 @@ after_call:
   }
   return code_off;
 }
+
 int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
               int64_t code_off) {
   int64_t use_reg, use_reg2, restore_from_tmp = 0, indir_off = 0,
@@ -3037,6 +3267,8 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
   assert(dst->mode > 0 || dst->mode == -1);
   if (dst->mode == MD_NULL)
     return code_off;
+  if (cctrl->is_lock_expr)
+    printf("here\n");
   if ((dst->raw_type == RT_F64) == (src->raw_type == RT_F64))
     if (dst->mode == src->mode) {
       switch (dst->mode) {
@@ -3077,21 +3309,49 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 0);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP, -1, -1, RIP,
+                           0x1122);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 0);
+        }
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 0);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 0x1122);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 0);
+        }
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 0);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 0x1122);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 0);
+        }
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 0);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 0x1122);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 0);
+        }
         break;
       case RT_F64:
         AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, -1, -1, RIP, 0);
@@ -3111,25 +3371,57 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       default:
         abort();
@@ -3141,27 +3433,56 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP,
+                           dst->__SIB_scale, dst->reg2, dst->reg, dst->off);
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, dst->__SIB_scale,
+                           dst->reg2, dst->reg, dst->off);
+        }
         break;
       case RT_F64:
+        // TODO atomic
         AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, dst->__SIB_scale,
                          dst->reg2, dst->reg, dst->off);
         break;
@@ -3179,26 +3500,62 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, RIP, 1000);
-        indir_off2 = 1;
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP, -1, -1, RIP,
+                           1000);
+          indir_off2 = 0;
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, RIP, 1000);
+          indir_off2 = 1;
+        }
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, RIP, 1000);
-        indir_off2 = 2;
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+          indir_off2 = 0;
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, RIP, 1000);
+          indir_off2 = 2;
+        }
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, RIP, 1000);
-        indir_off2 = 4;
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+          indir_off2 = 0;
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, RIP, 1000);
+          indir_off2 = 4;
+        }
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
       case RT_F64:
-        indir_off2 = 4;
-        AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 1000);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+          indir_off2 = 0;
+        } else {
+          AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, RIP, 1000);
+          indir_off2 = 4;
+        }
         break;
       default:
         abort();
@@ -3219,21 +3576,45 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 1000);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP, -1, -1, RIP,
+                           1000);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirRegI8, src->reg, -1, -1, RIP, 1000);
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 1000);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirRegI16, src->reg, -1, -1, RIP, 1000);
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 1000);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirRegI32, src->reg, -1, -1, RIP, 1000);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 1000);
+        if (cctrl->is_lock_expr) {
+          AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, src->reg);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           RIP, 1000);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirRegI64, src->reg, -1, -1, RIP, 1000);
         break;
       case RT_F64:
         AIWNIOS_ADD_CODE(X86MovIndirRegF64, src->reg, -1, -1, RIP, 1000);
@@ -3269,25 +3650,53 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           use_reg2, indir_off);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirI8Imm, src->integer, -1, -1, use_reg2,
+                           indir_off);
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           use_reg2, indir_off);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirI16Imm, src->integer, -1, -1, use_reg2,
+                           indir_off);
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           use_reg2, indir_off);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirI32Imm, src->integer, -1, -1, use_reg2,
+                           indir_off);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        if (cctrl->is_lock_expr) {
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, src->integer,
+                                 bin, code_off);
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                           use_reg2, indir_off);
+        } else
+          AIWNIOS_ADD_CODE(X86MovIndirI64Imm, src->integer, -1, -1, use_reg2,
+                           indir_off);
         break;
       default:
         abort();
@@ -3378,21 +3787,50 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       break;
     case RT_U8i:
     case RT_I8i:
-      AIWNIOS_ADD_CODE(X86MovIndirRegI8, use_reg, -1, -1, use_reg2, indir_off);
+      if (cctrl->is_lock_expr) {
+        AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, use_reg);
+        AIWNIOS_ADD_CODE(X86Lock, 0);
+        AIWNIOS_ADD_CODE(X86XChgIndirReg8, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                         use_reg2, indir_off);
+      } else
+        AIWNIOS_ADD_CODE(X86MovIndirRegI8, use_reg, -1, -1, use_reg2,
+                         indir_off);
       break;
     case RT_U16i:
     case RT_I16i:
-      AIWNIOS_ADD_CODE(X86MovIndirRegI16, use_reg, -1, -1, use_reg2, indir_off);
+      if (cctrl->is_lock_expr) {
+        AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, use_reg);
+        AIWNIOS_ADD_CODE(X86Lock, 0);
+        AIWNIOS_ADD_CODE(X86XChgIndirReg16, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                         use_reg2, indir_off);
+      } else
+
+        AIWNIOS_ADD_CODE(X86MovIndirRegI16, use_reg, -1, -1, use_reg2,
+                         indir_off);
       break;
     case RT_U32i:
     case RT_I32i:
-      AIWNIOS_ADD_CODE(X86MovIndirRegI32, use_reg, -1, -1, use_reg2, indir_off);
+      if (cctrl->is_lock_expr) {
+        AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, use_reg);
+        AIWNIOS_ADD_CODE(X86Lock, 0);
+        AIWNIOS_ADD_CODE(X86XChgIndirReg32, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                         use_reg2, indir_off);
+      } else
+        AIWNIOS_ADD_CODE(X86MovIndirRegI32, use_reg, -1, -1, use_reg2,
+                         indir_off);
       break;
     case RT_U64i:
     case RT_I64i:
     case RT_FUNC: // func ptr
     case RT_PTR:
-      AIWNIOS_ADD_CODE(X86MovIndirRegI64, use_reg, -1, -1, use_reg2, indir_off);
+      if (cctrl->is_lock_expr) {
+        AIWNIOS_ADD_CODE(X86MovRegReg, AIWNIOS_TMP_IREG_POOP, use_reg);
+        AIWNIOS_ADD_CODE(X86Lock, 0);
+        AIWNIOS_ADD_CODE(X86XChgIndirReg64, AIWNIOS_TMP_IREG_POOP, -1, -1,
+                         use_reg2, indir_off);
+      } else
+        AIWNIOS_ADD_CODE(X86MovIndirRegI64, use_reg, -1, -1, use_reg2,
+                         indir_off);
       break;
     default:
       abort();
@@ -3849,7 +4287,7 @@ static int64_t __SexyPreOp(
 
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off) {
-  CRPN  *next = ICArgN(rpn, 1), *next2 = ICArgN(rpn, 0);
+  CRPN  *next = ICArgN(rpn, 1), *next2 = ICArgN(rpn, 0), *next_next;
   CICArg old = rpn->res, dummy, old2 = {0};
 enter:;
   int64_t old_type = rpn->type, od = cctrl->backend_user_data2,
@@ -3866,6 +4304,73 @@ enter:;
   switch (rpn->type) {
     break;
   case IC_ADD_EQ:
+    // Account for atomic/immediates
+    if (ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
+      dummy    = next->res;
+      code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
+      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+        if (cctrl->is_lock_expr)
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+        switch (rpn->res.raw_type) {
+        case RT_I8i:
+        case RT_U8i:
+          AIWNIOS_ADD_CODE(X86AddIndir8Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I16i:
+        case RT_U16i:
+          AIWNIOS_ADD_CODE(X86AddIndir16Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I32i:
+        case RT_U32i:
+          AIWNIOS_ADD_CODE(X86AddIndir32Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        default:
+          AIWNIOS_ADD_CODE(X86AddIndir64Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        }
+      } else if (1) {
+        code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+        code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                   AIWNIOS_TMP_IREG_POOP2, bin, code_off);
+        switch (rpn->res.raw_type) {
+        case RT_I8i:
+        case RT_U8i:
+          break;
+        case RT_I16i:
+        case RT_U16i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86AddIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I32i:
+        case RT_U32i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86AddIndir32Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        default:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86AddIndir64Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        }
+      }
+    }
 // PushTmp will set next->res
 #define XXX_EQ_OP(op)                                                          \
   rpn->type = op;                                                              \
@@ -3950,6 +4455,68 @@ enter:;
     XXX_EQ_OP(IC_ADD);
     break;
   case IC_SUB_EQ:
+    // Account for atomic/immediates
+    if (0 && ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
+      dummy    = next->res;
+      code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
+      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+        if (cctrl->is_lock_expr)
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+        switch (rpn->res.raw_type) {
+        case RT_I8i:
+        case RT_U8i:
+          AIWNIOS_ADD_CODE(X86SubIndir8Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I16i:
+        case RT_U16i:
+          AIWNIOS_ADD_CODE(X86SubIndir16Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I32i:
+        case RT_U32i:
+          AIWNIOS_ADD_CODE(X86SubIndir32Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        default:
+          AIWNIOS_ADD_CODE(X86SubIndir64Imm32, ConstVal(next2),
+                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        }
+      } else {
+        switch (rpn->res.raw_type) {
+        case RT_I16i:
+        case RT_U16i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I32i:
+        case RT_U32i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        default:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+          AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+                           dummy.reg2, dummy.reg, dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        }
+      }
+    }
+
     XXX_EQ_OP(IC_SUB);
     break;
   case IC_MUL_EQ:
@@ -3976,6 +4543,7 @@ enter:;
   case IC_MOD_EQ:
     XXX_EQ_OP(IC_MOD);
   }
+fin:
   if (set_flags)
     rpn->res.set_flags = 1;
   return code_off;
@@ -4530,6 +5098,8 @@ static int64_t __SexyPostOp(
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
+      if (cctrl->is_lock_expr)
+        AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(incr_sib, derefed.__SIB_scale, derefed.reg2, derefed.reg,
                        derefed.off);
     } else {
@@ -4565,6 +5135,8 @@ static int64_t __SexyPostOp(
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
+      if (cctrl->is_lock_expr)
+        AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(incr_sib, derefed.__SIB_scale, derefed.reg2, derefed.reg,
                        derefed.off);
     } else {
@@ -4622,7 +5194,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   CRPN      *next, *next2, **range, **range_args, *next3, *a, *b;
   CICArg     tmp = {0}, orig_dst = {0}, tmp2 = {0}, derefed = {0};
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse,
-          is_typecast;
+          is_typecast, use_lock_prefix  = 0;
   int64_t   *range_cmp_types, use_flags = rpn->res.set_flags;
   CCodeMisc *old_fail_misc  = (CCodeMisc *)cctrl->backend_user_data5,
             *old_pass_misc  = (CCodeMisc *)cctrl->backend_user_data6;
@@ -4648,6 +5220,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   }
   static const void *poop_ants[IC_CNT] = {
+      [IC_LOCK]              = &&ic_lock,
       [IC_GOTO]              = &&ic_goto,
       [IC_GOTO_IF]           = &&ic_goto_if,
       [IC_TO_I64]            = &&ic_to_i64,
@@ -4747,6 +5320,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     goto ret;
   goto *poop_ants[rpn->type];
   do {
+  ic_lock:
+    cctrl->is_lock_expr = 1;
+    code_off            = __OptPassFinal(cctrl, rpn->base.next, bin, code_off);
+    cctrl->is_lock_expr = 0;
+    break;
   ic_short_addr:
     if (rpn->res.mode == MD_REG)
       into_reg = rpn->res.reg;
@@ -5143,8 +5721,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 
     if (cctrl->flags & CCF_STRINGS_ON_HEAP) {
       //
-      // README: We will "NULL"ify the rpn->code_misc->str later so we dont free
-      // it
+      // README: We will "NULL"ify the rpn->code_misc->str later so we dont
+      // free it
       //
       code_off = __ICMoveI64(cctrl, into_reg, (int64_t)rpn->code_misc->str, bin,
                              code_off);
@@ -6219,7 +6797,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (rpn->raw_type != RT_F64)
           rpn->res.set_flags = 1;
-        BACKEND_BINOP_IMM(X86ShlImm, X86AddReg); // X86AddReg wont be used here
+        BACKEND_BINOP_IMM(X86ShlImm,
+                          X86AddReg); // X86AddReg wont be used here
         break;
       }
       tmp.raw_type = RT_I64i;
@@ -6248,7 +6827,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (rpn->raw_type != RT_F64)
           rpn->res.set_flags = 1;
-        BACKEND_BINOP_IMM(X86ShlImm, X86AddReg); // X86AddReg wont be used here
+        BACKEND_BINOP_IMM(X86ShlImm,
+                          X86AddReg); // X86AddReg wont be used here
       }
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
       code_off = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -6297,7 +6877,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (rpn->raw_type != RT_F64)
           rpn->res.set_flags = 1;
-        BACKEND_BINOP_IMM(X86ShrImm, X86AddReg); // X86AddReg wont be used here
+        BACKEND_BINOP_IMM(X86ShrImm,
+                          X86AddReg); // X86AddReg wont be used here
       }
       next2        = ICArgN(rpn, 0);
       next         = ICArgN(rpn, 1);
@@ -6327,7 +6908,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (rpn->raw_type != RT_F64)
           rpn->res.set_flags = 1;
-        BACKEND_BINOP_IMM(X86SarImm, X86AddReg); // X86AddReg wont be used here
+        BACKEND_BINOP_IMM(X86SarImm,
+                          X86AddReg); // X86AddReg wont be used here
       }
       tmp.raw_type = RT_I64i;
       tmp.reg      = RCX;

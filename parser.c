@@ -204,6 +204,7 @@ CRPN *ICFwd(CRPN *rpn) {
     return rpn->ic_fwd;
   switch (rpn->type) {
     break;
+  case IC_LOCK:
   case IC_RAW_BYTES:
   case __IC_STATICS_SIZE:
   case __IC_SET_STATIC_DATA:
@@ -556,6 +557,10 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("  ");
   INDENT;
   switch (rpn->type) {
+   case IC_LOCK:
+    printf("IC_LOCK:\n");
+    ParserDumpIR(rpn->base.next,indent+1);
+    goto ret;
   case IC_RAW_BYTES:
     printf("RAW_BYTES:%ld\n", rpn->length);
     goto ret;
@@ -2789,6 +2794,10 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
   if (rpn->raw_type)
     return rpn->raw_type;
   switch (rpn->type) {
+	break;
+  case IC_LOCK: //Lock means "lock *ptr++;",it operates on expressions as a whole 
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
+    return rpn->raw_type = RT_U0; //dummy
     break;
   case IC_BT:
   case IC_BTR:
@@ -3918,6 +3927,7 @@ void PrsTests() {
     QueIns(rpn, cc->ir_code);                                                  \
     return rpn;                                                                \
   }
+HC_IC_BINDING(HC_ICAdd_Lock, IC_LOCK);
 HC_IC_BINDING(HC_ICAdd_Pow, IC_POW);
 HC_IC_BINDING(HC_ICAdd_Eq, IC_EQ);
 HC_IC_BINDING(HC_ICAdd_Div, IC_DIV);
@@ -4423,6 +4433,7 @@ void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl) {
        rpn = rpn->base.next) {
     rpn->ic_fwd = ICFwd(rpn);
     switch (rpn->type) {
+    case IC_LOCK:
     case IC_GOTO:
     unop:
       rpn->tree1 = rpn->base.next;

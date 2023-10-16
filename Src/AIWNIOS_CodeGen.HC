@@ -25,6 +25,7 @@ import U8 * __HC_ICAdd_PreDec(U8*,I64);
 import U8 * __HC_ICAdd_PostDec(U8*,I64);
 import U8 * __HC_ICAdd_PostInc(U8*,I64);
 import U8 * __HC_ICAdd_Pow(U8 *);
+import U8 * __HC_ICAdd_Lock(U8 *);
 import U8 * __HC_ICAdd_Eq(U8*);
 import U8 * __HC_ICAdd_Div(U8*);
 import U8 * __HC_ICAdd_Sub(U8*);
@@ -584,6 +585,8 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   //
   for(cur=head->last;cur!=head;cur=cur->last) {
     switch(cur->type) {
+    break;case IC_LOCK:
+    new=__HC_ICAdd_Lock(cc2);    
     break;case IC_FRAME:
     if(cur->last(CRPN*)->type==IC_ADDR) {
       //Our HolyC part accounts for the pointers for us

@@ -363,7 +363,7 @@ typedef struct CCodeCtrl {
   int64_t           min_ln;
   char            **dbg_info;
   int64_t           statics_offset;
-  CHeapCtrl        *hc;
+  CHeapCtrl        *hc
 } CCodeCtrl;
 typedef struct CCodeMiscRef {
   struct CCodeMiscRef *next;
@@ -437,6 +437,10 @@ typedef struct CCmpCtrl {
   // In SysV,the fregs are not saved,so i will make a mini function to save them
   CCodeMisc *fregs_save_label, *fregs_restore_label;
   CHeapCtrl *hc;
+  int64_t is_lock_expr; //lock EXPRESSION;
+  //private for AARCH64 for use with IC_LOCK
+  //I will use the ldxsr/stxr instructions in a loop
+  int64_t aarch64_atomic_loop_start;
 } CCmpCtrl;
 #define PRSF_CLASS    1
 #define PRSF_UNION    2
@@ -560,6 +564,7 @@ enum {
   IC_ATAN,
   IC_RAW_BYTES,
   IC_GET_VARGS_PTR, // Doing this sets the function as a VARGS function
+  IC_LOCK, //Lock means "lock EXPRESSION;",it operates on expressions as a whole
   IC_CNT,           // MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -1208,3 +1213,11 @@ extern int64_t         NetUDPSocketNew();
 extern struct CInAddr *NetUDPAddrNew(char *host, int64_t port);
 
 extern void Misc_ForceYield();
+int64_t ARM_ldaxrb(int64_t,int64_t);
+int64_t ARM_ldaxrh(int64_t,int64_t);
+int64_t ARM_ldaxr(int64_t,int64_t);
+int64_t ARM_ldaxrX(int64_t,int64_t);
+int64_t ARM_stlxrb(int64_t,int64_t,int64_t);
+int64_t ARM_stlxrh(int64_t,int64_t,int64_t);
+int64_t ARM_stlxr(int64_t,int64_t,int64_t);
+int64_t ARM_stlxrX(int64_t,int64_t,int64_t);

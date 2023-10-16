@@ -1188,3 +1188,39 @@ int64_t ARM_ldrshRegRegShiftX(int64_t r, int64_t a, int64_t b) {
 int64_t ARM_ldrswRegRegShiftX(int64_t r, int64_t a, int64_t b) {
   return LdStRegReg(2, 2, r, a, b, 1);
 }
+
+static int64_t LdExclusive(int64_t sz,int64_t o0,int64_t d,int64_t s) {
+  return (sz<<30)|(0x8<<24)|(1<<22)|(0x1f<<16)|(0x1f<<10)|(s<<5)|d;
+}
+
+int64_t ARM_ldaxrb(int64_t d,int64_t s) {
+	return LdExclusive(0,1,d,s);
+}
+
+int64_t ARM_ldaxrh(int64_t d,int64_t s) {
+	return LdExclusive(1,1,d,s);
+}
+int64_t ARM_ldaxr(int64_t d,int64_t s) {
+	return LdExclusive(2,1,d,s);
+}
+int64_t ARM_ldaxrX(int64_t d,int64_t s) {
+	return LdExclusive(3,1,d,s);
+}
+
+static int64_t StExclusive(int64_t sz,int64_t o0,int64_t pass,int64_t d,int64_t s) {
+	return (sz<<30)|(0x8<<24)|(pass<<16)|(0x1f<<10)|(s<<5)|d|(o0<<15);
+}
+
+int64_t ARM_stlxrb(int64_t p,int64_t d,int64_t s) {
+	return StExclusive(0,1,p,d,s);
+}
+
+int64_t ARM_stlxrh(int64_t p,int64_t d,int64_t s) {
+	return StExclusive(1,1,p,d,s);
+}
+int64_t ARM_stlxr(int64_t p,int64_t d,int64_t s) {
+	return StExclusive(2,1,p,d,s);
+}
+int64_t ARM_stlxrX(int64_t p,int64_t d,int64_t s) {
+	return StExclusive(3,1,p,d,s);
+}
