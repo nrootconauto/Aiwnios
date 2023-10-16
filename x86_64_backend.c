@@ -4,6 +4,7 @@
 // backend_user_data5 is the "fail" codemisc for IC_LT/GT etc
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
 // backend_user_data7 is the number of Fregs
+// backend_user_data8 is set if we were called from __SexyAssignOp
 //
 // I called CrunkLord420's stuff Voluptous - April 30,2023
 // I found a duck statue while voluentering - May 3,2023
@@ -13,6 +14,8 @@
 // I am putting in the pooping computed goto's May 27,2023
 //
 static int64_t IsCompoundCompare(CRPN *r);
+static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
+                              int64_t code_off);
 static int64_t IsSavedFReg(int64_t r) {
   if (r >= AIWNIOS_FREG_START)
     if (r - AIWNIOS_FREG_START < AIWNIOS_FREG_CNT)
@@ -73,14 +76,14 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
 }
 #define ADD_U8(v) to[len++] = (v);
 #define ADD_U16(v)                                                             \
-  *(int16_t *)(to + len) = (v);                                                \
-  len += 2;
+  {*(int16_t *)(to + len) = (v);                                                \
+  len += 2;}
 #define ADD_U32(v)                                                             \
-  *(int32_t *)(to + len) = (v);                                                \
-  len += 4;
+  {*(int32_t *)(to + len) = (v);                                                \
+  len += 4;}
 #define ADD_U64(v)                                                             \
-  *(int64_t *)(to + len) = (v);                                                \
-  len += 8;
+  {*(int64_t *)(to + len) = (v);                                                \
+  len += 8;}
 
 #define SIB_BEGIN(_64, r, s, i, b, o)                                          \
   do {                                                                         \
@@ -3257,7 +3260,42 @@ after_call:
   }
   return code_off;
 }
-
+int64_t ModeEqual(CICArg *dst,CICArg *src) {
+	if (dst->raw_type==src->raw_type) {
+    if (dst->mode == src->mode) {
+      switch (dst->mode) {
+        break;
+      case __MD_X86_64_SIB:
+        if (dst->off == src->off && dst->__SIB_scale == src->__SIB_scale &&
+            dst->reg == src->reg && dst->reg2 == src->reg2) {
+          return 1;
+        }
+        break;
+      case MD_STATIC:
+        if (dst->off == src->off)
+          return 1;
+        break;
+      case MD_PTR:
+        if (dst->off == src->off)
+          return 1;
+        break;
+      case MD_REG:
+        if (dst->reg == src->reg)
+          return 1;
+        break;
+      case MD_FRAME:
+        if (dst->off == src->off)
+          return 1;
+        break;
+      case MD_INDIR_REG:
+        if (dst->off == src->off && dst->reg == src->reg)
+          return 1;
+      }
+    }
+    } else if((dst->raw_type==RT_F64)==(src->raw_type==RT_F64))
+		return dst->mode==MD_REG&&src->mode==MD_REG&&dst->reg==src->reg; //All Registers are promoted to 64bit 
+    return 0;
+}
 int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
               int64_t code_off) {
   int64_t use_reg, use_reg2, restore_from_tmp = 0, indir_off = 0,
@@ -3267,39 +3305,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
   assert(dst->mode > 0 || dst->mode == -1);
   if (dst->mode == MD_NULL)
     return code_off;
-  if (cctrl->is_lock_expr)
-    printf("here\n");
-  if ((dst->raw_type == RT_F64) == (src->raw_type == RT_F64))
-    if (dst->mode == src->mode) {
-      switch (dst->mode) {
-        break;
-      case __MD_X86_64_SIB:
-        if (dst->off == src->off && dst->__SIB_scale == src->__SIB_scale &&
-            dst->reg == src->reg && dst->reg2 == src->reg2) {
-          return code_off;
-        }
-        break;
-      case MD_STATIC:
-        if (dst->off == src->off)
-          return code_off;
-        break;
-      case MD_PTR:
-        if (dst->off == src->off)
-          return code_off;
-        break;
-      case MD_REG:
-        if (dst->reg == src->reg)
-          return code_off;
-        break;
-      case MD_FRAME:
-        if (dst->off == src->off)
-          return code_off;
-        break;
-      case MD_INDIR_REG:
-        if (dst->off == src->off && dst->reg == src->reg)
-          return code_off;
-      }
-    }
+  if(ModeEqual(dst,src)) return code_off;
   switch (dst->mode) {
     break;
   case MD_CODE_MISC_PTR:
@@ -4285,11 +4291,47 @@ static int64_t __SexyPreOp(
   return code_off;
 }
 
+static int64_t X86AndIndirXImm(char *to,int64_t sz,int64_t imm,int64_t s,int64_t i,int64_t b,int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  if(sz==2)
+    ADD_U8(0x66);
+  SIB_BEGIN(sz==8, 4, s, i, b, o);
+  if(sz==1)
+  ADD_U8(0x80)
+  else
+  ADD_U8(0x81)
+  SIB_END();
+  switch(sz) {
+	  break;case 1: ADD_U8(imm);
+	  break;case 2: ADD_U16(imm);
+	  break;case 4: ADD_U32(imm);
+	  break;case 8: ADD_U32(imm);
+   }
+  return len;
+}
+
+static int64_t X86AndIndirXReg(char *to,int64_t sz,int64_t r,int64_t s,int64_t i,int64_t b,int64_t o) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  if(sz==2)
+    ADD_U8(0x66);
+  SIB_BEGIN(sz==8, r, s, i, b, o);
+  ADD_U8(0x21);
+  SIB_END();
+  return len;
+}
+
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off) {
   CRPN  *next = ICArgN(rpn, 1), *next2 = ICArgN(rpn, 0), *next_next;
   CICArg old = rpn->res, dummy, old2 = {0};
 enter:;
+  cctrl->backend_user_data8=1;
   int64_t old_type = rpn->type, od = cctrl->backend_user_data2,
           next_old = next->type, decr = 0, old_next2 = next2->type, pop = 0,
           use_tc = 0, use_raw_type = rpn->raw_type, use_f64 = 0,
@@ -4303,13 +4345,14 @@ enter:;
   }
   switch (rpn->type) {
     break;
+  case IC_ADD: //Will do assign on NORMAL tooo
   case IC_ADD_EQ:
     // Account for atomic/immediates
     if (ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
       dummy    = next->res;
+      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
       code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
                               code_off);
-      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (cctrl->is_lock_expr)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
@@ -4337,10 +4380,12 @@ enter:;
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
-      } else if (1) {
+      } else if(rpn->res.raw_type!=RT_I8i&&rpn->res.raw_type!=RT_U8i) {
         code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+        code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
         code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
-                                   AIWNIOS_TMP_IREG_POOP2, bin, code_off);
+                                   AIWNIOS_TMP_IREG_POOP, bin, code_off);
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
@@ -4454,13 +4499,14 @@ enter:;
   next2->type = old_next2;
     XXX_EQ_OP(IC_ADD);
     break;
+  case IC_SUB: 
   case IC_SUB_EQ:
     // Account for atomic/immediates
-    if (0 && ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
+    if (ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
       dummy    = next->res;
+      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
       code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
                               code_off);
-      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         if (cctrl->is_lock_expr)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
@@ -4488,7 +4534,13 @@ enter:;
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
-      } else {
+      } else if(rpn->res.raw_type!=RT_I8i&&rpn->res.raw_type!=RT_U8i) {
+code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+        code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
+        code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                   AIWNIOS_TMP_IREG_POOP, bin, code_off);
+        
         switch (rpn->res.raw_type) {
         case RT_I16i:
         case RT_U16i:
@@ -4502,14 +4554,14 @@ enter:;
         case RT_U32i:
           if (cctrl->is_lock_expr)
             AIWNIOS_ADD_CODE(X86Lock, 0);
-          AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+          AIWNIOS_ADD_CODE(X86SubIndir32Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (cctrl->is_lock_expr)
             AIWNIOS_ADD_CODE(X86Lock, 0);
-          AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
+          AIWNIOS_ADD_CODE(X86SubIndir64Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
@@ -4519,33 +4571,98 @@ enter:;
 
     XXX_EQ_OP(IC_SUB);
     break;
+  case IC_MUL: 
   case IC_MUL_EQ:
     XXX_EQ_OP(IC_MUL);
     break;
+  case IC_DIV: 
   case IC_DIV_EQ:
     XXX_EQ_OP(IC_DIV);
     break;
+  case IC_LSH: 
   case IC_LSH_EQ:
     XXX_EQ_OP(IC_LSH);
     break;
+  case IC_RSH: 
   case IC_RSH_EQ:
     XXX_EQ_OP(IC_RSH);
     break;
+  case IC_AND: 
   case IC_AND_EQ:
+  // Account for atomic/immediates
+    if (ModeIsDerefToSIB(next) && rpn->res.raw_type != RT_F64) {
+      dummy    = next->res;
+      if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
+      code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
+        if (cctrl->is_lock_expr)
+          AIWNIOS_ADD_CODE(X86Lock, 0);
+        switch (rpn->res.raw_type) {
+        case RT_I8i:
+        case RT_U8i:
+          AIWNIOS_ADD_CODE(X86AndIndirXImm,1,ConstVal(next2),dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+		break;
+        case RT_I16i:
+        case RT_U16i:
+          AIWNIOS_ADD_CODE(X86AndIndirXImm,2,ConstVal(next2),dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+		break;
+        case RT_I32i:
+        case RT_U32i:
+        AIWNIOS_ADD_CODE(X86AndIndirXImm,4,ConstVal(next2),dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+        break;
+        default:
+        AIWNIOS_ADD_CODE(X86AndIndirXImm,8,ConstVal(next2),dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+        }
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+      } else if(rpn->res.raw_type!=RT_I8i&&rpn->res.raw_type!=RT_U8i) {
+code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+        code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2, bin,
+                              code_off);
+        code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                   AIWNIOS_TMP_IREG_POOP, bin, code_off);
+        switch (rpn->res.raw_type) {
+        case RT_I16i:
+        case RT_U16i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+            AIWNIOS_ADD_CODE(X86AndIndirXReg,2,next2->res.reg,dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        case RT_I32i:
+        case RT_U32i:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+            AIWNIOS_ADD_CODE(X86AndIndirXReg,4,next2->res.reg,dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        default:
+          if (cctrl->is_lock_expr)
+            AIWNIOS_ADD_CODE(X86Lock, 0);
+                        AIWNIOS_ADD_CODE(X86AndIndirXReg,8,next2->res.reg,dummy.__SIB_scale,dummy.reg2,dummy.reg,dummy.off);
+          code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
+          goto fin;
+        }
+      }
+    }
     XXX_EQ_OP(IC_AND);
     break;
+  case IC_OR: 
   case IC_OR_EQ:
     XXX_EQ_OP(IC_OR);
     break;
+  case IC_XOR: 
   case IC_XOR_EQ:
     XXX_EQ_OP(IC_XOR);
     break;
+  case IC_MOD: 
   case IC_MOD_EQ:
     XXX_EQ_OP(IC_MOD);
   }
 fin:
   if (set_flags)
     rpn->res.set_flags = 1;
+  cctrl->backend_user_data8=0;
   return code_off;
 }
 
@@ -5847,6 +5964,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next     = ICArgN(rpn, 1);                                                 \
     next2    = ICArgN(rpn, 0);                                                 \
     orig_dst = next->res;                                                      \
+    if(rpn->res.mode==MD_FRAME&&next->type!=IC_DEREF) /* IC_DEREF + __SexyAssignOp == mutable (possible usefull) balue*/ \ 
+    if(ModeEqual(&rpn->res,&next->res)&&!cctrl->backend_user_data8)  { \
+		code_off=__SexyAssignOp(cctrl,rpn,bin,code_off); \
+		break; \
+	}\
     if (ModeIsDerefToSIB(next2) &&                                             \
         ((next2->raw_type == RT_F64) == (rpn->raw_type == RT_F64))) {          \
       if (!(next->raw_type != RT_F64 && next->res.mode != MD_REG) &&           \
@@ -5935,6 +6057,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define BACKEND_BINOP_IMM(i_imm_op, i_op)                                      \
   next  = ICArgN(rpn, 1);                                                      \
   next2 = ICArgN(rpn, 0);                                                      \
+  if(rpn->res.mode==MD_FRAME&&IsConst(next2)&&Is32Bit(ConstVal(next2))&&rpn->raw_type!=RT_F64) \
+    if(ModeEqual(&rpn->res,&next->res)&&!cctrl->backend_user_data8&&next->type!=IC_DEREF)  {/* IC_DEREF + __SexyAssignOp == mutate possibly useful value*/ \
+		code_off=__SexyAssignOp(cctrl,rpn,bin,code_off); \
+		break; \
+	}\
   if (rpn->raw_type != RT_F64 && IsConst(next2) && Is32Bit(ConstVal(next2)) && \
       next2->type != IC_F64 && next2->integer >= 0) {                          \
     code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
