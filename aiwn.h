@@ -598,6 +598,7 @@ typedef struct CICArg {
   char set_flags;
   // keep the value in a temp location,good for removing reundant stores
   char keep_in_tmp;
+  char keep_in_reg0; //RAX on X86_64
   union {
     CCodeMisc *code_misc;
     int64_t    integer;
@@ -605,7 +606,10 @@ typedef struct CICArg {
     double     flt;
   };
   int8_t __SIB_scale, pop_n_tmp_regs;
+  char is_tmp;
   CRPN  *__sib_base_rpn, *__sib_idx_rpn;
+  int32_t move_code_off,move_end_code_off;
+  struct CICArg *parent_move; //allocated on heap
 } CICArg;
 enum {
   ICF_SPILLED     = 1, // See PushSpilledTmp in XXX_backend.c
@@ -1027,6 +1031,7 @@ HC_IC_BINDINGH(HC_ICAdd_SubEq)
 HC_IC_BINDINGH(HC_ICAdd_MulEq)
 HC_IC_BINDINGH(HC_ICAdd_DivEq)
 HC_IC_BINDINGH(HC_ICAdd_LshEq)
+HC_IC_BINDINGH(HC_ICAdd_Lock)
 HC_IC_BINDINGH(HC_ICAdd_RshEq)
 HC_IC_BINDINGH(HC_ICAdd_AndEq)
 HC_IC_BINDINGH(HC_ICAdd_OrEq)

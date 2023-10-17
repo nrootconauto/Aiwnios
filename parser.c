@@ -3395,6 +3395,8 @@ CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t _flags) {
 }
 
 void ICFree(CRPN *ic) {
+  if(ic->res.parent_move)
+	A_FREE(ic->res.parent_move);
   QueRem(ic);
   A_FREE(ic);
 }

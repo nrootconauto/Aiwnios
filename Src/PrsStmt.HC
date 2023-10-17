@@ -1060,9 +1060,8 @@ fsp_flags=FSF_ASM;
 		    Lex(cc);
 		    case KW_LOCK:
 		      cc->lock_cnt++;
-		      RPNAddNew(cc,IC_LOCK,,cmp.internal_types[RT_I64]);
-		      if(!PrsStmt(cc,try_cnt))
-				RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64]);
+		      if(PrsExpression(cc,NULL,FALSE))
+		        RPNAddNew(cc,IC_LOCK,,cmp.internal_types[RT_I64],FALSE);
 		      cc->lock_cnt--;
 		      break;
 		    case KW_TRY:
