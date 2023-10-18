@@ -1535,7 +1535,6 @@ char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
   OptPassRemoveUselessArith(cctrl);
   OptPassRemoveUselessTypecasts(cctrl);
   OptPassMergeAddressOffsets(cctrl);
-  CmpCtrlCacheArgTrees(cctrl);
   cctrl->flags = old_flags;
   return OptPassFinal(cctrl, res_sz, dbg_info);
 }

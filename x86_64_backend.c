@@ -2650,7 +2650,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   int64_t a, argc, old_icnt = cctrl->backend_user_data2,
                    old_fcnt = cctrl->backend_user_data3, i, i2, tmp,
                    old_scnt = cctrl->backend_user_data1;
-  CRPN *arg, *arg2, *d, *b, *idx, *orig, **array;
+  CRPN *arg, *arg2, *d, *b, *idx, *orig, **array,*new;
   switch (r->type) {
     break;
   case IC_SHORT_ADDR:
@@ -2776,10 +2776,20 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else {
         i2 = 1;
         if (idx = __AddScale(arg, &i2)) {
-          if (idx->type == IC_IREG) {
             b = idx;
             PushTmpDepthFirst(cctrl, b, 0);
             PopTmp(cctrl, b);
+            //Make a dummy node to store in a tmp register
+            if(b->res.mode!=MD_REG||b->res.mode==RT_F64) {
+				new=A_CALLOC(sizeof(CRPN),cctrl->hc);
+				new->type=IC_POS;
+				new->raw_type=RT_I64i;
+				new->ic_line=b->ic_line;
+				QueIns(new,b->base.last);
+				new->res.mode=MD_REG;
+				new->res.reg=TmpRegToReg(cctrl->backend_user_data2);
+				new->res.raw_type=RT_I64i;
+			}
             orig->flags |= ICF_INDIR_REG;
             orig->res.mode           = __MD_X86_64_LEA_SIB;
             orig->res.__SIB_scale    = i2;
@@ -2791,18 +2801,29 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
             orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
             orig->res.pop_n_tmp_regs = 1;
             return 1;
-          }
         }
         goto binop;
       }
-      if (arg->type == IC_ADD && Is32Bit(i) && b->type == IC_IREG &&
-          idx->type == IC_IREG) {
+      if (arg->type == IC_ADD && Is32Bit(i) && b->type == IC_IREG&&!SpillsTmpRegs(idx)) {
         if (!Is32Bit(i))
           goto binop;
         PushTmpDepthFirst(cctrl, b, 0);
         PushTmpDepthFirst(cctrl, idx, 0);
         PopTmp(cctrl, idx);
         PopTmp(cctrl, b);
+        //Force index into tmp register
+        //Make a dummy node to store in a tmp register
+            if(idx->res.mode!=MD_REG||idx->res.mode==RT_F64) {
+				new=A_CALLOC(sizeof(CRPN),cctrl->hc);
+				new->type=IC_POS;
+				new->raw_type=RT_I64i;
+				new->ic_line=idx->ic_line;
+				QueIns(new,idx->base.last);
+				new->res.mode=MD_REG;
+				new->res.reg=TmpRegToReg(cctrl->backend_user_data2);
+				new->res.raw_type=RT_I64i;
+				idx=new;
+			}
         orig->res.mode           = __MD_X86_64_LEA_SIB;
         orig->res.off            = i;
         orig->res.__SIB_scale    = i2;
@@ -2858,7 +2879,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     // secret suace
     //
     orig->res.pop_n_tmp_regs = 0;
-    if (r->raw_type != RT_FUNC) {
+    if (!spilled&&r->raw_type != RT_FUNC&&AIWNIOS_TMP_IREG_CNT-cctrl->backend_user_data2>=1) {
       orig = r;
       d    = orig->base.next;
       i = i2 = 0;
@@ -2874,8 +2895,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         else {
           b = ICArgN(d, 0), idx = ICArgN(d, 1), i2 = 1;
         }
-        if ((b->type == IC_IREG && idx->type == IC_IREG) &&
-            !SpillsTmpRegs(idx)) {
+        if ((b->type == IC_IREG && !SpillsTmpRegs(idx))) {
           while (__AddOffset(idx, &tmp) && i2 == 1) {
             idx = __AddOffset(idx, &tmp);
             i += tmp;
@@ -2886,49 +2906,41 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
           }
           if (Is32Bit(i)) {
             PushTmpDepthFirst(cctrl, b, 0);
-            if (b->type == IC_IREG) {
-              // No need to store in a tmp register
-            } else {
-              cctrl->backend_user_data2++;
-            }
             PushTmpDepthFirst(cctrl, idx, 0);
-            if (idx->type == IC_IREG) {
-              // No need to store in a tmp register
-            } else {
-              cctrl->backend_user_data2++;
-            }
             PopTmp(cctrl, idx);
             PopTmp(cctrl, b);
-            if (b->type != IC_IREG) {
-              // Store in a tmp reg
-              b->stuff_in_reg = TmpRegToReg(old_icnt);
-              b->flags |= ICF_STUFF_IN_REG;
-              orig->res.pop_n_tmp_regs++;
-            } else
-              b->stuff_in_reg = b->res.reg;
-            if (idx->type != IC_IREG) {
-              // Store in a tmp reg
-              idx->stuff_in_reg =
-                  TmpRegToReg(old_icnt + orig->res.pop_n_tmp_regs);
-              idx->flags |= ICF_STUFF_IN_REG;
-              orig->res.pop_n_tmp_regs++;
-            } else
-              idx->stuff_in_reg = idx->res.reg;
+                        //Make a dummy node to store in a tmp register
+            if(idx->res.mode!=MD_REG||idx->res.mode==RT_F64) {
+				new=A_CALLOC(sizeof(CRPN),cctrl->hc);
+				new->type=IC_POS;
+				new->raw_type=RT_I64i;
+				new->ic_line=idx->ic_line;
+				QueIns(new,idx->base.last);
+				new->res.mode=MD_REG;
+				new->res.reg=TmpRegToReg(cctrl->backend_user_data2);
+				new->res.raw_type=RT_I64i;
+				idx=new;
+			}
+			b->stuff_in_reg = b->res.reg;
+            idx->stuff_in_reg = idx->res.reg;
             orig->res.mode           = __MD_X86_64_SIB;
             orig->res.off            = i;
             orig->res.__SIB_scale    = i2;
             orig->res.__sib_base_rpn = b;
             orig->res.__sib_idx_rpn  = idx;
-            orig->res.reg            = b->stuff_in_reg;
-            orig->res.reg2           = idx->stuff_in_reg;
+            orig->res.reg            = b->res.reg;
+            orig->res.reg2           = idx->res.reg;
             orig->res.raw_type       = r->raw_type;
+            orig->res.pop_n_tmp_regs=1;
+            orig->res.fallback_reg=TmpRegToReg(cctrl->backend_user_data2++);
             orig->flags |= ICF_SIB;
             return 1;
           }
         }
       }
+      i2=i=0;
       b = r->base.next;
-      if (b->type == IC_IREG) {
+      if (1) {
         while (__AddOffset(b, &tmp)) {
           b = __AddOffset(b, &tmp);
           i += tmp;
@@ -2940,25 +2952,28 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         }
         PushTmpDepthFirst(cctrl, b, 0);
         PopTmp(cctrl, b);
+        //Make a dummy node to store in a tmp register
+            if(b->res.mode!=MD_REG||b->res.mode==RT_F64) {
+				new=A_CALLOC(sizeof(CRPN),cctrl->hc);
+				new->type=IC_POS;
+				new->raw_type=RT_I64i;
+				new->ic_line=b->ic_line;
+				QueIns(new,b->base.last);
+				new->res.mode=MD_REG;
+				new->res.reg=TmpRegToReg(cctrl->backend_user_data2);
+				new->res.raw_type=RT_I64i;
+				b=new;
+			}
         orig->flags |= ICF_INDIR_REG;
         orig->res.mode           = __MD_X86_64_SIB;
         orig->res.__SIB_scale    = -1;
-        arg                      = b;
         orig->res.off            = i;
         orig->res.reg2           = -1;
         orig->res.raw_type       = r->raw_type;
-        orig->res.__sib_base_rpn = arg;
-        if (b->type == IC_IREG) {
-          // No need to store in a tmp register
-          orig->res.pop_n_tmp_regs = 0;
-          arg->stuff_in_reg        = b->res.reg;
-        } else {
-          arg->stuff_in_reg = TmpRegToReg(old_icnt);
-          arg->flags |= ICF_STUFF_IN_REG;
-          orig->res.pop_n_tmp_regs = 1;
-          cctrl->backend_user_data2++;
-        }
-        orig->res.reg = arg->stuff_in_reg;
+        orig->res.__sib_base_rpn = b;
+        orig->res.reg = b->res.reg;
+        orig->res.pop_n_tmp_regs=1;
+        orig->res.fallback_reg=TmpRegToReg(cctrl->backend_user_data2++);
         return 1;
       }
     }
