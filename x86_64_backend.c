@@ -2734,9 +2734,9 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     goto fin;
     break;
   case IC_ADD:
-    orig                     = r;
-    orig->res.pop_n_tmp_regs = 0;
-    if (!spilled && r->raw_type != RT_F64) {
+    orig = r;
+    if (!spilled && r->raw_type != RT_F64 &&
+        AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 1) {
       arg2 = r->base.last;
       arg  = r;
       i    = 0;
@@ -2744,8 +2744,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         arg = __AddOffset(arg, &tmp);
         i += tmp;
       }
-      if (arg->type == IC_ADD && Is32Bit(i) &&
-          AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 2) {
+      if (arg->type == IC_ADD) {
         if (idx = __AddScale(ICArgN(arg, 0), &i2))
           b = ICArgN(arg, 1);
         else if (idx = __AddScale(ICArgN(arg, 1), &i2))
@@ -2753,69 +2752,11 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         else {
           b = ICArgN(arg, 0), idx = ICArgN(arg, 1), i2 = 1;
         }
-        if (SpillsTmpRegs(idx))
-          goto binop;
-        while (__AddOffset(idx, &tmp) && i2 == 1) {
-          idx = __AddOffset(idx, &tmp);
-          i += tmp;
-        }
-        while (__AddOffset(b, &tmp)) {
-          b = __AddOffset(b, &tmp);
-          i += tmp;
-        }
-        if (!Is32Bit(i))
-          goto binop;
+      } else if (arg->type == IC_IREG) {
+        // All is good
+        b = arg;
         PushTmpDepthFirst(cctrl, b, 0);
-        if (b->type == IC_IREG) { // Currently __OptPassFinal will dump the
-                                  // result to rpn->res.reg
-                                  // No need to store in a tmp register
-        } else {
-          cctrl->backend_user_data2++;
-        }
-        PushTmpDepthFirst(cctrl, idx, 0);
-        if (idx->type == IC_IREG) {
-          // No need to store in a tmp register
-        } else {
-          cctrl->backend_user_data2++;
-        }
-        PopTmp(cctrl, idx);
         PopTmp(cctrl, b);
-        if (b->type != IC_IREG) {
-          // Store in a tmp reg
-          b->stuff_in_reg = TmpRegToReg(old_icnt);
-          b->flags |= ICF_STUFF_IN_REG;
-          orig->res.pop_n_tmp_regs++;
-        } else
-          b->stuff_in_reg = b->res.reg;
-        if (idx->type != IC_IREG) {
-          // Store in a tmp reg
-          idx->stuff_in_reg = TmpRegToReg(old_icnt + orig->res.pop_n_tmp_regs);
-          idx->flags |= ICF_STUFF_IN_REG;
-          orig->res.pop_n_tmp_regs++;
-        } else
-          idx->stuff_in_reg = idx->res.reg;
-        orig->res.mode           = __MD_X86_64_LEA_SIB;
-        orig->res.off            = i;
-        orig->res.__SIB_scale    = i2;
-        orig->res.__sib_base_rpn = b;
-        orig->res.__sib_idx_rpn  = idx;
-        orig->res.reg            = b->stuff_in_reg;
-        orig->res.reg2           = idx->stuff_in_reg;
-        // HERE IS USE fallback_reg becuase we need a register to use after we
-        // compute SIB
-        while (orig->res.pop_n_tmp_regs--)
-          cctrl->backend_user_data2--;
-        orig->res.pop_n_tmp_regs = 1;
-        cctrl->backend_user_data2 += 1;
-        orig->res.fallback_reg = TmpRegToReg(old_icnt);
-        orig->res.raw_type     = r->raw_type;
-        orig->flags |= ICF_SIB;
-        return 1;
-      } else if (Is32Bit(i) &&
-                 AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 1 &&
-                 arg != r) {
-        PushTmpDepthFirst(cctrl, arg, 0);
-        PopTmp(cctrl, arg);
         orig->flags |= ICF_INDIR_REG;
         orig->res.mode           = __MD_X86_64_LEA_SIB;
         orig->res.__SIB_scale    = -1;
@@ -2823,16 +2764,34 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         orig->res.reg2           = -1;
         orig->res.raw_type       = r->raw_type;
         orig->res.__sib_base_rpn = arg;
-        if (arg->type == IC_IREG) {
-          arg->stuff_in_reg = arg->res.reg;
-        } else {
-          arg->stuff_in_reg = TmpRegToReg(old_icnt);
-          arg->flags |= ICF_STUFF_IN_REG;
-        }
+        orig->res.reg            = b->res.reg;
+        orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
         orig->res.pop_n_tmp_regs = 1;
-        cctrl->backend_user_data2++;
-        orig->res.reg          = arg->stuff_in_reg;
-        orig->res.fallback_reg = TmpRegToReg(old_icnt);
+        return 1;
+
+      } else
+        goto binop;
+      if (arg->type == IC_ADD && Is32Bit(i) && b->type == IC_IREG &&
+          idx->type == IC_IREG) {
+        if (!Is32Bit(i))
+          goto binop;
+        PushTmpDepthFirst(cctrl, b, 0);
+        PushTmpDepthFirst(cctrl, idx, 0);
+        PopTmp(cctrl, idx);
+        PopTmp(cctrl, b);
+        orig->res.mode           = __MD_X86_64_LEA_SIB;
+        orig->res.off            = i;
+        orig->res.__SIB_scale    = i2;
+        orig->res.__sib_base_rpn = b;
+        orig->res.__sib_idx_rpn  = idx;
+        orig->res.reg            = b->res.reg;
+        orig->res.reg2           = idx->res.reg;
+        // HERE IS USE fallback_reg becuase we need a register to use after we
+        // compute SIB
+        orig->res.raw_type       = r->raw_type;
+        orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
+        orig->res.pop_n_tmp_regs = 1;
+        orig->flags |= ICF_SIB;
         return 1;
       }
     }
@@ -2875,7 +2834,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     // secret suace
     //
     orig->res.pop_n_tmp_regs = 0;
-    if (!spilled && r->raw_type != RT_FUNC) {
+    if (r->raw_type != RT_FUNC) {
       orig = r;
       d    = orig->base.next;
       i = i2 = 0;
@@ -2891,7 +2850,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         else {
           b = ICArgN(d, 0), idx = ICArgN(d, 1), i2 = 1;
         }
-        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 2 &&
+        if ((b->type == IC_IREG && idx->type == IC_IREG) &&
             !SpillsTmpRegs(idx)) {
           while (__AddOffset(idx, &tmp) && i2 == 1) {
             idx = __AddOffset(idx, &tmp);
@@ -2944,8 +2903,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
           }
         }
       }
-      if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 1) {
-        b = d;
+      b = r->base.next;
+      if (b->type == IC_IREG) {
         while (__AddOffset(b, &tmp)) {
           b = __AddOffset(b, &tmp);
           i += tmp;
@@ -4113,7 +4072,7 @@ static int64_t __SexyPreOp(
     } else if (rpn->integer != 1 && ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
-      if (rpn->flags&ICF_LOCK_EXPR)
+      if (rpn->flags & ICF_LOCK_EXPR)
         AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale,
                        derefed.reg2, derefed.reg, derefed.off);
@@ -4121,7 +4080,7 @@ static int64_t __SexyPreOp(
     } else if (ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
-      if (rpn->flags&ICF_LOCK_EXPR)
+      if (rpn->flags & ICF_LOCK_EXPR)
         AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
                        derefed.reg, derefed.off);
@@ -4379,7 +4338,7 @@ enter:;
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                 bin, code_off);
-        if (rpn->flags&ICF_LOCK_EXPR)
+        if (rpn->flags & ICF_LOCK_EXPR)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
         case RT_I8i:
@@ -4408,13 +4367,22 @@ enter:;
         }
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
-          old_flags3 = ((CRPN *)next->base.next)->flags;
-          code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-          ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-          code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                  bin, code_off);
-          ((CRPN *)next->base.next)->flags = old_flags3;
+          if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+
+          } else {
+            old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
+            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            ((CRPN *)next->base.next)->flags = old_flags3;
+          }
         } else {
           code_off   = __OptPassFinal(cctrl, next, bin, code_off);
           code_off   = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -4432,7 +4400,7 @@ enter:;
           break;
         case RT_I16i:
         case RT_U16i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AddIndir16Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4440,14 +4408,14 @@ enter:;
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AddIndir32Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AddIndir64Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4493,7 +4461,7 @@ enter:;
     next->res.mode = MD_INDIR_REG;                                             \
     next->res.off  = 0;                                                        \
     code_off       = PutICArgIntoReg(                                          \
-        cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,        \
+              cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,        \
         use_f64 ? 0 : AIWNIOS_TMP_IREG_POOP, bin, code_off);             \
     next->flags   = ICF_PRECOMPUTED;                                           \
     next2->flags  = ICF_PRECOMPUTED;                                           \
@@ -4548,7 +4516,7 @@ enter:;
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                 bin, code_off);
-        if (rpn->flags&ICF_LOCK_EXPR)
+        if (rpn->flags & ICF_LOCK_EXPR)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
         case RT_I8i:
@@ -4577,13 +4545,22 @@ enter:;
         }
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
-          old_flags3 = ((CRPN *)next->base.next)->flags;
-          code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-          ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-          code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                  bin, code_off);
-          ((CRPN *)next->base.next)->flags = old_flags3;
+          if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+
+          } else {
+            old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
+            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            ((CRPN *)next->base.next)->flags = old_flags3;
+          }
         } else {
           code_off   = __OptPassFinal(cctrl, next, bin, code_off);
           code_off   = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -4598,7 +4575,7 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I16i:
         case RT_U16i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4606,14 +4583,14 @@ enter:;
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86SubIndir32Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86SubIndir64Reg, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4719,7 +4696,7 @@ enter:;
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                 bin, code_off);
-        if (rpn->flags&ICF_LOCK_EXPR)
+        if (rpn->flags & ICF_LOCK_EXPR)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
         case RT_I8i:
@@ -4745,13 +4722,22 @@ enter:;
         goto fin;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
-          old_flags3 = ((CRPN *)next->base.next)->flags;
-          code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-          ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-          code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                  bin, code_off);
-          ((CRPN *)next->base.next)->flags = old_flags3;
+          if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+
+          } else {
+            old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
+            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            ((CRPN *)next->base.next)->flags = old_flags3;
+          }
         } else {
           code_off   = __OptPassFinal(cctrl, next, bin, code_off);
           code_off   = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -4766,7 +4752,7 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I16i:
         case RT_U16i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AndIndirXReg, 2, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
@@ -4774,14 +4760,14 @@ enter:;
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AndIndirXReg, 4, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86AndIndirXReg, 8, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
@@ -4801,7 +4787,7 @@ enter:;
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                 bin, code_off);
-        if (rpn->flags&ICF_LOCK_EXPR)
+        if (rpn->flags & ICF_LOCK_EXPR)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
         case RT_I8i:
@@ -4827,13 +4813,22 @@ enter:;
         goto fin;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
-          old_flags3 = ((CRPN *)next->base.next)->flags;
-          code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-          ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-          code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                  bin, code_off);
-          ((CRPN *)next->base.next)->flags = old_flags3;
+          if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+
+          } else {
+            old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
+            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            ((CRPN *)next->base.next)->flags = old_flags3;
+          }
         } else {
           code_off   = __OptPassFinal(cctrl, next, bin, code_off);
           code_off   = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -4848,7 +4843,7 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I16i:
         case RT_U16i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86OrIndirXReg, 2, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4856,14 +4851,14 @@ enter:;
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86OrIndirXReg, 4, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86OrIndirXReg, 8, next2->res.reg, dummy.__SIB_scale,
                            dummy.reg2, dummy.reg, dummy.off);
@@ -4883,7 +4878,7 @@ enter:;
       if (IsConst(next2) && Is32Bit(ConstVal(next2))) {
         code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                 bin, code_off);
-        if (rpn->flags&ICF_LOCK_EXPR)
+        if (rpn->flags & ICF_LOCK_EXPR)
           AIWNIOS_ADD_CODE(X86Lock, 0);
         switch (rpn->res.raw_type) {
         case RT_I8i:
@@ -4909,13 +4904,22 @@ enter:;
         goto fin;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
-          old_flags3 = ((CRPN *)next->base.next)->flags;
-          code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-          ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-          code_off = __OptPassFinal(cctrl, next2, bin, code_off);
-          code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                  bin, code_off);
-          ((CRPN *)next->base.next)->flags = old_flags3;
+          if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
+                                       AIWNIOS_TMP_IREG_POOP, bin, code_off);
+
+          } else {
+            old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off   = __OptPassFinal(cctrl, next->base.next, bin, code_off);
+            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
+            ((CRPN *)next->base.next)->flags = old_flags3;
+          }
         } else {
           code_off   = __OptPassFinal(cctrl, next, bin, code_off);
           code_off   = __OptPassFinal(cctrl, next2, bin, code_off);
@@ -4930,7 +4934,7 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I16i:
         case RT_U16i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86XorIndirXReg, 2, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
@@ -4938,14 +4942,14 @@ enter:;
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86XorIndirXReg, 4, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          if (rpn->flags&ICF_LOCK_EXPR)
+          if (rpn->flags & ICF_LOCK_EXPR)
             AIWNIOS_ADD_CODE(X86Lock, 0);
           AIWNIOS_ADD_CODE(X86XorIndirXReg, 8, next2->res.reg,
                            dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
@@ -5623,7 +5627,7 @@ static int64_t __SexyPostOp(
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
-      if (rpn->flags&ICF_LOCK_EXPR)
+      if (rpn->flags & ICF_LOCK_EXPR)
         AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
                        derefed.reg, derefed.off);
@@ -5669,7 +5673,7 @@ static int64_t __SexyPostOp(
                               bin, code_off);
       tmp      = derefed;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-      if (rpn->flags&ICF_LOCK_EXPR)
+      if (rpn->flags & ICF_LOCK_EXPR)
         AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale,
                        derefed.reg2, derefed.reg, derefed.off);
@@ -5677,7 +5681,7 @@ static int64_t __SexyPostOp(
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
-      if (rpn->flags&ICF_LOCK_EXPR)
+      if (rpn->flags & ICF_LOCK_EXPR)
         AIWNIOS_ADD_CODE(X86Lock, 0);
       AIWNIOS_ADD_CODE(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
                        derefed.reg, derefed.off);
