@@ -395,6 +395,7 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
 	a=ICNext(rpn);
 	if(rpn->t.arg1_class->raw_type!=RT_F64) {
 	  b=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) b->ic_flags|=ICF_LOCK;
 	  b->type=IC_TO_F64;
 	  b->ic_class=cmp.internal_types[RT_F64];
 	  QueInsRev(b,rpn->t.arg1_tree);
@@ -403,6 +404,7 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
 	}
 	if(rpn->t.arg2_class->raw_type!=RT_F64) {
 	  b=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) b->ic_flags|=ICF_LOCK;
 	  b->type=IC_TO_F64;
 	  b->ic_class=cmp.internal_types[RT_F64];
 	  QueInsRev(b,rpn->t.arg2_tree);
@@ -416,11 +418,13 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
 	  throw('Compiler');
         if(cc->flags&CCF_AOT_COMPILE||Bt(&powh->flags,Cf_EXTERN)) {
 	  b=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) b->ic_flags|=ICF_LOCK;
 	  b->type=IC_ADDR_IMPORT;
 	  b->ic_data=CodeMiscHashNew(cc,powh);
 	  b->ic_class=powh;
         } else {
 	  b=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) b->ic_flags|=ICF_LOCK;
 	  b->type=IC_IMM_I64;
 	  b->ic_data=powh->exe_addr;
 	  b->ic_class=powh;
@@ -486,6 +490,7 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
         if(IsPtrNode(a)) {
 	  width=RPNPtrWidth(a);
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 	  rpn2->ic_class=cmp.internal_types[RT_I64];
@@ -496,6 +501,7 @@ U0 RPNAdd(CCmpCtrl *cc,CRPN *rpn,Bool add_to_prs_stk=TRUE) {
 	    rpn->ic_class=a->ic_class;          
 mul:
 	    rpn3=CAlloc(sizeof CRPN);
+	    if(cc->lock_cnt) rpn3->ic_flags|=ICF_LOCK;
 	    rpn3->type=IC_MUL;
 	    rpn3->ic_class=cmp.internal_types[RT_I64];
 	    rpn3->t.arg2_tree=rpn2;
@@ -516,6 +522,7 @@ mul:
         if(a->ic_dim) {
 	  width=a->ic_class->size*a->ic_dim->total_cnt;
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 	  rpn2->ic_class=cmp.internal_types[RT_I64];
@@ -526,6 +533,7 @@ mul:
         } else if(IsPtrNode(a)) {
 	  width=RPNPtrWidth(a);
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 //Use a's class for rpn
@@ -567,6 +575,7 @@ mul:
         if(a->ic_dim) {
 	  width=a->ic_class->size*a->ic_dim->total_cnt;
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 	  rpn2->ic_class=cmp.internal_types[RT_I64];
@@ -577,6 +586,7 @@ mul:
         } else if(IsPtrNode(a)) {
 	  width=RPNPtrWidth(a);
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 //Use a's class for rpn
@@ -586,6 +596,7 @@ mul:
         if(b->ic_dim) {
 	  width=b->ic_class->size*b->ic_dim->total_cnt;
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 	  rpn2->ic_class=cmp.internal_types[RT_PTR];
@@ -593,6 +604,7 @@ mul:
 	  rpn->ic_class=b->ic_class;
 mul2:
 	  rpn3=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn3->ic_flags|=ICF_LOCK;
 	  rpn3->type=IC_MUL;
 	  rpn3->ic_class=cmp.internal_types[RT_I64];
 	  rpn3->t.arg2_tree=rpn2;
@@ -606,6 +618,7 @@ mul2:
         } else if(IsPtrNode(b)) {
 	  width=RPNPtrWidth(b);
 	  rpn2=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn2->ic_flags|=ICF_LOCK;
 	  rpn2->type=IC_IMM_I64;
 	  rpn2->imm_i64=width;
 //Use b's class for rpn
@@ -622,6 +635,7 @@ mul2:
   if(divide) {
     RPNAdd(cc,rpn2,add_to_prs_stk);
     rpn3=CAlloc(sizeof CRPN);
+    if(cc->lock_cnt) rpn3->ic_flags|=ICF_LOCK;
     rpn3->type=IC_DIV;
     rpn3->ic_class=cmp.internal_types[RT_I64];
     RPNAdd(cc,rpn3,add_to_prs_stk);
@@ -629,6 +643,7 @@ mul2:
 } 
 CRPN *RPNAddNew(CCmpCtrl *cc,I64 type,I64 data=0,CHashClass *cls=NULL,Bool add_to_prs_stk=TRUE) {
   CRPN *rpn=CAlloc(sizeof CRPN);
+  if(cc->lock_cnt) rpn->ic_flags|=ICF_LOCK;
   rpn->type=type;
   rpn->ic_data=data;
   rpn->ic_class=cls;
@@ -998,6 +1013,7 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
 	    flags&=~PEF_ADDR_OF;
 	  PushOpers(cc,cur_prec);
 	  rpn=CAlloc(sizeof CRPN);
+	  if(cc->lock_cnt) rpn->ic_flags|=ICF_LOCK;
 	  rpn->type=cur_prec.u32[0];
 	  PrsPush(cc->ps,cur_prec);
 	  PrsPush2(cc->ps,rpn);
@@ -1094,6 +1110,7 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
         PushOpers(cc,cur_prec);
         flags&=~PEF_ADDR_OF;
         rpn=CAlloc(sizeof CRPN);
+        if(cc->lock_cnt) rpn->ic_flags|=ICF_LOCK;
         rpn->type=cur_prec.u32[0];
         PrsPush(cc->ps,cur_prec);
         PrsPush2(cc->ps,rpn);

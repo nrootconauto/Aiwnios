@@ -471,6 +471,10 @@ static int64_t STK___AIWNIOS_CAlloc(int64_t *stk) {
   return (int64_t)__AIWNIOS_CAlloc(stk[0], (CTask *)stk[1]);
 }
 
+static int64_t STK___HC_ICSetLock(int64_t *stk) {
+	__HC_ICSetLock(stk[0]);
+}
+
 static int64_t STK___AIWNIOS_Free(int64_t *stk) {
   __AIWNIOS_Free((void *)stk[0]);
 }
@@ -1181,6 +1185,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__MAlloc", STK___AIWNIOS_MAlloc, 2);
     PrsAddSymbol("__CAlloc", STK___AIWNIOS_CAlloc, 2);
     PrsAddSymbol("Free", STK___AIWNIOS_Free, 1);
+    PrsAddSymbol("__HC_ICSetLock", STK___HC_ICSetLock, 1);
     PrsAddSymbol("MSize", STK_MSize, 1);
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);

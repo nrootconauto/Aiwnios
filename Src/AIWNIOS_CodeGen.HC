@@ -33,6 +33,7 @@ import U8 * __HC_ICAdd_Mul(U8*);
 import U8 * __HC_ICAdd_Add(U8*);
 import U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs);
 import U8 * __HC_ICAdd_Comma(U8*);
+import U0 __HC_ICSetLock(U8*);
 import U8 * __HC_ICAdd_Addr(U8*);
 import U8 * __HC_ICAdd_Xor(U8*);
 import U8 * __HC_ICAdd_Mod(U8*);
@@ -905,6 +906,8 @@ break;case IC_ASM:
       new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cur->ic_class->raw_type,0);
     }
     __HC_ICSetLine(new,cur->ic_line);
+    if(cur->ic_flags&ICF_LOCK)
+		__HC_ICSetLock(new);
   }
   aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+2));
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);

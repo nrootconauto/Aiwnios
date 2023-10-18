@@ -608,8 +608,6 @@ typedef struct CICArg {
   int8_t __SIB_scale, pop_n_tmp_regs;
   char is_tmp;
   CRPN  *__sib_base_rpn, *__sib_idx_rpn;
-  int32_t move_code_off,move_end_code_off;
-  struct CICArg *parent_move; //allocated on heap
 } CICArg;
 enum {
   ICF_SPILLED     = 1, // See PushSpilledTmp in XXX_backend.c
@@ -621,6 +619,7 @@ enum {
   ICF_INDIR_REG    = 32, // Has 1 registers (idnex)
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
+  ICF_LOCK_EXPR = 128, //Used with lock {}
 };
 struct CRPN {
   CQue base;
@@ -1226,3 +1225,4 @@ int64_t ARM_stlxrb(int64_t,int64_t,int64_t);
 int64_t ARM_stlxrh(int64_t,int64_t,int64_t);
 int64_t ARM_stlxr(int64_t,int64_t,int64_t);
 int64_t ARM_stlxrX(int64_t,int64_t,int64_t);
+void __HC_ICSetLock(CRPN *l);

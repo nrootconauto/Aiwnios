@@ -3395,8 +3395,6 @@ CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t _flags) {
 }
 
 void ICFree(CRPN *ic) {
-  if(ic->res.parent_move)
-	A_FREE(ic->res.parent_move);
   QueRem(ic);
   A_FREE(ic);
 }
@@ -4407,6 +4405,9 @@ CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr) {
   };
   misc->refs = ref;
   return ref;
+}
+void __HC_ICSetLock(CRPN *l) {
+	l->flags|=ICF_LOCK_EXPR;
 }
 
 void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) {
