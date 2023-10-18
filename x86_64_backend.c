@@ -140,8 +140,12 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
     ADD_U32(O - (len + 4));                                                    \
     break;                                                                     \
   } else {                                                                     \
-    ADD_U8(MODRMSIB((R & 0b111)) |                                             \
-           (((-0x7f <= O && O <= 0x7f) ? 0b01 : 0b10) << 6))                   \
+    if (B != -1) {                                                             \
+      ADD_U8(MODRMSIB((R & 0b111)) |                                           \
+             (((-0x7f <= O && O <= 0x7f) ? 0b01 : 0b10) << 6))                 \
+    } else {                                                                   \
+      ADD_U8(MODRMSIB(R & 0b111));                                             \
+    }                                                                          \
   }                                                                            \
   if (S == -1) {                                                               \
     ADD_U8((RSP << 3) | (B & 0b111));                                          \
@@ -2740,6 +2744,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       arg2 = r->base.last;
       arg  = r;
       i    = 0;
+      i2   = 1;
       while (__AddOffset(arg, &tmp)) {
         arg = __AddOffset(arg, &tmp);
         i += tmp;
@@ -2768,9 +2773,28 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
         orig->res.pop_n_tmp_regs = 1;
         return 1;
-
-      } else
+      } else {
+        i2 = 1;
+        if (idx = __AddScale(arg, &i2)) {
+          if (idx->type == IC_IREG) {
+            b = idx;
+            PushTmpDepthFirst(cctrl, b, 0);
+            PopTmp(cctrl, b);
+            orig->flags |= ICF_INDIR_REG;
+            orig->res.mode           = __MD_X86_64_LEA_SIB;
+            orig->res.__SIB_scale    = i2;
+            orig->res.off            = i;
+            orig->res.reg2           = b->res.reg;
+            orig->res.raw_type       = r->raw_type;
+            orig->res.__sib_idx_rpn  = idx;
+            orig->res.reg            = -1;
+            orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
+            orig->res.pop_n_tmp_regs = 1;
+            return 1;
+          }
+        }
         goto binop;
+      }
       if (arg->type == IC_ADD && Is32Bit(i) && b->type == IC_IREG &&
           idx->type == IC_IREG) {
         if (!Is32Bit(i))
