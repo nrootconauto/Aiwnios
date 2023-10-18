@@ -843,61 +843,21 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-          AIWNIOS_ADD_CODE(
-              ARM_addsRegX(AIWNIOS_TMP_IREG_POOP, dst->reg, dst->reg2));
-          AIWNIOS_ADD_CODE(ARM_stlxrb(AIWNIOS_TMP_IREG_POOP, src->reg,
-                                      AIWNIOS_TMP_IREG_POOP))
-          AIWNIOS_ADD_CODE(
-              ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                       cctrl->aarch64_atomic_loop_start - code_off));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_strbRegRegShift(src->reg, dst->reg, dst->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_strbRegRegShift(src->reg, dst->reg, dst->reg2));
         break;
       case RT_U16i:
       case RT_I16i:
-        if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-          AIWNIOS_ADD_CODE(
-              ARM_addsRegX(AIWNIOS_TMP_IREG_POOP, dst->reg, dst->reg2));
-          AIWNIOS_ADD_CODE(ARM_stlxrb(AIWNIOS_TMP_IREG_POOP, src->reg,
-                                      AIWNIOS_TMP_IREG_POOP))
-          AIWNIOS_ADD_CODE(
-              ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                       cctrl->aarch64_atomic_loop_start - code_off));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_strhRegRegShift(src->reg, dst->reg, dst->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_strhRegRegShift(src->reg, dst->reg, dst->reg2));
         break;
       case RT_U32i:
       case RT_I32i:
-        if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-          AIWNIOS_ADD_CODE(
-              ARM_addsRegX(AIWNIOS_TMP_IREG_POOP, dst->reg, dst->reg2));
-          AIWNIOS_ADD_CODE(ARM_stlxrb(AIWNIOS_TMP_IREG_POOP, src->reg,
-                                      AIWNIOS_TMP_IREG_POOP))
-          AIWNIOS_ADD_CODE(
-              ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                       cctrl->aarch64_atomic_loop_start - code_off));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_strRegRegShift(src->reg, dst->reg, dst->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_strRegRegShift(src->reg, dst->reg, dst->reg2));
         break;
       case RT_U64i:
       case RT_I64i:
       case RT_PTR:
       case RT_FUNC:
-        if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-          AIWNIOS_ADD_CODE(
-              ARM_addsRegX(AIWNIOS_TMP_IREG_POOP, dst->reg, dst->reg2));
-          AIWNIOS_ADD_CODE(ARM_stlxrX(AIWNIOS_TMP_IREG_POOP, src->reg,
-                                      AIWNIOS_TMP_IREG_POOP))
-          AIWNIOS_ADD_CODE(
-              ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                       cctrl->aarch64_atomic_loop_start - code_off));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_strRegRegShiftX(src->reg, dst->reg, dst->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_strRegRegShiftX(src->reg, dst->reg, dst->reg2));
         break;
       case RT_F64:
         AIWNIOS_ADD_CODE(ARM_strRegRegShiftF64(src->reg, dst->reg, dst->reg2));
@@ -988,121 +948,59 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       break;
     case RT_U8i:
     case RT_I8i:
-      if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-        if (indir_off) {
-          if (ARM_ERR_INV_OFF !=
-              ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(
-                ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off));
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2,
-                                         AIWNIOS_TMP_IREG_POOP));
-          }
-          AIWNIOS_ADD_CODE(ARM_stlxrb(AIWNIOS_TMP_IREG_POOP, use_reg,
-                                      AIWNIOS_TMP_IREG_POOP));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_stlxrb(AIWNIOS_TMP_IREG_POOP, use_reg, use_reg2));
-        }
-        AIWNIOS_ADD_CODE(ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                                  cctrl->aarch64_atomic_loop_start - code_off));
+
+      opc = ARM_strbRegImm(use_reg, use_reg2, indir_off);
+      if (opc != ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(opc);
       } else {
-        opc = ARM_strbRegImm(use_reg, use_reg2, indir_off);
+        // Try unaligned version
+        opc = ARM_sturb(use_reg, use_reg2, indir_off);
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
-          // Try unaligned version
-          opc = ARM_sturb(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(
-                ARM_strbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-          }
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_strbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
       }
       break;
     case RT_U16i:
     case RT_I16i:
-      if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-        if (indir_off) {
-          if (ARM_ERR_INV_OFF !=
-              ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(
-                ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off));
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2,
-                                         AIWNIOS_TMP_IREG_POOP));
-          }
-          AIWNIOS_ADD_CODE(ARM_stlxrh(AIWNIOS_TMP_IREG_POOP, use_reg,
-                                      AIWNIOS_TMP_IREG_POOP));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_stlxrh(AIWNIOS_TMP_IREG_POOP, use_reg, use_reg2));
-        }
-        AIWNIOS_ADD_CODE(ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                                  cctrl->aarch64_atomic_loop_start - code_off));
+
+      opc = ARM_strhRegImm(use_reg, use_reg2, indir_off);
+      if (opc != ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(opc);
       } else {
-        opc = ARM_strhRegImm(use_reg, use_reg2, indir_off);
+        // Try unaligned version
+        opc = ARM_sturh(use_reg, use_reg2, indir_off);
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
-          // Try unaligned version
-          opc = ARM_sturh(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(
-                ARM_strhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-          }
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_strhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
       }
       break;
     case RT_U32i:
     case RT_I32i:
-      if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-        if (indir_off) {
-          if (ARM_ERR_INV_OFF !=
-              ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(
-                ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off));
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2,
-                                         AIWNIOS_TMP_IREG_POOP));
-          }
-          AIWNIOS_ADD_CODE(
-              ARM_stlxr(AIWNIOS_TMP_IREG_POOP, use_reg, AIWNIOS_TMP_IREG_POOP));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_stlxr(AIWNIOS_TMP_IREG_POOP, use_reg, use_reg2));
-        }
-        AIWNIOS_ADD_CODE(ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                                  cctrl->aarch64_atomic_loop_start - code_off));
+
+      opc = ARM_strRegImm(use_reg, use_reg2, indir_off);
+      if (opc != ARM_ERR_INV_OFF) {
+        AIWNIOS_ADD_CODE(opc);
       } else {
-        opc = ARM_strRegImm(use_reg, use_reg2, indir_off);
+        // Try unaligned version
+        opc = ARM_sturw(use_reg, use_reg2, indir_off);
         if (opc != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(opc);
         } else {
-          // Try unaligned version
-          opc = ARM_sturw(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(
-                ARM_strRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-          }
+          // 5 is one of our poop registers
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_strRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
       }
       break;
@@ -1110,28 +1008,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     case RT_I64i:
     case RT_FUNC: // func ptr
     case RT_PTR:
-      if (cctrl->is_lock_expr && cctrl->aarch64_atomic_loop_start != -1) {
-        if (indir_off) {
-          if (ARM_ERR_INV_OFF !=
-              ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(
-                ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2, indir_off));
-          } else {
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(AIWNIOS_TMP_IREG_POOP, use_reg2,
-                                         AIWNIOS_TMP_IREG_POOP));
-          }
-          AIWNIOS_ADD_CODE(ARM_stlxrX(AIWNIOS_TMP_IREG_POOP, use_reg,
-                                      AIWNIOS_TMP_IREG_POOP));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_stlxrX(AIWNIOS_TMP_IREG_POOP, use_reg, use_reg2));
-        }
-        AIWNIOS_ADD_CODE(ARM_cbnz(AIWNIOS_TMP_IREG_POOP,
-                                  cctrl->aarch64_atomic_loop_start - code_off));
-      } else {
-        opc = ARM_strRegImmX(use_reg, use_reg2, indir_off);
+      opc = ARM_strRegImmX(use_reg, use_reg2, indir_off);
       if (opc != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(opc);
       } else {
@@ -1151,7 +1028,6 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
                 ARM_strRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
           }
         }
-	}
       }
       break;
     default:
@@ -1188,88 +1064,33 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_U0:
         break;
       case RT_U8i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxrb(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_ldrbRegRegShift(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrbRegRegShift(dst->reg, src->reg, src->reg2));
         AIWNIOS_ADD_CODE(ARM_uxtbX(dst->reg, dst->reg));
         break;
       case RT_I8i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxrb(dst->reg, dst->reg));
-          AIWNIOS_ADD_CODE(ARM_sxtbX(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_ldrsbRegRegShiftX(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrsbRegRegShiftX(dst->reg, src->reg, src->reg2));
         break;
       case RT_U16i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxrh(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_ldrhRegRegShift(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrhRegRegShift(dst->reg, src->reg, src->reg2));
         AIWNIOS_ADD_CODE(ARM_uxthX(dst->reg, dst->reg));
         break;
       case RT_I16i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxrh(dst->reg, dst->reg));
-          AIWNIOS_ADD_CODE(ARM_sxthX(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_ldrshRegRegShiftX(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrshRegRegShiftX(dst->reg, src->reg, src->reg2));
         break;
       case RT_U32i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxr(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_ldrRegRegShift(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrRegRegShift(dst->reg, src->reg, src->reg2));
         AIWNIOS_ADD_CODE(ARM_uxtwX(dst->reg, dst->reg));
         break;
       case RT_I32i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxr(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(
-              ARM_ldrswRegRegShiftX(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrswRegRegShiftX(dst->reg, src->reg, src->reg2));
         break;
       case RT_U64i:
       case RT_PTR:
       case RT_FUNC:
       case RT_I64i:
-        if (cctrl->is_lock_expr) {
-          if (cctrl->aarch64_atomic_loop_start != -1)
-            cctrl->aarch64_atomic_loop_start = code_off;
-          AIWNIOS_ADD_CODE(ARM_addRegX(dst->reg, src->reg, src->reg2));
-          AIWNIOS_ADD_CODE(ARM_ldaxrX(dst->reg, dst->reg));
-        } else {
-          AIWNIOS_ADD_CODE(ARM_ldrRegRegShiftX(dst->reg, src->reg, src->reg2));
-        }
+        AIWNIOS_ADD_CODE(ARM_ldrRegRegShiftX(dst->reg, src->reg, src->reg2));
         break;
       case RT_F64:
-        // TODO atomic
         AIWNIOS_ADD_CODE(ARM_ldrRegRegShiftF64(dst->reg, src->reg, src->reg2));
       }
       return code_off;
@@ -1303,41 +1124,40 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       }
       // We can use ARM_ldrLabel/ARM_ldrLabelX for 64/32bit shenangins if it is
       // in range
-      if (!cctrl->is_lock_expr)
-        if (cctrl->code_ctrl->final_pass)
-          switch (src->raw_type) {
-            break;
-          case RT_I32i:
-            opc = ARM_ldrLabel(use_reg, (char *)src->off - (code_off + bin));
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-              AIWNIOS_ADD_CODE(ARM_sxtwX(use_reg, use_reg));
-              return code_off;
-            }
-            break;
-          case RT_U32i:
-            opc = ARM_ldrLabel(use_reg, (char *)src->off - (code_off + bin));
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-              AIWNIOS_ADD_CODE(ARM_uxtwX(use_reg, use_reg));
-              return code_off;
-            }
-            break;
-          case RT_I64i:
-          case RT_U64i:
-            opc = ARM_ldrLabelX(use_reg, (char *)src->off - (code_off + bin));
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-              return code_off;
-            }
-            break;
-          case RT_F64:
-            opc = ARM_ldrLabelF64(use_reg, (char *)src->off - (code_off + bin));
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-              return code_off;
-            }
+      if (cctrl->code_ctrl->final_pass)
+        switch (src->raw_type) {
+          break;
+        case RT_I32i:
+          opc = ARM_ldrLabel(use_reg, (char *)src->off - (code_off + bin));
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
+            AIWNIOS_ADD_CODE(ARM_sxtwX(use_reg, use_reg));
+            return code_off;
           }
+          break;
+        case RT_U32i:
+          opc = ARM_ldrLabel(use_reg, (char *)src->off - (code_off + bin));
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
+            AIWNIOS_ADD_CODE(ARM_uxtwX(use_reg, use_reg));
+            return code_off;
+          }
+          break;
+        case RT_I64i:
+        case RT_U64i:
+          opc = ARM_ldrLabelX(use_reg, (char *)src->off - (code_off + bin));
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
+            return code_off;
+          }
+          break;
+        case RT_F64:
+          opc = ARM_ldrLabelF64(use_reg, (char *)src->off - (code_off + bin));
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
+            return code_off;
+          }
+        }
 
       use_reg2  = AIWNIOS_TMP_IREG_POOP;
       code_off  = __ICMoveI64(cctrl, use_reg2, src->off, bin, code_off);
@@ -1365,136 +1185,56 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         }
         break;
       case RT_U8i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
-          }
+        opc = ARM_ldrbRegImm(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
         } else {
-          opc = ARM_ldrbRegImm(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(
-                ARM_ldrbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-          }
+          // 5 is one of our poop registers
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_ldrbRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
         AIWNIOS_ADD_CODE(ARM_uxtbX(use_reg, use_reg));
         break;
       case RT_I8i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
+        opc = ARM_ldrsbX(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
+        } else {
+          // Try unaligned version
+          opc = ARM_ldursbX(use_reg, use_reg2, indir_off);
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
           } else {
             // 5 is one of our poop registers
             code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                    code_off);
             AIWNIOS_ADD_CODE(
-                ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
-          }
-          AIWNIOS_ADD_CODE(ARM_sxtbX(use_reg,use_reg));
-        } else {
-          opc = ARM_ldrsbX(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // Try unaligned version
-            opc = ARM_ldursbX(use_reg, use_reg2, indir_off);
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-            } else {
-              // 5 is one of our poop registers
-              code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off,
-                                     bin, code_off);
-              AIWNIOS_ADD_CODE(
-                  ARM_ldrsbRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            }
+                ARM_ldrsbRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
           }
         }
         break;
       case RT_U16i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrh(use_reg, use_reg));
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrh(use_reg, use_reg));
-          }
+        opc = ARM_ldrhRegImm(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
         } else {
-          opc = ARM_ldrhRegImm(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(
-                ARM_ldrhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-          }
+          // 5 is one of our poop registers
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_ldrhRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
         AIWNIOS_ADD_CODE(ARM_uxthX(use_reg, use_reg));
         break;
       case RT_I16i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrh(use_reg, use_reg));
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrh(use_reg, use_reg));
-          }
-          AIWNIOS_ADD_CODE(ARM_sxthX(use_reg, use_reg));
+        opc = ARM_ldrshX(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
         } else {
-          opc = ARM_ldrshX(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // Try unaligned version
-            opc = ARM_ldurshX(use_reg, use_reg2, indir_off);
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-            } else {
-              // 5 is one of our poop registers
-              code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off,
-                                     bin, code_off);
-              AIWNIOS_ADD_CODE(
-                  ARM_ldrshRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            }
-          }
-        }
-        break;
-      case RT_U32i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxr(use_reg, use_reg));
-          } else {
-            // 5 is one of our poop registers
-            code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
-                                   code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxr(use_reg, use_reg));
-          }
-        } else {
-          opc = ARM_ldrRegImm(use_reg, use_reg2, indir_off);
+          // Try unaligned version
+          opc = ARM_ldurshX(use_reg, use_reg2, indir_off);
           if (opc != ARM_ERR_INV_OFF) {
             AIWNIOS_ADD_CODE(opc);
           } else {
@@ -1502,40 +1242,38 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
             code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                    code_off);
             AIWNIOS_ADD_CODE(
-                ARM_ldrRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
+                ARM_ldrshRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
           }
+        }
+        break;
+      case RT_U32i:
+        opc = ARM_ldrRegImm(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
+        } else {
+          // 5 is one of our poop registers
+          code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
+                                 code_off);
+          AIWNIOS_ADD_CODE(
+              ARM_ldrRegReg(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
         }
         AIWNIOS_ADD_CODE(ARM_uxtwX(use_reg, use_reg));
         break;
       case RT_I32i:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
+        opc = ARM_ldrswX(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
+        } else {
+          // Try unaligned version
+          opc = ARM_ldurswX(use_reg, use_reg2, indir_off);
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
           } else {
             // 5 is one of our poop registers
             code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                    code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrb(use_reg, use_reg));
-          }
-          AIWNIOS_ADD_CODE(ARM_sxtwX(use_reg, use_reg));
-        } else {
-          opc = ARM_ldrswX(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // Try unaligned version
-            opc = ARM_ldurswX(use_reg, use_reg2, indir_off);
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-            } else {
-              // 5 is one of our poop registers
-              code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off,
-                                     bin, code_off);
-              AIWNIOS_ADD_CODE(
-                  ARM_ldrswRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            }
+            AIWNIOS_ADD_CODE(
+                ARM_ldrswRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
           }
         }
         break;
@@ -1543,33 +1281,20 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_I64i:
       case RT_FUNC: // func ptr
       case RT_PTR:
-        if (cctrl->is_lock_expr) {
-          if (ARM_ERR_INV_OFF != ARM_addImmX(use_reg, use_reg2, indir_off)) {
-            AIWNIOS_ADD_CODE(ARM_addImmX(use_reg, use_reg2, indir_off));
-            AIWNIOS_ADD_CODE(ARM_ldaxrX(use_reg, use_reg));
+        opc = ARM_ldrRegImmX(use_reg, use_reg2, indir_off);
+        if (opc != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(opc);
+        } else {
+          // Try unaligned version
+          opc = ARM_ldur(use_reg, use_reg2, indir_off);
+          if (opc != ARM_ERR_INV_OFF) {
+            AIWNIOS_ADD_CODE(opc);
           } else {
             // 5 is one of our poop registers
             code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off, bin,
                                    code_off);
-            AIWNIOS_ADD_CODE(ARM_addRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            AIWNIOS_ADD_CODE(ARM_ldaxrX(use_reg, use_reg));
-          }
-        } else {
-          opc = ARM_ldrRegImmX(use_reg, use_reg2, indir_off);
-          if (opc != ARM_ERR_INV_OFF) {
-            AIWNIOS_ADD_CODE(opc);
-          } else {
-            // Try unaligned version
-            opc = ARM_ldur(use_reg, use_reg2, indir_off);
-            if (opc != ARM_ERR_INV_OFF) {
-              AIWNIOS_ADD_CODE(opc);
-            } else {
-              // 5 is one of our poop registers
-              code_off = __ICMoveI64(cctrl, AIWNIOS_TMP_IREG_POOP, indir_off,
-                                     bin, code_off);
-              AIWNIOS_ADD_CODE(
-                  ARM_ldrRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
-            }
+            AIWNIOS_ADD_CODE(
+                ARM_ldrRegRegX(use_reg, use_reg2, AIWNIOS_TMP_IREG_POOP));
           }
         }
         break;
@@ -1829,7 +1554,106 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
   }
   return code_off;
 }
-
+#define ATOMIC_LOAD(derefed)                                                   \
+  {                                                                            \
+    int64_t retry = code_off;                                                  \
+    if (derefed.mode == __MD_ARM_SHIFT) {                                      \
+      switch (derefed.raw_type) {                                              \
+      case RT_I8i:                                                             \
+      case RT_U8i:                                                             \
+        AIWNIOS_ADD_CODE(ARM_addRegX(1, derefed.reg2, derefed.reg));           \
+        AIWNIOS_ADD_CODE(ARM_ldaxrb(0, 1));                                    \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxtbX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxtbX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I16i:                                                            \
+      case RT_U16i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_lslImmX(0, derefed.reg2, 1));                     \
+        AIWNIOS_ADD_CODE(ARM_addRegX(1, 0, derefed.reg));                      \
+        AIWNIOS_ADD_CODE(ARM_ldaxrh(0, 1));                                    \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxthX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxthX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I32i:                                                            \
+      case RT_U32i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_lslImmX(0, derefed.reg2, 2));                     \
+        AIWNIOS_ADD_CODE(ARM_addRegX(1, 0, derefed.reg));                      \
+        AIWNIOS_ADD_CODE(ARM_ldaxr(0, 1));                                     \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxtwX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxtwX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I64i:                                                            \
+      case RT_U64i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_lslImmX(0, derefed.reg2, 3));                     \
+        AIWNIOS_ADD_CODE(ARM_addRegX(1, 0, derefed.reg));                      \
+        AIWNIOS_ADD_CODE(ARM_ldaxrX(0, 1));                                    \
+        break;                                                                 \
+      }                                                                        \
+    } else if (derefed.mode == MD_INDIR_REG) {                                 \
+      if (derefed.off) {                                                       \
+        code_off = __ICMoveI64(cctrl, 0, derefed.off, bin, code_off);          \
+        AIWNIOS_ADD_CODE(ARM_addRegX(1, 0, derefed.reg));                      \
+      } else {                                                                 \
+        AIWNIOS_ADD_CODE(ARM_movRegX(1, derefed.reg));                         \
+      }                                                                        \
+      switch (derefed.raw_type) {                                              \
+      case RT_I8i:                                                             \
+      case RT_U8i:                                                             \
+        AIWNIOS_ADD_CODE(ARM_ldaxrb(0, 1));                                    \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxtbX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxtbX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I16i:                                                            \
+      case RT_U16i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_ldaxrh(0, 1));                                    \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxthX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxthX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I32i:                                                            \
+      case RT_U32i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_ldaxr(0, 1));                                     \
+        if (RT_U8i == derefed.raw_type)                                        \
+          AIWNIOS_ADD_CODE(ARM_uxtwX(0, 0))                                    \
+        else                                                                   \
+          AIWNIOS_ADD_CODE(ARM_sxtwX(0, 0))                                    \
+        break;                                                                 \
+      case RT_I64i:                                                            \
+      case RT_U64i:                                                            \
+        AIWNIOS_ADD_CODE(ARM_ldaxrX(0, 1));                                    \
+        break;                                                                 \
+      }                                                                        \
+    }
+#define ATOMIC_STORE(derefed, r)                                               \
+  switch (derefed.raw_type) {                                                  \
+  case RT_I8i:                                                                 \
+  case RT_U8i:                                                                 \
+    AIWNIOS_ADD_CODE(ARM_stlxrb(0, 1, r));                                     \
+    break;                                                                     \
+  case RT_I16i:                                                                \
+  case RT_U16i:                                                                \
+    AIWNIOS_ADD_CODE(ARM_stlxrh(0, 1, r));                                     \
+    break;                                                                     \
+  case RT_I32i:                                                                \
+  case RT_U32i:                                                                \
+    AIWNIOS_ADD_CODE(ARM_stlxrh(0, 1, r));                                     \
+    break;                                                                     \
+  case RT_I64i:                                                                \
+  case RT_U64i:                                                                \
+    AIWNIOS_ADD_CODE(ARM_stlxrX(0, 1, r));                                     \
+    break;                                                                     \
+  }                                                                            \
+  AIWNIOS_ADD_CODE(ARM_cbnz(0, retry - code_off));                             \
+  }
 static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
                            int64_t (*i_imm_op)(int64_t, int64_t, int64_t),
                            int64_t (*i_reg_op)(int64_t, int64_t, int64_t),
@@ -1910,6 +1734,22 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
       tmp      = derefed;
+      if (cctrl->is_lock_expr &&
+          (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
+        ATOMIC_LOAD(derefed);
+        tmp.mode = MD_REG;
+        tmp.reg  = 0;
+        code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+        code     = i_imm_op(0, 0, rpn->integer);
+        if (code != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(code);
+        } else {
+          code_off = __ICMoveI64(cctrl, 2, rpn->integer, bin, code_off);
+          AIWNIOS_ADD_CODE(i_reg_op(0, 0, 2))
+        }
+        ATOMIC_STORE(derefed, 0);
+        return code_off;
+      }
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
       code     = i_imm_op(tmp.reg, tmp.reg, rpn->integer);
       if (code != ARM_ERR_INV_OFF) {
@@ -1970,8 +1810,23 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
       tmp      = derefed;
-      code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+      if (cctrl->is_lock_expr &&
+          (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
+        ATOMIC_LOAD(derefed);
+        tmp.mode = MD_REG;
+        tmp.reg  = 0;
+        code     = i_imm_op(0, 0, rpn->integer);
+        if (code != ARM_ERR_INV_OFF) {
+          AIWNIOS_ADD_CODE(code);
+        } else {
+          code_off = __ICMoveI64(cctrl, 2, rpn->integer, bin, code_off);
+          AIWNIOS_ADD_CODE(i_reg_op(0, 0, 2))
+        }
+        ATOMIC_STORE(derefed, 0);
+        return code_off;
+      }
+      code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 2, bin, code_off);
       code     = i_imm_op(tmp.reg, tmp.reg, rpn->integer);
       if (code != ARM_ERR_INV_OFF) {
         AIWNIOS_ADD_CODE(code);
@@ -2026,65 +1881,6 @@ static int64_t FBitOp(CCmpCtrl *cctrl, CICArg *res, CICArg *next, CICArg *next2,
   }
   return code_off;
 }
-static int64_t __SexyAssignBitOp(CCmpCtrl *cctrl, CRPN *rpn,
-                                 int32_t (*ubit_op)(int64_t, int64_t, int64_t),
-                                 int32_t (*sbit_op)(int64_t, int64_t, int64_t),
-                                 int64_t shift, char *bin, int64_t code_off) {
-  CRPN   *next = ICArgN(rpn, 1), *next2, *next3, *b;
-  CICArg  tmp = {0}, tmp2 = {0}, derefed = {0};
-  int64_t i = 0, tc = 0;
-  b     = ICArgN(rpn, 0);
-  next2 = rpn->base.next;
-  next3 = next2;
-  if (SpillsTmpRegs(next2))
-    PushSpilledTmp(cctrl, next3);
-  else
-    PushTmp(cctrl, next3, NULL);
-  code_off = __OptPassFinal(cctrl, next3, bin, code_off);
-  tmp2     = derefed;
-  if (next->type == IC_TYPECAST) {
-    tc = 1;
-    TYPECAST_ASSIGN_BEGIN(next, b);
-    goto enter;
-  tc_reenter:;
-    TYPECAST_ASSIGN_END(next);
-    return code_off;
-  }
-enter:
-  code_off = DerefToICArg(cctrl, &derefed, next2, 2, bin, code_off);
-  PopTmp(cctrl, next2);
-  code_off =
-      PutICArgIntoReg(cctrl, &next3->res, rpn->raw_type, 1, bin, code_off);
-  if (derefed.raw_type == RT_F64)
-    code_off = FBitOp(cctrl, &derefed, &tmp2, &next3->res, sbit_op, shift, bin,
-                      code_off);
-  else {
-    code_off = PutICArgIntoReg(cctrl, &tmp2, rpn->raw_type, 3, bin, code_off);
-    if (next3->res.raw_type == RT_F64) {
-      tmp.reg      = 0;
-      tmp.mode     = MD_REG;
-      tmp.raw_type = RT_I64i;
-      code_off     = ICMov(cctrl, &tmp, &next3->res, bin, code_off);
-    } else
-      tmp = next3->res;
-    switch (tmp2.raw_type) {
-    case RT_I16i:
-    case RT_I32i:
-    case RT_I64i:
-    case RT_I8i:
-    case RT_PTR:
-    case RT_FUNC: // func ptr
-      AIWNIOS_ADD_CODE(sbit_op(tmp2.reg, tmp2.reg, &tmp));
-      break;
-    default:
-      AIWNIOS_ADD_CODE(ubit_op(tmp2.reg, tmp2.reg, &tmp));
-    }
-  }
-  code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
-  if (tc)
-    goto tc_reenter;
-  return code_off;
-}
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
                               int32_t (*i_op)(int64_t, int64_t, int64_t),
                               int32_t (*i_imm_op)(int64_t, int64_t, int64_t),
@@ -2092,7 +1888,7 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
                               char *bin, int64_t code_off) {
   CRPN   *next = ICArgN(rpn, 1), *next2, *next3, *b;
   CICArg  tmp = {0}, tmp2 = {0}, derefed = {0};
-  int64_t i = 0, const_can = 0;
+  int64_t i = 0, const_can = 0, retry;
   next2 = b = ICArgN(rpn, 0);
   if (SpillsTmpRegs(next))
     PushSpilledTmp(cctrl, next2);
@@ -2121,13 +1917,28 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
         goto defacto2;
       code_off = DerefToICArg(cctrl, &derefed, next, 2, bin, code_off);
       tmp2     = derefed;
-      code_off = PutICArgIntoReg(cctrl, &tmp2, RT_I64i, 3, bin, code_off);
-      AIWNIOS_ADD_CODE(i_imm_op(tmp2.reg, tmp2.reg, ConstVal(b)));
-      PopTmp(cctrl, next2);
-      code_off = ICMov(cctrl, &derefed, &tmp2, bin, code_off);
-      code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
-      return code_off;
+      if (!cctrl->is_lock_expr) {
+      not_lock_const:;
+        code_off = PutICArgIntoReg(cctrl, &tmp2, RT_I64i, 3, bin, code_off);
+        AIWNIOS_ADD_CODE(i_imm_op(tmp2.reg, tmp2.reg, ConstVal(b)));
+        PopTmp(cctrl, next2);
+        code_off = ICMov(cctrl, &derefed, &tmp2, bin, code_off);
+        code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
+      } else {
+        if (derefed.mode != __MD_ARM_SHIFT && derefed.mode != MD_INDIR_REG)
+          goto not_lock_const;
+        retry = code_off;
+        ATOMIC_LOAD(derefed);
+        AIWNIOS_ADD_CODE(i_imm_op(0, 0, ConstVal(b)));
+        tmp2.mode     = MD_REG;
+        tmp2.reg      = 0;
+        tmp2.raw_type = RT_I64i;
+        code_off      = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
+        ATOMIC_STORE(derefed, 0);
+        PopTmp(cctrl, next2);
+      }
     }
+    return code_off;
   } else {
     if (next->type == IC_TYPECAST) {
       TYPECAST_ASSIGN_BEGIN(next, b);
@@ -2150,9 +1961,27 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
       return code_off;
     } else {
     defacto2:
+      if (cctrl->is_lock_expr && next->raw_type != RT_F64) {
+        code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+        code_off = DerefToICArg(cctrl, &derefed, next, 1, bin, code_off);
+        code_off = PutICArgIntoReg(cctrl, &b->res, next->raw_type, 3, bin,
+                                   code_off); // 1
+        if (derefed.mode != __MD_ARM_SHIFT && derefed.mode != MD_INDIR_REG)
+          goto normal;
+        ATOMIC_LOAD(derefed);
+        AIWNIOS_ADD_CODE(i_op(0, 0, b->res.reg));
+        tmp2.mode     = MD_REG;
+        tmp2.reg      = 0;
+        tmp2.raw_type = RT_I64i;
+        code_off      = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
+        ATOMIC_STORE(derefed, 0);
+        PopTmp(cctrl, next2);
+        return code_off;
+      }
       //
       code_off = __OptPassFinal(cctrl, next2, bin, code_off);
       code_off = DerefToICArg(cctrl, &derefed, next, 2, bin, code_off);
+    normal:;
       PopTmp(cctrl, next2);
       tmp2 = derefed;
       // Check if different
@@ -2671,7 +2500,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   int64_t old_lock_start = cctrl->aarch64_atomic_loop_start;
   int64_t *range_cmp_types, use_flags = rpn->res.set_flags, old_fail_addr = 0,
                             old_pass_addr = 0;
-  cctrl->aarch64_atomic_loop_start       = -1;
+  cctrl->aarch64_atomic_loop_start        = -1;
   rpn->res.set_flags                      = 0;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
       ***range_fail_addrs;
