@@ -204,6 +204,9 @@ CRPN *ICFwd(CRPN *rpn) {
     return rpn->ic_fwd;
   switch (rpn->type) {
     break;
+  case IC_GS:
+  case IC_FS:
+	goto unop;
   case IC_LOCK:
   case IC_RAW_BYTES:
   case __IC_STATICS_SIZE:
@@ -648,6 +651,12 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("SWITCH()\n");
     goto swit;
     break;
+  case IC_GS:
+	printf("GS:%p\n",rpn->integer);
+	goto unop;
+  case IC_FS:
+	printf("FS:%p\n",rpn->integer);
+	goto unop;
   case __IC_CALL:
   case IC_CALL:
     rpn = rpn->base.next;
@@ -2795,6 +2804,11 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     return rpn->raw_type;
   switch (rpn->type) {
 	break;
+  case IC_FS:
+  case IC_GS:
+    rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_I64i;
+    break;
   case IC_LOCK: //Lock means "lock *ptr++;",it operates on expressions as a whole 
     AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
     return rpn->raw_type = RT_U0; //dummy
@@ -4335,6 +4349,21 @@ CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
   return rpn;
 }
 
+CRPN *__HC_ICAdd_RelocUnqiue(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
+                       char *sym, int64_t rt, int64_t ptrs) {
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type      = IC_RELOC,
+      .ic_class  = rt2cls(rt, ptrs),
+      .code_misc = CodeMiscNew(cmpc,CMT_RELOC_U64),
+  };
+  rpn->code_misc->patch_addr = pat_addr;
+  rpn->code_misc->str = A_STRDUP(sym, cc->hc);
+  QueIns(rpn, cc->ir_code);
+  return rpn;
+}
+
+
 // Sets how many bytes before function start a symbol starts at
 // Symbol    <=====RIP-off
 // some...code
@@ -4388,7 +4417,6 @@ CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
   cc->flags |= CCF_AOT_COMPILE;
 }
-
 HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
 HC_IC_BINDING(HC_ICAdd_BTC, IC_BTC);
 HC_IC_BINDING(HC_ICAdd_BTS, IC_BTS);
@@ -4396,6 +4424,10 @@ HC_IC_BINDING(HC_ICAdd_BTR, IC_BTR);
 HC_IC_BINDING(HC_ICAdd_LBTC, IC_LBTC);
 HC_IC_BINDING(HC_ICAdd_LBTS, IC_LBTS);
 HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
+
+HC_IC_BINDING(HC_ICAdd_Fs, IC_FS);
+HC_IC_BINDING(HC_ICAdd_Gs, IC_GS);
+
 
 CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr) {
   CCodeMiscRef *ref;
@@ -4430,233 +4462,5 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
     refs = refs->next;
   }
 }
-void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl) {
-  CRPN *rpn;
-  for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code;
-       rpn = rpn->base.next) {
-    rpn->ic_fwd = ICFwd(rpn);
-    switch (rpn->type) {
-    case IC_LOCK:
-    case IC_GOTO:
-    unop:
-      rpn->tree1 = rpn->base.next;
-      continue;
-      break;
-    case IC_GOTO_IF:
-      goto unop;
-      break;
-    case IC_TO_I64:
-      goto unop;
-      break;
-    case IC_TO_F64:
-      goto unop;
-      break;
-    case IC_PAREN:
-      goto unop;
-      break;
-    case IC_NEG:
-      goto unop;
-      break;
-    case IC_POS:
-      goto unop;
-      break;
-    case IC_POW:
-    binop:
-      rpn->tree1 = rpn->base.next;
-      rpn->tree2 = ICFwd(rpn->tree1);
-      continue;
-      break;
-    case IC_ADD:
-      goto binop;
-      break;
-    case IC_EQ:
-      goto binop;
-      break;
-    case IC_SUB:
-      goto binop;
-      break;
-    case IC_DIV:
-      goto binop;
-      break;
-    case IC_MUL:
-      goto binop;
-      break;
-    case IC_DEREF:
-      goto binop;
-      break;
-    case IC_AND:
-      goto binop;
-      break;
-    case IC_ADDR_OF:
-      goto unop;
-      break;
-    case IC_XOR:
-      goto binop;
-      break;
-    case IC_MOD:
-      goto binop;
-      break;
-    case IC_OR:
-      goto binop;
-      break;
-    case IC_LT:
-      goto binop;
-      break;
-    case IC_GT:
-      goto binop;
-      break;
-    case IC_LNOT:
-      goto unop;
-      break;
-    case IC_BNOT:
-      goto unop;
-      break;
-    case IC_POST_INC:
-      goto unop;
-      break;
-    case IC_POST_DEC:
-      goto unop;
-      break;
-    case IC_PRE_INC:
-      goto unop;
-      break;
-    case IC_PRE_DEC:
-      goto unop;
-      break;
-    case IC_AND_AND:
-      goto binop;
-      break;
-    case IC_OR_OR:
-      goto binop;
-      break;
-    case IC_XOR_XOR:
-      goto binop;
-      break;
-    case IC_EQ_EQ:
-      goto binop;
-      break;
-    case IC_NE:
-      goto binop;
-      break;
-    case IC_LE:
-      goto binop;
-      break;
-    case IC_GE:
-      goto binop;
-      break;
-    case IC_LSH:
-      goto binop;
-      break;
-    case IC_RSH:
-      goto binop;
-      break;
-    case IC_ADD_EQ:
-      goto binop;
-      break;
-    case IC_SUB_EQ:
-      goto binop;
-      break;
-    case IC_MUL_EQ:
-      goto binop;
-      break;
-    case IC_DIV_EQ:
-      goto binop;
-      break;
-    case IC_LSH_EQ:
-      goto binop;
-      break;
-    case IC_RSH_EQ:
-      goto binop;
-      break;
-    case IC_AND_EQ:
-      goto binop;
-      break;
-    case IC_OR_EQ:
-      goto binop;
-      break;
-    case IC_XOR_EQ:
-      goto binop;
-      break;
-    case IC_MOD_EQ:
-      goto binop;
-      break;
-    case IC_RET:
-      goto unop;
-      break;
-    case IC_COMMA:
-      goto binop;
-      break;
-    case IC_UNBOUNDED_SWITCH:
-      goto unop;
-      break;
-    case IC_BOUNDED_SWITCH:
-      goto unop;
-      break;
-    case IC_TYPECAST:
-      goto unop;
-      break;
-    case IC_BT:
-      goto binop;
-      break;
-    case IC_BTC:
-      goto binop;
-      break;
-    case IC_BTS:
-      goto binop;
-      break;
-    case IC_BTR:
-      goto binop;
-      break;
-    case IC_LBTC:
-      goto binop;
-      break;
-    case IC_LBTS:
-      goto binop;
-      break;
-    case IC_LBTR:
-      goto binop;
-      break;
-    case IC_MAX_I64:
-      goto binop;
-      break;
-    case IC_MIN_I64:
-      goto binop;
-      break;
-    case IC_MAX_U64:
-      goto binop;
-      break;
-    case IC_MIN_U64:
-      goto binop;
-      break;
-    case IC_SIGN_I64:
-      goto unop;
-      break;
-    case IC_SQR_I64:
-      goto unop;
-      break;
-    case IC_SQR_U64:
-      goto unop;
-      break;
-    case IC_SQR:
-      goto unop;
-      break;
-    case IC_ABS:
-      goto unop;
-      break;
-    case IC_SQRT:
-      goto unop;
-      break;
-    case IC_SIN:
-      goto unop;
-      break;
-    case IC_COS:
-      goto unop;
-      break;
-    case IC_TAN:
-      goto unop;
-      break;
-    case IC_ATAN:
-      goto unop;
-    }
-  }
-}
+
+

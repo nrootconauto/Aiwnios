@@ -3877,6 +3877,11 @@ import F64 Ceil(F64);
 import I64 Bsf(I64);
 import I64 Bsr(I64);
 import U0 PutS(U8*);
+#ifdef TARGET_X86
+import U8 *__Fs();
+import U8 *__Gs();
+#endif
+import CCPU *Gs();
 import CTask *Fs();
 import U0 SetFs(CTask *);
 import I64 AIWNIOS_SetJmp(I64 *); //Returns 1 if called,else 0 if LongJmped to
@@ -3915,7 +3920,6 @@ import U0 SetKBCallback(U8 *fptr);
 import U0 SetMSCallback(U8 *fptr);
 import U0 SndFreq(I64);
 import F64 Pow(F64,F64);
-import CCPU *Gs();
 import U0 SetGs(CCPU *);
 import I64 mp_cnt();
 import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
@@ -3941,7 +3945,10 @@ extern U64 Btr(U8 *,I64);
 extern U64 Bts(U8 *,I64);
 extern U64 Btc(U8 *,I64);
 extern I64 mp_cnt();
+extern U8 *__Fs();
+extern U8 *__Gs();
 extern CCPU *Gs();
+extern CTask *Fs();
 extern U0 SetGs(CCPU *);
 extern U8 *BoundsCheck(U8 *ptr,I64 *oob_bytes);
 extern F64 Pow(F64,F64);
@@ -3990,7 +3997,6 @@ extern F64 Ceil(F64);
 extern I64 Bsf(I64);
 extern I64 Bsr(I64);
 extern U0 PutS(U8*);
-extern CTask *Fs();
 extern U0 SetFs(CTask *);
 extern I64 AIWNIOS_SetJmp(I64 *); //Returns 1 if called,else 0 if LongJmped to
 extern U0 AIWNIOS_LongJmp(I64 *);
@@ -6505,6 +6511,8 @@ extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #include "Headers.HH";
 
 #ifndef BOOTSTRAP
+#define IC_FS 0x15
+#define IC_GS 0x17
 #define IC_BT			0x77
 #define IC_BTS			0x78
 #define IC_BTR			0x79
@@ -6524,6 +6532,8 @@ _intern IC_BTR Bool Btr(U8*,I64);
 _intern IC_LBTS Bool LBts(U8*,I64);
 _intern IC_LBTC Bool LBtc(U8*,I64);
 _intern IC_LBTR Bool LBtr(U8*,I64);
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
 #endif
 #endif
 extern CCmpGlbls cmp;

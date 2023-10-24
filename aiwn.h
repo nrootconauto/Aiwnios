@@ -373,6 +373,7 @@ typedef struct CCodeMiscRef {
   int32_t (*patch_uncond_br)(int64_t);
   int64_t user_data1;
   int64_t user_data2;
+  int64_t is_abs64;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;
@@ -565,6 +566,8 @@ enum {
   IC_RAW_BYTES,
   IC_GET_VARGS_PTR, // Doing this sets the function as a VARGS function
   IC_LOCK, //Lock means "lock EXPRESSION;",it operates on expressions as a whole
+  IC_FS,
+  IC_GS,
   IC_CNT,           // MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -1064,6 +1067,8 @@ HC_IC_BINDINGH(HC_ICAdd_SIN)
 HC_IC_BINDINGH(HC_ICAdd_COS)
 HC_IC_BINDINGH(HC_ICAdd_TAN)
 HC_IC_BINDINGH(HC_ICAdd_ATAN)
+HC_IC_BINDINGH(HC_ICAdd_Fs)
+HC_IC_BINDINGH(HC_ICAdd_Gs)
 CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc, int64_t r);
 CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc, int64_t r, int64_t rt, int64_t ptr_cnt);
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc, int64_t off, int64_t rt, int64_t ptr_cnt);
@@ -1226,3 +1231,13 @@ int64_t ARM_stlxrh(int64_t,int64_t,int64_t);
 int64_t ARM_stlxr(int64_t,int64_t,int64_t);
 int64_t ARM_stlxrX(int64_t,int64_t,int64_t);
 void __HC_ICSetLock(CRPN *l);
+CRPN *__HC_ICAdd_RelocUnqiue(CCmpCtrl*,CCodeCtrl*,int64_t*,char*,int64_t,int64_t);
+
+#if defined(__x86_64__) && (defined(__linux__)||defined(__FreeBSD__))
+void *GetHolyGs();
+void *GetHolyFs();
+void *GetHolyGsPtr();
+void *GetHolyFsPtr();
+void SetHolyFs(void*);
+void SetHolyGs(void*);
+#endif

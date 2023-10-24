@@ -84,6 +84,7 @@ import U8 *__HC_ICAdd_Ret(U8*);
 import U8 *__HC_ICAdd_Arg(U8*,I64);
 import U8 *__HC_ICAdd_SetFrameSize(U8*,I64);
 import U8 *__HC_ICAdd_Reloc(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrsctrl);
+import U8 *__HC_ICAdd_RelocUnique(U8 *ccmp,U8 *cc,U64*,U8 *sym,I64 rt,I64 ptrsctrl);
 import U8 *__HC_ICAdd_StaticData(U8 *ccmp,U8 *cc,I64 at,U8 *d,I64 lctrl);
 import U8 *__HC_ICAdd_SetStaticsSize(U8 *,I64 szctrl);
 import U8 *__HC_ICAdd_StaticRef(U8 *,I64 off,I64 rt,I64 ptrsctrl);
@@ -97,6 +98,8 @@ import U8 * __HC_ICAdd_LBTC(U8*);
 import U8 * __HC_ICAdd_LBTR(U8*);
 import U8 * __HC_ICAdd_LBTS(U8*);
 import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
+import U8 * __HC_ICAdd_Fs(U8*);
+import U8 * __HC_ICAdd_Gs(U8*);
 #else
 extern U8 *__HC_ICAdd_GetVargsPtr(U8*);
 extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
@@ -188,6 +191,8 @@ extern U8 * __HC_ICAdd_BTS(U8*);
 extern U8 * __HC_ICAdd_LBTC(U8*);
 extern U8 * __HC_ICAdd_LBTR(U8*);
 extern U8 * __HC_ICAdd_LBTS(U8*);
+extern U8 * __HC_ICAdd_Fs(U8*);
+extern U8 * __HC_ICAdd_Gs(U8*)
 #endif
 //
 // See arm_backend.c
@@ -281,6 +286,11 @@ U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   tmpaie->offset=data->cm->offset;
   tmpaie->short_jmp=TRUE;
   QueIns(tmpaie,data->cc->aot->last_ie);
+}
+static Bool IsTLSReloc(CCodeMisc *misc) {
+  if(misc->h&&(!StrCmp(misc->h->str,"__Fs")||!StrCmp(misc->h->str,"__Gs")))
+	return TRUE;
+  return FALSE;
 }
 //
 // Turns my CRPN from the parser into the IC for the C side
@@ -586,7 +596,51 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   //
   for(cur=head->last;cur!=head;cur=cur->last) {
     switch(cur->type) {
-    break;case IC_LOCK:
+    break;case IC_FS:
+    if(!cur->ic_data) {
+    //Unique references to the TLS offset(unlike normal functions whose pointer is stored at the end of the function and loaded from there)
+      misc=cur->ic_data=COCMiscNew(cc,CMT_HASH_ENTRY);
+      misc->h=HashFind("__Fs",cc->htc.glbl_hash_table,HTT_FUN);
+      if(!misc->h)
+        misc->h=HashFind("__Fs",Fs->hash_table,HTT_FUN); //Maybe we arent AOT Compiling
+    }
+    misc=cur->ic_data;
+    misc->addr=INVALID_PTR;
+    if(!(misc->h->type&HTF_IMPORT)) {
+      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
+    } else
+      new=__HC_ICAdd_RelocUnique(
+          acc,
+          cc2,
+          &misc->addr,
+          "__Fs",
+          RT_U8,
+          1
+        );
+    new=__HC_ICAdd_Fs(cc2);
+	break;case IC_GS:
+	if(!cur->ic_data) {
+    //Unique references to the TLS offset(unlike normal functions whose pointer is stored at the end of the function and loaded from there)
+      misc=cur->ic_data=COCMiscNew(cc,CMT_HASH_ENTRY);
+      misc->h=HashFind("__Gs",cc->htc.glbl_hash_table,HTT_FUN);
+      if(!misc->h)
+        misc->h=HashFind("__Gs",Fs->hash_table,HTT_FUN); //Maybe we arent AOT Compiling
+    }
+    misc=cur->ic_data;
+    misc->addr=INVALID_PTR;
+    if(!(misc->h->type&HTF_IMPORT)) {
+      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
+    } else
+      new=__HC_ICAdd_RelocUnique(
+          acc,
+          cc2,
+          &misc->addr,
+          "__Gs",
+          RT_U8,
+          1
+        );
+    new=__HC_ICAdd_Gs(cc2);
+	    break;case IC_LOCK:
     new=__HC_ICAdd_Lock(cc2);    
     break;case IC_FRAME:
     if(cur->last(CRPN*)->type==IC_ADDR) {
@@ -943,6 +997,13 @@ break;case IC_ASM:
 			fill_user_data.cm=misc;
 			fill_user_data.machine_code=machine_code;
 			__HC_CodeMiscInterateThroughRefs(misc->addr,&AddShortReloc,&fill_user_data);
+          } else if(IsTLSReloc(misc)) {
+            tmpaie=CAlloc(sizeof(CAOTImportExport));
+            tmpaie->type=IET_IMM_I64;
+            tmpaie->str=StrNew(misc->h->str);
+            tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
+            tmpaie->offset=misc->offset;
+            QueIns(tmpaie,cc->aot->last_ie);
           } else {
             tmpaie=CAlloc(sizeof(CAOTImportExport));
             tmpaie->type=IET_IMM_I64;
@@ -961,7 +1022,10 @@ break;case IC_ASM:
           //[reloc type 1][reloc offset 4][name?]NULL]
           //Nroot adds an aditional byte to specify NULL after we load the silly sauce 
           h->module_header_entry=CAlloc(StrLen(h->str)+5+1+1);
-          h->module_header_entry[0]=IET_IMM_I64;
+          if(IsTLSReloc(misc))
+			h->module_header_entry[0]=IET_IMM_I64;
+          else 
+			h->module_header_entry[0]=IET_IMM_I64;
           h->module_header_entry[1](U32)=misc->addr(U8*)-machine_code;
           StrCpy(h->module_header_entry+5,h->str);
           HashAdd(h,Fs->hash_table);

@@ -1,6 +1,65 @@
 #include "aiwn.h"
 #include <SDL2/SDL.h>
 #include <inttypes.h>
+//In x86_64_backend,we are going to (if supported) use the raw FS/GS registers
+//If unable to,we will fill in the "__Fs/__Gs" relocations with a function to return the 
+// TLS pointers,OTHERWISE I will fill in an offset to FS/GS
+
+// supported:
+// MOV RAX,FS/GS:ThreadGs/Fs
+// 
+// Unsupported
+//  CALL &GetHolyGs/GetHolyFs
+#if defined(__x86_64__) && defined(__SEG_FS)
+    #if defined(__FreeBSD__) || defined(__linux__)
+    __thread void *ThreadFs;
+    __thread void *ThreadGs;
+    void *GetHolyGsPtr() {
+		__seg_fs char * fs=(__seg_fs char*)&ThreadGs; //thread tls register is FS
+		char *base;
+		asm ("mov %%fs:0,%0"
+			:"=r"(base));
+		return (char*)fs-(char*)base;
+	}
+	void* GetHolyFsPtr() {
+		__seg_fs char *fs=(__seg_fs char*)&ThreadFs;
+		char *base;
+		asm ("mov %%fs:0,%0"
+			:"=r"(base));
+		return (char*)fs-(char*)base;
+	}
+    #else
+    __thread void *ThreadGs;
+    __thread void *ThreadFs;
+    void *GetHolyGsPtr() {
+		return &GetHolyGs;
+	}
+	void *GetHolyFsPtr() {
+		return &GetHolyFs;
+	}
+    #endif
+#else
+__thread void *ThreadGs;
+__thread void *ThreadFs;   
+void *GetHolyGsPtr() {
+	return &GetHolyGs;
+}
+void *GetHolyFsPtr() {
+	return &GetHolyFs;
+}
+#endif  
+void SetHolyFs(void *new) {
+	ThreadFs=new;
+}
+void SetHolyGs(void *new) {
+	ThreadGs=new;
+}
+void *GetHolyFs() {
+	return ThreadFs;
+}
+void *GetHolyGs() {
+	return ThreadGs;
+}
 typedef struct {
   void (*fp)(), *gs;
   int64_t num;

@@ -1035,7 +1035,7 @@ U0 AnimateTask(I64)
 	  tmpb->p.x+=10*ms/1000*MAP_SCALE*Cos(tmpb->é);
 	  tmpb->p.y+=10*ms/1000*MAP_SCALE*Sin(tmpb->é);
 	  tmpb->p.z=BIRD_ELEVATION*MAP_SCALE+
-		elevations[AbsI64(tmpb->p.y/MAP_SCALE)%MAP_HEIGHT][AbsI64(tmpb->p.x/MAP_SCALE)%MAP_WIDTH];
+		elevations[AbsI64(tmpb->p.y/MAP_SCALE)%MAP_HEIGHT][AbsI64(tmpb->p.x/MAP_SCALE)%MAP_WIDTH];
 	  tmpb->é+=2*pi*ms/1000/10;
 	  tmpb=tmpb->next;
 	}

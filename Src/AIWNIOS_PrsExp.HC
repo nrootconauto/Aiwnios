@@ -148,6 +148,8 @@ binop_dft:
       goto binop_dft;
     }
     break;
+    case IC_FS:
+    case IC_GS:
     case IC_BT:
     case IC_BTS:
     case IC_BTR:
@@ -656,7 +658,7 @@ U0 PushOpers(CCmpCtrl *cc,I64 cur_prec,Bool fin=FALSE) {
   while(cc->ps->ptr>0) { //cc->ps->stk starts at 1
     v=PrsPop(cc->ps);
     rpn=PrsPop2(cc->ps); //NULL if paren
-    if(PREC_NULL==v.u32[1]&&!fin) {
+	if(PREC_NULL==v.u32[1]&&!fin) {
       //Put back on stack
       PrsPush(cc->ps,v);
       PrsPush2(cc->ps,rpn);
@@ -777,7 +779,12 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
   I64 idx=0;
   CHashClass *cls=rpn->ic_class;
   CRPN *next=rpn->next;
-  DbgPrint("%x%*c%s",rpn,indent+1,' ',intermediate_code_table[rpn->type].name);
+  if(cls) {
+    while(cls->ptr_stars_cnt)
+      cls=DerefType(cls);
+    DbgPrint("%x%*c%s(%s*%d)",rpn,indent+1,' ',intermediate_code_table[rpn->type].name,cls->str,rpn->ic_class->ptr_stars_cnt);
+  } else
+	DbgPrint("%x%*c%s",rpn,indent+1,' ',intermediate_code_table[rpn->type].name);
   switch(rpn->type) {
     break;case IC_IMM_I64:
     case IC_FRAME:
@@ -785,10 +792,7 @@ CRPN *DumpRPN(CRPN *rpn,I64 indent=0) {
     break;case IC_IMM_F64:
     ",%n,",rpn->imm_f64;
   }
-  if(cls) {
-    while(cls->ptr_stars_cnt)
-      cls=DerefType(cls);
-  }
+  
   switch(intermediate_code_table[rpn->type].arg_cnt) {
     break;case IS_V_ARG:
     DbgPrint("(%d)\n",rpn->length);
@@ -1270,6 +1274,7 @@ vargs:
 		  ic_fun->return_class
 		  );
 	  } else {
+use_intern:
 		rpn=RPNAddNew(
 		  cc,
 		  IC_CALL_INDIRECT,
@@ -1278,6 +1283,7 @@ vargs:
 		  );
 		//"SWAP" out the new rpn type with the desired one
 		rpn->type=ic_fun->exe_addr; 		  
+		rpn->ic_data=0;
 		//next is the old dummy function,not needed as we are using an intermendiate
 		RPNDel(next);
 	  }
@@ -1469,7 +1475,7 @@ ins_label:
 		    );
 	    }
 	    if(cc->local_var_entry->flags&MLF_FUN) {
-//TempleOS stores Function claass in ->fun_ptr for some reason(when MLF_FUN is set) 
+//TempleOS stores Function class in ->fun_ptr for some reason(when MLF_FUN is set) 
 	      rpn->ic_class=cc->local_var_entry->fun_ptr;
 	    }
 	    rpn->ic_dim=cc->local_var_entry->dim.next;
@@ -1481,14 +1487,21 @@ ins_label:
 	    }
 	    if(cc->hash_entry->type&HTT_FUN) {
 	      ic_fun=cc->hash_entry;
-	        if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
+	      if(Bt(&ic_fun->flags,Ff_INTERNAL)) {
+		  rpn=RPNAddNew(
+		        cc,
+		        IC_IMM_I64,
+		        cc->hash_entry(CHashFun*)->exe_addr,
+		        cc->hash_entry,
+		        );
+	      } else if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
 		  rpn=RPNAddNew(
 		        cc,
 		        IC_ADDR_IMPORT,
 		        CodeMiscHashNew(cc,cc->hash_entry),
 		        cc->hash_entry,
 		        );
-	        else
+	       else
 		  rpn=RPNAddNew(
 		        cc,
 		        IC_IMM_I64,
@@ -1496,6 +1509,7 @@ ins_label:
 		        cc->hash_entry,
 		        );
 	      Lex(cc);
+	      next=rpn;
 	      if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
 	        if(ic_fun->flags&(1<<Ff_INTERNAL))
 		  LexExcept(cc,"Can't get address of internal function at ");
@@ -1511,7 +1525,10 @@ ins_label:
 		  arity++;
 	        }
 	        arity++;//Include function
-	        RPNAddNew(
+	        if(Bt(&ic_fun->flags,Ff_INTERNAL)) {
+		      goto use_intern;
+	        } else
+	          RPNAddNew(
 		      cc,
 		      IC_CALL_INDIRECT,
 		      arity,

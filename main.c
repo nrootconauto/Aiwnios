@@ -288,11 +288,6 @@ static void PutS(char *s) {
 static uint64_t STK_60fps(uint64_t *stk) {
   return sixty_fps->count != 0;
 }
-
-// This a "symbolic" Fs only used from the HolyC part
-static void SetHolyFs(void *fs) {
-  HolyFs = fs;
-}
 extern int64_t GetTicksHP();
 static int64_t __GetTicksHP() {
 #if defined(_WIN32) || defined(WIN32)
@@ -319,17 +314,6 @@ static int64_t __GetTicks() {
 }
 static void __SleepHP(int64_t us) {
   usleep(us);
-}
-void *GetHolyFs() {
-  return HolyFs;
-}
-static _Thread_local void *HolyGs;
-
-void *GetHolyGs() {
-  return HolyGs;
-}
-void SetHolyGs(void *ptr) {
-  HolyGs = ptr;
 }
 static int64_t MemCmp(char *a, char *b, int64_t s) {
   return memcmp(a, b, s);
@@ -833,6 +817,12 @@ static int64_t STK___HC_ICAdd_AddEq(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Lock(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Lock((CCodeCtrl *)stk[0]);
 }
+static int64_t STK___HC_ICAdd_Fs(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Fs((CCodeCtrl *)stk[0]);
+}
+static int64_t STK___HC_ICAdd_Gs(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Gs((CCodeCtrl *)stk[0]);
+}
 static int64_t STK___HC_ICAdd_SubEq(int64_t *stk) {
   return (int64_t)__HC_ICAdd_SubEq((CCodeCtrl *)stk[0]);
 }
@@ -922,6 +912,10 @@ static int64_t STK___HC_ICAdd_SetFrameSize(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Reloc(int64_t *stk) {
   return __HC_ICAdd_Reloc(stk[0], stk[1], stk[2], stk[3], stk[4], stk[5]);
 }
+static int64_t STK___HC_ICAdd_RelocUnique(int64_t *stk) {
+  return __HC_ICAdd_RelocUnqiue(stk[0], stk[1], stk[2], stk[3], stk[4], stk[5]);
+}
+
 static int64_t STK___HC_ICSetLine(int64_t *stk) {
   __HC_ICSetLine(stk[0], stk[1]);
 }
@@ -1222,8 +1216,21 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS", STK_PutS, 1);
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
-    PrsAddSymbol("Fs", GetHolyFs, 0); // Gs just calls Thread local storage on
-                                      // linux(not mutations in saved registers)
+    PrsAddSymbol("Fs", GetHolyFs, 0); 
+    #if defined (__x86_64__)
+    #if defined(__linux__) || defined(__FreeBSD__)
+    //__Fs is special
+    //__Gs is special then so add the RESULT OF THE function
+    PrsAddSymbolNaked("__Fs",NULL,0);
+    ((CHashExport*)HashFind("__Fs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyFsPtr();
+    PrsAddSymbolNaked("__Gs",NULL,0);
+    ((CHashExport*)HashFind("__Gs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyGsPtr();
+    #else
+    //Pass function pointer(not the result)
+    PrsAddSymbol("__Fs",GetHolyFsPtr,0);
+    PrsAddSymbol("__Gs",GetHolyGsPtr,0);
+    #endif
+    #endif
     PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
     PrsAddSymbol("MPAwake", STK_MPAwake, 1);
@@ -1308,12 +1315,15 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_ICAdd_Str", STK___HC_ICAdd_Str, 2);
     PrsAddSymbol("__HC_ICAdd_And", STK___HC_ICAdd_And, 1);
     PrsAddSymbol("__HC_ICAdd_Lock", STK___HC_ICAdd_Lock, 1);
+    PrsAddSymbol("__HC_ICAdd_Fs", STK___HC_ICAdd_Fs, 1);
+    PrsAddSymbol("__HC_ICAdd_Gs", STK___HC_ICAdd_Gs, 1);
     PrsAddSymbol("__HC_ICAdd_EqEq", STK___HC_ICAdd_EqEq, 1);
     PrsAddSymbol("__HC_ICAdd_Neg", STK___HC_ICAdd_Neg, 1);
     PrsAddSymbol("__HC_ICAdd_Ret", STK___HC_ICAdd_Ret, 1);
     PrsAddSymbol("__HC_ICAdd_Arg", STK___HC_ICAdd_Arg, 2);
     PrsAddSymbol("__HC_ICAdd_SetFrameSize", STK___HC_ICAdd_SetFrameSize, 2);
     PrsAddSymbol("__HC_ICAdd_Reloc", STK___HC_ICAdd_Reloc, 6);
+    PrsAddSymbol("__HC_ICAdd_RelocUnique", STK___HC_ICAdd_RelocUnique, 6);
     PrsAddSymbol("__HC_ICSetLine", STK___HC_ICSetLine, 2);
     PrsAddSymbol("__HC_ICAdd_StaticRef", STK___HC_ICAdd_StaticRef, 4);
     PrsAddSymbol("__HC_ICAdd_StaticData", STK___HC_ICAdd_StaticData, 5);
