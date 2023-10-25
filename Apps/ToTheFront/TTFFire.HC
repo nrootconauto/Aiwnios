@@ -148,7 +148,7 @@ U0 UnitDirectFire(Unit *tmpu,Unit *target)
     target_hit=FALSE;
     Noise(1000*animation_delay,69,74);
     Sleep(1000*animation_delay);
-    a=pi*2*Rand;
+    a=ã*2*Rand;
     d=(0.5-d/100)*HEX_SIDE;
     Line(NULL,x1,y1,0,x2+d*Cos(a),y2+d*Sin(a),0,&BulletPlot);
   }
@@ -215,7 +215,7 @@ U0 IndirectResolveAll()
   F64 x1,y1,x2,y2,d,range_factor;
   Unit *tmpu,*target;
   IndirectOrders *tmpi=indirect_head.next,*tmpi1;
-  while (tmpi!=*indirect_head) {
+  while (tmpi!=&indirect_head) {
     tmpi1=tmpi->next;
     tmpu=tmpi->attacker;
     AttackHeader(tmpu,"IndirectFire",NULL);

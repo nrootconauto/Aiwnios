@@ -110,16 +110,14 @@ U0 TaskEndCB()
 I64 PhaseDo()
 {
   I64 res='ExitGame';
-  U0 (*cb)();
   PhaseNew;
   try {
     if (phase&~1==PHASE_INDIRECT)
-      cb=player_indirect[cur_player];
+      Call(player_indirect[cur_player],0,NULL);
     else if (phase&~1==PHASE_MOVE)
-      cb=player_move[cur_player];
+      Call(player_move[cur_player],0,NULL);
     else
-      cb=player_direct[cur_player];
-    (*cb)();
+      Call(player_direct[cur_player],0,NULL);
   } catch {
     res=Fs->except_ch;
     Fs->catch_except=TRUE;
