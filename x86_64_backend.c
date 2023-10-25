@@ -5968,14 +5968,23 @@ segment:
 		if(bin) *(void**)(bin+code_off-8)=next->integer;
 	} else if(bin)
 		CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64=1;
-	#else
-	AIWNIOS_ADD_CODE(X86Call32,0x11223344);
-	if(bin) CodeMiscAddRef(next->code_misc, bin + code_off - 4);
-	#endif
 	tmp.mode=MD_REG;
 	tmp.reg=0;
 	tmp.raw_type=RT_I64i;
 	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+	#else
+	AIWNIOS_ADD_CODE(X86MovImm,RAX,0x1122334455ll); //Force 64 bit
+	if(next->type==IC_I64) {
+		if(bin) *(void**)(bin+code_off-8)=next->integer;
+	} else if(bin)
+		CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64=1;
+	AIWNIOS_ADD_CODE(X86CallReg,RAX);
+	tmp.mode=MD_INDIR_REG;
+	tmp.reg=0;
+	tmp.off=0;
+	tmp.raw_type=RT_I64i;
+	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+	#endif
 	break;
   ic_lock:
     cctrl->is_lock_expr = 1;

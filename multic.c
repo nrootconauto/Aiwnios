@@ -32,10 +32,10 @@
     __thread void *ThreadGs;
     __thread void *ThreadFs;
     void *GetHolyGsPtr() {
-		return &GetHolyGs;
+		return &ThreadGs;
 	}
 	void *GetHolyFsPtr() {
-		return &GetHolyFs;
+		return &ThreadFs;
 	}
     #endif
 #else

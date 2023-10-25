@@ -1233,11 +1233,9 @@ int64_t ARM_stlxrX(int64_t,int64_t,int64_t);
 void __HC_ICSetLock(CRPN *l);
 CRPN *__HC_ICAdd_RelocUnqiue(CCmpCtrl*,CCodeCtrl*,int64_t*,char*,int64_t,int64_t);
 
-#if defined(__x86_64__) && (defined(__linux__)||defined(__FreeBSD__))
 void *GetHolyGs();
 void *GetHolyFs();
 void *GetHolyGsPtr();
 void *GetHolyFsPtr();
 void SetHolyFs(void*);
 void SetHolyGs(void*);
-#endif
