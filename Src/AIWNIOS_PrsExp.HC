@@ -1275,17 +1275,17 @@ vargs:
 		  );
 	  } else {
 use_intern:
-		rpn=RPNAddNew(
+	    rpn=RPNAddNew(
 		  cc,
 		  IC_CALL_INDIRECT,
 		  arity,
 		  ic_fun->return_class
 		  );
-		//"SWAP" out the new rpn type with the desired one
-		rpn->type=ic_fun->exe_addr; 		  
-		rpn->ic_data=0;
-		//next is the old dummy function,not needed as we are using an intermendiate
-		RPNDel(next);
+//"SWAP" out the new rpn type with the desired one
+	    rpn->type=ic_fun->exe_addr; 		  
+	    rpn->ic_data=0;
+//next is the old dummy function,not needed as we are using an intermendiate
+	    RPNDel(next);
 	  }
         } else {
 	  if(tok==TK_IDENT&&cc->hash_entry) {
@@ -1347,7 +1347,7 @@ found_end_square:
         Lex(cc);
         next=cc->coc.coc_head.next;
         if(next==&cc->coc.coc_head.next)
-          LexExcept(cc,"Expected not empty '[]' at ");
+	  LexExcept(cc,"Expected not empty '[]' at ");
         if(next->ic_class->raw_type==RT_F64)
 	  RPNAddNew(cc,IC_TO_I64);
         RPNAddNew(cc,IC_ADD);
@@ -1410,7 +1410,7 @@ found_end_square:
 	      tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
 	      goto ins_label;
 	    } else if(cc->hash_entry&&cc->hash_entry->type&HTT_CLASS) {
-	      //MOV RAX, CTask.addr[RBX]
+//MOV RAX, CTask.addr[RBX]
 	      PrsOffsetOf(cc);
 	      break;
 	    } else if(!cc->hash_entry) {
@@ -1488,37 +1488,52 @@ ins_label:
 	    if(cc->hash_entry->type&HTT_FUN) {
 	      ic_fun=cc->hash_entry;
 	      if(Bt(&ic_fun->flags,Ff_INTERNAL)) {
-		  rpn=RPNAddNew(
-		        cc,
-		        IC_IMM_I64,
-		        cc->hash_entry(CHashFun*)->exe_addr,
-		        cc->hash_entry,
-		        );
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_IMM_I64,
+		      cc->hash_entry(CHashFun*)->exe_addr,
+		      cc->hash_entry,
+		      );
 	      } else if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
-		  rpn=RPNAddNew(
-		        cc,
-		        IC_ADDR_IMPORT,
-		        CodeMiscHashNew(cc,cc->hash_entry),
-		        cc->hash_entry,
-		        );
-	       else
-		  rpn=RPNAddNew(
-		        cc,
-		        IC_IMM_I64,
-		        cc->hash_entry(CHashFun*)->exe_addr,
-		        cc->hash_entry,
-		        );
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_ADDR_IMPORT,
+		      CodeMiscHashNew(cc,cc->hash_entry),
+		      cc->hash_entry,
+		      );
+	      else
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_IMM_I64,
+		      cc->hash_entry(CHashFun*)->exe_addr,
+		      cc->hash_entry,
+		      );
 	      Lex(cc);
 	      next=rpn;
 	      if(cc->ps->ptr&&cc->ps->stk[cc->ps->ptr].u32[0]==IC_ADDR) {
-	        if(ic_fun->flags&(1<<Ff_INTERNAL))
-		  LexExcept(cc,"Can't get address of internal function at ");
+	        if(ic_fun->flags&(1<<Ff_INTERNAL)) {
+//Account for &Fs->task_flags
+		  if(cc->token=='('||cc->token=='.'||cc->token==TK_DEREFERENCE) {
+//All is good,not '(' so continue as usal
+		    if(cc->token!='(')
+		      goto implicit_call;
+		  } else
+		    LexExcept(cc,"Can't get address of internal function at ");
+	        } else {
 //Continue as usual
-	        rpn->ic_class=AddrOfType(rpn->ic_class); //Emulate a pointer star
-	        PrsPop(cc->ps);
-	        Free(PrsPop2(cc->ps)); //Free node
+		  //Dont derefernce to function pointer if it is a call or "&Call()->member"
+		  if(cc->token=='('||cc->token=='.'||cc->token==TK_DEREFERENCE) {
+		    if(cc->token!='(')
+		      goto implicit_call;
+		  } else {
+		    rpn->ic_class=AddrOfType(rpn->ic_class); //Emulate a pointer star
+		    PrsPop(cc->ps);
+		    Free(PrsPop2(cc->ps)); //Free node
+		  }
+	        }
 	      } else if(cc->token!='(') {
 //Is an implicit function call
+	        implicit_call:
 	        arity=ImplicitFunCall(cc,ic_fun,0);
 	        if(ic_fun->flags&(1<<Ff_DOT_DOT_DOT)) {
 		  RPNAddNew(cc,IC_IMM_I64,0); //Add argc,argv not needed
@@ -1526,14 +1541,14 @@ ins_label:
 	        }
 	        arity++;//Include function
 	        if(Bt(&ic_fun->flags,Ff_INTERNAL)) {
-		      goto use_intern;
+		  goto use_intern;
 	        } else
-	          RPNAddNew(
-		      cc,
-		      IC_CALL_INDIRECT,
-		      arity,
-		      ic_fun->return_class
-		      );
+		  RPNAddNew(
+		        cc,
+		        IC_CALL_INDIRECT,
+		        arity,
+		        ic_fun->return_class
+		        );
 	        goto fin_ident;
 	      }
 	    } else if(cc->hash_entry->type&HTT_GLBL_VAR) {
