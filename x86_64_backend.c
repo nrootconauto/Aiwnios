@@ -6892,7 +6892,7 @@ segment:
       AIWNIOS_ADD_CODE(X86LeaSIB, into_reg, -1, -1, RIP, 0);
       if (bin)
         CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4)->offset =
-            rpn->integer;
+            next->integer;
       goto restore_reg;
       break;
     case IC_DEREF:
