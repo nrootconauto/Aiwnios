@@ -2057,16 +2057,16 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   int64_t idx;
   switch (rpn->type) {
     break;
-    //SEE NOTE IN multic.c
-  #if defined(__FreeBSD__)||defined(__linux__)
+    // SEE NOTE IN multic.c
+#if defined(__FreeBSD__) || defined(__linux__)
   case IC_FS:
   case IC_GS:
-	return 0;
-  #else
+    return 0;
+#else
   case IC_FS:
   case IC_GS:
-	return 1;
-  #endif
+    return 1;
+#endif
   case __IC_CALL:
   case IC_CALL:
     return 1;
@@ -2577,9 +2577,22 @@ static void PopTmp(CCmpCtrl *cctrl, CRPN *rpn) {
 }
 
 static CRPN *__AddScale(CRPN *r, int64_t *const_val) {
+  CRPN *n0 = ICArgN(r, 0), *n1 = ICArgN(r, 1);
+  if (r->type == IC_LSH) {
+    if (IsConst(n0) && Is32Bit(ConstVal(n0))) {
+      switch (ConstVal(n0)) {
+      case 1:
+      case 2:
+      case 3:
+        if (const_val)
+          *const_val = 1 << ConstVal(n0);
+        return n1;
+      }
+    }
+    return NULL;
+  }
   if (r->type != IC_MUL)
     return NULL;
-  CRPN *n0 = ICArgN(r, 0), *n1 = ICArgN(r, 1);
   if (IsConst(n0) && Is32Bit(ConstVal(n0))) {
     switch (ConstVal(n0)) {
     case 1:
@@ -2636,6 +2649,45 @@ static int64_t IsCompare(int64_t c) {
     return 1;
   }
   return 0;
+}
+
+static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
+                           int64_t *scale) {
+  CRPN   *b = NULL, *idx = NULL;
+  int64_t tmp, i = 0, i2 = -1, is_sib = 0;
+  CRPN   *arg = r;
+  while (__AddOffset(arg, &tmp)) {
+    arg = __AddOffset(arg, &tmp);
+    i += tmp;
+  }
+  if (arg->type == IC_ADD) {
+    if (idx = __AddScale(ICArgN(arg, 0), &i2))
+      b = ICArgN(arg, 1);
+    else if (idx = __AddScale(ICArgN(arg, 1), &i2))
+      b = ICArgN(arg, 0);
+    else {
+      b = ICArgN(arg, 0), idx = ICArgN(arg, 1), i2 = 1;
+    }
+    is_sib = 1;
+  } else if (arg->type == IC_IREG) {
+    b      = arg;
+    is_sib = 1;
+  } else if (arg->type == IC_MUL) {
+    b = NULL;
+    if (idx = __AddScale(ICArgN(arg, 0), &i2))
+      is_sib = 1;
+    else if (idx = __AddScale(ICArgN(arg, 1), &i2))
+      is_sib = 1;
+  }
+  if (_b)
+    *_b = b;
+  if (_idx)
+    *_idx = idx;
+  if (off)
+    *off = i;
+  if (scale)
+    *scale = i2;
+  return is_sib && Is32Bit(i);
 }
 
 // Returns 1 if we hit the bottom
@@ -2751,48 +2803,27 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     break;
   case IC_ADD:
     orig = r;
-    if (!spilled && r->raw_type != RT_F64 &&
-        AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 1) {
-      arg2 = r->base.last;
-      arg  = r;
-      i    = 0;
-      i2   = 1;
-      while (__AddOffset(arg, &tmp)) {
-        arg = __AddOffset(arg, &tmp);
-        i += tmp;
-      }
-      if (arg->type == IC_ADD) {
-        if (idx = __AddScale(ICArgN(arg, 0), &i2))
-          b = ICArgN(arg, 1);
-        else if (idx = __AddScale(ICArgN(arg, 1), &i2))
-          b = ICArgN(arg, 0);
-        else {
-          b = ICArgN(arg, 0), idx = ICArgN(arg, 1), i2 = 1;
-        }
-      } else if (arg->type == IC_IREG) {
-        // All is good
-        b = arg;
+    tmp  = 0;
+    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2)) {
+      if (b && idx) {
+        if (b->type != IC_IREG)
+          tmp++;
+        if (idx->type != IC_IREG)
+          tmp++;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0 ||
+            tmp >= 2)
+          goto binop;
+        if (SpillsTmpRegs(idx))
+          goto binop;
         PushTmpDepthFirst(cctrl, b, 0);
+        PushTmpDepthFirst(cctrl, idx, 0);
+        PopTmp(cctrl, idx);
         PopTmp(cctrl, b);
-        orig->flags |= ICF_INDIR_REG;
-        orig->res.mode           = __MD_X86_64_LEA_SIB;
-        orig->res.__SIB_scale    = -1;
-        orig->res.off            = i;
-        orig->res.reg2           = -1;
-        orig->res.raw_type       = r->raw_type;
-        orig->res.__sib_base_rpn = arg;
-        orig->res.reg            = b->res.reg;
-        orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
-        orig->res.pop_n_tmp_regs = 1;
-        return 1;
-      } else {
-        i2 = 1;
-        if (idx = __AddScale(arg, &i2)) {
-          b = idx;
-          PushTmpDepthFirst(cctrl, b, 0);
-          PopTmp(cctrl, b);
-          // Make a dummy node to store in a tmp register
-          if (b->res.mode != MD_REG || b->res.mode == RT_F64) {
+
+      lea_sib:
+        // Make a dummy node to store in a tmp register
+        if (b)
+          if (b->res.mode != MD_REG || b->res.raw_type == RT_F64) {
             new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
             new->type     = IC_POS;
             new->raw_type = RT_I64i;
@@ -2801,56 +2832,56 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
             new->res.mode     = MD_REG;
             new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
             new->res.raw_type = RT_I64i;
+            b                 = new;
           }
-          orig->flags |= ICF_INDIR_REG;
-          orig->res.mode           = __MD_X86_64_LEA_SIB;
-          orig->res.__SIB_scale    = i2;
-          orig->res.off            = i;
-          orig->res.reg2           = b->res.reg;
-          orig->res.raw_type       = r->raw_type;
-          orig->res.__sib_idx_rpn  = idx;
-          orig->res.reg            = -1;
-          orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
-          orig->res.pop_n_tmp_regs = 1;
-          return 1;
-        }
-        goto binop;
-      }
-      if (arg->type == IC_ADD && Is32Bit(i) && b->type == IC_IREG &&
-          !SpillsTmpRegs(idx)) {
-        if (!Is32Bit(i))
-          goto binop;
-        PushTmpDepthFirst(cctrl, b, 0);
-        PushTmpDepthFirst(cctrl, idx, 0);
-        PopTmp(cctrl, idx);
-        PopTmp(cctrl, b);
-        // Force index into tmp register
         // Make a dummy node to store in a tmp register
-        if (idx->res.mode != MD_REG || idx->res.mode == RT_F64) {
-          new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-          new->type     = IC_POS;
-          new->raw_type = RT_I64i;
-          new->ic_line  = idx->ic_line;
-          QueIns(new, idx->base.last);
-          new->res.mode     = MD_REG;
-          new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
-          new->res.raw_type = RT_I64i;
-          idx               = new;
-        }
-        orig->res.mode           = __MD_X86_64_LEA_SIB;
-        orig->res.off            = i;
-        orig->res.__SIB_scale    = i2;
-        orig->res.__sib_base_rpn = b;
+        if (idx)
+          if (idx->res.mode != MD_REG || idx->res.raw_type == RT_F64) {
+            new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
+            new->type     = IC_POS;
+            new->raw_type = RT_I64i;
+            new->ic_line  = idx->ic_line;
+            QueIns(new, idx->base.last);
+            new->res.mode     = MD_REG;
+            new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
+            new->res.raw_type = RT_I64i;
+            idx               = new;
+          }
+
+        orig->flags |= ICF_INDIR_REG;
+        orig->res.mode        = __MD_X86_64_LEA_SIB;
+        orig->res.__SIB_scale = idx ? i2 : -1;
+        orig->res.off         = i;
+        if (idx)
+          orig->res.reg2 = idx->res.reg;
+        else
+          orig->res.reg2 = -1;
         orig->res.__sib_idx_rpn  = idx;
-        orig->res.reg            = b->res.reg;
-        orig->res.reg2           = idx->res.reg;
-        // HERE IS USE fallback_reg becuase we need a register to use after we
-        // compute SIB
+        orig->res.__sib_base_rpn = b;
         orig->res.raw_type       = r->raw_type;
+        if (b)
+          orig->res.reg = b->res.reg;
+        else
+          orig->res.reg = -1;
         orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
         orig->res.pop_n_tmp_regs = 1;
-        orig->flags |= ICF_SIB;
         return 1;
+      } else if (b) {
+        if (b->type != IC_IREG)
+          tmp++;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
+          goto binop;
+        PushTmpDepthFirst(cctrl, b, 0);
+        PopTmp(cctrl, b);
+        goto lea_sib;
+      } else if (idx && 0) {
+        if (idx->type != IC_IREG)
+          tmp++;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
+          goto binop;
+        PushTmpDepthFirst(cctrl, idx, 0);
+        PopTmp(cctrl, idx);
+        goto lea_sib;
       }
     }
     goto binop;
@@ -2887,110 +2918,98 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       r->flags |= ICF_PRECOMPUTED;
       return 1;
     }
-    //
-    // When we are looking for SIBs,the IC_DEREF is uselss so inhiere from the
-    // secret suace
-    //
-    orig->res.pop_n_tmp_regs = 0;
-    if (!spilled && r->raw_type != RT_FUNC &&
-        AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 >= 1) {
-      orig = r;
-      d    = orig->base.next;
-      i = i2 = 0;
-      while (__AddOffset(d, &tmp)) {
-        i += tmp;
-        d = __AddOffset(d, &tmp);
-      }
-      if (d->type == IC_ADD) {
-        if (idx = __AddScale(ICArgN(d, 0), &i2))
-          b = ICArgN(d, 1);
-        else if (idx = __AddScale(ICArgN(d, 1), &i2))
-          b = ICArgN(d, 0);
-        else {
-          b = ICArgN(d, 0), idx = ICArgN(d, 1), i2 = 1;
+    tmp = 0;
+    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2)) {
+      if (b && idx) {
+        tmp = 0;
+        if (b->type != IC_IREG)
+          tmp++;
+        if (idx->type != IC_IREG)
+          tmp++;
+        if (tmp && spilled) {
+          goto deref_norm;
         }
-        if ((b->type == IC_IREG && !SpillsTmpRegs(idx))) {
-          while (__AddOffset(idx, &tmp) && i2 == 1) {
-            idx = __AddOffset(idx, &tmp);
-            i += tmp;
-          }
-          while (__AddOffset(b, &tmp)) {
-            b = __AddOffset(b, &tmp);
-            i += tmp;
-          }
-          if (Is32Bit(i)) {
-            PushTmpDepthFirst(cctrl, b, 0);
-            PushTmpDepthFirst(cctrl, idx, 0);
-            PopTmp(cctrl, idx);
-            PopTmp(cctrl, b);
-            // Make a dummy node to store in a tmp register
-            if (idx->res.mode != MD_REG || idx->res.mode == RT_F64) {
-              new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-              new->type     = IC_POS;
-              new->raw_type = RT_I64i;
-              new->ic_line  = idx->ic_line;
-              QueIns(new, idx->base.last);
-              new->res.mode     = MD_REG;
-              new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
-              new->res.raw_type = RT_I64i;
-              idx               = new;
-            }
-            b->stuff_in_reg          = b->res.reg;
-            idx->stuff_in_reg        = idx->res.reg;
-            orig->res.mode           = __MD_X86_64_SIB;
-            orig->res.off            = i;
-            orig->res.__SIB_scale    = i2;
-            orig->res.__sib_base_rpn = b;
-            orig->res.__sib_idx_rpn  = idx;
-            orig->res.reg            = b->res.reg;
-            orig->res.reg2           = idx->res.reg;
-            orig->res.raw_type       = r->raw_type;
-            orig->res.pop_n_tmp_regs = 1;
-            orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
-            orig->flags |= ICF_SIB;
-            return 1;
-          }
-        }
-      }
-      i2 = i = 0;
-      b      = r->base.next;
-      if (1) {
-        while (__AddOffset(b, &tmp)) {
-          b = __AddOffset(b, &tmp);
-          i += tmp;
-        }
-        if (!Is32Bit(i)) {
-          PushTmpDepthFirst(cctrl, r->base.next, 0);
-          PopTmp(cctrl, r->base.next);
-          goto fin;
-        }
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp < 0 ||
+            tmp >= 2)
+          goto deref_norm;
+        if (SpillsTmpRegs(idx))
+          goto deref_norm;
         PushTmpDepthFirst(cctrl, b, 0);
+        PushTmpDepthFirst(cctrl, idx, 0);
+        PopTmp(cctrl, idx);
         PopTmp(cctrl, b);
+
+      sib:
         // Make a dummy node to store in a tmp register
-        if (b->res.mode != MD_REG || b->res.mode == RT_F64) {
-          new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-          new->type     = IC_POS;
-          new->raw_type = RT_I64i;
-          new->ic_line  = b->ic_line;
-          QueIns(new, b->base.last);
-          new->res.mode     = MD_REG;
-          new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
-          new->res.raw_type = RT_I64i;
-          b                 = new;
-        }
-        orig->flags |= ICF_INDIR_REG;
-        orig->res.mode           = __MD_X86_64_SIB;
-        orig->res.__SIB_scale    = -1;
-        orig->res.off            = i;
-        orig->res.reg2           = -1;
+        if (b)
+          if (b->res.mode != MD_REG || b->res.raw_type == RT_F64) {
+            new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
+            new->type     = IC_POS;
+            new->raw_type = RT_I64i;
+            new->ic_line  = b->ic_line;
+            QueIns(new, b->base.last);
+            new->res.mode     = MD_REG;
+            new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
+            new->res.raw_type = RT_I64i;
+            b                 = new;
+          }
+        // Make a dummy node to store in a tmp register
+        if (idx)
+          if (idx->res.mode != MD_REG || idx->res.raw_type == RT_F64) {
+            new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
+            new->type     = IC_POS;
+            new->raw_type = RT_I64i;
+            new->ic_line  = idx->ic_line;
+            QueIns(new, idx->base.last);
+            new->res.mode     = MD_REG;
+            new->res.reg      = TmpRegToReg(cctrl->backend_user_data2);
+            new->res.raw_type = RT_I64i;
+            idx               = new;
+          }
+
+        orig->flags |= ICF_SIB;
+        orig->res.mode        = __MD_X86_64_SIB;
+        orig->res.__SIB_scale = idx ? i2 : -1;
+        orig->res.off         = i;
+        if (idx)
+          orig->res.reg2 = idx->res.reg;
+        else
+          orig->res.reg2 = -1;
         orig->res.raw_type       = r->raw_type;
         orig->res.__sib_base_rpn = b;
-        orig->res.reg            = b->res.reg;
-        orig->res.pop_n_tmp_regs = 1;
+        orig->res.__sib_idx_rpn  = idx;
+        if (b)
+          orig->res.reg = b->res.reg;
+        else
+          orig->res.reg = -1;
         orig->res.fallback_reg   = TmpRegToReg(cctrl->backend_user_data2++);
+        orig->res.pop_n_tmp_regs = 1;
         return 1;
+      } else if (b) {
+        if (b->type != IC_IREG)
+          tmp++;
+        if (tmp && spilled)
+          goto deref_norm;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
+            tmp >= 2)
+          goto deref_norm;
+        PushTmpDepthFirst(cctrl, b, 0);
+        PopTmp(cctrl, b);
+        goto sib;
+      } else if (idx) {
+        if (idx->type != IC_IREG)
+          tmp++;
+        if (tmp && spilled)
+          goto deref_norm;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
+            tmp >= 2)
+          goto deref_norm;
+        PushTmpDepthFirst(cctrl, idx, 0);
+        PopTmp(cctrl, idx);
+        goto sib;
       }
     }
+  deref_norm:
     PushTmpDepthFirst(cctrl, r->base.next, 0);
     PopTmp(cctrl, r->base.next);
     goto fin;
@@ -5757,26 +5776,29 @@ static int64_t __SexyPostOp(
 static void DoNothing() {
 }
 
-static int64_t SEG_GS(char *to,int64_t dummy) {
-	char buf[16];
-	if(!to) to=buf;
-	to[0]=0x65;
-	return 1;
+static int64_t SEG_GS(char *to, int64_t dummy) {
+  char buf[16];
+  if (!to)
+    to = buf;
+  to[0] = 0x65;
+  return 1;
 }
-static int64_t SEG_FS(char *to,int64_t dummy) {
-	char buf[16];
-	if(!to) to=buf;
-	to[0]=0x64;
-	return 1;
+static int64_t SEG_FS(char *to, int64_t dummy) {
+  char buf[16];
+  if (!to)
+    to = buf;
+  to[0] = 0x64;
+  return 1;
 }
-static int64_t MovRAXMoffs32(char *to,int64_t off) {
-	char buf[16];
-	int64_t len=0;
-	if(!to) to=buf;
-	ADD_U8(0x48);
-	ADD_U8(0xa1);
-	ADD_U64(off);
-    return 2+8;	
+static int64_t MovRAXMoffs32(char *to, int64_t off) {
+  char    buf[16];
+  int64_t len = 0;
+  if (!to)
+    to = buf;
+  ADD_U8(0x48);
+  ADD_U8(0xa1);
+  ADD_U64(off);
+  return 2 + 8;
 }
 
 static int64_t IsCompoundCompare(CRPN *r) {
@@ -5843,8 +5865,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   }
   static const void *poop_ants[IC_CNT] = {
-	  [IC_FS]				 = &&ic_fs,
-	  [IC_GS]				 = &&ic_gs,
+      [IC_FS]                = &&ic_fs,
+      [IC_GS]                = &&ic_gs,
       [IC_LOCK]              = &&ic_lock,
       [IC_GOTO]              = &&ic_goto,
       [IC_GOTO_IF]           = &&ic_goto_if,
@@ -5946,46 +5968,51 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   goto *poop_ants[rpn->type];
   do {
   ic_gs:
-	next=rpn->base.next;
-	if(next->type!=IC_RELOC&&next->type!=IC_I64) {
-		printf("Expected a relocation at IC_GS,aborting(Contact nrootcoauto for more info)\n");
-		abort();
-	}
-	goto segment;
-	break;
+    next = rpn->base.next;
+    if (next->type != IC_RELOC && next->type != IC_I64) {
+      printf("Expected a relocation at IC_GS,aborting(Contact nrootcoauto for "
+             "more info)\n");
+      abort();
+    }
+    goto segment;
+    break;
   ic_fs:
-	next=rpn->base.next;
-	if(next->type!=IC_RELOC&&next->type!=IC_I64) {
-		printf("Expected a relocation at IC_FS,aborting(Contact nrootcoauto for more info)\n");
-		abort();
-	}
-segment:
-	#if defined(__linux__) || defined (__FreeBSD__)
-	//IN LINUX/FreeBSD(?) FS is the thread local register,GS is a variabel stored in ThreadGs(from FS)
-	AIWNIOS_ADD_CODE(SEG_FS,0);
-	AIWNIOS_ADD_CODE(MovRAXMoffs32,0);
-	if(next->type==IC_I64) {
-		if(bin) *(void**)(bin+code_off-8)=next->integer;
-	} else if(bin)
-		CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64=1;
-	tmp.mode=MD_REG;
-	tmp.reg=0;
-	tmp.raw_type=RT_I64i;
-	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
-	#else
-	AIWNIOS_ADD_CODE(X86MovImm,RAX,0x1122334455ll); //Force 64 bit
-	if(next->type==IC_I64) {
-		if(bin) *(void**)(bin+code_off-8)=next->integer;
-	} else if(bin)
-		CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64=1;
-	AIWNIOS_ADD_CODE(X86CallReg,RAX);
-	tmp.mode=MD_INDIR_REG;
-	tmp.reg=0;
-	tmp.off=0;
-	tmp.raw_type=RT_I64i;
-	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
-	#endif
-	break;
+    next = rpn->base.next;
+    if (next->type != IC_RELOC && next->type != IC_I64) {
+      printf("Expected a relocation at IC_FS,aborting(Contact nrootcoauto for "
+             "more info)\n");
+      abort();
+    }
+  segment:
+#if defined(__linux__) || defined(__FreeBSD__)
+    // IN LINUX/FreeBSD(?) FS is the thread local register,GS is a variabel
+    // stored in ThreadGs(from FS)
+    AIWNIOS_ADD_CODE(SEG_FS, 0);
+    AIWNIOS_ADD_CODE(MovRAXMoffs32, 0);
+    if (next->type == IC_I64) {
+      if (bin)
+        *(void **)(bin + code_off - 8) = next->integer;
+    } else if (bin)
+      CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
+    tmp.mode     = MD_REG;
+    tmp.reg      = 0;
+    tmp.raw_type = RT_I64i;
+    code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+#else
+    AIWNIOS_ADD_CODE(X86MovImm, RAX, 0x1122334455ll); // Force 64 bit
+    if (next->type == IC_I64) {
+      if (bin)
+        *(void **)(bin + code_off - 8) = next->integer;
+    } else if (bin)
+      CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
+    AIWNIOS_ADD_CODE(X86CallReg, RAX);
+    tmp.mode     = MD_INDIR_REG;
+    tmp.reg      = 0;
+    tmp.off      = 0;
+    tmp.raw_type = RT_I64i;
+    code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+#endif
+    break;
   ic_lock:
     cctrl->is_lock_expr = 1;
     code_off            = __OptPassFinal(cctrl, rpn->base.next, bin, code_off);
@@ -8037,12 +8064,13 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
         for (cm_ref = misc->refs; cm_ref; cm_ref = cm_ref_tmp) {
           cm_ref_tmp = cm_ref->next;
           if (run) {
-			  if(cm_ref->is_abs64) {
-				  //Filled in by HolyC side
-			    if(misc->patch_addr) *misc->patch_addr = cm_ref->add_to;
-			  } else
-            *cm_ref->add_to = (char *)misc->addr - (char *)cm_ref->add_to - 4 +
-                              cm_ref->offset;
+            if (cm_ref->is_abs64) {
+              // Filled in by HolyC side
+              if (misc->patch_addr)
+                *misc->patch_addr = cm_ref->add_to;
+            } else
+              *cm_ref->add_to = (char *)misc->addr - (char *)cm_ref->add_to -
+                                4 + cm_ref->offset;
           }
           A_FREE(cm_ref);
         }
