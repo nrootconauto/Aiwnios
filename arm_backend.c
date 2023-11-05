@@ -3013,72 +3013,73 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;                                                                     \
   }
 
-    // IC_ADD is special as we can use __MD_ARM_SHIFT_ADD
-    if (rpn->res.raw_type != RT_F64) {
-      int64_t shift_cnt;
-      next  = ICArgN(rpn, 1);
-      next2 = ICArgN(rpn, 0);
-      next3 = ICArgN(next2, 0);
-      if (next2->type == IC_LSH && IsConst(next3)) {
-        next4     = ICArgN(next2, 1);
-        shift_cnt = ConstVal(next3);
-        if (shift_cnt < (1 << 6)) {
-        add_shift:
-          if (!SpillsTmpRegs(next))
-            PushTmp(cctrl, next4, NULL);
-          else
-            PushSpilledTmp(cctrl, next4);
-          PushTmp(cctrl, next, &rpn->res);
-          code_off = __OptPassFinal(cctrl, next4, bin, code_off);
-          code_off = __OptPassFinal(cctrl, next, bin, code_off);
-          PopTmp(cctrl, next);
-          PopTmp(cctrl, next4);
-          code_off =
-              PutICArgIntoReg(cctrl, &next->res, RT_I64i, 2, bin, code_off);
-          code_off =
-              PutICArgIntoReg(cctrl, &next4->res, RT_I64i, 0, bin, code_off);
-          if (use_flags) {
-            rpn->res.set_flags = 1;
-            AIWNIOS_ADD_CODE(
-                ARM_addShiftRegXs(0, next->res.reg, next4->res.reg, shift_cnt));
-            // Probably MD_NULL if use_flags is set
-            tmp.raw_type = rpn->raw_type;
-            tmp.reg      = 0;
-            tmp.mode     = MD_REG;
-            code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-          break;
-          } else {
-            if (rpn->res.mode == MD_REG) {
-              AIWNIOS_ADD_CODE(ARM_addShiftRegX(rpn->res.reg, next->res.reg,
-                                                next4->res.reg, shift_cnt));
-          break;
-            } else {
-              AIWNIOS_ADD_CODE(ARM_addShiftRegX(0, next->res.reg,
-                                                next4->res.reg, shift_cnt));
-              tmp.raw_type = rpn->raw_type;
-              tmp.reg      = 0;
-              tmp.mode     = MD_REG;
-              code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-          break;
-            }
-          }
-        } 
-      } else if (next2->type == IC_MUL) {
-          int64_t i;
-          for (i = 0; i != 2; i++) {
-            next3 = ICArgN(next2, i);
-            next4 = ICArgN(next2, 1 - i);
-            if (IsConst(next3)) {
-              shift_cnt = ConstVal(next3);
-              if (__builtin_popcountll(shift_cnt) == 1) {
-                shift_cnt = __builtin_ffsll(shift_cnt) - 1;
-                if (shift_cnt < (1 << 6))
-                  goto add_shift;
-              }
-            }
-          }
-        }
-    }
+// IC_ADD is special as we can use __MD_ARM_SHIFT_ADD
+#define ARM_SHIFT_OP(shift_op, shift_ops)                                      \
+  if (rpn->res.raw_type != RT_F64) {                                           \
+    int64_t shift_cnt;                                                         \
+    next  = ICArgN(rpn, 1);                                                    \
+    next2 = ICArgN(rpn, 0);                                                    \
+    next3 = ICArgN(next2, 0);                                                  \
+    if (next2->type == IC_LSH && IsConst(next3)) {                             \
+      next4     = ICArgN(next2, 1);                                            \
+      shift_cnt = ConstVal(next3);                                             \
+      if (shift_cnt < (1 << 6)) {                                              \
+        shift_op##shift : if (!SpillsTmpRegs(next))                            \
+                              PushTmp(cctrl, next4, NULL);                     \
+        else PushSpilledTmp(cctrl, next4);                                     \
+        PushTmp(cctrl, next, &rpn->res);                                       \
+        code_off = __OptPassFinal(cctrl, next4, bin, code_off);                \
+        code_off = __OptPassFinal(cctrl, next, bin, code_off);                 \
+        PopTmp(cctrl, next);                                                   \
+        PopTmp(cctrl, next4);                                                  \
+        code_off =                                                             \
+            PutICArgIntoReg(cctrl, &next->res, RT_I64i, 2, bin, code_off);     \
+        code_off =                                                             \
+            PutICArgIntoReg(cctrl, &next4->res, RT_I64i, 0, bin, code_off);    \
+        if (use_flags) {                                                       \
+          rpn->res.set_flags = 1;                                              \
+          AIWNIOS_ADD_CODE(                                                    \
+              shift_ops(0, next->res.reg, next4->res.reg, shift_cnt));         \
+          tmp.raw_type = rpn->raw_type;                                        \
+          tmp.reg      = 0;                                                    \
+          tmp.mode     = MD_REG;                                               \
+          code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);         \
+          break;                                                               \
+        } else {                                                               \
+          if (rpn->res.mode == MD_REG) {                                       \
+            AIWNIOS_ADD_CODE(shift_op(rpn->res.reg, next->res.reg,             \
+                                      next4->res.reg, shift_cnt));             \
+            break;                                                             \
+          } else {                                                             \
+            AIWNIOS_ADD_CODE(                                                  \
+                shift_op(0, next->res.reg, next4->res.reg, shift_cnt));        \
+            tmp.raw_type = rpn->raw_type;                                      \
+            tmp.reg      = 0;                                                  \
+            tmp.mode     = MD_REG;                                             \
+            code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);       \
+            break;                                                             \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    } else if (next2->type == IC_MUL) {                                        \
+      int64_t i;                                                               \
+      for (i = 0; i != 2; i++) {                                               \
+        next3 = ICArgN(next2, i);                                              \
+        next4 = ICArgN(next2, 1 - i);                                          \
+        if (IsConst(next3)) {                                                  \
+          shift_cnt = ConstVal(next3);                                         \
+          if (__builtin_popcountll(shift_cnt) == 1) {                          \
+            shift_cnt = __builtin_ffsll(shift_cnt) - 1;                        \
+            if (shift_cnt < (1 << 6))                                          \
+              goto shift_op##shift;                                            \
+          }                                                                    \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
+  }
+
+    ARM_SHIFT_OP(ARM_addShiftRegX, ARM_addShiftRegXs);
+
     if (use_flags && rpn->res.raw_type != RT_F64) {
       rpn->res.set_flags = 1;
       rpn->res.mode      = MD_NULL;
@@ -3130,6 +3131,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     PopTmp(cctrl, next2);
     break;
   case IC_SUB:
+    ARM_SHIFT_OP(ARM_subShiftRegX, ARM_subShiftRegXs);
     if (use_flags && rpn->res.raw_type != RT_F64) {
       rpn->res.set_flags = 1;
       rpn->res.mode      = MD_NULL;
