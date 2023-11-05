@@ -1637,19 +1637,19 @@ static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
   switch (derefed.raw_type) {                                                  \
   case RT_I8i:                                                                 \
   case RT_U8i:                                                                 \
-    AIWNIOS_ADD_CODE(ARM_stlxrb(0, r,1));                                     \
+    AIWNIOS_ADD_CODE(ARM_stlxrb(0, r, 1));                                     \
     break;                                                                     \
   case RT_I16i:                                                                \
   case RT_U16i:                                                                \
-    AIWNIOS_ADD_CODE(ARM_stlxrh(0, r,1));                                     \
+    AIWNIOS_ADD_CODE(ARM_stlxrh(0, r, 1));                                     \
     break;                                                                     \
   case RT_I32i:                                                                \
   case RT_U32i:                                                                \
-    AIWNIOS_ADD_CODE(ARM_stlxrh(0, r,1));                                     \
+    AIWNIOS_ADD_CODE(ARM_stlxrh(0, r, 1));                                     \
     break;                                                                     \
   case RT_I64i:                                                                \
   case RT_U64i:                                                                \
-    AIWNIOS_ADD_CODE(ARM_stlxrX(0, r,1));                                     \
+    AIWNIOS_ADD_CODE(ARM_stlxrX(0, r, 1));                                     \
     break;                                                                     \
   }                                                                            \
   AIWNIOS_ADD_CODE(ARM_cbnz(0, retry - code_off));                             \
@@ -1734,7 +1734,7 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
       tmp      = derefed;
-      if ((rpn->flags&ICF_LOCK_EXPR) &&
+      if ((rpn->flags & ICF_LOCK_EXPR) &&
           (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
         ATOMIC_LOAD(derefed);
         tmp.mode = MD_REG;
@@ -1811,7 +1811,7 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
       code_off = DerefToICArg(cctrl, &derefed, next, 3, bin, code_off);
       tmp      = derefed;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-      if ((rpn->flags&ICF_LOCK_EXPR) &&
+      if ((rpn->flags & ICF_LOCK_EXPR) &&
           (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
         ATOMIC_LOAD(derefed);
         tmp.mode = MD_REG;
@@ -1917,7 +1917,7 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
         goto defacto2;
       code_off = DerefToICArg(cctrl, &derefed, next, 2, bin, code_off);
       tmp2     = derefed;
-      if (!(rpn->flags&ICF_LOCK_EXPR)) {
+      if (!(rpn->flags & ICF_LOCK_EXPR)) {
       not_lock_const:;
         code_off = PutICArgIntoReg(cctrl, &tmp2, RT_I64i, 3, bin, code_off);
         AIWNIOS_ADD_CODE(i_imm_op(tmp2.reg, tmp2.reg, ConstVal(b)));
@@ -1961,7 +1961,7 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
       return code_off;
     } else {
     defacto2:
-      if ((rpn->flags&ICF_LOCK_EXPR) && next->raw_type != RT_F64) {
+      if ((rpn->flags & ICF_LOCK_EXPR) && next->raw_type != RT_F64) {
         code_off = __OptPassFinal(cctrl, next2, bin, code_off);
         code_off = DerefToICArg(cctrl, &derefed, next, 1, bin, code_off);
         code_off = PutICArgIntoReg(cctrl, &b->res, next->raw_type, 3, bin,
@@ -2494,7 +2494,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off) {
   CCodeMisc    *misc;
   CCodeMiscRef *ref;
-  CRPN         *next, *next2, **range, **range_args, *next3, *a, *b;
+  CRPN         *next, *next2, **range, **range_args, *next3, *next4, *a, *b;
   CICArg        tmp = {0}, orig_dst = {0}, tmp2 = {0};
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse;
   int64_t old_lock_start = cctrl->aarch64_atomic_loop_start;
@@ -3012,6 +3012,73 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     PopTmp(cctrl, next);                                                       \
     break;                                                                     \
   }
+
+    // IC_ADD is special as we can use __MD_ARM_SHIFT_ADD
+    if (rpn->res.raw_type != RT_F64) {
+      int64_t shift_cnt;
+      next  = ICArgN(rpn, 1);
+      next2 = ICArgN(rpn, 0);
+      next3 = ICArgN(next2, 0);
+      if (next2->type == IC_LSH && IsConst(next3)) {
+        next4     = ICArgN(next2, 1);
+        shift_cnt = ConstVal(next3);
+        if (shift_cnt < (1 << 6)) {
+        add_shift:
+          if (!SpillsTmpRegs(next))
+            PushTmp(cctrl, next4, NULL);
+          else
+            PushSpilledTmp(cctrl, next4);
+          PushTmp(cctrl, next, &rpn->res);
+          code_off = __OptPassFinal(cctrl, next4, bin, code_off);
+          code_off = __OptPassFinal(cctrl, next, bin, code_off);
+          PopTmp(cctrl, next);
+          PopTmp(cctrl, next4);
+          code_off =
+              PutICArgIntoReg(cctrl, &next->res, RT_I64i, 2, bin, code_off);
+          code_off =
+              PutICArgIntoReg(cctrl, &next4->res, RT_I64i, 0, bin, code_off);
+          if (use_flags) {
+            rpn->res.set_flags = 1;
+            AIWNIOS_ADD_CODE(
+                ARM_addShiftRegXs(0, next->res.reg, next4->res.reg, shift_cnt));
+            // Probably MD_NULL if use_flags is set
+            tmp.raw_type = rpn->raw_type;
+            tmp.reg      = 0;
+            tmp.mode     = MD_REG;
+            code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+          break;
+          } else {
+            if (rpn->res.mode == MD_REG) {
+              AIWNIOS_ADD_CODE(ARM_addShiftRegX(rpn->res.reg, next->res.reg,
+                                                next4->res.reg, shift_cnt));
+          break;
+            } else {
+              AIWNIOS_ADD_CODE(ARM_addShiftRegX(0, next->res.reg,
+                                                next4->res.reg, shift_cnt));
+              tmp.raw_type = rpn->raw_type;
+              tmp.reg      = 0;
+              tmp.mode     = MD_REG;
+              code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+          break;
+            }
+          }
+        } 
+      } else if (next2->type == IC_MUL) {
+          int64_t i;
+          for (i = 0; i != 2; i++) {
+            next3 = ICArgN(next2, i);
+            next4 = ICArgN(next2, 1 - i);
+            if (IsConst(next3)) {
+              shift_cnt = ConstVal(next3);
+              if (__builtin_popcountll(shift_cnt) == 1) {
+                shift_cnt = __builtin_ffsll(shift_cnt) - 1;
+                if (shift_cnt < (1 << 6))
+                  goto add_shift;
+              }
+            }
+          }
+        }
+    }
     if (use_flags && rpn->res.raw_type != RT_F64) {
       rpn->res.set_flags = 1;
       rpn->res.mode      = MD_NULL;

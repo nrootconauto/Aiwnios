@@ -427,6 +427,23 @@ int64_t ARM_movRegX(int64_t d, int64_t n) {
   return MvRegX(d, n);
 }
 
+int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh) {
+  return AddSubShiftRegX(0, 0, d, n, m, LSL, sh, 0);
+}
+
+int64_t ARM_subShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh) {
+  return AddSubShiftRegX(1, 0, d, n, m, LSL, sh, 0);
+}
+
+int64_t ARM_addShiftRegXs(int64_t d, int64_t n, int64_t m,int64_t sh) {
+  return AddSubShiftRegX(0, 1, d, n, m, LSL, sh, 0);
+}
+
+int64_t ARM_subShiftRegXs(int64_t d, int64_t n, int64_t m,int64_t sh) {
+  return AddSubShiftRegX(1, 1, d, n, m, LSL, sh, 0);
+}
+
+
 int64_t ARM_addRegX(int64_t d, int64_t n, int64_t m) {
   return AddSubShiftRegX(0, 0, d, n, m, LSL, 0, 0);
 }

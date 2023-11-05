@@ -593,6 +593,8 @@ typedef struct CICArg {
 // Like X86_64 but uses LEA
 #define __MD_X86_64_LEA_SIB 10
 #define MD_CODE_MISC_PTR    11
+#define __MD_ARM_SHIFT_ADD 12 //Like lea
+#define __MD_ARM_SHIFT_SUB 13 //Like lea
   int32_t mode;
   int32_t raw_type;
   int8_t  reg, reg2, fallback_reg;
@@ -1239,3 +1241,6 @@ void *GetHolyGsPtr();
 void *GetHolyFsPtr();
 void SetHolyFs(void*);
 void SetHolyGs(void*);
+
+int64_t ARM_subShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
+int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
