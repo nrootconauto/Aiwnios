@@ -3310,7 +3310,12 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         into_reg = rpn->res.reg;
       else
         into_reg = 0;
-      AIWNIOS_ADD_CODE(ARM_addImmX(into_reg, ARM_REG_FP, next->integer));
+      if(ARM_addImmX(into_reg, ARM_REG_FP, next->integer)!=ARM_ERR_INV_OFF) {
+		AIWNIOS_ADD_CODE(ARM_addImmX(into_reg, ARM_REG_FP, next->integer));
+	  } else {
+		  code_off=__ICMoveI64(cctrl,into_reg,next->integer,bin,code_off);
+		  AIWNIOS_ADD_CODE(ARM_addRegX(into_reg,into_reg,ARM_REG_FP));
+	  }
       goto restore_reg;
       break;
     case IC_STATIC:
@@ -4175,8 +4180,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
     // Move all frame offsets over by 16(for FP/LR) area on the frame
     if (r->type == IC_BASE_PTR) {
       r->integer += 16;
-    } else if (r->type == __IC_STATICS_SIZE)
+    } else if (r->type == __IC_STATICS_SIZE) {
       statics_sz = r->integer;
+    }
   }
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
        r = ICFwd(r)) {
@@ -4349,7 +4355,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
         final_size = code_off;
       misc = cctrl->statics_label;
       FILL_IN_REFS;
-    }
+    } else if (statics_sz) //Make sure if it isnt our final run,to include the statics_sz in the count!!
+        code_off += statics_sz + 8;
+      
   }
   __builtin___clear_cache(bin, bin + MSize(bin));
   if (dbg_info) {

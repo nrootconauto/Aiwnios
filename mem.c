@@ -366,7 +366,7 @@ static void *GetAvailRegion32(int64_t len) {
   if (!ps) {
     ps = sysconf(_SC_PAGESIZE);
   }
-  void *last_gap_end = NULL;
+  void *last_gap_end = 0x10000;
   void *start;
   void *retv = NULL, *ptr;
   int   fd   = open("/proc/self/maps", O_RDONLY);
