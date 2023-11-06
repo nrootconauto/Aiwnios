@@ -3930,6 +3930,7 @@ import U8 *CmdLineGetStr();
 import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 #else
+extern U0 MPAwake(I64);
 extern U8 *CmdLineGetStr();
 extern U0 PutS2(U8*);
 extern Bool IsCmdLineMode();
