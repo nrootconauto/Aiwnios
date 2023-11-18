@@ -863,7 +863,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
       end:
         is_x_sz=TRUE;
     }
-  if(operand_sz==-1)
+  if(operand_sz==-1&&opc->operands[0].u8[0]) //Make sure our opcode takes arguments
     operand_sz=8;
 
   if(X86_OPCF_MODRM&opc->flags) {
