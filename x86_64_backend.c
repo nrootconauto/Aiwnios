@@ -2919,7 +2919,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       return 1;
     }
     tmp = 0;
-    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2)) {
+    arg = r->base.next;
+    if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2)) {
       if (b && idx) {
         tmp = 0;
         if (b->type != IC_IREG)
@@ -2929,7 +2930,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         if (tmp && spilled) {
           goto deref_norm;
         }
-        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp < 0 ||
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
             tmp >= 2)
           goto deref_norm;
         if (SpillsTmpRegs(idx))
@@ -4532,7 +4533,7 @@ enter:;
     next->res.mode = MD_INDIR_REG;                                             \
     next->res.off  = 0;                                                        \
     code_off       = PutICArgIntoReg(                                          \
-              cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,        \
+        cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,        \
         use_f64 ? 0 : AIWNIOS_TMP_IREG_POOP, bin, code_off);             \
     next->flags   = ICF_PRECOMPUTED;                                           \
     next2->flags  = ICF_PRECOMPUTED;                                           \
@@ -6881,6 +6882,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
     break;
   ic_deref:
+    if (rpn->flags & ICF_SIB) {
+      if (rpn->res.__sib_base_rpn)
+        code_off =
+            __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
+      if (rpn->res.__sib_idx_rpn)
+        code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
+      break;
+    }
     next = rpn->base.next;
     i    = 0;
     //
