@@ -1230,7 +1230,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
     }
   }
   qsort(mv, cnt = cctrl->cur_fun->base.member_cnt, sizeof(COptMemberVar),
-        OptMemberVarSort);
+        (void*)&OptMemberVarSort);
   ireg = AIWNIOS_IREG_START;
   freg = AIWNIOS_FREG_START;
   for (i = cnt - 1; i >= 0; i--) {
@@ -1283,7 +1283,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
     }
   }
   // Time to assign the rest of the function members to the base pointer
-  qsort(mv, cnt, sizeof(COptMemberVar), OptMemberVarSortSz);
+  qsort(mv, cnt, sizeof(COptMemberVar), (void*)&OptMemberVarSortSz);
   off = 0;
   for (i = 0; i != cnt; i++) {
     if (mv[i].m->reg == REG_NONE && !(mv[i].m->flags & MLF_STATIC)) {

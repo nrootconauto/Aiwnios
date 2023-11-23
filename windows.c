@@ -591,7 +591,7 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
   InitSound();
   int64_t quit = 0;
   user_ev_num  = SDL_RegisterEvents(1);
-  SDL_CreateThread(boot_ptr, "Boot thread", data);
+  SDL_CreateThread((void*)boot_ptr, "Boot thread", data);
   InputLoop(&quit);
 }
 

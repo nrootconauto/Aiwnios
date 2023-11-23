@@ -184,7 +184,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   char             buf[144];
   CorePair         pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
-  pthread_create(&cores[core].pt, NULL, threadrt, ptr);
+  pthread_create(&cores[core].pt, NULL, (void*)&threadrt, ptr);
   char nambuf[16];
   snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
   pthread_setname_np(cores[core].pt, nambuf);
@@ -193,7 +193,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;
   sa.sa_flags     = SA_SIGINFO;
-  sa.sa_sigaction = ProfRt;
+  sa.sa_sigaction = (void*)&ProfRt;
   sigaction(SIGPROF, &sa, NULL);
 }
 int64_t mp_cnt() {

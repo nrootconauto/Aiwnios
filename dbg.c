@@ -209,7 +209,7 @@ void InstallDbgSignalsForThread() {
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;
   sa.sa_flags     = SA_SIGINFO;
-  sa.sa_sigaction = SigHandler;
+  sa.sa_sigaction = (void*)&SigHandler;
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGBUS, &sa, NULL);
   sigaction(SIGTRAP, &sa, NULL);

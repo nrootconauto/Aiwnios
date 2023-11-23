@@ -2101,7 +2101,8 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  binf = bin = Compile(ccmp, NULL, NULL);
+  bin = Compile(ccmp, NULL, NULL);
+  binf = (void*)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
@@ -2123,7 +2124,8 @@ double PrsF64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  binf = bin = Compile(ccmp, NULL, NULL);
+  bin = Compile(ccmp, NULL, NULL);
+  binf = (void*)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
