@@ -5425,14 +5425,8 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         fun_arg.off = 16 + stk_arg_cnt++ * 8;
         PushTmp(cctrl, arg, NULL);
         PopTmp(cctrl, arg);
-        if (fun_arg.mode == MD_FRAME && write_to.mode == MD_FRAME) {
-          // DONT DIRTY THE POOP REGISTER THAT IS USED AS AN ARGUMENT
-          tmp.reg      = 0;
-          tmp.mode     = MD_REG;
-          tmp.raw_type = write_to.raw_type;
-          code_off     = ICMov(cctrl, &tmp, &fun_arg, bin, code_off);
-          fun_arg      = tmp;
-        }
+        if(fun_arg.off==-arg->res.off&&arg->res.mode==MD_FRAME)
+		   continue;
         code_off = ICMov(cctrl, &arg->res, &fun_arg, bin, code_off);
       } else if (rpn->type == IC_GET_VARGS_PTR) {
         arg = ICArgN(rpn, 0);

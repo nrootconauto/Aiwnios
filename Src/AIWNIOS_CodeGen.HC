@@ -292,6 +292,27 @@ static Bool IsTLSReloc(CCodeMisc *misc) {
 	return TRUE;
   return FALSE;
 }
+static Bool IsFunArg(CHashFun *fun,CMemberLst *lst) {
+  if(!fun) return FALSE;
+  CMemberLst *mlst=fun->member_lst_and_root;
+  I64 idx;
+  for(idx=0;idx!=fun->arg_cnt;idx++) {
+    if(lst==mlst) return TRUE;
+    mlst=mlst->next;
+  }
+  return FALSE;
+}
+static I64 FunArgIdx(CHashFun *fun,CMemberLst *lst) {
+  if(!fun) return FALSE;
+  CMemberLst *mlst=fun->member_lst_and_root;
+  I64 idx;
+  for(idx=0;idx!=fun->arg_cnt;idx++) {
+    if(lst==mlst) return idx;
+    mlst=mlst->next;
+  }
+  return -1;
+}
+
 //
 // Turns my CRPN from the parser into the IC for the C side
 //
@@ -432,19 +453,27 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
           foff+=align-(foff&(align-1)); //Align to 8
         #endif
         #ifdef TARGET_X86
-        foff_lookup[idx].i32[0]=mlst->offset;
-        //In X86_64 the stack grows down and the RBP is above the stack pointer,
-        //SO MOVE THE OFFSETS DOWN TO THE BOTTOM
-        //RBP
-        //x0
-        //x1
-        //....
-        //x8 <<=offset
-        foff+=mlst->member_class->size*mlst->dim.total_cnt;  
-        if(foff&(align-1))
-          foff+=align-(foff&(align-1)); //Align to 8
-        mlst->offset=foff;
-        foff_lookup[idx].i32[1]=foff;
+	if(IsFunArg(cc->htc.fun,mlst)&&!(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv"))) {
+	  //Arguments are passed on stack so no need to mode
+	  foff_lookup[idx].i32[0]=mlst->offset;
+	  //16 to offset [PC,RBP] pair at base 
+	  mlst->offset=-16-8*FunArgIdx(cc->htc.fun,mlst);
+      foff_lookup[idx].i32[1]=mlst->offset;
+	} else {
+          foff_lookup[idx].i32[0]=mlst->offset;
+          //In X86_64 the stack grows down and the RBP is above the stack pointer,
+          //SO MOVE THE OFFSETS DOWN TO THE BOTTOM
+          //RBP
+          //x0
+          //x1
+          //....
+          //x8 <<=offset
+          foff+=mlst->member_class->size*mlst->dim.total_cnt;  
+          if(foff&(align-1))
+            foff+=align-(foff&(align-1)); //Align to 8
+          mlst->offset=foff;
+          foff_lookup[idx].i32[1]=foff;
+	}
         #endif
       } else {
 //Assign  them a spot on the stack for debugging purposes
