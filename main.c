@@ -596,16 +596,16 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DbgPutS(int64_t *stk) {
-  fprintf(stdout,"%s\n",(char *)stk[0]);
+  fprintf(stdout,"%s",(char *)stk[0]);
   fflush(stdout);
 }
 static int64_t STK_PutS(int64_t *stk) {
-  fprintf(stdout,"%s\n",(char *)stk[0]);
+  fprintf(stdout,"%s",(char *)stk[0]);
   fflush(stdout);
 }
 
 static void STK_PutS2(int64_t *stk) {
-  fprintf(stdout,"%s\n", (char *)stk[0]);
+  fprintf(stdout,"%s", (char *)stk[0]);
   fflush(stdout);
 
 }
@@ -1124,11 +1124,24 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
 int64_t IsCmdLineMode() {
   return arg_cmd_line->count != 0;
 }
-
-char *CmdLineGetStr() {
+#ifndef TARGET_WIN32
+#include "linenoise/linenoise.h"
+#endif
+char *CmdLineGetStr(char **stk) {
+#ifdef TARGET_WIN32
+  printf("%s",stk[0]);
   char buf[2048];
   fgets(buf, 2048, stdin);
   return A_STRDUP(buf, NULL);
+#else
+  char *copy,*ln;
+  if(ln=linenoise(stk[0]?stk[0]:"")) {
+	  copy=A_STRDUP(ln,NULL);
+	  linenoiseFree(ln);
+  } else
+	  copy=A_STRDUP("",NULL);
+  return copy;
+#endif
 }
 
 char **CmdLineBootFiles() {
@@ -1154,7 +1167,7 @@ void BootAiwnios(char *bootstrap_text) {
     // TODO make a better way of doing this
     PrsAddSymbol("CmdLineBootFiles", CmdLineBootFiles, 0);
     PrsAddSymbol("CmdLineBootFileCnt", CmdLineBootFileCnt, 0);
-    PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 0);
+    PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 1);
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);

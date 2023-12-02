@@ -3926,12 +3926,12 @@ import U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );
 import U0 MPSleepHP(I64);
 import U0 MPAwake(I64);
 import U0 PutS2(U8*);
-import U8 *CmdLineGetStr();
+import U8 *CmdLineGetStr(U8 *);
 import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 #else
 extern U0 MPAwake(I64);
-extern U8 *CmdLineGetStr();
+extern U8 *CmdLineGetStr(U8 *);
 extern U0 PutS2(U8*);
 extern Bool IsCmdLineMode();
 extern U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );

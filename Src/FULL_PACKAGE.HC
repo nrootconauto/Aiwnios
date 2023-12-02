@@ -271,8 +271,11 @@ U0 UserStartUp()
   //CPURep;
 }
 PaletteSetStd;
-U8 *_CmdLineGetStr() {
-  return CmdLineGetStr; 
+U8 *_CmdLineGetStr(U8 *st) {
+  U8 *ret,*dc=DirCur,*pmt=MStrPrint("%s> ",dc);
+  ret=CmdLineGetStr(pmt); 
+  Free(dc),Free(pmt);
+  return ret;
 }
 U0 CmdLine(I64) {
   I64 cnt=0;

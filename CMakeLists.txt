@@ -91,6 +91,9 @@ elseif ("${ARCH}" STREQUAL "arm64")
     socket.c
   )
 endif()
+if(NOT WIN32)
+list(APPEND C_SOURCES linenoise/linenoise.c)
+endif()
 add_executable(
   aiwnios
   ${C_SOURCES}
