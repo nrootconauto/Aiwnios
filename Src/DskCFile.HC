@@ -167,8 +167,12 @@ I64 FSetClus(CFile *f,I64 c,I64 blk,Bool read)
 Bool FBlkRead(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
 {//Read [nth,n+cnt) blks of file.
   if(f->_3days_virt) {
-    if(blk!=FFB_NEXT_BLK)
+    if(blk!=FFB_NEXT_BLK) {
       VFsFSeek(blk<<BLK_SIZE_BITS,f->_3days_virt);
+      blk+=cnt;
+      f->fblk_num=blk;
+    } else
+      f->fblk_num+=cnt;
     return VFsFBlkRead(buf,1<<BLK_SIZE_BITS,cnt,f->_3days_virt);
   }
   CDrv *dv=f->dv;
@@ -235,6 +239,14 @@ dummy_fill_loop:
         else
 		  goto dummy_fill_loop;
       }
+      blk+=cnt;
+      f->fblk_num=blk;
+      if (f->de.size<blk<<BLK_SIZE_BITS)
+        f->de.size=blk<<BLK_SIZE_BITS;
+    } else {
+      blk=f->fblk_num+=cnt;
+      if (f->de.size<blk<<BLK_SIZE_BITS)
+        f->de.size=blk<<BLK_SIZE_BITS;
     }
     VFsFBlkWrite(buf,1<<BLK_SIZE_BITS,cnt,f->_3days_virt);
     return TRUE;
