@@ -1499,6 +1499,9 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
     goto binop;
   case IC_TYPECAST:
     goto unop;
+  case IC_FS:
+  case IC_GS:
+	return 0;
   }
   return 0;
 t:
@@ -2486,6 +2489,11 @@ static int64_t IsCompoundCompare(CRPN *r) {
   */
   }
   return 0;
+}
+
+//Load thread register
+static int64_t ARM_msrX1_tpidr_el0(int64_t ul) {
+	return -717500351;
 }
 //
 // ALWAYS ASSUME WORST CASE if we dont have a ALLOC'ed peice of RAM
@@ -4034,6 +4042,37 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       rpn->res.mode     = MD_I64;
       rpn->res.raw_type = RT_I64i;
       rpn->res.integer  = rpn->integer;
+    }
+    break;
+  case IC_GS:
+  case IC_FS: {
+	  next = rpn->base.next;
+    if (next->type != IC_RELOC && next->type != IC_I64) {
+      printf("Expected a relocation at IC_FS,aborting(Contact nrootcoauto for "
+             "more info)\n");
+      abort();
+    }
+  segment:
+    if (next->type == IC_I64) {
+		code_off=__ICMoveI64(cctrl,0,next->integer,bin,code_off);
+    } else if (bin) {
+      AIWNIOS_ADD_CODE(ARM_ldrLabelX(0,0));
+      next->code_misc->use_cnt++;
+      ref=CodeMiscAddRef(next->code_misc, bin + code_off-4);
+      ref->patch_cond_br = ARM_ldrLabelX;
+      ref->user_data1    = 0;
+    }
+    AIWNIOS_ADD_CODE(ARM_msrX1_tpidr_el0(0));
+    AIWNIOS_ADD_CODE(ARM_addRegX(1,0,1));
+    if(rpn->res.mode==MD_REG&&rpn->res.raw_type!=RT_F64) {
+	   AIWNIOS_ADD_CODE(ARM_ldrRegImmX(rpn->res.reg,1,0));
+    } else {
+	   AIWNIOS_ADD_CODE(ARM_ldrRegImmX(1,1,0));
+    tmp.mode     = MD_REG;
+    tmp.reg      = 1;
+    tmp.raw_type = RT_I64i;
+    code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+	}
     }
     break;
   case IC_F64:

@@ -6,7 +6,11 @@
 .global Misc_Btr
 .global Misc_Btc
 .global Misc_Bts
+.global Misc_TLS_Base
 .global Misc_Caller
+Misc_TLS_Base:
+  mrs x0, tpidr_el0
+  ret
 Misc_Bt:
   lsr x3,x1,3
   and x1,x1,0x7

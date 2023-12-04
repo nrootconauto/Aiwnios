@@ -38,6 +38,15 @@
 		return &ThreadFs;
 	}
     #endif
+#elif (defined(_M_ARM64) || defined(__aarch64__))
+    __thread void *ThreadGs;
+    __thread void *ThreadFs;
+    void *GetHolyGsPtr() {
+		return (char*)&ThreadGs-(char*)Misc_TLS_Base();
+	}
+	void *GetHolyFsPtr() {
+		return (char*)&ThreadFs-(char*)Misc_TLS_Base();
+	}
 #else
 __thread void *ThreadGs;
 __thread void *ThreadFs;   

@@ -1244,6 +1244,14 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__Gs",GetHolyGsPtr,0);
     #endif
     #endif
+    #if defined(_M_ARM64) || defined(__aarch64__)
+    //__Fs is special
+    //__Gs is special then so add the RESULT OF THE function
+    PrsAddSymbolNaked("__Fs",NULL,0);
+    ((CHashExport*)HashFind("__Fs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyFsPtr();
+    PrsAddSymbolNaked("__Gs",NULL,0);
+    ((CHashExport*)HashFind("__Gs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyGsPtr();
+    #endif
     PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
     PrsAddSymbol("MPAwake", STK_MPAwake, 1);

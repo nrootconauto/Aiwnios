@@ -3881,6 +3881,11 @@ import U0 PutS(U8*);
 import U8 *__Fs();
 import U8 *__Gs();
 #endif
+#ifdef TARGET_AARCH64
+import U8 *__Fs();
+import U8 *__Gs();
+#endif
+
 import CCPU *Gs();
 import CTask *Fs();
 import U0 SetFs(CTask *);
@@ -6533,6 +6538,10 @@ _intern IC_BTR Bool Btr(U8*,I64);
 _intern IC_LBTS Bool LBts(U8*,I64);
 _intern IC_LBTC Bool LBtc(U8*,I64);
 _intern IC_LBTR Bool LBtr(U8*,I64);
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
+#endif
+#ifdef TARGET_AARCH64
 _intern IC_FS CTask *Fs();
 _intern IC_GS CCPU *Gs();
 #endif
