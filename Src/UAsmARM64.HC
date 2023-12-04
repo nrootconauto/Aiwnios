@@ -561,6 +561,23 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	    break;
         end:;
 	  break;
+        case 272:
+	  off=Arm64GetValue(opc,inst,ARM64_OP_IMMLO)|
+	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
+	  off=Sext(off,19+2);
+	  DocPrint(doc,"R%d,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	        ptr(U8*)+off);
+	  break;
+        case 273:
+	  off=Arm64GetValue(opc,inst,ARM64_OP_IMMLO)|
+	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
+	  off=Sext(off,19+2);
+	  off<<=12;
+	  DocPrint(doc,"R%d,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	        ptr(U8*)+off);
+	  break;
         case 275 ... 282:
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMM12);
 	  if(off<0) off=(-(-off-1<<12))&(1<<12-1);
