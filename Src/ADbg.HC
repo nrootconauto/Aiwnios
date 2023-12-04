@@ -279,8 +279,6 @@ public U0 FunRep(U8 *st,U8 *rbp=NULL,I64 max_depth=2,CTask *task=NULL)
   }
 }
 
-#ifdef TARGET_X86
-//Ask nroot to write an AARCH64 disasembler motherfucker
 #help_index "Debugging/Unassemble"
 public U0 Uf(U8 *st)
 {//Unassembles a named fun
@@ -300,4 +298,3 @@ public U0 Uf(U8 *st)
       ;//U(HashVal(tmpf));
   }
 }
-#endif
