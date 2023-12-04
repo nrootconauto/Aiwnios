@@ -298,7 +298,7 @@ if(!IsCmdLineMode) {
   ExePrint2("#include \"T:/Src/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
-  ACInit("T:/Src/*.HC*;*.HH.*");
+  ACInit("T:/Src/*.HC*;*.HH.*");
 }
 CoreAPSethTask;
 #endif;

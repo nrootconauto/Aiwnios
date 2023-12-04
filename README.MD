@@ -94,7 +94,7 @@ Aiwnios would not be possible without the valuable contributions of the followin
 - [Cmake architecture detector by axr](https://github.com/axr/solar-cmake/blob/master/TargetArch.cmake)
 - [Xbyak Arm assembler](https://github.com/fujitsu/xbyak_aarch64)
 - [sdl2-cmake-modules](https://github.com/aminosbh/sdl2-cmake-modules)
-
+- [AArch64-Encodung] https://github.com/CAS-Atlantic/AArch64-Encoding
 ___
 
 # Devloper Manual (WIP)
