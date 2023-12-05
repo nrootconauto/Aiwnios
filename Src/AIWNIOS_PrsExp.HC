@@ -148,6 +148,8 @@ binop_dft:
       goto binop_dft;
     }
     break;
+    case IC_MAX_I64:
+    case IC_MIN_I64:
     case IC_FS:
     case IC_GS:
     case IC_BT:
@@ -158,6 +160,10 @@ binop_dft:
     case IC_LBTR:
     case IC_LBTC:
     r->ic_class=cmp.internal_types[RT_I64];
+    break;
+    case IC_MAX_U64:
+    case IC_MIN_U64:
+    r->ic_class=cmp.internal_types[RT_U64];
     break;
     break;case IC_SHR:
     goto binop;

@@ -233,6 +233,12 @@ CRPN *ICFwd(CRPN *rpn) {
     goto unop;
     break;
   case IC_COMMA:
+  case IC_MAX_F64:
+ case IC_MAX_U64:
+ case IC_MAX_I64:
+ case IC_MIN_F64:
+ case IC_MIN_U64:
+ case IC_MIN_I64:
     goto binop;
     break;
   case __IC_VARGS:
@@ -560,6 +566,24 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("  ");
   INDENT;
   switch (rpn->type) {
+	  case IC_MAX_F64:
+	  printf("MAX_F64:\n");
+	  goto binop;
+	  case IC_MAX_I64:
+printf("MAX_I64:\n");
+	  goto binop;
+	   case IC_MAX_U64:
+	   printf("MAX_U64:\n");
+	  goto binop;
+   case IC_MIN_F64:
+	   printf("MIN_F64:\n");
+	  goto binop;
+	  case IC_MIN_I64:
+	   printf("MIN_I64:\n");
+	  goto binop;
+	   case IC_MIN_U64:
+	   printf("MIN_U64:\n");
+	  goto binop;
    case IC_LOCK:
     printf("IC_LOCK:\n");
     ParserDumpIR(rpn->base.next,indent+1);
@@ -2806,6 +2830,27 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     return rpn->raw_type;
   switch (rpn->type) {
 	break;
+  case IC_MAX_I64:
+  case IC_MIN_I64:
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_I64i;
+  break;
+  case IC_MIN_U64:
+  case IC_MAX_U64:
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    rpn->ic_class        = HashFind("U64i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_U64i;
+  break;
+  case IC_MIN_F64:
+  case IC_MAX_F64:
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
+  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    rpn->ic_class        = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_F64;
+  break;
   case IC_FS:
   case IC_GS:
     rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
@@ -4038,6 +4083,16 @@ HC_IC_BINDING(HC_ICAdd_XorEq, IC_XOR_EQ);
 HC_IC_BINDING(HC_ICAdd_ModEq, IC_MOD_EQ);
 HC_IC_BINDING(HC_ICAdd_ToI64, IC_TO_I64);
 HC_IC_BINDING(HC_ICAdd_ToF64, IC_TO_F64);
+
+
+HC_IC_BINDING(HC_ICAdd_Min_I64, IC_MIN_I64);
+HC_IC_BINDING(HC_ICAdd_Max_I64, IC_MAX_I64);
+HC_IC_BINDING(HC_ICAdd_Min_U64, IC_MIN_U64);
+HC_IC_BINDING(HC_ICAdd_Max_U64, IC_MAX_U64);
+HC_IC_BINDING(HC_ICAdd_Min_F64, IC_MIN_F64);
+HC_IC_BINDING(HC_ICAdd_Max_F64, IC_MAX_F64);
+
+
 CRPN *__HC_ICAdd_I64(CCodeCtrl *cc, int64_t integer) {
   CRPN *rpn;
   *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){

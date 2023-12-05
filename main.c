@@ -722,6 +722,27 @@ static int64_t STK___HC_ICAdd_PostInc(int64_t *stk) {
   return (int64_t)__HC_ICAdd_PostInc((CCodeCtrl *)stk[0], stk[1]);
 }
 
+static int64_t STK___HC_ICAdd_Max_I64(int64_t *stk) {
+	return __HC_ICAdd_Max_I64(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Min_I64(int64_t *stk) {
+	return __HC_ICAdd_Min_I64(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Max_U64(int64_t *stk) {
+	return __HC_ICAdd_Max_U64(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Min_U64(int64_t *stk) {
+	return __HC_ICAdd_Min_U64(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Max_F64(int64_t *stk) {
+	return __HC_ICAdd_Max_F64(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Min_F64(int64_t *stk) {
+	return __HC_ICAdd_Min_F64(stk[0]);
+}
+
+
+
 static int64_t STK___HC_ICAdd_PostDec(int64_t *stk) {
   return (int64_t)__HC_ICAdd_PostDec((CCodeCtrl *)stk[0], stk[1]);
 }
@@ -1165,6 +1186,12 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("__HC_ICAdd_Min_F64",STK___HC_ICAdd_Min_F64,1);
+    PrsAddSymbol("__HC_ICAdd_Max_F64",STK___HC_ICAdd_Max_F64,1);
+    PrsAddSymbol("__HC_ICAdd_Min_I64",STK___HC_ICAdd_Min_I64,1);
+    PrsAddSymbol("__HC_ICAdd_Max_I64",STK___HC_ICAdd_Max_I64,1);
+    PrsAddSymbol("__HC_ICAdd_Min_U64",STK___HC_ICAdd_Min_U64,1);
+    PrsAddSymbol("__HC_ICAdd_Max_U64",STK___HC_ICAdd_Max_U64,1);
     PrsAddSymbol("CmdLineBootFiles", CmdLineBootFiles, 0);
     PrsAddSymbol("CmdLineBootFileCnt", CmdLineBootFileCnt, 0);
     PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 1);

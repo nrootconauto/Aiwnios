@@ -191,6 +191,52 @@ static int64_t X86CmpRegReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
+static int64_t X86CmovaRegReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(ErectREX(1, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x47);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+static int64_t X86CmovbRegReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(ErectREX(1, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x42);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+
+static int64_t X86CmovlRegReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(ErectREX(1, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x4c);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+static int64_t X86CmovgRegReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char    buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(ErectREX(1, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x4f);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+
 static int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
@@ -2717,6 +2763,11 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   CRPN *arg, *arg2, *d, *b, *idx, *orig, **array, *new;
   switch (r->type) {
     break;
+  case IC_MAX_I64:
+  case IC_MAX_U64:
+  case IC_MIN_I64:
+  case IC_MIN_U64:
+    goto binop;
   case IC_SHORT_ADDR:
     goto fin;
   case IC_CALL:
@@ -5962,6 +6013,36 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     goto ret;
   goto *poop_ants[rpn->type];
   do {
+	  ic_max_u64:
+	  #define IC_MXX_X64(OP) { \
+		  a=ICArgN(rpn,1); \
+		  b=ICArgN(rpn,0); \
+		  code_off=__OptPassFinal(cctrl,a,bin,code_off); \
+		  code_off=__OptPassFinal(cctrl,b,bin,code_off); \
+		  if(rpn->res.mode==MD_REG) { \
+			  use_reg=rpn->res.reg; \
+		  } else  \
+		    use_reg=0; \
+		  tmp.mode=MD_REG; \
+		  tmp.raw_type=rpn->res.raw_type; \
+		  tmp.reg=use_reg; \
+		  code_off=PutICArgIntoReg(cctrl,&b->res,tmp.raw_type,AIWNIOS_TMP_IREG_POOP,bin,code_off); \
+		  code_off=ICMov(cctrl,&tmp,&a->res,bin,code_off); \
+		  AIWNIOS_ADD_CODE(X86CmpRegReg,into_reg,b->res.reg); \
+		  AIWNIOS_ADD_CODE(OP,into_reg,b->res.reg); \
+		  code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off); \
+		}
+		IC_MXX_X64(X86CmovaRegReg);
+	  break;
+	  ic_max_i64:
+	  IC_MXX_X64(X86CmovgRegReg);
+	  break;
+	  ic_min_u64:
+	  IC_MXX_X64(X86CmovbRegReg);
+	  break;
+	  ic_min_i64:
+	  IC_MXX_X64(X86CmovlRegReg);
+	  break;
   ic_gs:
     next = rpn->base.next;
     if (next->type != IC_RELOC && next->type != IC_I64) {
@@ -7861,10 +7942,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   ic_lbtr:
     BTX_OP(1, X86BtrSIBImm, X86BtrRegImm, X86BtrSIBReg, X86BtrRegReg);
-  ic_max_i64:
-  ic_max_u64:
-  ic_min_i64:
-  ic_min_u64:
   ic_sign_i64:
   ic_sqr_i64:
   ic_sqr_u64:

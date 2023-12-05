@@ -1343,6 +1343,12 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   case IC_EQ:
     goto binop;
     break;
+    case IC_MAX_F64:
+    case IC_MAX_I64:
+    case IC_MAX_U64:
+    case IC_MIN_F64:
+    case IC_MIN_I64:
+    case IC_MIN_U64:
   case IC_SUB:
     goto binop;
     break;
@@ -3106,6 +3112,45 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       BACKEND_BINOP(ARM_fsubReg, ARM_subRegX);
     }
     break;
+  case IC_MAX_I64:
+	  #define CSEL_OP(cond) \
+    next  = rpn->base.next; \
+    next2 = ICArgN(rpn, 1); \
+    PushTmp(cctrl, next, NULL);                                                 \
+    if(SpillsTmpRegs(next)) PushSpilledTmp(cctrl, next2);                                                 \
+    else PushTmp(cctrl,next2,NULL); \
+    code_off=__OptPassFinal(cctrl,next2,bin,code_off); \
+    code_off=__OptPassFinal(cctrl,next,bin,code_off); \
+    code_off=PutICArgIntoReg(cctrl,&next->res,rpn->res.raw_type,1,bin,code_off); \
+    code_off=PutICArgIntoReg(cctrl,&next2->res,rpn->res.raw_type,0,bin,code_off); \
+    if(rpn->res.raw_type==RT_F64) { \
+		AIWNIOS_ADD_CODE(ARM_fcmp(next2->res.reg,next->res.reg)); \	
+        AIWNIOS_ADD_CODE(ARM_fcsel(0,next2->res.reg,next->res.reg,cond)); \
+	} else {\
+		AIWNIOS_ADD_CODE(ARM_cmpRegX(next2->res.reg,next->res.reg)); \
+		AIWNIOS_ADD_CODE(ARM_cselX(0,next2->res.reg,next->res.reg,cond)); \
+	}\
+	tmp.raw_type=rpn->res.raw_type; \
+	tmp.mode=MD_REG; \
+	tmp.reg=0; \
+	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+	CSEL_OP(ARM_GT);
+  break;
+  case IC_MAX_U64:
+    CSEL_OP(ARM_HI);
+  break;
+  case IC_MAX_F64:
+	CSEL_OP(ARM_GT);    
+  break;
+  case IC_MIN_I64:
+  CSEL_OP(ARM_LT);
+  break;
+  case IC_MIN_U64:
+  CSEL_OP(ARM_LO);
+  break;
+  case IC_MIN_F64:
+  CSEL_OP(ARM_LT);
+   break;
   case IC_DIV:
     next  = rpn->base.next;
     next2 = ICArgN(rpn, 1);

@@ -11,6 +11,12 @@ import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
+import U8 *__HC_ICAdd_Max_I64(U8 *);
+import U8 *__HC_ICAdd_Min_I64(U8 *);
+import U8 *__HC_ICAdd_Max_U64(U8 *);
+import U8 *__HC_ICAdd_Min_U64(U8 *);
+import U8 *__HC_ICAdd_Max_F64(U8 *);
+import U8 *__HC_ICAdd_Min_F64(U8 *);
 import U8 *__HC_ICAdd_Typecast(U8 *,I64,I64);
 import U8 *__HC_ICAdd_SubCall(U8 *,U8 *);
 import U8 *__HC_ICAdd_SubProlog(U8 *);
@@ -101,6 +107,12 @@ import U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user
 import U8 * __HC_ICAdd_Fs(U8*);
 import U8 * __HC_ICAdd_Gs(U8*);
 #else
+extern  U8 *__HC_ICAdd_Max_I64(U8 *);
+extern U8 *__HC_ICAdd_Min_I64(U8 *);
+extern U8 *__HC_ICAdd_Max_U64(U8 *);
+extern U8 *__HC_ICAdd_Min_U64(U8 *);
+extern U8 *__HC_ICAdd_Max_F64(U8 *);
+extern U8 *__HC_ICAdd_Min_F64(U8 *);
 extern U8 *__HC_ICAdd_GetVargsPtr(U8*);
 extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
@@ -625,6 +637,14 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   //
   for(cur=head->last;cur!=head;cur=cur->last) {
     switch(cur->type) {
+    break;case IC_MAX_I64:
+      new=__HC_ICAdd_Max_I64(cc2);
+    break;case IC_MAX_U64:
+      new=__HC_ICAdd_Max_U64(cc2);
+    break;case IC_MIN_I64:
+      new=__HC_ICAdd_Min_I64(cc2);
+    break;case IC_MIN_U64:
+      new=__HC_ICAdd_Min_U64(cc2);
     break;case IC_FS:
     if(!cur->ic_data) {
     //Unique references to the TLS offset(unlike normal functions whose pointer is stored at the end of the function and loaded from there)

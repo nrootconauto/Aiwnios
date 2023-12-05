@@ -553,6 +553,8 @@ enum {
   IC_MIN_I64,
   IC_MAX_U64,
   IC_MIN_U64,
+  IC_MAX_F64,
+  IC_MIN_F64,
   IC_SIGN_I64,
   IC_SQR_I64,
   IC_SQR_U64,
@@ -992,6 +994,7 @@ int64_t    ARM_ldrRegRegShiftX(int64_t a, int64_t n, int64_t m);
 int64_t    ARM_strRegRegShiftX(int64_t a, int64_t n, int64_t m);
 int64_t    ARM_ldpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
 int64_t    ARM_stpImmX(int64_t r1, int64_t r2, int64_t ra, int64_t off);
+int64_t ARM_fcsel(int64_t d,int64_t a,int64_t b,int64_t c);
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp);
 void       CodeCtrlDel(CCodeCtrl *ctrl);
 void       CodeCtrlPop(CCmpCtrl *ccmp);
@@ -1057,10 +1060,12 @@ HC_IC_BINDINGH(HC_ICAdd_BTR)
 HC_IC_BINDINGH(HC_ICAdd_LBTC)
 HC_IC_BINDINGH(HC_ICAdd_LBTS)
 HC_IC_BINDINGH(HC_ICAdd_LBTR)
-HC_IC_BINDINGH(HC_ICAdd_MAX_I64)
-HC_IC_BINDINGH(HC_ICAdd_MAX_U64)
-HC_IC_BINDINGH(HC_ICAdd_MIN_I64)
-HC_IC_BINDINGH(HC_ICAdd_MIN_U64)
+HC_IC_BINDINGH(HC_ICAdd_Max_I64)
+HC_IC_BINDINGH(HC_ICAdd_Max_U64)
+HC_IC_BINDINGH(HC_ICAdd_Min_I64)
+HC_IC_BINDINGH(HC_ICAdd_Min_U64)
+HC_IC_BINDINGH(HC_ICAdd_Min_F64)
+HC_IC_BINDINGH(HC_ICAdd_Max_F64)
 HC_IC_BINDINGH(HC_ICAdd_SIGN_I64)
 HC_IC_BINDINGH(HC_ICAdd_SQR_I64)
 HC_IC_BINDINGH(HC_ICAdd_SQR_U64)
@@ -1073,6 +1078,7 @@ HC_IC_BINDINGH(HC_ICAdd_TAN)
 HC_IC_BINDINGH(HC_ICAdd_ATAN)
 HC_IC_BINDINGH(HC_ICAdd_Fs)
 HC_IC_BINDINGH(HC_ICAdd_Gs)
+
 CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc, int64_t r);
 CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc, int64_t r, int64_t rt, int64_t ptr_cnt);
 CRPN *__HC_ICAdd_Frame(CCodeCtrl *cc, int64_t off, int64_t rt, int64_t ptr_cnt);

@@ -56,6 +56,7 @@ I64 ClampI64(I64 i,I64 lo,I64 hi) {
   return i;
   
 }
+#ifdef BOOTSTRAP
 I64 MinI64(I64 a,I64 b) {
   if(a<b)
     return a;
@@ -66,6 +67,19 @@ I64 MaxI64(I64 a,I64 b) {
     return a;
   return b;
 }
+U64 MinU64(U64 a,U64 b) {
+  if(a<b)
+    return a;
+  return b;
+}
+U64 MaxU64(U64 a,U64 b) {
+  if(a>b)
+    return a;
+  return b;
+}
+#else
+//Both X86/AARCH64 have these as interns
+#endif
 
 I64 SqrI64(I64 i) {
   return i*i;

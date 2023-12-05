@@ -6516,114 +6516,6 @@ class CSpritePtMeshU8s : CSpriteBase
 extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 #include "Headers.HH";
 
-#ifndef BOOTSTRAP
-#define IC_FS 0x15
-#define IC_GS 0x17
-#define IC_BT			0x77
-#define IC_BTS			0x78
-#define IC_BTR			0x79
-#define IC_BTC			0x7A
-#define IC_LBTS			0x7B
-#define IC_LBTR			0x7C
-#define IC_LBTC			0x7D
-#define IC_TO_I64		0x1B
-#define IC_TO_F64		0x1C
-_intern IC_TO_I64 I64 ToI64(F64);
-_intern IC_TO_F64 F64 ToF64(I64);
-#ifdef TARGET_X86
-_intern IC_BT Bool Bt(U8*,I64);
-_intern IC_BTS Bool Bts(U8*,I64);
-_intern IC_BTC Bool Btc(U8*,I64);
-_intern IC_BTR Bool Btr(U8*,I64);
-_intern IC_LBTS Bool LBts(U8*,I64);
-_intern IC_LBTC Bool LBtc(U8*,I64);
-_intern IC_LBTR Bool LBtr(U8*,I64);
-_intern IC_FS CTask *Fs();
-_intern IC_GS CCPU *Gs();
-#endif
-#ifdef TARGET_AARCH64
-_intern IC_FS CTask *Fs();
-_intern IC_GS CCPU *Gs();
-#endif
-#endif
-extern CCmpGlbls cmp;
-//Added by Mr nrootconauto
-extern U8 *DisasOpc(CDoc *doc,U8 *data);
-extern U0 Uf(U8 *st); 
-extern I64 CallExtStr(U8 *,...);
-extern U8 *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0);
-class CAiwniosAOTBlob {
-  CQue *asm_patches;
-  CQue *to_fill;
-  I64 len;
-  U8 *data;
-  //private,used when placing ->data into it's final location
-  U8 **final_start_addr;
-};
-extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
-extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
-extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
-extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
-
-#define HDR_NUM	16
-#define REGISTRY_FILENAME "~/Registry.HC.Z"
-#define SE_NOISE	0
-#define SE_SWEEP	1
-#define INTERNAL_TYPES_NUM	17
-#define WIN_SCROLL_SIZE		8
-#define WIN_SCROLL_BORDER_BONUS	4
-#define VIEWANGLES_SPACING	22
-#define VIEWANGLES_RANGE	48
-#define VIEWANGLES_BORDER	2
-#define VIEWANGLES_SNAP		2
-#define C_INDENT_SPACES		2
-#define ASM_RENUM_SPACING	5
-#define PU_SPACING	10
-#define WIZ_HIGHLIGHT_ON	(DOCT_ERROR+1)
-#define WIZ_HIGHLIGHT_OFF	(DOCT_ERROR+2)
-#define DEF2_PROCESSED		1
-#define DEF2_NOT_INITIALIZED	2
-#define FMR_INCLUDE		0
-#define FMR_ADAM_INCLUDE	1
-#define FMR_DELETE		2
-#define FMR_RENAME		3
-#define FMR_MKDIR		4
-#define FMR_PLAIN		5
-#define FMR_PASTE		6
-#define FMR_CHG_DSK		7
-#define FMR_FORMAT		8
-#define FMR_MOUNT_REDSEA_ISO_C	9
-#define FMR_UNMOUNT		10
-#define FMR_MAKE_REDSEA_ISO_C	11
-#define FMR_BURN_ISO		12
-#define FMR_HELP		13
-#define GOD_BAD_BITS	4
-#define GOD_GOOD_BITS	24
-#define DUR_4		0
-#define DUR_8_8		1
-#define DUR_3_3_3	2
-#define DUR_16_16_16_16	3
-#define DUR_8DOT_16	4
-#define DUR_8_16_16	5
-#define DUR_16_16_8	6
-#define GR_FILE_MAX	(offset(CDC.end)-offset(CDC.start)+\
-	COLORS_NUM*sizeof(CBGR48)+sizeof(CArcCtrl)+GR_WIDTH*GR_HEIGHT)
-#define GR_SCALE1_BITS	24
-#define GR_SCALE2_BITS	8
-#define CC_LEFT		1
-#define CC_RIGHT	2
-#define CC_TOP		4
-#define CC_BOTTOM	8
-#define MV_FILE_MAX	0x007FF000
-#define IS_0_ARG	0
-#define IS_1_ARG	1
-#define IS_2_ARG	2
-#define IS_V_ARG	3 //Variable Arg Cnt
-
-#define IST_NULL	0
-#define IST_DEREF	1
-#define IST_ASSIGN	2
-#define IST_CMP		3
 #define IC_END			0x00
 #define IC_NOP1			0x01
 #define IC_END_EXP		0x02
@@ -6849,6 +6741,124 @@ extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
 #define IC_LOCK  0xBE //Added by nroot
 
 #define IC_ICS_NUM		0xBF
+
+
+#ifndef BOOTSTRAP
+#define IC_FS 0x15
+#define IC_GS 0x17
+#define IC_BT			0x77
+#define IC_BTS			0x78
+#define IC_BTR			0x79
+#define IC_BTC			0x7A
+#define IC_LBTS			0x7B
+#define IC_LBTR			0x7C
+#define IC_LBTC			0x7D
+#define IC_TO_I64		0x1B
+#define IC_TO_F64		0x1C
+_intern IC_TO_I64 I64 ToI64(F64);
+_intern IC_TO_F64 F64 ToF64(I64);
+#ifdef TARGET_X86
+_intern IC_BT Bool Bt(U8*,I64);
+_intern IC_BTS Bool Bts(U8*,I64);
+_intern IC_BTC Bool Btc(U8*,I64);
+_intern IC_BTR Bool Btr(U8*,I64);
+_intern IC_LBTS Bool LBts(U8*,I64);
+_intern IC_LBTC Bool LBtc(U8*,I64);
+_intern IC_LBTR Bool LBtr(U8*,I64);
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
+_intern IC_MAX_I64 I64 MaxI64(I64,I64);
+_intern IC_MIN_I64 I64 MinI64(I64,I64);
+_intern IC_MAX_U64 U64 MaxU64(U64,U64);
+_intern IC_MIN_U64 U64 MinU64(U64,U64);
+#endif
+#ifdef TARGET_AARCH64
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
+_intern IC_MAX_I64 I64 MaxI64(I64,I64);
+_intern IC_MIN_I64 I64 MinI64(I64,I64);
+_intern IC_MAX_U64 U64 MaxU64(U64,U64);
+_intern IC_MIN_U64 U64 MinU64(U64,U64);
+#endif
+#endif
+extern CCmpGlbls cmp;
+//Added by Mr nrootconauto
+extern U8 *DisasOpc(CDoc *doc,U8 *data);
+extern U0 Uf(U8 *st); 
+extern I64 CallExtStr(U8 *,...);
+extern U8 *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0);
+class CAiwniosAOTBlob {
+  CQue *asm_patches;
+  CQue *to_fill;
+  I64 len;
+  U8 *data;
+  //private,used when placing ->data into it's final location
+  U8 **final_start_addr;
+};
+extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
+extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
+extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
+extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
+
+#define HDR_NUM	16
+#define REGISTRY_FILENAME "~/Registry.HC.Z"
+#define SE_NOISE	0
+#define SE_SWEEP	1
+#define INTERNAL_TYPES_NUM	17
+#define WIN_SCROLL_SIZE		8
+#define WIN_SCROLL_BORDER_BONUS	4
+#define VIEWANGLES_SPACING	22
+#define VIEWANGLES_RANGE	48
+#define VIEWANGLES_BORDER	2
+#define VIEWANGLES_SNAP		2
+#define C_INDENT_SPACES		2
+#define ASM_RENUM_SPACING	5
+#define PU_SPACING	10
+#define WIZ_HIGHLIGHT_ON	(DOCT_ERROR+1)
+#define WIZ_HIGHLIGHT_OFF	(DOCT_ERROR+2)
+#define DEF2_PROCESSED		1
+#define DEF2_NOT_INITIALIZED	2
+#define FMR_INCLUDE		0
+#define FMR_ADAM_INCLUDE	1
+#define FMR_DELETE		2
+#define FMR_RENAME		3
+#define FMR_MKDIR		4
+#define FMR_PLAIN		5
+#define FMR_PASTE		6
+#define FMR_CHG_DSK		7
+#define FMR_FORMAT		8
+#define FMR_MOUNT_REDSEA_ISO_C	9
+#define FMR_UNMOUNT		10
+#define FMR_MAKE_REDSEA_ISO_C	11
+#define FMR_BURN_ISO		12
+#define FMR_HELP		13
+#define GOD_BAD_BITS	4
+#define GOD_GOOD_BITS	24
+#define DUR_4		0
+#define DUR_8_8		1
+#define DUR_3_3_3	2
+#define DUR_16_16_16_16	3
+#define DUR_8DOT_16	4
+#define DUR_8_16_16	5
+#define DUR_16_16_8	6
+#define GR_FILE_MAX	(offset(CDC.end)-offset(CDC.start)+\
+	COLORS_NUM*sizeof(CBGR48)+sizeof(CArcCtrl)+GR_WIDTH*GR_HEIGHT)
+#define GR_SCALE1_BITS	24
+#define GR_SCALE2_BITS	8
+#define CC_LEFT		1
+#define CC_RIGHT	2
+#define CC_TOP		4
+#define CC_BOTTOM	8
+#define MV_FILE_MAX	0x007FF000
+#define IS_0_ARG	0
+#define IS_1_ARG	1
+#define IS_2_ARG	2
+#define IS_V_ARG	3 //Variable Arg Cnt
+
+#define IST_NULL	0
+#define IST_DEREF	1
+#define IST_ASSIGN	2
+#define IST_CMP		3
 
 #define KW_INCLUDE	0
 #define KW_DEFINE	1
