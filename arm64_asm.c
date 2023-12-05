@@ -879,6 +879,19 @@ int64_t ARM_movzImmX(int64_t d, int64_t i16, int64_t sh) {
   }
   return MvWideImmX(2, d, i16, sh);
 }
+int64_t ARM_movkImmX(int64_t d, int64_t i16, int64_t sh) {
+  switch (sh) {
+  case 0:
+  case 16:
+  case 32:
+  case 48:
+    break;
+  default:
+    throw(*(uint32_t *)"ASM");
+  }
+  return MvWideImmX(3, d, i16, sh);
+}
+
 int64_t ARM_movnImmX(int64_t d, int64_t i16, int64_t sh) {
   switch (sh) {
   case 0:

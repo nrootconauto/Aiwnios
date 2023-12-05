@@ -245,8 +245,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off);
 static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
                            char *bin, int64_t code_off) {
-  int64_t       code;
-  CCodeMiscRef *ref;
+  int64_t       code,which;
+  int64_t z;
   if (bin && !(cctrl->flags & CCF_AOT_COMPILE)) { // TODO make sure not AOT
     if (ARM_ERR_INV_OFF !=
         (code = ARM_adrX(reg, imm - (int64_t)(bin + code_off)))) {
@@ -254,64 +254,20 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
       return code_off;
     }
   }
-  // Here's the deal,you can store a 16bit literal into a register,but you
-  // can shift it to get bigger range,and you can make it negative
-  if ((imm & 0xffffll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movzImmX(reg, imm, 0));
-    return code_off;
-  }
-  if ((imm & 0xffff0000ll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movzImmX(reg, imm >> 16, 16));
-    return code_off;
-  }
-  if ((imm & 0xffff00000000ll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movzImmX(reg, imm >> 32, 32));
-    return code_off;
-  }
-  if ((imm & 0xffff000000000000ll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movzImmX(reg, imm >> 48, 48));
-    return code_off;
-  }
-  /*
-  imm = ~imm;
-  if ((imm & 0xffff) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movnImmX(reg, imm, 0));
-    return code_off;
-  }
-  if ((imm & 0xffff0000) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movnImmX(reg, imm >> 16, 16));
-    return code_off;
-  }
-  if ((imm & 0xffff00000000ll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movnImmX(reg, imm >> 32, 32));
-    return code_off;
-  }
-  if ((imm & 0xffff000000000000ll) == imm) {
-    AIWNIOS_ADD_CODE(ARM_movnImmX(reg, imm >> 48, 48));
-    return code_off;
-  }
-  imm = ~imm;
-  */
-  CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
-  char      *dptr;
-  for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
-    if (misc->type == CMT_INT_CONST && misc->integer == imm) {
-      goto found;
+  z=1;
+  for(which=0;which!=4;which++) {
+    if ((imm>>(which*16)) & 0xffffll) {
+	  if(z) {
+        AIWNIOS_ADD_CODE(ARM_movzImmX(reg, 0xffff&(imm>>(which*16)), which*16));
+        z=0;
+	  } else {
+        AIWNIOS_ADD_CODE(ARM_movkImmX(reg, 0xffff&(imm>>(which*16)), which*16));
+	  }
     }
   }
-  misc          = A_CALLOC(sizeof(CCodeMisc), cctrl->hc);
-  misc->type    = CMT_INT_CONST;
-  misc->integer = imm;
-  QueIns(misc, cctrl->code_ctrl->code_misc->last);
-found:
-  if (bin && misc->addr && cctrl->code_ctrl->final_pass) {
-    AIWNIOS_ADD_CODE(ARM_ldrLabelX(reg, 0));
-    ref                = CodeMiscAddRef(misc, bin + code_off - 4);
-    ref->patch_cond_br = ARM_ldrLabelX;
-    ref->user_data1    = reg;
-
-  } else
-    AIWNIOS_ADD_CODE(0); // See above AIWNIOS_ADD_CODE
+  if(z) {
+     AIWNIOS_ADD_CODE(ARM_movzImmX(reg, 0,0));
+  }
   return code_off;
 }
 

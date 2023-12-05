@@ -870,6 +870,7 @@ int64_t    ARM_ldrPreImmF64(int64_t d, int64_t p, int64_t off);
 int64_t    ARM_strPreImmF64(int64_t d, int64_t p, int64_t off);
 int64_t    ARM_ldrPostImmF64(int64_t d, int64_t p, int64_t off);
 int64_t    ARM_strPostImmF64(int64_t d, int64_t p, int64_t off);
+int64_t    ARM_movkImmX(int64_t d, int64_t i16, int64_t sh) ;
 int64_t    ARM_movnImmX(int64_t d, int64_t i16, int64_t sh);
 int64_t    ARM_movzImmX(int64_t d, int64_t i16, int64_t sh);
 int64_t    ARM_asrvRegX(int64_t d, int64_t n, int64_t m);
