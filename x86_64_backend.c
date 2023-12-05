@@ -6020,15 +6020,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     b        = ICArgN(rpn, 0);                                                 \
     code_off = __OptPassFinal(cctrl, a, bin, code_off);                        \
     code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
-    if (rpn->res.mode == MD_REG ) {                                        \
-      into_reg = rpn->res.reg;                                                 \
-    } else                                                                     \
-      into_reg = 0;                                                            \
+    into_reg = 0;                                                            \
     tmp.mode     = MD_REG;                                                     \
     tmp.raw_type = rpn->res.raw_type;                                          \
     tmp.reg      = into_reg;                                                   \
     code_off     = PutICArgIntoReg(cctrl, &b->res, tmp.raw_type,               \
-                                   AIWNIOS_TMP_IREG_POOP, bin, code_off);      \
+                                   RDX, bin, code_off);      \
     code_off     = ICMov(cctrl, &tmp, &a->res, bin, code_off);                 \
     AIWNIOS_ADD_CODE(X86CmpRegReg, into_reg, b->res.reg);                      \
     AIWNIOS_ADD_CODE(OP, into_reg, b->res.reg);                                \
