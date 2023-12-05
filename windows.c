@@ -15,7 +15,6 @@ static uint32_t      palette[0x100];
 static SDL_Thread   *sdl_main_thread;
 int64_t              user_ev_num;
 static SDL_mutex    *screen_mutex, *screen_mutex2;
-static SDL_cond     *screen_done_cond;
 static int64_t       screen_ready = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
@@ -40,7 +39,6 @@ static void _DrawWindowNew() {
   SDL_RendererInfo info;
   screen_mutex     = SDL_CreateMutex();
   screen_mutex2    = SDL_CreateMutex();
-  screen_done_cond = SDL_CreateCond();
   SDL_LockMutex(screen_mutex);
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
@@ -98,9 +96,6 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_LockMutex(screen_mutex);
   SDL_PushEvent(&event);
   SDL_UnlockMutex(screen_mutex);
-  SDL_LockMutex(screen_mutex2);
-  SDL_CondWaitTimeout(screen_done_cond, screen_mutex2, 33);
-  SDL_UnlockMutex(screen_mutex2);
   return;
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
@@ -121,7 +116,6 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_RenderCopy(renderer, text, NULL, &view_port);
   SDL_RenderPresent(renderer);
   SDL_DestroyTexture(text);
-  SDL_CondBroadcast(screen_done_cond);
   SDL_UnlockMutex(screen_mutex);
 }
 
