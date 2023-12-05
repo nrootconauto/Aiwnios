@@ -5476,8 +5476,8 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         fun_arg.off = 16 + stk_arg_cnt++ * 8;
         PushTmp(cctrl, arg, NULL);
         PopTmp(cctrl, arg);
-        if(fun_arg.off==-arg->res.off&&arg->res.mode==MD_FRAME)
-		   continue;
+        if (fun_arg.off == -arg->res.off && arg->res.mode == MD_FRAME)
+          continue;
         code_off = ICMov(cctrl, &arg->res, &fun_arg, bin, code_off);
       } else if (rpn->type == IC_GET_VARGS_PTR) {
         arg = ICArgN(rpn, 0);
@@ -5996,7 +5996,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_MAX_I64]           = &&ic_max_i64,
       [IC_MIN_I64]           = &&ic_min_i64,
       [IC_MAX_U64]           = &&ic_max_u64,
-      [IC_MIN_U64]           = &&ic_min_i64,
+      [IC_MIN_U64]           = &&ic_min_u64,
       [IC_SIGN_I64]          = &&ic_sign_i64,
       [IC_SQR_I64]           = &&ic_sqr_i64,
       [IC_SQR_U64]           = &&ic_sqr_u64,
@@ -6013,36 +6013,38 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     goto ret;
   goto *poop_ants[rpn->type];
   do {
-	  ic_max_u64:
-	  #define IC_MXX_X64(OP) { \
-		  a=ICArgN(rpn,1); \
-		  b=ICArgN(rpn,0); \
-		  code_off=__OptPassFinal(cctrl,a,bin,code_off); \
-		  code_off=__OptPassFinal(cctrl,b,bin,code_off); \
-		  if(rpn->res.mode==MD_REG) { \
-			  use_reg=rpn->res.reg; \
-		  } else  \
-		    use_reg=0; \
-		  tmp.mode=MD_REG; \
-		  tmp.raw_type=rpn->res.raw_type; \
-		  tmp.reg=use_reg; \
-		  code_off=PutICArgIntoReg(cctrl,&b->res,tmp.raw_type,AIWNIOS_TMP_IREG_POOP,bin,code_off); \
-		  code_off=ICMov(cctrl,&tmp,&a->res,bin,code_off); \
-		  AIWNIOS_ADD_CODE(X86CmpRegReg,into_reg,b->res.reg); \
-		  AIWNIOS_ADD_CODE(OP,into_reg,b->res.reg); \
-		  code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off); \
-		}
-		IC_MXX_X64(X86CmovaRegReg);
-	  break;
-	  ic_max_i64:
-	  IC_MXX_X64(X86CmovgRegReg);
-	  break;
-	  ic_min_u64:
-	  IC_MXX_X64(X86CmovbRegReg);
-	  break;
-	  ic_min_i64:
-	  IC_MXX_X64(X86CmovlRegReg);
-	  break;
+  ic_max_u64:
+#define IC_MXX_X64(OP)                                                         \
+  {                                                                            \
+    a        = ICArgN(rpn, 1);                                                 \
+    b        = ICArgN(rpn, 0);                                                 \
+    code_off = __OptPassFinal(cctrl, a, bin, code_off);                        \
+    code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
+    if (rpn->res.mode == MD_REG ) {                                        \
+      into_reg = rpn->res.reg;                                                 \
+    } else                                                                     \
+      into_reg = 0;                                                            \
+    tmp.mode     = MD_REG;                                                     \
+    tmp.raw_type = rpn->res.raw_type;                                          \
+    tmp.reg      = into_reg;                                                   \
+    code_off     = PutICArgIntoReg(cctrl, &b->res, tmp.raw_type,               \
+                                   AIWNIOS_TMP_IREG_POOP, bin, code_off);      \
+    code_off     = ICMov(cctrl, &tmp, &a->res, bin, code_off);                 \
+    AIWNIOS_ADD_CODE(X86CmpRegReg, into_reg, b->res.reg);                      \
+    AIWNIOS_ADD_CODE(OP, into_reg, b->res.reg);                                \
+    code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                   \
+  }
+    IC_MXX_X64(X86CmovbRegReg);
+    break;
+  ic_max_i64:
+    IC_MXX_X64(X86CmovlRegReg);
+    break;
+  ic_min_u64:
+    IC_MXX_X64(X86CmovaRegReg);
+    break;
+  ic_min_i64:
+    IC_MXX_X64(X86CmovgRegReg);
+    break;
   ic_gs:
     next = rpn->base.next;
     if (next->type != IC_RELOC && next->type != IC_I64) {
