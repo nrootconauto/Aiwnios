@@ -3302,7 +3302,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         ref = CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4);
         ref->patch_cond_br = ARM_adrX;
         ref->user_data1    = into_reg;
-        ref->offset        = rpn->integer;
+        ref->offset        = next->integer;
       }
       goto restore_reg;
       break;
