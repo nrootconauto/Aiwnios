@@ -1145,11 +1145,11 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
 int64_t IsCmdLineMode() {
   return arg_cmd_line->count != 0;
 }
-#ifndef TARGET_WIN32
+#if !(defined (_WIN32)||defined(WIN32))
 #include "linenoise/linenoise.h"
 #endif
 char *CmdLineGetStr(char **stk) {
-#ifdef TARGET_WIN32
+#if defined (_WIN32)||defined(WIN32)
   printf("%s",stk[0]);
   char buf[2048];
   fgets(buf, 2048, stdin);

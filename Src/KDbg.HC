@@ -118,9 +118,9 @@ U0 DebuggerSpawn(CTask *debugee) {
 
 U0 DumbStackTrace(U8 **rbp,U8 *rip) {
   I64 cnt=1;
-  DbgPrint("[0]::%P",rip);
+  DbgPrint("[0]::%P\n",rip);
   while(ChkOnStk(rbp,Fs)) {
-    DbgPrint("[%d]::%P",cnt++,rbp[1]);
+    DbgPrint("[%d]::%P\n",cnt++,rbp[1]);
     rbp=*rbp;
   }
 }
