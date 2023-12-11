@@ -100,7 +100,7 @@ U0 Snd(I8 ona=0)
   SndFreq(Ona2Freq(ona));
 }
 
-Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="B:/Tmp/%X.GR")
+Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="T:/Video/%X.GR")
 {//WinMgr saves GR files to a dir.
   Bool old_val;
   scrncast.just_audio=just_audio;

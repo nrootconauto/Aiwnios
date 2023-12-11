@@ -665,8 +665,6 @@ sp_out_e:
 	    if (flags&PRTF_NEG_E)
 	      tmp_buf[k++]='-';
 	    tmp_buf[k++]='e';
-	    DbgPutS(tmp_buf);
-	    DbgPutS("\n");
 	    dec_len=len-k-2;
 	    if (flags&PRTF_NEG)
 	      dec_len--;
