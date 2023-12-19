@@ -83,8 +83,8 @@ public U0 ClipPaste(CDoc *doc)
     tdoc=DocNew;
     DocLoad(tdoc,cb,StrLen(cb));
     if (doc_ce->type_u8==DOCT_DATA) {
-      doc_e=doc2->head.next;
-      while (doc_e!=doc2) {
+      doc_e=tdoc->head.next;
+      while (doc_e!=tdoc) {
         if (doc_e->de_flags&DOCEF_TAG)
 	  DocPrintPartial(doc,"%s",doc_e->tag);
         doc_e=doc_e->next;
