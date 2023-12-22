@@ -48,20 +48,32 @@ en:
   Free(link);
 }
 U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
+  U8 *prefix="/";
   U8 *tmp;
+  Bool raw=FALSE;
   if(!url->abs_path) return;
+  if(!StrNCmp(url->abs_path,SERVER_RAW_PREFIX,StrLen(SERVER_RAW_PREFIX))) {
+    tmp=StrNew(url->abs_path+StrLen(SERVER_RAW_PREFIX));
+    Free(url->abs_path);
+    url->abs_path=tmp;
+    prefix=SERVER_RAW_PREFIX;
+    raw=TRUE;
+  }
   U8 *path=ChrootFile(tmp=MStrPrint("%s/*",url->abs_path));
+  Free(tmp);
   CDirEntry *root=FilesFind(path),*cur;
   I64 len;
   CDoc *tmpd=DocNew(blkdev.tmp_filename),*html;
-  Free(tmp);
+  DocPrint(tmpd,"$$FG,PURPLE$$$$TX+CX,\"Pro Tip!!!\"$$$$FD$$$$WW,1$$\n\n");
+  DocPrint(tmpd,"  You can download the whole directory in a TempleOS $$RED$$.ISO.C$$FD$$ format which you get the files out via $$HL,1$$MountFile(\"File.ISO.C\");$$HL,0$$ by clicking the typing in $$RED$$aiwnios.com/raw_dir/some_directory.ISO.C$$FD$$ or by clicking here $$LK,\"%Q.ISO.C\",A=\"FL:/raw_dir%Q.ISO.C\"$$\n\n",url->abs_path,url->abs_path);
+  DocPrint(tmpd,"  You can download indivual files raw with $$RED$$aiwnios.com/raw/some_file$$FD$$\n\n");
   DocPrint(tmpd,"$$FG,PURPLE$$$$TX+CX,\"Directory listing of %Q:\"$$$$FD$$\n\n",url->abs_path);
   DocPrint(tmpd,"$$ID,2$$");
   for(cur=root;cur;cur=cur->next) {
     if(IsDir(cur->full_name)) {
-      DocPrint(tmpd,"$$LK,\"%Q/\",A=\"FL:/%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
+      DocPrint(tmpd,"$$LK,\"%Q/\",A=\"FL:%Q%Q/%Q\"$$\n",cur->name,prefix,url->abs_path,cur->name);
     } else 
-      DocPrint(tmpd,"$$LK,\"%Q\",A=\"FL:/%Q/%Q\"$$\n",cur->name,url->abs_path,cur->name);
+      DocPrint(tmpd,"$$LK,\"%Q\",A=\"FL:%Q%Q/%Q\"$$\n",cur->name,prefix,url->abs_path,cur->name);
   }
   DocPrint(tmpd,"$$ID,-2$$");
   html=Doc2Html(tmpd);
@@ -71,6 +83,48 @@ U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   DocDel(tmpd),DocDel(html);
   Free(path);
   DirEntryDel(root);
+}
+#define ISOC_CACHE "../ISOCs"
+if(!FileFind(ISOC_CACHE)) DirMk(ISOC_CACHE);
+U0 Dir_ISOC_Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
+  U8 *tmp,*fp,*cache=NULL,*data;
+  CDirEntry dent,cache_ent;
+  I64 flen;
+  CConnection *con=Fs->user_data;  
+  if(!url->abs_path) return;
+  if(!StrNCmp(url->abs_path,SERVER_ISOC_PREFIX,StrLen(SERVER_ISOC_PREFIX))) {
+    tmp=StrNew(url->abs_path+StrLen(SERVER_ISOC_PREFIX));
+    Free(url->abs_path);
+    url->abs_path=tmp;
+    FileExtRem(url->abs_path); //Remove .ISO.C
+    Free(tmp);
+  }
+  fp=ChrootFile(url->abs_path);
+  if(!FileFind(fp,&dent)) {
+    R404(stream,NULL,url->abs_path);
+    goto fin;
+  }
+  tmp=ChrootFile(url->abs_path,ISOC_CACHE);
+  cache=ExtDft(tmp,"ISO.C");
+  Free(tmp);
+  if(!FileFind(cache,&cache_ent)) {
+regen:
+     tmp=MStrPrint("RedSeaISO(\"%Q\",\"%Q\");;",cache,fp);
+     JobResGet(TaskExe(Gs->seth_task,Fs,tmp,JOBf_WAKE_MASTER));
+     Free(tmp);
+  } else if(cache_ent.datetime<dent.datetime) {
+    Free(cache_ent.full_name);
+    goto regen;
+  } else
+    Free(cache_ent.full_name);
+  StrCpy(con->response_mime,"application/x-binary");
+  data=FileRead(cache,&flen);
+  WriteNBytes(stream,NULL,data,flen);
+  Free(data);
+  Free(dent.full_name);
+fin:
+  Free(cache);
+  Free(fp);
 }
 U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   if(!url->abs_path) return;
@@ -125,20 +179,43 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   if(!url||!url->abs_path) return;
-  U8 *dot=FileExtDot(url->abs_path),*np;
+  U8 *dot=FileExtDot(url->abs_path),*np,*data;
+  I64 flen;
+  CConnection *con=Fs->user_data;
+  CDirEntry dent;
+  if(!StrNCmp(url->abs_path,SERVER_ISOC_PREFIX,StrLen(SERVER_RAW_PREFIX))) {
+    Dir_ISOC_Get(srv,stream,url,req);
+    goto fin;
+  } else if(!StrNCmp(url->abs_path,SERVER_RAW_PREFIX,StrLen(SERVER_RAW_PREFIX))) {
+    np=ChrootFile(url->abs_path+StrLen(SERVER_RAW_PREFIX));
+    if(!FileFind(np,&dent)) {
+      R404(stream,NULL,url->abs_path);
+    } else if(IsDir(dent.full_name)) {
+      DirGet(srv,stream,url,req);
+      Free(dent.full_name);
+    } else {
+      StrCpy(con->response_mime,"application/x-binary");
+      data=FileRead(np,&flen);
+      WriteNBytes(stream,NULL,data,flen);
+      Free(dent.full_name);
+      Free(data);
+    }
+    Free(np);
+    goto fin;
+  }
   if(!StrCmp(url->abs_path,"/")&&FileFind("/WWW/index.DD")) {
     Free(url->abs_path);
     url->abs_path=StrNew("/index.DD");
   }
   if(!dot) {
-   DolDocGet(srv,stream,url,req);
-   goto fin;
+    DolDocGet(srv,stream,url,req);
+    goto fin;
   }        
   if(!StrICmp(dot,".DD")
-	||!StrICmp(dot,".DD.Z")
-	||!StrICmp(dot,".HC")
-	||!StrICmp(dot,".HC.Z")
-	) {
+        ||!StrICmp(dot,".DD.Z")
+        ||!StrICmp(dot,".HC")
+        ||!StrICmp(dot,".HC.Z")
+  ) {
     DolDocGet(srv,stream,url,req);
     goto fin;
   }

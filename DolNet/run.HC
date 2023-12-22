@@ -3,6 +3,8 @@ Cd("/DolNet");
 #define SERVER_HTML "../HTML"
 #define SERVER_WWW "../WWW"
 #define SERVER_PORT 8080
+#define SERVER_RAW_PREFIX "/raw/"
+#define SERVER_ISOC_PREFIX "/raw_dir/"
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
   if(to) {

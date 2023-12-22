@@ -326,7 +326,7 @@ U0 CloseConnectionCB() {
 U0 ParseRequest(CConnection *con) {
   FramePtrAdd("CACHE_BLOB",NULL);
   FramePtrAdd("CONNECTION",con);
-  FramePtrAdd("TIMEOUT",(tS+5)(I64));
+  FramePtrAdd("TIMEOUT",(tS+60)(I64));
   Fs->put_doc=Fs->parent_task->put_doc;
   Fs->user_data=con;
   Fs->task_end_cb=&CloseConnectionCB;
