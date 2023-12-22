@@ -112,7 +112,7 @@ public U0 SettingsPop(CTask *task=NULL,I64 flags=0)
     }
 
     SettingsPop2(task,tmpse); //Do it to get ress fast
-    Refresh(,TRUE);
+    if(!IsCmdLineMode) Refresh(,TRUE);
     SettingsPop2(task,tmpse); //Redo in case was lost by old update
 
     Free(tmpse);
