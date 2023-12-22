@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line;
+    *sixty_fps, *arg_cmd_line, *arg_fork;
 struct arg_file       *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -282,7 +282,7 @@ static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
   return dst;
 }
 static void PutS(char *s) {
-  fprintf(stdout,"%s", s);
+  fprintf(stdout, "%s", s);
   fflush(stdout);
 }
 static uint64_t STK_60fps(uint64_t *stk) {
@@ -456,7 +456,7 @@ static int64_t STK___AIWNIOS_CAlloc(int64_t *stk) {
 }
 
 static int64_t STK___HC_ICSetLock(int64_t *stk) {
-	__HC_ICSetLock(stk[0]);
+  __HC_ICSetLock(stk[0]);
 }
 
 static int64_t STK___AIWNIOS_Free(int64_t *stk) {
@@ -596,18 +596,17 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DbgPutS(int64_t *stk) {
-  fprintf(stdout,"%s",(char *)stk[0]);
+  fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
 }
 static int64_t STK_PutS(int64_t *stk) {
-  fprintf(stdout,"%s",(char *)stk[0]);
+  fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
 }
 
 static void STK_PutS2(int64_t *stk) {
-  fprintf(stdout,"%s", (char *)stk[0]);
+  fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
-
 }
 
 static int64_t STK_SetHolyFs(int64_t *stk) {
@@ -723,25 +722,23 @@ static int64_t STK___HC_ICAdd_PostInc(int64_t *stk) {
 }
 
 static int64_t STK___HC_ICAdd_Max_I64(int64_t *stk) {
-	return __HC_ICAdd_Max_I64(stk[0]);
+  return __HC_ICAdd_Max_I64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Min_I64(int64_t *stk) {
-	return __HC_ICAdd_Min_I64(stk[0]);
+  return __HC_ICAdd_Min_I64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Max_U64(int64_t *stk) {
-	return __HC_ICAdd_Max_U64(stk[0]);
+  return __HC_ICAdd_Max_U64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Min_U64(int64_t *stk) {
-	return __HC_ICAdd_Min_U64(stk[0]);
+  return __HC_ICAdd_Min_U64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Max_F64(int64_t *stk) {
-	return __HC_ICAdd_Max_F64(stk[0]);
+  return __HC_ICAdd_Max_F64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Min_F64(int64_t *stk) {
-	return __HC_ICAdd_Min_F64(stk[0]);
+  return __HC_ICAdd_Min_F64(stk[0]);
 }
-
-
 
 static int64_t STK___HC_ICAdd_PostDec(int64_t *stk) {
   return (int64_t)__HC_ICAdd_PostDec((CCodeCtrl *)stk[0], stk[1]);
@@ -1145,22 +1142,22 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
 int64_t IsCmdLineMode() {
   return arg_cmd_line->count != 0;
 }
-#if !(defined (_WIN32)||defined(WIN32))
-#include "linenoise/linenoise.h"
+#if !(defined(_WIN32) || defined(WIN32))
+  #include "linenoise/linenoise.h"
 #endif
 char *CmdLineGetStr(char **stk) {
-#if defined (_WIN32)||defined(WIN32)
-  printf("%s",stk[0]);
+#if defined(_WIN32) || defined(WIN32)
+  printf("%s", stk[0]);
   char buf[2048];
   fgets(buf, 2048, stdin);
   return A_STRDUP(buf, NULL);
 #else
-  char *copy,*ln;
-  if(ln=linenoise(stk[0]?stk[0]:"")) {
-	  copy=A_STRDUP(ln,NULL);
-	  linenoiseFree(ln);
+  char *copy, *ln;
+  if (ln = linenoise(stk[0] ? stk[0] : "")) {
+    copy = A_STRDUP(ln, NULL);
+    linenoiseFree(ln);
   } else
-	  copy=A_STRDUP("",NULL);
+    copy = A_STRDUP("", NULL);
   return copy;
 #endif
 }
@@ -1186,12 +1183,12 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
-    PrsAddSymbol("__HC_ICAdd_Min_F64",STK___HC_ICAdd_Min_F64,1);
-    PrsAddSymbol("__HC_ICAdd_Max_F64",STK___HC_ICAdd_Max_F64,1);
-    PrsAddSymbol("__HC_ICAdd_Min_I64",STK___HC_ICAdd_Min_I64,1);
-    PrsAddSymbol("__HC_ICAdd_Max_I64",STK___HC_ICAdd_Max_I64,1);
-    PrsAddSymbol("__HC_ICAdd_Min_U64",STK___HC_ICAdd_Min_U64,1);
-    PrsAddSymbol("__HC_ICAdd_Max_U64",STK___HC_ICAdd_Max_U64,1);
+    PrsAddSymbol("__HC_ICAdd_Min_F64", STK___HC_ICAdd_Min_F64, 1);
+    PrsAddSymbol("__HC_ICAdd_Max_F64", STK___HC_ICAdd_Max_F64, 1);
+    PrsAddSymbol("__HC_ICAdd_Min_I64", STK___HC_ICAdd_Min_I64, 1);
+    PrsAddSymbol("__HC_ICAdd_Max_I64", STK___HC_ICAdd_Max_I64, 1);
+    PrsAddSymbol("__HC_ICAdd_Min_U64", STK___HC_ICAdd_Min_U64, 1);
+    PrsAddSymbol("__HC_ICAdd_Max_U64", STK___HC_ICAdd_Max_U64, 1);
     PrsAddSymbol("CmdLineBootFiles", CmdLineBootFiles, 0);
     PrsAddSymbol("CmdLineBootFileCnt", CmdLineBootFileCnt, 0);
     PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 1);
@@ -1256,29 +1253,33 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS", STK_PutS, 1);
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
-    PrsAddSymbol("Fs", GetHolyFs, 0); 
-    #if defined (__x86_64__)
-    #if defined(__linux__) || defined(__FreeBSD__)
+    PrsAddSymbol("Fs", GetHolyFs, 0);
+#if defined(__x86_64__)
+  #if defined(__linux__) || defined(__FreeBSD__)
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs",NULL,0);
-    ((CHashExport*)HashFind("__Fs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs",NULL,0);
-    ((CHashExport*)HashFind("__Gs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyGsPtr();
-    #else
-    //Pass function pointer(not the result)
-    PrsAddSymbol("__Fs",GetHolyFsPtr,0);
-    PrsAddSymbol("__Gs",GetHolyGsPtr,0);
-    #endif
-    #endif
-    #if defined(_M_ARM64) || defined(__aarch64__)
+    PrsAddSymbolNaked("__Fs", NULL, 0);
+    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyFsPtr();
+    PrsAddSymbolNaked("__Gs", NULL, 0);
+    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyGsPtr();
+  #else
+    // Pass function pointer(not the result)
+    PrsAddSymbol("__Fs", GetHolyFsPtr, 0);
+    PrsAddSymbol("__Gs", GetHolyGsPtr, 0);
+  #endif
+#endif
+#if defined(_M_ARM64) || defined(__aarch64__)
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs",NULL,0);
-    ((CHashExport*)HashFind("__Fs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs",NULL,0);
-    ((CHashExport*)HashFind("__Gs",Fs->hash_table,HTT_EXPORT_SYS_SYM,1))->val=GetHolyGsPtr();
-    #endif
+    PrsAddSymbolNaked("__Fs", NULL, 0);
+    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyFsPtr();
+    PrsAddSymbolNaked("__Gs", NULL, 0);
+    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyGsPtr();
+#endif
     PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
     PrsAddSymbol("MPAwake", STK_MPAwake, 1);
@@ -1506,6 +1507,8 @@ int main(int argc, char **argv) {
     arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
+    arg_fork =
+        arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
 #endif
     sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
     arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
@@ -1522,6 +1525,27 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
+#ifndef _WIN32
+  if (arg_fork->count) {
+    pid_t pid = fork();
+    assert(pid >= 0);
+    if (pid > 0)
+      return 0; // parent
+    assert(setsid() >= 0);
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+    pid = fork();
+    assert(pid >= 0);
+    if (pid > 0)
+      return 0; // parent(child of previous parent, we want the grandchild)
+    umask(0);
+    /*close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);*/
+    for (int i = 0; i <= sysconf(_SC_OPEN_MAX); ++i)
+      close(i);
+  }
+#endif
   t_drive = NULL;
   if (arg_asan_enable->count)
     InitBoundsChecker();
