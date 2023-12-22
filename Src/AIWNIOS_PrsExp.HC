@@ -664,7 +664,7 @@ U0 PushOpers(CCmpCtrl *cc,I64 cur_prec,Bool fin=FALSE) {
   while(cc->ps->ptr>0) { //cc->ps->stk starts at 1
     v=PrsPop(cc->ps);
     rpn=PrsPop2(cc->ps); //NULL if paren
-	if(PREC_NULL==v.u32[1]&&!fin) {
+    if(PREC_NULL==v.u32[1]&&!fin) {
       //Put back on stack
       PrsPush(cc->ps,v);
       PrsPush2(cc->ps,rpn);
@@ -675,17 +675,20 @@ U0 PushOpers(CCmpCtrl *cc,I64 cur_prec,Bool fin=FALSE) {
     }
     if(v.u32[1]<cur_prec.u32[1]||fin) {
 pop:
+      if(!rpn) LexExcept(cc,"Invalid expression at ");
       if(rpn->type==IC_ADDR) {
         //
         //Address of array does nothing in terms of SYNTAX
         // But is used internaly so we check ONLY here.
         r2=cc->coc.coc_head.next;
+	if(&cc->coc.coc_head==r2) LexExcept(cc,"Can't get address of nothing at ");
         if(r2->ic_dim) {
           Free(rpn);
           goto next;
         }
       } else if(rpn->type==IC_DEREF) {
          r2=cc->coc.coc_head.next;
+	if(&cc->coc.coc_head==r2) LexExcept(cc,"Can't get derefernce nothing at ");
 	 if(!r2->ic_dim&&!r2->ic_class->ptr_stars_cnt)
            LexExcept(cc,"Expected pointer type at ");
       }
