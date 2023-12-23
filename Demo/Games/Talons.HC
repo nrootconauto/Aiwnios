@@ -274,8 +274,8 @@ U0 MPDoPanels(CTask *task)
   Panel *tmpp,*start_ptr=NULL,*end_ptr=NULL;
   CD3I32 *poly;
   Obj *tmpo;
-  lo=Gs->num*(MAP_HEIGHT-1)/mp_cnt;
-  hi=(Gs->num+1)*(MAP_HEIGHT-1)/mp_cnt;
+  lo=0;
+  hi=MAP_HEIGHT-1;
   for (threshold=8;threshold>=1;threshold--)
     for (j=lo;j<hi;j++) {
       for (i=0;i<MAP_WIDTH-1;i++) {
@@ -387,14 +387,13 @@ U0 MPDoPanels(CTask *task)
       }
     }
   if (end_ptr) {
-    while (LBts(&critical_section_flag,0))
-      Yield;
+//    while (LBts(&critical_section_flag,0))
+//      Yield;
     if (end_ptr)
       end_ptr->next=panel_head;
     panel_head=start_ptr;
-    LBtr(&critical_section_flag,0);
+//    LBtr(&critical_section_flag,0);
   }
-  LBtr(&mp.init_not_done_flags,Gs->num);
 }
 
 U0 InitElevations()
@@ -438,12 +437,15 @@ for each spot.
   MemSet(panels,0,sizeof(panels));
   CalcNormals;
   panel_head=NULL;
+  MPDoPanels(Fs);
+//This routine deadlocks at loads of cores,Nrootconauto
+  /*
   mp.init_not_done_flags=1<<mp_cnt-1;
   for (i=0;i<mp_cnt;i++) {
      Spawn(&MPDoPanels,Fs,"Do Panels",i);
   }
   while (mp.init_not_done_flags)
-    Sleep(1);
+    Sleep(1);*/
 }
 
 F64 claws_down;

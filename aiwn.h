@@ -1252,3 +1252,12 @@ void SetHolyGs(void*);
 
 int64_t ARM_subShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
 int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
+
+
+#if defined(_M_ARM64) || defined(__aarch64__)
+    #define PAUSE asm ( "yield " );
+#elif defined (__x86_64__)
+    #define PAUSE asm ( "pause " );
+#else
+    #define PAUSE ;
+#endif

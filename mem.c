@@ -146,7 +146,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   cnt &= (int8_t)0xf8;
   // HClF_LOCKED is 1
   while (Misc_LBts(&hc->locked_flags, 1))
-    ;
+    PAUSE;
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
   if (hc->heap_hash[cnt / 8]) {
@@ -218,7 +218,7 @@ void __AIWNIOS_Free(void *ptr) {
   }
   hc = un->hc;
   while (Misc_LBts(&hc->locked_flags, 1))
-    ;
+    PAUSE;
   hc->used_u8s -= un->sz;
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
     hash                      = hc->heap_hash[un->sz / 8];
@@ -267,9 +267,8 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
 
 void HeapCtrlDel(CHeapCtrl *ct) {
   CMemBlk *next, *m;
-  // TODO atomic
   while (Misc_Bt(&ct->locked_flags, 1))
-    ;
+    PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
     next = m->base.next;
 #if defined(_WIN32) || defined(WIN32)

@@ -1539,11 +1539,6 @@ int main(int argc, char **argv) {
     if (pid > 0)
       return 0; // parent(child of previous parent, we want the grandchild)
     umask(0);
-    /*close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);*/
-    for (int i = 0; i <= sysconf(_SC_OPEN_MAX); ++i)
-      close(i);
   }
 #endif
   t_drive = NULL;
