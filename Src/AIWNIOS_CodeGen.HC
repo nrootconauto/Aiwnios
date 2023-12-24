@@ -338,6 +338,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CAOTAbsAddr *tmpabs;
   CAddShortRelocData fill_user_data;
   I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL,align;
+  I64 reported_min_ln=I16_MAX,reported_max_ln=I16_MIN;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code;
   I64 *table_ptr;
@@ -704,7 +705,6 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
       new=__HC_ICAdd_Frame(cc2,cur->ic_data,RT_I64,0);
     break;case IC_BR_ZERO:
     new=__HC_ICAdd_LNot(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_NOT_ZERO:
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
@@ -712,27 +712,21 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //break;case IC_BR_NOT_CARRY: ???
     break;case IC_BR_EQU_EQU:
     new=__HC_ICAdd_EqEq(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_NOT_EQU:
     new=__HC_ICAdd_Ne(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_LESS:
     new=__HC_ICAdd_Lt(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_GREATER_EQU:
     new=__HC_ICAdd_Ge(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_GREATER:
     new=__HC_ICAdd_Gt(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     break;case IC_BR_LESS_EQU:
     new=__HC_ICAdd_Le(cc2);
-    __HC_ICSetLine(new,cur->ic_line);
     new=__HC_ICAdd_GotoIf(cc2,cur->ic_data(CCodeMisc*)->addr);
     //break;case IC_BR_EQU_EQU2: ???
     //break;case IC_BR_NOT_EQU2:  ???
@@ -1010,7 +1004,11 @@ break;case IC_ASM:
     else
       new=__HC_ICAdd_StaticRef(cc2,cur->ic_data,cmp.internal_types[RT_I64],0);
     }
-    __HC_ICSetLine(new,cur->ic_line);
+    if(cur->ic_line&&cur->ic_line>=cc->min_line) { //check for oddities(maybe includes accross a file boundary)
+      reported_max_ln=MaxI64(reported_max_ln,cur->ic_line);
+      reported_min_ln=MinI64(reported_min_ln,cur->ic_line);
+      __HC_ICSetLine(new,cur->ic_line);
+    }
     if(cur->ic_flags&ICF_LOCK)
 		__HC_ICSetLock(new);
   }
@@ -1019,9 +1017,18 @@ break;case IC_ASM:
   if(res_sz) *res_sz=idx;
   __HC_CodeCtrlPop(acc);
   if(info) {
-    aiwnios_dbg_info[0]=machine_code;
-    aiwnios_dbg_info[cc->max_line-cc->min_line+1]=machine_code+idx;
-    MemCpy(info[0]->body,aiwnios_dbg_info,8*(cc->max_line-cc->min_line+2));
+    if(cc->htc.fun&&!StrCmp("Uf",cc->htc.fun->str)) {
+      PrintI("reported_min_ln",reported_min_ln);
+      PrintI("reported_max_ln",reported_max_ln);
+      PrintI("cc->min_line",cc->min_line);
+      PrintI("cc->max_line",cc->max_line);
+    }
+    if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line&&reported_max_ln<=cc->max_line) {
+      MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(reported_max_ln-reported_min_ln+1));
+    }
+    info[0]->body[0]=machine_code;
+    info[0]->body[cc->max_line-cc->min_line+1]=machine_code+idx;
+    
   }
   Free(aiwnios_dbg_info);
   
@@ -1193,8 +1200,9 @@ wrote_help_idx:
 	  for(ln=0;ln<=max+1;ln++) {
       if(dbg_info->body[ln]) {
 	      if(to) (to+size)(U32*)[0]=dbg_info->body[ln]-start_ptr;
-	    } else
+	  } else {
 	      if(to) (to+size)(U32*)[0]=0;
+	  }
       size+=4;      
 	  }
 	  if(to) (to+size)(U32*)[0]=tmph(CHashFun*)->size;

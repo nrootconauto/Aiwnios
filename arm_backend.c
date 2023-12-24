@@ -4402,19 +4402,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
   __builtin___clear_cache(bin, bin + MSize(bin));
   if (dbg_info) {
     cnt = MSize(dbg_info) / 8;
-    ptr = dbg_info[0] = bin;
-    for (idx = 1; idx < cnt; idx++) {
-      if (!dbg_info[idx]) {
-        dbg_info[idx] = NULL;
-        continue;
-      }
-      if (ptr > dbg_info[idx]) {
-        // No backwards jumps
-        dbg_info[idx] = NULL;
-        continue;
-      }
-      ptr = dbg_info[idx];
-    }
+    dbg_info[0] = bin;
   }
   if (res_sz)
     *res_sz = final_size;
