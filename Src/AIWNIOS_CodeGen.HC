@@ -1017,14 +1017,11 @@ break;case IC_ASM:
   if(res_sz) *res_sz=idx;
   __HC_CodeCtrlPop(acc);
   if(info) {
-    if(cc->htc.fun&&!StrCmp("Uf",cc->htc.fun->str)) {
-      PrintI("reported_min_ln",reported_min_ln);
-      PrintI("reported_max_ln",reported_max_ln);
-      PrintI("cc->min_line",cc->min_line);
-      PrintI("cc->max_line",cc->max_line);
-    }
-    if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line&&reported_max_ln<=cc->max_line) {
-      MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(reported_max_ln-reported_min_ln+1));
+    if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
+      if(reported_max_ln<=cc->max_line)
+        MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(reported_max_ln-reported_min_ln+1));
+      else
+        MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(cc->max_line-reported_min_ln+1));
     }
     info[0]->body[0]=machine_code;
     info[0]->body[cc->max_line-cc->min_line+1]=machine_code+idx;

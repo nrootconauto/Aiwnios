@@ -206,6 +206,7 @@ I64 SrcLineNum(U8 *addr,I64 cnt=1)
   CDbgInfo *dbg_info;
   U64 *body; //Changed by nroot to be U64
   U8 *src,*src2;
+  I64 best_dist=I64_MAX,best_ln;
   if (tmph=FunSegFind(addr,&_offset)) {
     if (tmph->type&(HTT_FUN|HTT_EXPORT_SYS_SYM)) {
       if (dbg_info=tmph->dbg_info) {
@@ -225,20 +226,17 @@ I64 SrcLineNum(U8 *addr,I64 cnt=1)
 	while (!body[last_line] && last_line>first_line)
 	  last_line--;
 
-	  //interpolate to guess line num
-	cur_line=ClampI64(ToF64(addr-body[first_line])*(last_line-first_line+1)/
-	      (body[last_line]-body[first_line]+1),first_line,last_line);
-
-	//retreat while too high
-	while ((!body[cur_line] || body[cur_line]>=addr) && cur_line>first_line)
-	  cur_line--;
-
-	  //advance while to low
-	while ((!body[cur_line] || body[cur_line]<addr) && cur_line<last_line)
+	//Reworked by Nrootconauto,his codegen is not so good at genrating good debug info
+	cur_line=best_ln=first_line;
+        while(cur_line<=last_line) {
+	  if(body[cur_line]&&addr>=body[cur_line])
+	    if(addr-body[cur_line]<best_dist) 
+	      best_dist=addr-body[cur_line],best_ln=cur_line;
 	  cur_line++;
+	}
 
-	if (addr<body[cur_line]+cnt)
-	  return cur_line+dbg_info->min_line;
+	if (addr<body[best_ln]+cnt)
+	  return best_ln+dbg_info->min_line;
 
       } else if (tmph->src_link) {
 	src =StrNew(tmph->src_link);
