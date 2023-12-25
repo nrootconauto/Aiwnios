@@ -47,7 +47,10 @@ U0 EnsurePathExists(U8 *path) {
 //Im too lazy to make a new file
 U8 *ChrootFile(U8 *fn,U8 *prefix=SERVER_WWW) {
   U8 *t1,*t2;
-  fn=StrNew(fn);
+  if(fn[1]==':')
+    fn=StrNew(fn+2);
+  else
+    fn=StrNew(fn);
   //Check for "." , ".." and "//"(root dir)
   t1=fn;
   while(t2=StrFirstOcc(t1,"/")) {

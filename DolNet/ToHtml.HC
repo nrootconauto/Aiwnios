@@ -133,34 +133,49 @@ U8 *TOSLinkCvt1(U8 *link_st)
 {
   static CDoc *bible=NULL;
   static I64 locks=0;
-  U8 *res=NULL,*filename,*needle;
+  CDoc *anchor_doc;
+  CDocEntry *cde;
+  U8 *res=NULL,*filename,*needle,*ofilename;
   I64 i,num;
   if (link_st) {
     switch (i=EdLinkCvt(link_st,&filename,&needle,&num)) {
       case LK_FILE_LINE:
       case LK_PLAIN_LINE:
       case LK_FILE:
-	res=TOSLinkCvt2(filename,num);
-	break;
+        res=TOSLinkCvt2(filename,num);
+        break;
       case -1:
       case LK_DEF:
       case LK_HELP_INDEX:
       case LK_DOC:
-      case LK_DOC_ANCHOR:
       case LK_DOC_FIND:
       case LK_DOC_LINE:
-	break;
+      case LK_DOC_ANCHOR:
+        break;
+      case LK_FILE_ANCHOR:
+//Nroot was here
+      //Change into our WWW directory to get the full path then push 
+        filename=ChrootFile(ofilename=filename);
+        if(FileFind(filename)) {
+	  anchor_doc=DocRead(filename);
+	  if(DocAnchorFind(anchor_doc,needle)) {
+	    res=TOSLinkCvt2(ofilename,anchor_doc->cur_entry->y);
+	  }
+	  DocDel(anchor_doc);
+        }
+	Free(ofilename);
+        break;
       case LK_BIBLE_FIND:
-	while (LBts(&locks,0))
+        while (LBts(&locks,0))
 	  Yield;
-	if (!bible)
+        if (!bible)
 	  bible=Adam("DocRead(\"%s\");",filename);
-	if (DocFind(bible,num,needle))
+        if (DocFind(bible,num,needle))
 	  res=URLBibleGateway(link_st);
-	LBtr(&locks,0);
-	break;
+        LBtr(&locks,0);
+        break;
       default:
-	if (DocFileEd(i,filename,needle,&num,EDF_UNCOLLAPSE|EDF_BAIL))
+        if (DocFileEd(i,filename,needle,&num,EDF_UNCOLLAPSE|EDF_BAIL))
 	  res=TOSLinkCvt2(filename,num);
     }
     Free(filename);
