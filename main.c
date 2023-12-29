@@ -275,6 +275,12 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
   }
   return dst;
 }
+static void STK_AiwniosSetVolume(double *stk) {
+	AiwniosSetVolume(*stk);
+}
+double STK_AiwniosGetVolume(double *stk) {
+	return AiwniosGetVolume();
+}
 static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
   while (--cnt >= 0) {
     dst[cnt] = with;
@@ -1183,6 +1189,8 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
+    PrsAddSymbol("GetVolume", STK_AiwniosGetVolume, 0);
     PrsAddSymbol("__HC_ICAdd_Min_F64", STK___HC_ICAdd_Min_F64, 1);
     PrsAddSymbol("__HC_ICAdd_Max_F64", STK___HC_ICAdd_Max_F64, 1);
     PrsAddSymbol("__HC_ICAdd_Min_I64", STK___HC_ICAdd_Min_I64, 1);

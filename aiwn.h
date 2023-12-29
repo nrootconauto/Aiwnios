@@ -1261,3 +1261,6 @@ int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
 #else
     #define PAUSE ;
 #endif
+
+void AiwniosSetVolume(double v);
+double AiwniosGetVolume();
