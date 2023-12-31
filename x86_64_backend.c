@@ -3990,7 +3990,8 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (bin)
           CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4)->offset =
               src->off;
-      }
+      } else
+        goto dft;
       goto ret;
     } else
       goto dft;
@@ -6016,17 +6017,17 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   ic_max_u64:
 #define IC_MXX_X64(OP)                                                         \
   {                                                                            \
-    a        = ICArgN(rpn, 1);                                                 \
-    b        = ICArgN(rpn, 0);                                                 \
-    code_off = __OptPassFinal(cctrl, a, bin, code_off);                        \
-    code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
-    into_reg = 0;                                                            \
+    a            = ICArgN(rpn, 1);                                             \
+    b            = ICArgN(rpn, 0);                                             \
+    code_off     = __OptPassFinal(cctrl, a, bin, code_off);                    \
+    code_off     = __OptPassFinal(cctrl, b, bin, code_off);                    \
+    into_reg     = 0;                                                          \
     tmp.mode     = MD_REG;                                                     \
     tmp.raw_type = rpn->res.raw_type;                                          \
     tmp.reg      = into_reg;                                                   \
-    code_off     = PutICArgIntoReg(cctrl, &b->res, tmp.raw_type,               \
-                                   RDX, bin, code_off);      \
-    code_off     = ICMov(cctrl, &tmp, &a->res, bin, code_off);                 \
+    code_off =                                                                 \
+        PutICArgIntoReg(cctrl, &b->res, tmp.raw_type, RDX, bin, code_off);     \
+    code_off = ICMov(cctrl, &tmp, &a->res, bin, code_off);                     \
     AIWNIOS_ADD_CODE(X86CmpRegReg, into_reg, b->res.reg);                      \
     AIWNIOS_ADD_CODE(OP, into_reg, b->res.reg);                                \
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                   \
@@ -8258,7 +8259,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
   }
   final_size = code_off;
   if (dbg_info) {
-    cnt = MSize(dbg_info) / 8;
+    cnt         = MSize(dbg_info) / 8;
     dbg_info[0] = bin;
   }
   if (res_sz)
