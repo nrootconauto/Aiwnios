@@ -129,6 +129,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *gps) {
   DebuggerClientStart(Fs);
   CBpt *bp;
   CTask clone;
+  I64 idx;
   #ifdef TARGET_X86
   I64 oip=gps[0],rbp=gps[2]; 
   #else
@@ -156,9 +157,10 @@ U0 AiwniosDbgCB(I64 sig,I64 *gps) {
       *bp->addr=bp->val;
   }
 fin:
-  MemCpy(gps,clone.context_save_area,22*8);
   Fs->task_flags=clone.task_flags;
   Fs->bpt_lst=clone.bpt_lst;
+  for(idx=0;idx!=23;idx++)
+     DebuggerClientSetGreg(Fs,idx,clone.context_save_area[idx]);
   DebuggerClientEnd(Fs,Fs->is_single_step);
 }
 CBpt *BptFind(U8 *needle_addr,CTask *haystack_task=NULL,Bool rem=FALSE)

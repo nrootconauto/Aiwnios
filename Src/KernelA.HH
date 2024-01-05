@@ -3818,6 +3818,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 DebuggerClientSetGreg(CTask*,I64,I64);
 import U0 DebuggerClientStart(CTask*);
 import U0 DebuggerClientEnd(CTask*,I64 single_step);
 import U0 SetVolume(F64);

@@ -4,12 +4,12 @@
   #include <netdb.h>
   #include <netinet/in.h>
   #include <poll.h>
+  #include <signal.h>
   #include <sys/socket.h>
   #include <sys/types.h>
   #include <unistd.h>
-#include <signal.h>
 static void InitSock() {
-  //These are not my freind
+  // These are not my freind
   signal(SIGPIPE, SIG_IGN);
 }
 #else

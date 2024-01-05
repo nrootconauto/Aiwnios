@@ -276,10 +276,10 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
   return dst;
 }
 static void STK_AiwniosSetVolume(double *stk) {
-	AiwniosSetVolume(*stk);
+  AiwniosSetVolume(*stk);
 }
 double STK_AiwniosGetVolume(double *stk) {
-	return AiwniosGetVolume();
+  return AiwniosGetVolume();
 }
 static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
   while (--cnt >= 0) {
@@ -602,15 +602,14 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DebuggerClientStart(int64_t *s) {
-	DebuggerClientStart(*s);
-	return 0;
+  DebuggerClientStart(*s);
+  return 0;
 }
 
 static int64_t STK_DebuggerClientEnd(int64_t *s) {
-	DebuggerClientEnd(s[0],s[1]);
-	return 0;
+  DebuggerClientEnd(s[0], s[1]);
+  return 0;
 }
-
 
 static int64_t STK_DbgPutS(int64_t *stk) {
   fprintf(stdout, "%s", (char *)stk[0]);
@@ -1123,6 +1122,11 @@ static int64_t STK_NetBindIn(int64_t *stk) {
   NetBindIn(stk[0], stk[1]);
 }
 
+static int64_t STK_DebuggerClientSetGreg(int64_t *stk) {
+  DebuggerClientSetGreg(stk[0], stk[1], stk[2]);
+  return 0;
+}
+
 static int64_t STK_NetSocketNew(int64_t *stk) {
   return NetSocketNew();
 }
@@ -1299,6 +1303,7 @@ void BootAiwnios(char *bootstrap_text) {
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
 #endif
+    PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 1);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
     PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
@@ -1512,7 +1517,7 @@ static void ExitAiwnios(int64_t *stk) {
   #undef main
 #endif
 int main(int argc, char **argv) {
-	DebuggerBegin();
+  DebuggerBegin();
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =

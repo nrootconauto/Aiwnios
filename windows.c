@@ -37,14 +37,14 @@ static void _DrawWindowNew() {
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
-  screen_mutex     = SDL_CreateMutex();
-  screen_mutex2    = SDL_CreateMutex();
+  screen_mutex  = SDL_CreateMutex();
+  screen_mutex2 = SDL_CreateMutex();
   SDL_LockMutex(screen_mutex);
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   SDL_SetWindowIcon(window, window_icon);
-  SDL_SetWindowKeyboardGrab(window,SDL_TRUE);
+  SDL_SetWindowKeyboardGrab(window, SDL_TRUE);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
@@ -585,7 +585,7 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
   InitSound();
   int64_t quit = 0;
   user_ev_num  = SDL_RegisterEvents(1);
-  SDL_CreateThread((void*)boot_ptr, "Boot thread", data);
+  SDL_CreateThread((void *)boot_ptr, "Boot thread", data);
   InputLoop(&quit);
 }
 

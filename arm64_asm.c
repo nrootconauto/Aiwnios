@@ -427,22 +427,21 @@ int64_t ARM_movRegX(int64_t d, int64_t n) {
   return MvRegX(d, n);
 }
 
-int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh) {
+int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m, int64_t sh) {
   return AddSubShiftRegX(0, 0, d, n, m, LSL, sh, 0);
 }
 
-int64_t ARM_subShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh) {
+int64_t ARM_subShiftRegX(int64_t d, int64_t n, int64_t m, int64_t sh) {
   return AddSubShiftRegX(1, 0, d, n, m, LSL, sh, 0);
 }
 
-int64_t ARM_addShiftRegXs(int64_t d, int64_t n, int64_t m,int64_t sh) {
+int64_t ARM_addShiftRegXs(int64_t d, int64_t n, int64_t m, int64_t sh) {
   return AddSubShiftRegX(0, 1, d, n, m, LSL, sh, 0);
 }
 
-int64_t ARM_subShiftRegXs(int64_t d, int64_t n, int64_t m,int64_t sh) {
+int64_t ARM_subShiftRegXs(int64_t d, int64_t n, int64_t m, int64_t sh) {
   return AddSubShiftRegX(1, 1, d, n, m, LSL, sh, 0);
 }
-
 
 int64_t ARM_addRegX(int64_t d, int64_t n, int64_t m) {
   return AddSubShiftRegX(0, 0, d, n, m, LSL, 0, 0);
@@ -1258,10 +1257,12 @@ int64_t ARM_stlxrX(int64_t p, int64_t d, int64_t s) {
   return StExclusive(3, 1, p, d, s);
 }
 
-static int64_t FpCondSel(int64_t m,int64_t s,int64_t t,int64_t d,int64_t n,int64_t M,int64_t cond) {
-	return (m<<31)|(s<<29)|(0xf<<25)|(t<<22)|(1<<21)|(M<<16)|(cond<<12)|(3<<10)|(n<<5)|(d);
+static int64_t FpCondSel(int64_t m, int64_t s, int64_t t, int64_t d, int64_t n,
+                         int64_t M, int64_t cond) {
+  return (m << 31) | (s << 29) | (0xf << 25) | (t << 22) | (1 << 21) |
+         (M << 16) | (cond << 12) | (3 << 10) | (n << 5) | (d);
 }
 
-int64_t ARM_fcsel(int64_t d,int64_t a,int64_t b,int64_t c) {
-	return FpCondSel(0, 0, 1, d, a,b,  c);
+int64_t ARM_fcsel(int64_t d, int64_t a, int64_t b, int64_t c) {
+  return FpCondSel(0, 0, 1, d, a, b, c);
 }

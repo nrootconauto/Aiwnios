@@ -1268,3 +1268,4 @@ double AiwniosGetVolume();
 void DebuggerClientEnd(void *task, int64_t wants_singlestep);
 void DebuggerClientStart(void *task);
 void DebuggerBegin(); //CALL AT THE START OF THE PROGRAM
+void DebuggerClientSetGreg(void *task,int64_t which ,int64_t v);

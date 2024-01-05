@@ -4,13 +4,13 @@ static SDL_AudioDeviceID output;
 static int64_t           sample, freq;
 static SDL_AudioSpec     have;
 static double            vol = .1;
-void AiwniosSetVolume(double v) {
-  if(v>100.)
-     v=100;
-  vol=v/100;
+void                     AiwniosSetVolume(double v) {
+  if (v > 100.)
+    v = 100;
+  vol = v / 100;
 }
 double AiwniosGetVolume() {
-	return vol*100;
+  return vol * 100;
 }
 static void AudioCB(void *ul, int8_t *out, int64_t len) {
   unsigned int i, i2;
@@ -40,7 +40,7 @@ void InitSound() {
   want.format   = AUDIO_S8;
   want.channels = 2;
   want.samples  = 64;
-  want.callback = (void*)&AudioCB;
+  want.callback = (void *)&AudioCB;
   output        = SDL_OpenAudioDevice(NULL, 0, &want, &have,
                                       SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
                                           SDL_AUDIO_ALLOW_CHANNELS_CHANGE);

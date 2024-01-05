@@ -1,73 +1,72 @@
 #include "aiwn.h"
 #include <SDL2/SDL.h>
 #include <inttypes.h>
-//In x86_64_backend,we are going to (if supported) use the raw FS/GS registers
-//If unable to,we will fill in the "__Fs/__Gs" relocations with a function to return the 
-// TLS pointers,OTHERWISE I will fill in an offset to FS/GS
+// In x86_64_backend,we are going to (if supported) use the raw FS/GS registers
+// If unable to,we will fill in the "__Fs/__Gs" relocations with a function to
+// return the
+//  TLS pointers,OTHERWISE I will fill in an offset to FS/GS
 
 // supported:
 // MOV RAX,FS/GS:ThreadGs/Fs
-// 
+//
 // Unsupported
 //  CALL &GetHolyGs/GetHolyFs
 #if defined(__x86_64__) && defined(__SEG_FS)
-    #if defined(__FreeBSD__) || defined(__linux__)
-    __thread void *ThreadFs;
-    __thread void *ThreadGs;
-    void *GetHolyGsPtr() {
-		__seg_fs char * fs=(__seg_fs char*)&ThreadGs; //thread tls register is FS
-		char *base;
-		asm ("mov %%fs:0,%0"
-			:"=r"(base));
-		return (char*)fs-(char*)base;
-	}
-	void* GetHolyFsPtr() {
-		__seg_fs char *fs=(__seg_fs char*)&ThreadFs;
-		char *base;
-		asm ("mov %%fs:0,%0"
-			:"=r"(base));
-		return (char*)fs-(char*)base;
-	}
-    #else
-    __thread void *ThreadGs;
-    __thread void *ThreadFs;
-    void *GetHolyGsPtr() {
-		return &ThreadGs;
-	}
-	void *GetHolyFsPtr() {
-		return &ThreadFs;
-	}
-    #endif
-#elif (defined(_M_ARM64) || defined(__aarch64__))
-    __thread void *ThreadGs;
-    __thread void *ThreadFs;
-    void *GetHolyGsPtr() {
-		return (char*)&ThreadGs-(char*)Misc_TLS_Base();
-	}
-	void *GetHolyFsPtr() {
-		return (char*)&ThreadFs-(char*)Misc_TLS_Base();
-	}
-#else
+  #if defined(__FreeBSD__) || defined(__linux__)
+__thread void *ThreadFs;
 __thread void *ThreadGs;
-__thread void *ThreadFs;   
-void *GetHolyGsPtr() {
-	return &GetHolyGs;
+void          *GetHolyGsPtr() {
+  __seg_fs char *fs = (__seg_fs char *)&ThreadGs; // thread tls register is FS
+  char          *base;
+  asm("mov %%fs:0,%0" : "=r"(base));
+  return (char *)fs - (char *)base;
 }
 void *GetHolyFsPtr() {
-	return &GetHolyFs;
+  __seg_fs char *fs = (__seg_fs char *)&ThreadFs;
+  char          *base;
+  asm("mov %%fs:0,%0" : "=r"(base));
+  return (char *)fs - (char *)base;
 }
-#endif  
+  #else
+__thread void *ThreadGs;
+__thread void *ThreadFs;
+void          *GetHolyGsPtr() {
+  return &ThreadGs;
+}
+void *GetHolyFsPtr() {
+  return &ThreadFs;
+}
+  #endif
+#elif (defined(_M_ARM64) || defined(__aarch64__))
+__thread void *ThreadGs;
+__thread void *ThreadFs;
+void          *GetHolyGsPtr() {
+  return (char *)&ThreadGs - (char *)Misc_TLS_Base();
+}
+void *GetHolyFsPtr() {
+  return (char *)&ThreadFs - (char *)Misc_TLS_Base();
+}
+#else
+__thread void *ThreadGs;
+__thread void *ThreadFs;
+void          *GetHolyGsPtr() {
+  return &GetHolyGs;
+}
+void *GetHolyFsPtr() {
+  return &GetHolyFs;
+}
+#endif
 void SetHolyFs(void *new) {
-	ThreadFs=new;
+  ThreadFs = new;
 }
 void SetHolyGs(void *new) {
-	ThreadGs=new;
+  ThreadGs = new;
 }
 void *GetHolyFs() {
-	return ThreadFs;
+  return ThreadFs;
 }
 void *GetHolyGs() {
-	return ThreadGs;
+  return ThreadGs;
 }
 typedef struct {
   void (*fp)(), *gs;
@@ -193,7 +192,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   char             buf[144];
   CorePair         pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
-  pthread_create(&cores[core].pt, NULL, (void*)&threadrt, ptr);
+  pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
   char nambuf[16];
   snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
   pthread_setname_np(cores[core].pt, nambuf);
@@ -202,7 +201,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;
   sa.sa_flags     = SA_SIGINFO;
-  sa.sa_sigaction = (void*)&ProfRt;
+  sa.sa_sigaction = (void *)&ProfRt;
   sigaction(SIGPROF, &sa, NULL);
 }
 int64_t mp_cnt() {

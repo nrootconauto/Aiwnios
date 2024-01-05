@@ -343,7 +343,7 @@ static void *GetAvailRegion32(int64_t len) {
 #else
 static void *Str2Ptr(char *ptr, char **end) {
   int64_t v = 0;
-  char    c;
+  char c;
   while (isxdigit(*ptr)) {
     v <<= 4;
     switch (c = toupper(*ptr)) {
@@ -368,16 +368,16 @@ static void *GetAvailRegion32(int64_t len) {
   void *last_gap_end = 0x10000;
   void *start;
   void *retv = NULL, *ptr;
-  int   fd   = open("/proc/self/maps", O_RDONLY);
+  int fd = open("/proc/self/maps", O_RDONLY);
   if (fd == -1)
     return NULL;
-  char    buf[BUFSIZ];
+  char buf[BUFSIZ];
   ssize_t n;
   while ((n = read(fd, buf, BUFSIZ)) > 0) {
     ssize_t pos = 0;
     while (pos < n) {
       char *ptr = buf + pos;
-      start     = Str2Ptr(ptr, &ptr);
+      start = Str2Ptr(ptr, &ptr);
       if (last_gap_end && start - last_gap_end >= len) {
         retv = last_gap_end;
         goto ret;
@@ -396,7 +396,7 @@ ret:
 
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;
-  int64_t        mptr = chk;
+  int64_t mptr = chk;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   mptr &= ~(ps - 1);

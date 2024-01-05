@@ -206,7 +206,7 @@ CRPN *ICFwd(CRPN *rpn) {
     break;
   case IC_GS:
   case IC_FS:
-	goto unop;
+    goto unop;
   case IC_LOCK:
   case IC_RAW_BYTES:
   case __IC_STATICS_SIZE:
@@ -234,11 +234,11 @@ CRPN *ICFwd(CRPN *rpn) {
     break;
   case IC_COMMA:
   case IC_MAX_F64:
- case IC_MAX_U64:
- case IC_MAX_I64:
- case IC_MIN_F64:
- case IC_MIN_U64:
- case IC_MIN_I64:
+  case IC_MAX_U64:
+  case IC_MAX_I64:
+  case IC_MIN_F64:
+  case IC_MIN_U64:
+  case IC_MIN_I64:
     goto binop;
     break;
   case __IC_VARGS:
@@ -566,27 +566,27 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("  ");
   INDENT;
   switch (rpn->type) {
-	  case IC_MAX_F64:
-	  printf("MAX_F64:\n");
-	  goto binop;
-	  case IC_MAX_I64:
-printf("MAX_I64:\n");
-	  goto binop;
-	   case IC_MAX_U64:
-	   printf("MAX_U64:\n");
-	  goto binop;
-   case IC_MIN_F64:
-	   printf("MIN_F64:\n");
-	  goto binop;
-	  case IC_MIN_I64:
-	   printf("MIN_I64:\n");
-	  goto binop;
-	   case IC_MIN_U64:
-	   printf("MIN_U64:\n");
-	  goto binop;
-   case IC_LOCK:
+  case IC_MAX_F64:
+    printf("MAX_F64:\n");
+    goto binop;
+  case IC_MAX_I64:
+    printf("MAX_I64:\n");
+    goto binop;
+  case IC_MAX_U64:
+    printf("MAX_U64:\n");
+    goto binop;
+  case IC_MIN_F64:
+    printf("MIN_F64:\n");
+    goto binop;
+  case IC_MIN_I64:
+    printf("MIN_I64:\n");
+    goto binop;
+  case IC_MIN_U64:
+    printf("MIN_U64:\n");
+    goto binop;
+  case IC_LOCK:
     printf("IC_LOCK:\n");
-    ParserDumpIR(rpn->base.next,indent+1);
+    ParserDumpIR(rpn->base.next, indent + 1);
     goto ret;
   case IC_RAW_BYTES:
     printf("RAW_BYTES:%ld\n", rpn->length);
@@ -676,11 +676,11 @@ printf("MAX_I64:\n");
     goto swit;
     break;
   case IC_GS:
-	printf("GS:%p\n",rpn->integer);
-	goto unop;
+    printf("GS:%p\n", rpn->integer);
+    goto unop;
   case IC_FS:
-	printf("FS:%p\n",rpn->integer);
-	goto unop;
+    printf("FS:%p\n", rpn->integer);
+    goto unop;
   case __IC_CALL:
   case IC_CALL:
     rpn = rpn->base.next;
@@ -2125,8 +2125,8 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin = Compile(ccmp, NULL, NULL);
-  binf = (void*)bin;
+  bin  = Compile(ccmp, NULL, NULL);
+  binf = (void *)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
@@ -2148,8 +2148,8 @@ double PrsF64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin = Compile(ccmp, NULL, NULL);
-  binf = (void*)bin;
+  bin  = Compile(ccmp, NULL, NULL);
+  binf = (void *)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
@@ -2829,36 +2829,37 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
   if (rpn->raw_type)
     return rpn->raw_type;
   switch (rpn->type) {
-	break;
+    break;
   case IC_MAX_I64:
   case IC_MIN_I64:
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
     rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_I64i;
-  break;
+    break;
   case IC_MIN_U64:
   case IC_MAX_U64:
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
     rpn->ic_class        = HashFind("U64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_U64i;
-  break;
+    break;
   case IC_MIN_F64:
   case IC_MAX_F64:
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
-  AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));  
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
     rpn->ic_class        = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_F64;
-  break;
+    break;
   case IC_FS:
   case IC_GS:
     rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_I64i;
     break;
-  case IC_LOCK: //Lock means "lock *ptr++;",it operates on expressions as a whole 
-    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));  
-    return rpn->raw_type = RT_U0; //dummy
+  case IC_LOCK: // Lock means "lock *ptr++;",it operates on expressions as a
+                // whole
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0; // dummy
     break;
   case IC_BT:
   case IC_BTR:
@@ -4084,14 +4085,12 @@ HC_IC_BINDING(HC_ICAdd_ModEq, IC_MOD_EQ);
 HC_IC_BINDING(HC_ICAdd_ToI64, IC_TO_I64);
 HC_IC_BINDING(HC_ICAdd_ToF64, IC_TO_F64);
 
-
 HC_IC_BINDING(HC_ICAdd_Min_I64, IC_MIN_I64);
 HC_IC_BINDING(HC_ICAdd_Max_I64, IC_MAX_I64);
 HC_IC_BINDING(HC_ICAdd_Min_U64, IC_MIN_U64);
 HC_IC_BINDING(HC_ICAdd_Max_U64, IC_MAX_U64);
 HC_IC_BINDING(HC_ICAdd_Min_F64, IC_MIN_F64);
 HC_IC_BINDING(HC_ICAdd_Max_F64, IC_MAX_F64);
-
 
 CRPN *__HC_ICAdd_I64(CCodeCtrl *cc, int64_t integer) {
   CRPN *rpn;
@@ -4407,19 +4406,18 @@ CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
 }
 
 CRPN *__HC_ICAdd_RelocUnqiue(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
-                       char *sym, int64_t rt, int64_t ptrs) {
+                             char *sym, int64_t rt, int64_t ptrs) {
   CRPN *rpn;
   *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
       .type      = IC_RELOC,
       .ic_class  = rt2cls(rt, ptrs),
-      .code_misc = CodeMiscNew(cmpc,CMT_RELOC_U64),
+      .code_misc = CodeMiscNew(cmpc, CMT_RELOC_U64),
   };
   rpn->code_misc->patch_addr = pat_addr;
-  rpn->code_misc->str = A_STRDUP(sym, cc->hc);
+  rpn->code_misc->str        = A_STRDUP(sym, cc->hc);
   QueIns(rpn, cc->ir_code);
   return rpn;
 }
-
 
 // Sets how many bytes before function start a symbol starts at
 // Symbol    <=====RIP-off
@@ -4485,7 +4483,6 @@ HC_IC_BINDING(HC_ICAdd_LBTR, IC_LBTR);
 HC_IC_BINDING(HC_ICAdd_Fs, IC_FS);
 HC_IC_BINDING(HC_ICAdd_Gs, IC_GS);
 
-
 CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr) {
   CCodeMiscRef *ref;
   *(ref = A_CALLOC(sizeof(CCodeMiscRef), NULL)) = (CCodeMiscRef){
@@ -4496,7 +4493,7 @@ CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr) {
   return ref;
 }
 void __HC_ICSetLock(CRPN *l) {
-	l->flags|=ICF_LOCK_EXPR;
+  l->flags |= ICF_LOCK_EXPR;
 }
 
 void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) {
@@ -4519,5 +4516,3 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
     refs = refs->next;
   }
 }
-
-
