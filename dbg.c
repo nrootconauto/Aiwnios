@@ -14,6 +14,10 @@
   #if defined(__FreeBSD__)
     #include <machine/reg.h>
   #endif
+  #if defined(__linux__)
+    #include <sys/uio.h>
+    #include <linux/elf.h> //Why do I need this for NT_PRSTATUS
+  #endif
 #else
   #include <windows.h>
   #include <errhandlingapi.h>
@@ -25,8 +29,18 @@ typedef struct CFuckup {
   int64_t     signal;
   void       *task;
   struct reg  regs;
-  struct xmmreg      xmm;
+  struct freg      fp;
 } CFuckup;
+#endif
+#if defined (__linux__)
+typedef struct CFuckup {
+  struct CQue base;
+  int64_t     signal;
+  void       *task;
+  struct user_regs_struct  regs;
+  struct user_fpsimd_struct  fp;
+} CFuckup;
+
 #endif
 CFuckup *GetFuckupByTask(CQue *head, void *t) {
   CFuckup *fu;
@@ -45,6 +59,9 @@ void DebuggerBegin() {
   if (!pid) {
 	  return;
   } else {
+	  #if defined (__linux__)
+	  struct iovec poop;
+	  #endif
 	ptrace(PT_ATTACH,pid,NULL,NULL);
 	wait(NULL);
 	ptrace(PT_CONTINUE,pid,1,NULL);    
@@ -75,8 +92,18 @@ fail:
         case SIGILL:
         case SIGFPE:
          fu = malloc(sizeof(CFuckup)); fu->signal = sig;
+         //IF you are blessed you are running on a platform that has these
+         #if defined (PT_GETREGS) || defined(PT_GETFPREGS)
             ptrace(PT_GETREGS, pid, &fu->regs, sizeof(fu->regs));
-            ptrace(PT_GETFPREGS, pid, &fu->xmm, sizeof(fu->xmm));
+            ptrace(PT_GETFPREGS, pid, &fu->fp, sizeof(fu->fp));
+         #elif defined (PTRACE_GETREGSET)
+         			  poop.iov_len=sizeof (struct user_regs_struct);
+			  poop.iov_base=&fu->regs;
+              ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS,&poop);
+			  poop.iov_len=sizeof (struct user_fpsimd_struct);
+			  poop.iov_base=&fu->fp;
+              ptrace(PTRACE_GETREGSET, pid, NT_PRFPREG,&poop);
+         #endif
             QueIns(fu, &fuckups);
             last = fu;
           ptrace(PT_CONTINUE, pid, 1, sig);
@@ -87,7 +114,6 @@ fail:
 		case SIGCONT:
           ptr  = buf;
           task = NULL;
-          puts("cont");
           read(debugger_pipe[0], buf, 2048);
           while(1) {
             if (*ptr == ':') {
@@ -103,21 +129,28 @@ fail:
 				fu = GetFuckupByTask(&fuckups, task);
                 if (!fu)
                   abort();
+         #if defined (PT_SETREGS) || defined(PT_SETFPREGS)
                 ptrace(PT_SETREGS, pid, &fu->regs, 0);
-                ptrace(PT_SETFPREGS, pid, &fu->xmm, 0);
+                ptrace(PT_SETFPREGS, pid, &fu->fp, 0);
+         #elif defined (PTRACE_SETREGSET)
+			  poop.iov_len=sizeof (struct user_regs_struct);
+			  poop.iov_base=&fu->regs;
+              ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS,&poop);
+			  poop.iov_len=sizeof (struct user_fpsimd_struct);
+			  poop.iov_base=&fu->fp;
+              ptrace(PTRACE_SETREGSET, pid, NT_PRFPREG,&poop);
+         #endif
                 ptr=name+strlen("RESUME");
-                puts(ptr);
                 if(*ptr==',') {
-					puts(ptr+1);
 					if(strtoul(ptr+1,NULL,10))
 					  ptrace(PT_STEP,pid,1,SIGTRAP);
 					else {
-					  ptrace(PT_CONTINUE, pid, fu->regs.r_rip, 0);
+					  ptrace(PT_CONTINUE, pid, 1, 0);
 					  QueRem(fu);
 					  free(fu);
 					}
 				} else {
-					ptrace(PT_CONTINUE, pid, fu->regs.r_rip, 0);
+					ptrace(PT_CONTINUE, pid, 1, 0);
 					QueRem(fu);
 					free(fu);
 				}
@@ -350,14 +383,12 @@ void InstallDbgSignalsForThread() {
 void DebuggerClientStart(void *task) {
   char   buf[2048], *ptr;
   sprintf(buf, DBG_MSG_START, task);
-  puts(buf);
   write(debugger_pipe[1], buf,strlen(buf)+1);
   raise(SIGCONT);
 }
 void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
   char   buf[2048];
   sprintf(buf, DBG_MSG_RESUME, task, wants_singlestep);
-  puts(buf);
   write(debugger_pipe[1], buf,strlen(buf)+1);
   raise(SIGCONT);
 }
