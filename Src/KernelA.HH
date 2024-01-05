@@ -3818,6 +3818,8 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 DebuggerClientStart(CTask*);
+import U0 DebuggerClientEnd(CTask*,I64 single_step);
 import U0 SetVolume(F64);
 import Bool IsCmdLineMode();
 import U8 *MPSetProfilerInt(U0 (*fp)(U8 *fs),I64 c,I64);

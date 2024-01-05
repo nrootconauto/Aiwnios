@@ -125,7 +125,8 @@ U0 DumbStackTrace(U8 **rbp,U8 *rip) {
   }
 }
 
-I64 AiwniosDbgCB(I64 sig,I64 *gps) {
+U0 AiwniosDbgCB(I64 sig,I64 *gps) {
+  DebuggerClientStart(Fs);
   CBpt *bp;
   CTask clone;
   #ifdef TARGET_X86
@@ -158,7 +159,7 @@ fin:
   MemCpy(gps,clone.context_save_area,22*8);
   Fs->task_flags=clone.task_flags;
   Fs->bpt_lst=clone.bpt_lst;
-  return clone.is_single_step;
+  DebuggerClientEnd(Fs,Fs->is_single_step);
 }
 CBpt *BptFind(U8 *needle_addr,CTask *haystack_task=NULL,Bool rem=FALSE)
 {

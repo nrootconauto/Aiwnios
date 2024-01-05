@@ -2,12 +2,139 @@
 #include <signal.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
+#define DBG_MSG_RESUME "%ld:RESUME,%d\n" //(task,single_step)
+#define DBG_MSG_START  "%ld:START\n"     //(task)
+#define DBG_MSG_OK     "OK"
 #if defined(__linux__) || defined(__FreeBSD__)
+  #include <sys/types.h>
+  #include <sys/ptrace.h>
+  #include <sys/wait.h>
   #include <ucontext.h>
+  #include <unistd.h>
+  #if defined(__FreeBSD__)
+    #include <machine/reg.h>
+  #endif
 #else
   #include <windows.h>
   #include <errhandlingapi.h>
 #endif
+static int debugger_pipe[2];
+#if defined(__FreeBSD__)
+typedef struct CFuckup {
+  struct CQue base;
+  int64_t     signal;
+  void       *task;
+  struct reg  regs;
+  struct xmmreg      xmm;
+} CFuckup;
+#endif
+CFuckup *GetFuckupByTask(CQue *head, void *t) {
+  CFuckup *fu;
+  for (fu = head->next; fu != head; fu = fu->base.next) {
+    if (fu->task == t)
+      return fu;
+    }
+  return NULL;
+}
+void DebuggerBegin() {
+  pipe(debugger_pipe);
+  int   code, sig;
+  void *task;
+  char  buf[4048], *ptr;
+  pid_t pid = fork();
+  if (!pid) {
+	  return;
+  } else {
+	ptrace(PT_ATTACH,pid,NULL,NULL);
+	wait(NULL);
+	ptrace(PT_CONTINUE,pid,1,NULL);    
+	CQue     fuckups;
+    CFuckup *fu, *last;
+    char    *ptr,*name;
+    QueInit(&fuckups);
+    while (pid = waitpid(-1, &code, WCONTINUED | WUNTRACED)) {
+      if (WIFEXITED(code)) {
+fail:
+		close(debugger_pipe[0]);
+        close(debugger_pipe[1]);
+        ptrace(PT_DETACH,pid,0,0);
+        exit(WEXITSTATUS(code));
+      } else if (WIFSIGNALED(code)||WIFSTOPPED(code)||WIFCONTINUED(code)) {
+		  if(WIFSIGNALED(code))
+		   sig  = WTERMSIG(code);
+		  else if(WIFSTOPPED(code))
+		  sig=WSTOPSIG(code);
+		  else if(WIFCONTINUED(code))
+		  sig=SIGCONT;
+		  else
+		  abort();
+        switch (sig) {
+        case SIGSEGV:
+        case SIGBUS:
+        case SIGTRAP:
+        case SIGILL:
+        case SIGFPE:
+         fu = malloc(sizeof(CFuckup)); fu->signal = sig;
+            ptrace(PT_GETREGS, pid, &fu->regs, sizeof(fu->regs));
+            ptrace(PT_GETFPREGS, pid, &fu->xmm, sizeof(fu->xmm));
+            QueIns(fu, &fuckups);
+            last = fu;
+          ptrace(PT_CONTINUE, pid, 1, sig);
+        case SIGUSR1:
+        case SIGUSR2:
+          ptrace(PT_CONTINUE, pid, 1, sig);
+		  break;
+		case SIGCONT:
+          ptr  = buf;
+          task = NULL;
+          puts("cont");
+          read(debugger_pipe[0], buf, 2048);
+          while(1) {
+            if (*ptr == ':') {
+		*ptr=0;
+              task = strtoul(buf, NULL, 10);
+              name=ptr+1;
+            }
+            if (*ptr == 0) {
+              if (!strncmp(name, "START", strlen("START"))) {
+                last->task = task;
+                ptrace(PT_CONTINUE, pid,1,0);
+              } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
+				fu = GetFuckupByTask(&fuckups, task);
+                if (!fu)
+                  abort();
+                ptrace(PT_SETREGS, pid, &fu->regs, 0);
+                ptrace(PT_SETFPREGS, pid, &fu->xmm, 0);
+                ptr=name+strlen("RESUME");
+                puts(ptr);
+                if(*ptr==',') {
+					puts(ptr+1);
+					if(strtoul(ptr+1,NULL,10))
+					  ptrace(PT_STEP,pid,1,SIGTRAP);
+					else {
+					  ptrace(PT_CONTINUE, pid, fu->regs.r_rip, 0);
+					  QueRem(fu);
+					  free(fu);
+					}
+				} else {
+					ptrace(PT_CONTINUE, pid, fu->regs.r_rip, 0);
+					QueRem(fu);
+					free(fu);
+				}
+              } else
+				abort();
+                break;
+            }
+            ptr++;
+          }
+          break;
+        default:
+          goto fail;
+        }
+      }
+    }
+  }
+}
 static void UnblockSignals() {
 #if defined(__linux__) || defined(__FreeBSD__)
   sigset_t set;
@@ -92,7 +219,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -209,7 +336,7 @@ void InstallDbgSignalsForThread() {
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;
   sa.sa_flags     = SA_SIGINFO;
-  sa.sa_sigaction = (void*)&SigHandler;
+  sa.sa_sigaction = (void *)&SigHandler;
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGBUS, &sa, NULL);
   sigaction(SIGTRAP, &sa, NULL);
@@ -218,4 +345,19 @@ void InstallDbgSignalsForThread() {
 #else
   AddVectoredExceptionHandler(1, VectorHandler);
 #endif
+}
+#include <errno.h>
+void DebuggerClientStart(void *task) {
+  char   buf[2048], *ptr;
+  sprintf(buf, DBG_MSG_START, task);
+  puts(buf);
+  write(debugger_pipe[1], buf,strlen(buf)+1);
+  raise(SIGCONT);
+}
+void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
+  char   buf[2048];
+  sprintf(buf, DBG_MSG_RESUME, task, wants_singlestep);
+  puts(buf);
+  write(debugger_pipe[1], buf,strlen(buf)+1);
+  raise(SIGCONT);
 }

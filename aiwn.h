@@ -1264,3 +1264,7 @@ int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m,int64_t sh);
 
 void AiwniosSetVolume(double v);
 double AiwniosGetVolume();
+
+void DebuggerClientEnd(void *task, int64_t wants_singlestep);
+void DebuggerClientStart(void *task);
+void DebuggerBegin(); //CALL AT THE START OF THE PROGRAM
