@@ -29,7 +29,7 @@ typedef struct CFuckup {
   int64_t     signal;
   void       *task;
   struct reg  regs;
-  struct freg      fp;
+  struct fpreg      fp;
 } CFuckup;
 #endif
 #if defined (__linux__)
