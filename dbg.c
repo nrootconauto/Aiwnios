@@ -40,17 +40,18 @@ typedef struct CFuckup {
 } CFuckup;
 #endif
 #if defined(__linux__)
-pthread_t master_thread;
-#include <sys/user.h>
+  #include <asm/ptrace.h>
+  #include <sys/user.h>
 typedef struct CFuckup {
-  struct CQue             base;
-  int64_t                 signal;
-  pid_t                   pid;
-  void                   *task;
-  struct user_regs_struct regs;
+  struct CQue base;
+  int64_t     signal;
+  pid_t       pid;
+  void       *task;
   #if defined(_M_ARM64) || defined(__aarch64__)
+  struct user_pt_regs       regs;
   struct user_fpsimd_struct fp;
-  #elif defined (__x86_64__)
+  #elif defined(__x86_64__)
+  struct user_regs_struct   regs;
   struct user_fpregs_struct fp;
   #endif
 } CFuckup;
@@ -115,16 +116,24 @@ void DebuggerBegin() {
   pid_t tid   = fork();
   pid_t child = tid;
   if (!tid) {
-    master_thread = pthread_self();
     ptrace(PTRACE_TRACEME, tid, NULL, NULL);
+    strcpy(buf, DBG_MSG_OK);
+    write(debugger_pipe[1], buf, 256);
     return;
   } else {
     ptrace(PT_ATTACH, tid, NULL, NULL);
     wait(NULL);
+    ptrace(PT_CONTINUE, tid, 1, NULL);
+    while (read(debugger_pipe[0], buf, 256) > 0) {
+      if (strcmp(buf, DBG_MSG_OK))
+        exit(1);
+      else
+        break;
+    }
+
 #if defined(__linux__)
     struct iovec poop;
 #endif
-    ptrace(PT_CONTINUE, tid, 1, NULL);
     struct pollfd poll_for;
     CQue          fuckups;
     CFuckup      *fu, *last;
@@ -135,7 +144,7 @@ void DebuggerBegin() {
       memset(&poll_for, 0, sizeof(struct pollfd));
       poll_for.fd     = debugger_pipe[0];
       poll_for.events = POLL_IN;
-      if (poll(&poll_for, 1, 0)) {
+      if (poll(&poll_for, 1, 2)) {
         read(debugger_pipe[0], buf, 256);
         ptr  = buf;
         task = NULL;
@@ -198,11 +207,11 @@ void DebuggerBegin() {
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
+                    fu->task   = task;
                     break;
                   }
                 }
               }
-              fu->task = task;
               ptrace(PT_CONTINUE, tid, 0, 0);
               break;
             } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
@@ -215,17 +224,19 @@ void DebuggerBegin() {
                 }
               }
               fu = GetFuckupByTask(&fuckups, task);
-              if (!fu)
-                abort();
-#if defined (__x86_64__)
+              if (!fu) {
+                ptrace(PT_CONTINUE, tid, 0, 0);
+                break;
+              }
+#if defined(__x86_64__)
               // IF you are blessed you are running on a platform that has these
               ptrace(PTRACE_SETREGS, tid, 0, &fu->regs);
               ptrace(PTRACE_SETFPREGS, tid, 0, &fu->fp);
 #else
-              poop.iov_len  = sizeof(sizeof (fu->regs));
+              poop.iov_len  = sizeof(sizeof(fu->regs));
               poop.iov_base = &fu->regs;
               ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
-              poop.iov_len  = sizeof(sizeof (fu->fp));
+              poop.iov_len  = sizeof(sizeof(fu->fp));
               poop.iov_base = &fu->fp;
               ptrace(PTRACE_SETREGSET, tid, NT_PRFPREG, &poop);
 #endif
@@ -241,7 +252,7 @@ void DebuggerBegin() {
 #elif defined(__linux__) && defined(__x86_64__)
                   ptrace(PT_CONTINUE, tid, 0, 0);
 #else
-                  ptrace(PT_CONTINUE, tid, 1, 0);
+                  ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
                   ptrace(PT_CONTINUE, child, 0, 0);
                   QueRem(fu);
@@ -264,19 +275,20 @@ void DebuggerBegin() {
         case SIGBUS:
         case SIGSEGV:
         case SIGTRAP:
+          printf("s:%d\n", sig);
           fu = calloc(sizeof(CFuckup), 1);
           QueIns(fu, &fuckups);
           fu->task = NULL;
           fu->pid  = tid;
-#if defined (__x86_64__)
+#if defined(__x86_64__)
           // IF you are blessed you are running on a platform that has these
           ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
           ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
 #elif defined(PTRACE_GETREGSET)
-          poop.iov_len = sizeof(sizeof(fu->regs));
+          poop.iov_len  = sizeof(sizeof(fu->regs));
           poop.iov_base = &fu->regs;
           ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
-          poop.iov_len = sizeof(sizeof(fu->fp));
+          poop.iov_len  = sizeof(sizeof(fu->fp));
           poop.iov_base = &fu->fp;
           ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
 #endif
@@ -287,7 +299,6 @@ void DebuggerBegin() {
             ptrace(PT_CONTINUE, tid, 1, sig);
         }
       }
-      usleep(2 * 1000);
     }
   }
 }
@@ -368,14 +379,14 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t               *ctx = &_ctx->uc_mcontext;
-  CHashExport              *exp;
-  int64_t                   is_single_step;
+  mcontext_t  *ctx = &_ctx->uc_mcontext;
+  CHashExport *exp;
+  int64_t      is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -446,7 +457,6 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     FFI_CALL_TOS_0(fp2);
   } else
     abort();
-  goto call_exit;
   #endif
 }
 #endif

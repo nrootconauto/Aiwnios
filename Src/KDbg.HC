@@ -106,7 +106,7 @@ U0 DebuggerSpawn(CTask *debugee) {
   #ifdef TARGET_X86
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[0],src_link=SrcEdLink(debugee->context_save_area[0]);
   #else
-  "Oh,and welcome to %P(%s)\n",debugee->context_save_area[12],src_link=SrcEdLink(debugee->context_save_area[12]);
+  "Oh,and welcome to %P(%s)\n",debugee->context_save_area[0],src_link=SrcEdLink(debugee->context_save_area[0]);
   #endif
   "\n";
   Free(src_link);
