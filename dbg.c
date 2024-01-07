@@ -38,6 +38,13 @@ typedef struct CFuckup {
   struct reg   regs;
   struct fpreg fp;
 } CFuckup;
+  #define PTRACE_TRACEME   PT_TRACE_ME
+  #define PTRACE_ATTACH    PT_ATTACH
+  #define PTRACE_SETREGS   PT_SETREGS
+  #define PTRACE_GETREGS   PT_GETREGS
+  #define PTRACE_SETFPREGS PT_SETFPREGS
+  #define PTRACE_GETFPREGS PT_GETFPREGS
+  #define gettid           getpid
 #endif
 #if defined(__linux__)
   #include <asm/ptrace.h>
@@ -163,7 +170,7 @@ void DebuggerBegin() {
                 which = strtoul(ptr, &ptr, 10);
                 ptr++; // Skip ','
                 value = strtoul(ptr, &ptr, 10);
-// SEE swapctxX86.s
+                // SEE swapctxX86.s
 #if defined(__FreeBSD__) && defined(__x86_64__)
                 switch (which) {
                 case 0:
@@ -212,7 +219,7 @@ void DebuggerBegin() {
                   }
                 }
               }
-              ptrace(PT_CONTINUE, tid, 0, 0);
+              ptrace(PT_CONTINUE, tid, 1, 0);
               break;
             } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
               while (DebuggerWait(&fuckups, &tid)) {
@@ -225,7 +232,7 @@ void DebuggerBegin() {
               }
               fu = GetFuckupByTask(&fuckups, task);
               if (!fu) {
-                ptrace(PT_CONTINUE, tid, 0, 0);
+                ptrace(PT_CONTINUE, tid, 1, 0);
                 break;
               }
 #if defined(__x86_64__)
@@ -245,16 +252,11 @@ void DebuggerBegin() {
                 if (strtoul(ptr + 1, NULL, 10))
                   ptrace(PT_STEP, tid, 1, SIGTRAP);
                 else {
-                  kill(child, SIGSTOP);
-                  wait(NULL);
-#if defined(__FreeBSD__) && defined(__x86_64__)
-                  ptrace(PT_CONTINUE, tid, fu->regs.r_rip, 0);
-#elif defined(__linux__) && defined(__x86_64__)
-                  ptrace(PT_CONTINUE, tid, 0, 0);
+#if defined(__x86_64__)
+                  ptrace(PT_CONTINUE, tid, 1, 0);
 #else
                   ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
-                  ptrace(PT_CONTINUE, child, 0, 0);
                   QueRem(fu);
                   free(fu);
                 }
@@ -275,7 +277,6 @@ void DebuggerBegin() {
         case SIGBUS:
         case SIGSEGV:
         case SIGTRAP:
-          printf("s:%d\n", sig);
           fu = calloc(sizeof(CFuckup), 1);
           QueIns(fu, &fuckups);
           fu->task = NULL;
@@ -285,10 +286,10 @@ void DebuggerBegin() {
           ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
           ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
 #elif defined(PTRACE_GETREGSET)
-          poop.iov_len  = sizeof(sizeof(fu->regs));
+          poop.iov_len = sizeof(sizeof(fu->regs));
           poop.iov_base = &fu->regs;
           ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
-          poop.iov_len  = sizeof(sizeof(fu->fp));
+          poop.iov_len = sizeof(sizeof(fu->fp));
           poop.iov_base = &fu->fp;
           ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
 #endif
@@ -379,14 +380,14 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t  *ctx = &_ctx->uc_mcontext;
-  CHashExport *exp;
-  int64_t      is_single_step;
+  mcontext_t               *ctx = &_ctx->uc_mcontext;
+  CHashExport              *exp;
+  int64_t                   is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
