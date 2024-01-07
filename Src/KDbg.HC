@@ -161,7 +161,8 @@ fin:
   Fs->bpt_lst=clone.bpt_lst;
   for(idx=0;idx!=23;idx++)
      DebuggerClientSetGreg(Fs,idx,clone.context_save_area[idx]);
-  DebuggerClientEnd(Fs,Fs->is_single_step);
+  WinRefocus;
+  DebuggerClientEnd(Fs,clone.is_single_step);
 }
 CBpt *BptFind(U8 *needle_addr,CTask *haystack_task=NULL,Bool rem=FALSE)
 {
@@ -321,7 +322,6 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
   FunRep(fun->str,rbp,depth,t);
   return TRUE;
 }
-#ifdef NROOT_ISNT_LAZY
 U0 DbgHelp()
 {
   "\n"
@@ -354,10 +354,8 @@ public U0 S(U8 *ip=INVALID_PTR,CTask *task=NULL) //Single-step.
 {//Single step.
   Bool bl=BreakLock;
   if (!task) task=GetDebuggedProcess;
-  if (ip!=INVALID_PTR) task->rip=ip;
-//https://en.wikipedia.org/wiki/Trap_flag
-  LBts(&task->task_flags,TASKf_DISABLE_BPTS);
-  LBts(&task->task_flags,TASKf_JUST_STEPPED);
+  if (ip!=INVALID_PTR) task->context_save_area[0]=ip;
+  task->is_single_step=TRUE;
   if(bl) BreakUnlock;
   Exit;
 }
@@ -410,14 +408,14 @@ U0 StkRep(CTask *task=NULL)
   Fs->hash_table=old_hash;
 }
 */
-U0 Dr(CTask *task=NULL)
+/*U0 Dr(CTask *task=NULL)
 {//Dump regs
   I64 i;
   if (!task) task=GetDebuggedProcess;
   for (i=0;i<16;i++)
     "%3Z:%016X\n",i,"ST_U64_REGS",*TaskRegAddr(task,i);
-  "RIP:%016X\n",task->rip;
-}
+  "RIP:%016X\n",task->context_save_area[0];
+}*/
 U0 D(U8 *addr,I64 cnt=0x80,Bool show_offset=TRUE)
 {//Dump mem, showing offsets.
 //See $LK,"DocD",A="MN:DocD"$() for a live dump.
@@ -462,4 +460,3 @@ U0 Da(U8 **addr,I64 cnt=0x10)
     addr++;
   }
 }
-#endif

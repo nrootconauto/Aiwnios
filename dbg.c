@@ -58,8 +58,8 @@ typedef struct CFuckup {
   struct user_pt_regs       regs;
   struct user_fpsimd_struct fp;
   #elif defined(__x86_64__)
-  struct user_regs_struct   regs;
   struct user_fpregs_struct fp;
+  struct user_regs_struct   regs;
   #endif
 } CFuckup;
 
@@ -165,6 +165,14 @@ void DebuggerBegin() {
           }
           if (*ptr == 0) {
             if (!strncmp(name, "SGREG", strlen("SGREG"))) {
+				while (DebuggerWait(&fuckups, &tid)) {
+                if (fu = GetFuckupByPid(&fuckups, tid)) {
+                  if (fu->signal == SIGCONT) {
+                    fu->signal = 0;
+                    break;
+                  }
+                }
+              }
               ptr = name + strlen("SGREG,");
               if (strtok(ptr, ",")) {
                 which = strtoul(ptr, &ptr, 10);
@@ -250,7 +258,11 @@ void DebuggerBegin() {
               ptr = name + strlen("RESUME");
               if (*ptr == ',') {
                 if (strtoul(ptr + 1, NULL, 10))
+                #if defined (__FreeBSD__)
                   ptrace(PT_STEP, tid, 1, SIGTRAP);
+                #else
+                  ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
+                #endif
                 else {
 #if defined(__x86_64__)
                   ptrace(PT_CONTINUE, tid, 1, 0);
