@@ -113,6 +113,7 @@ typedef struct {
 static _Thread_local core_num = 0;
 
 static void threadrt(CorePair *pair) {
+  DebuggerClientWatchThisTID();
   Fs = calloc(sizeof(CTask), 1);
   VFsThrdInit();
   TaskInit(Fs, NULL, 0);

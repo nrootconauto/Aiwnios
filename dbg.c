@@ -2,11 +2,15 @@
 #include <signal.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
-#define DBG_MSG_RESUME   "%ld:RESUME,%d\n"     //(task,single_step)
-#define DBG_MSG_START    "%ld:START\n"         //(task)
-#define DBG_MSG_SET_GREG "%ld:SGREG,%ld,%ld\n" //(task,which_reg,value)
-#define DBG_MSG_OK       "OK"
+#define DBG_MSG_RESUME   "%ld:%d,RESUME,%d\n"     //(task,pid,single_step)
+#define DBG_MSG_START    "%ld:%d,START\n"         //(task,pid)
+#define DBG_MSG_SET_GREG "%ld:%d,SGREG,%ld,%ld\n" //(task,pid,which_reg,value)
+#define DBG_MSG_WATCH_TID                                                      \
+  "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
+                      // the important TIDs(cores))
+#define DBG_MSG_OK "OK"
 #if defined(__linux__) || defined(__FreeBSD__)
+  #include <poll.h>
   #include <sys/ptrace.h>
   #include <sys/types.h>
   #include <sys/wait.h>
@@ -18,6 +22,7 @@
   #if defined(__linux__)
     #include <linux/elf.h> //Why do I need this for NT_PRSTATUS
     #include <sys/uio.h>
+    #include <sys/user.h>
   #endif
 #else
   #include <windows.h>
@@ -28,18 +33,26 @@ static int debugger_pipe[2];
 typedef struct CFuckup {
   struct CQue  base;
   int64_t      signal;
+  pid_t        pid;
   void        *task;
   struct reg   regs;
   struct fpreg fp;
 } CFuckup;
 #endif
 #if defined(__linux__)
+pthread_t master_thread;
+#include <sys/user.h>
 typedef struct CFuckup {
-  struct CQue               base;
-  int64_t                   signal;
-  void                     *task;
-  struct user_regs_struct   regs;
+  struct CQue             base;
+  int64_t                 signal;
+  pid_t                   pid;
+  void                   *task;
+  struct user_regs_struct regs;
+  #if defined(_M_ARM64) || defined(__aarch64__)
   struct user_fpsimd_struct fp;
+  #elif defined (__x86_64__)
+  struct user_fpregs_struct fp;
+  #endif
 } CFuckup;
 
 #endif
@@ -51,175 +64,230 @@ CFuckup *GetFuckupByTask(CQue *head, void *t) {
   }
   return NULL;
 }
+CFuckup *GetFuckupByPid(CQue *head, pid_t pid) {
+  CFuckup *fu;
+  for (fu = head->next; fu != head; fu = fu->base.next) {
+    if (fu->pid == pid)
+      return fu;
+  }
+  return NULL;
+}
+
+void DebuggerClientWatchThisTID() {
+  int64_t tid = gettid();
+  char    buf[256];
+  sprintf(buf, DBG_MSG_WATCH_TID, tid);
+  write(debugger_pipe[1], buf, 256);
+}
+static int64_t DebuggerWait(CQue *head, pid_t *got) {
+  int      code, sig;
+  pid_t    pid = waitpid(-1, &code, WNOHANG | WUNTRACED | WCONTINUED);
+  CFuckup *fu;
+  if (pid <= 0)
+    return 0;
+  if (WIFEXITED(code)) {
+    close(debugger_pipe[0]);
+    close(debugger_pipe[1]);
+    ptrace(PT_DETACH, pid, 0, 0);
+    exit(WEXITSTATUS(code));
+    return 0;
+  } else if (WIFSIGNALED(code) || WIFSTOPPED(code) || WIFCONTINUED(code)) {
+    if (WIFSIGNALED(code))
+      sig = WTERMSIG(code);
+    else if (WIFSTOPPED(code))
+      sig = WSTOPSIG(code);
+    else if (WIFCONTINUED(code))
+      sig = SIGCONT;
+    else
+      abort();
+    if (fu = GetFuckupByPid(head, pid))
+      fu->signal = sig;
+    if (got)
+      *got = pid;
+    return sig;
+  }
+}
 void DebuggerBegin() {
   pipe(debugger_pipe);
   int   code, sig;
   void *task;
   char  buf[4048], *ptr;
-  pid_t pid = fork();
-  if (!pid) {
+  pid_t tid   = fork();
+  pid_t child = tid;
+  if (!tid) {
+    master_thread = pthread_self();
+    ptrace(PTRACE_TRACEME, tid, NULL, NULL);
     return;
   } else {
+    ptrace(PT_ATTACH, tid, NULL, NULL);
+    wait(NULL);
 #if defined(__linux__)
     struct iovec poop;
 #endif
-    ptrace(PT_ATTACH, pid, NULL, NULL);
-    wait(NULL);
-    ptrace(PT_CONTINUE, pid, 1, NULL);
-    CQue     fuckups;
-    CFuckup *fu, *last;
-    char    *ptr, *name;
-    int64_t  which, value;
+    ptrace(PT_CONTINUE, tid, 1, NULL);
+    struct pollfd poll_for;
+    CQue          fuckups;
+    CFuckup      *fu, *last;
+    char         *ptr, *name;
+    int64_t       which, value, sig;
     QueInit(&fuckups);
-    while (pid = waitpid(-1, &code, WCONTINUED | WUNTRACED)) {
-      if (WIFEXITED(code)) {
-      fail:
-        close(debugger_pipe[0]);
-        close(debugger_pipe[1]);
-        ptrace(PT_DETACH, pid, 0, 0);
-        exit(WEXITSTATUS(code));
-      } else if (WIFSIGNALED(code) || WIFSTOPPED(code) || WIFCONTINUED(code)) {
-        if (WIFSIGNALED(code))
-          sig = WTERMSIG(code);
-        else if (WIFSTOPPED(code))
-          sig = WSTOPSIG(code);
-        else if (WIFCONTINUED(code))
-          sig = SIGCONT;
-        else
-          abort();
-        switch (sig) {
-        case SIGSEGV:
-        case SIGBUS:
-        case SIGTRAP:
-        case SIGILL:
-        case SIGFPE:
-          fu         = malloc(sizeof(CFuckup));
-          fu->signal = sig;
-// IF you are blessed you are running on a platform that has these
-#if defined(PT_GETREGS) || defined(PT_GETFPREGS)
-          ptrace(PT_GETREGS, pid, &fu->regs, sizeof(fu->regs));
-          ptrace(PT_GETFPREGS, pid, &fu->fp, sizeof(fu->fp));
-#elif defined(PTRACE_GETREGSET)
-          poop.iov_len  = sizeof(struct user_regs_struct);
-          poop.iov_base = &fu->regs;
-          ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &poop);
-          poop.iov_len  = sizeof(struct user_fpsimd_struct);
-          poop.iov_base = &fu->fp;
-          ptrace(PTRACE_GETREGSET, pid, NT_PRFPREG, &poop);
-#endif
-          QueIns(fu, &fuckups);
-          last = fu;
-          ptrace(PT_CONTINUE, pid, 1, sig);
-        case SIGUSR1:
-        case SIGUSR2:
-          ptrace(PT_CONTINUE, pid, 1, sig);
-          break;
-        case SIGCONT:
-          ptr  = buf;
-          task = NULL;
-          read(debugger_pipe[0], buf, 2048);
-          while (1) {
-            if (*ptr == ':') {
-              *ptr = 0;
-              task = strtoul(buf, NULL, 10);
-              name = ptr + 1;
-            }
-            if (*ptr == 0) {
-              if (!strncmp(name, "SGREG", strlen("SGREG"))) {
-                ptr = name + strlen("SGREG,");
-                if (strtok(ptr, ",")) {
-                  which = strtoul(ptr, &ptr, 10);
-                  ptr++; // Skip ','
-                  value = strtoul(ptr, &ptr, 10);
-                  printf("which,%p,%p\n", which, value);
+    while (1) {
+      memset(&poll_for, 0, sizeof(struct pollfd));
+      poll_for.fd     = debugger_pipe[0];
+      poll_for.events = POLL_IN;
+      if (poll(&poll_for, 1, 0)) {
+        read(debugger_pipe[0], buf, 256);
+        ptr  = buf;
+        task = NULL;
+        while (1) {
+          if (*ptr == ':') {
+            *ptr = 0;
+            task = strtoul(buf, NULL, 10);
+            ptr++;
+            tid  = strtoul(ptr, &ptr, 10);
+            name = ptr + 1;
+          }
+          if (*ptr == 0) {
+            if (!strncmp(name, "SGREG", strlen("SGREG"))) {
+              ptr = name + strlen("SGREG,");
+              if (strtok(ptr, ",")) {
+                which = strtoul(ptr, &ptr, 10);
+                ptr++; // Skip ','
+                value = strtoul(ptr, &ptr, 10);
 // SEE swapctxX86.s
 #if defined(__FreeBSD__) && defined(__x86_64__)
-                  switch (which) {
-                  case 0:
-                    fu->regs.r_rip = value;
-                    break;
-                  case 1:
-                    fu->regs.r_rsp = value;
-                    break;
-                  case 2:
-                    fu->regs.r_rbp = value;
-                    break;
-                  case 3:
-                    fu->regs.r_r11 = value;
-                    break;
-                  case 4:
-                    fu->regs.r_r12 = value;
-                    break;
-                  case 5:
-                    fu->regs.r_r13 = value;
-                    break;
-                  case 6:
-                    fu->regs.r_r14 = value;
-                    break;
-                  case 7:
-                    fu->regs.r_r15 = value;
-                    break;
-                  case 20:
-                    fu->regs.r_r10 = value;
-                    break;
-                  case 21:
-                    fu->regs.r_rdi = value;
-                    break;
-                  case 22:
-                    fu->regs.r_rsi = value;
-                    break;
-                  }
-#endif
+                switch (which) {
+                case 0:
+                  fu->regs.r_rip = value;
+                  break;
+                case 1:
+                  fu->regs.r_rsp = value;
+                  break;
+                case 2:
+                  fu->regs.r_rbp = value;
+                  break;
+                  // DONT RELY ON CHANGING GPs
                 }
-                ptrace(PT_CONTINUE, pid, 1, 0);
-                break;
-              } else if (!strncmp(name, "START", strlen("START"))) {
-                last->task = task;
-                ptrace(PT_CONTINUE, pid, 1, 0);
-              } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
-                fu = GetFuckupByTask(&fuckups, task);
-                if (!fu)
-                  abort();
-#if defined(PT_SETREGS) || defined(PT_SETFPREGS)
-                ptrace(PT_SETREGS, pid, &fu->regs, 0);
-                ptrace(PT_SETFPREGS, pid, &fu->fp, 0);
-#elif defined(PTRACE_SETREGSET)
-                poop.iov_len  = sizeof(struct user_regs_struct);
-                poop.iov_base = &fu->regs;
-                ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &poop);
-                poop.iov_len  = sizeof(struct user_fpsimd_struct);
-                poop.iov_base = &fu->fp;
-                ptrace(PTRACE_SETREGSET, pid, NT_PRFPREG, &poop);
 #endif
-                ptr = name + strlen("RESUME");
-                if (*ptr == ',') {
-                  if (strtoul(ptr + 1, NULL, 10))
-                    ptrace(PT_STEP, pid, 1, SIGTRAP);
-                  else {
-#if defined(__FreeBSD__) && defined(__x86_64__)
-                    ptrace(PT_CONTINUE, pid, fu->regs.r_rip, 0);
-#else
-                    ptrace(PT_CONTINUE, pid, 1, 0);
+#if defined(__linux__) && defined(__x86_64__)
+                switch (which) {
+                case 0:
+                  fu->regs.rip = value;
+                  break;
+                case 1:
+                  fu->regs.rsp = value;
+                  break;
+                case 2:
+                  fu->regs.rbp = value;
+                  break;
+                  // DONT RELY ON CHANGING GPs
+                }
 #endif
-                    QueRem(fu);
-                    free(fu);
+              }
+              ptrace(PT_CONTINUE, tid, 1, 0);
+              break;
+            } else if (!strncmp(name, "WATCHTID", strlen("WATCHTID"))) {
+              ptr = name + strlen("WATCHTID");
+              if (*ptr != ',')
+                abort();
+              ptr++;
+              ptrace(PTRACE_ATTACH, strtoul(ptr, NULL, 10), NULL, NULL);
+              break;
+            } else if (!strncmp(name, "START", strlen("START"))) {
+              while (DebuggerWait(&fuckups, &tid)) {
+                if (fu = GetFuckupByPid(&fuckups, tid)) {
+                  if (fu->signal == SIGCONT) {
+                    fu->signal = 0;
+                    break;
                   }
-                } else {
-                  ptrace(PT_CONTINUE, pid, 1, 0);
+                }
+              }
+              fu->task = task;
+              ptrace(PT_CONTINUE, tid, 0, 0);
+              break;
+            } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
+              while (DebuggerWait(&fuckups, &tid)) {
+                if (fu = GetFuckupByPid(&fuckups, tid)) {
+                  if (fu->signal == SIGCONT) {
+                    fu->signal = 0;
+                    break;
+                  }
+                }
+              }
+              fu = GetFuckupByTask(&fuckups, task);
+              if (!fu)
+                abort();
+#if defined (__x86_64__)
+              // IF you are blessed you are running on a platform that has these
+              ptrace(PTRACE_SETREGS, tid, 0, &fu->regs);
+              ptrace(PTRACE_SETFPREGS, tid, 0, &fu->fp);
+#else
+              poop.iov_len  = sizeof(sizeof (fu->regs));
+              poop.iov_base = &fu->regs;
+              ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
+              poop.iov_len  = sizeof(sizeof (fu->fp));
+              poop.iov_base = &fu->fp;
+              ptrace(PTRACE_SETREGSET, tid, NT_PRFPREG, &poop);
+#endif
+              ptr = name + strlen("RESUME");
+              if (*ptr == ',') {
+                if (strtoul(ptr + 1, NULL, 10))
+                  ptrace(PT_STEP, tid, 1, SIGTRAP);
+                else {
+                  kill(child, SIGSTOP);
+                  wait(NULL);
+#if defined(__FreeBSD__) && defined(__x86_64__)
+                  ptrace(PT_CONTINUE, tid, fu->regs.r_rip, 0);
+#elif defined(__linux__) && defined(__x86_64__)
+                  ptrace(PT_CONTINUE, tid, 0, 0);
+#else
+                  ptrace(PT_CONTINUE, tid, 1, 0);
+#endif
+                  ptrace(PT_CONTINUE, child, 0, 0);
                   QueRem(fu);
                   free(fu);
                 }
-              } else
-                abort();
-              break;
-            }
-            ptr++;
+              } else {
+                ptrace(PT_CONTINUE, tid, 1, 0);
+                QueRem(fu);
+                free(fu);
+              }
+            } else
+              abort();
+            break;
           }
-          break;
+          ptr++;
+        }
+      } else if (sig = DebuggerWait(&fuckups, &tid)) {
+        switch (sig) {
+        case SIGFPE:
+        case SIGBUS:
+        case SIGSEGV:
+        case SIGTRAP:
+          fu = calloc(sizeof(CFuckup), 1);
+          QueIns(fu, &fuckups);
+          fu->task = NULL;
+          fu->pid  = tid;
+#if defined (__x86_64__)
+          // IF you are blessed you are running on a platform that has these
+          ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
+          ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
+#elif defined(PTRACE_GETREGSET)
+          poop.iov_len = sizeof(sizeof(fu->regs));
+          poop.iov_base = &fu->regs;
+          ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
+          poop.iov_len = sizeof(sizeof(fu->fp));
+          poop.iov_base = &fu->fp;
+          ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
+#endif
         default:
-          goto fail;
+          if (sig == SIGSTOP) // This is used for ptrace events
+            ptrace(PT_CONTINUE, tid, 1, 0);
+          else
+            ptrace(PT_CONTINUE, tid, 1, sig);
         }
       }
+      usleep(2 * 1000);
     }
   }
 }
@@ -265,7 +333,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   actx[0] = ctx->gregs[REG_RIP];
   actx[1] = ctx->gregs[REG_RSP];
   actx[2] = ctx->gregs[REG_RBP];
-  actx[3] = ctx->gregs[REG_RBX];
+  actx[3] = ctx->gregs[REG_R11];
   actx[4] = ctx->gregs[REG_R12];
   actx[5] = ctx->gregs[REG_R13];
   actx[6] = ctx->gregs[REG_R14];
@@ -285,7 +353,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   actx[0] = ctx->mc_rip;
   actx[1] = ctx->mc_rsp;
   actx[2] = ctx->mc_rbp;
-  actx[3] = ctx->mc_rbx;
+  actx[3] = ctx->mc_r11;
   actx[4] = ctx->mc_r12;
   actx[5] = ctx->mc_r13;
   actx[6] = ctx->mc_r14;
@@ -300,9 +368,9 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t  *ctx = &_ctx->uc_mcontext;
-  CHashExport *exp;
-  int64_t      is_single_step;
+  mcontext_t               *ctx = &_ctx->uc_mcontext;
+  CHashExport              *exp;
+  int64_t                   is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
@@ -354,7 +422,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
       ctx->mc_rip = actx[0];
       ctx->mc_rsp = actx[1];
       ctx->mc_rbp = actx[2];
-      ctx->mc_rbx = actx[3];
+      ctx->mc_r11 = actx[3];
       ctx->mc_r12 = actx[4];
       ctx->mc_r13 = actx[5];
       ctx->mc_r14 = actx[6];
@@ -364,7 +432,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
       ctx->gregs[REG_RIP] = actx[0];
       ctx->gregs[REG_RSP] = actx[1];
       ctx->gregs[REG_RBP] = actx[2];
-      ctx->gregs[REG_RBX] = actx[3];
+      ctx->gregs[REG_R11] = actx[3];
       ctx->gregs[REG_R12] = actx[4];
       ctx->gregs[REG_R13] = actx[5];
       ctx->gregs[REG_R14] = actx[6];
@@ -436,21 +504,20 @@ void InstallDbgSignalsForThread() {
 }
 // This happens when after we call DebuggerClientEnd
 void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
-  char buf[2048];
-  sprintf(buf, DBG_MSG_SET_GREG, task, which, v);
-  puts(buf);
-  write(debugger_pipe[1], buf, strlen(buf) + 1);
+  char buf[256];
+  sprintf(buf, DBG_MSG_SET_GREG, task, gettid(), which, v);
+  write(debugger_pipe[1], buf, 256);
   raise(SIGCONT);
 }
 void DebuggerClientStart(void *task) {
-  char buf[2048], *ptr;
-  sprintf(buf, DBG_MSG_START, task);
-  write(debugger_pipe[1], buf, strlen(buf) + 1);
+  char buf[256], *ptr;
+  sprintf(buf, DBG_MSG_START, task, gettid());
+  write(debugger_pipe[1], buf, 256);
   raise(SIGCONT);
 }
 void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
-  char buf[2048];
-  sprintf(buf, DBG_MSG_RESUME, task, wants_singlestep);
-  write(debugger_pipe[1], buf, strlen(buf) + 1);
+  char buf[256];
+  sprintf(buf, DBG_MSG_RESUME, task, gettid(), wants_singlestep);
+  write(debugger_pipe[1], buf, 256);
   raise(SIGCONT);
 }
