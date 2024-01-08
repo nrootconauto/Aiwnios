@@ -248,10 +248,10 @@ void DebuggerBegin() {
               ptrace(PTRACE_SETREGS, tid, 0, &fu->regs);
               ptrace(PTRACE_SETFPREGS, tid, 0, &fu->fp);
 #else
-              poop.iov_len  = sizeof(sizeof(fu->regs));
+              poop.iov_len  = sizeof(fu->regs);
               poop.iov_base = &fu->regs;
               ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
-              poop.iov_len  = sizeof(sizeof(fu->fp));
+              poop.iov_len  = sizeof(fu->fp);
               poop.iov_base = &fu->fp;
               ptrace(PTRACE_SETREGSET, tid, NT_PRFPREG, &poop);
 #endif
@@ -298,10 +298,10 @@ void DebuggerBegin() {
           ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
           ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
 #elif defined(PTRACE_GETREGSET)
-          poop.iov_len = sizeof(sizeof(fu->regs));
+          poop.iov_len = sizeof(fu->regs);
           poop.iov_base = &fu->regs;
           ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
-          poop.iov_len = sizeof(sizeof(fu->fp));
+          poop.iov_len = sizeof(fu->fp);
           poop.iov_base = &fu->fp;
           ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
 #endif
