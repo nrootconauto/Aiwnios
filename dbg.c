@@ -117,12 +117,21 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
 }
 static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   int64_t s;
+  #if defined (__linux__)
 #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
       ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
     else
-      ptrace(PTRACE_POKETEXT, tid, to + s * 2, (v >> (s * 16)) & 0xffff);
+      ptrace(PTRACE_POKETEXT, tid, to + s * 2, (v >> (s * 16ul)) & 0xfffful);
+  }
+#endif
+#elif defined (__FreeBSD__)
+for (s = 0; s != 8 / 4; s++) {
+    if (!s)
+      ptrace(PT_WRITE_D, tid, to + s, v & 0xffffFFFFul);
+    else
+      ptrace(PT_WRITE_D, tid, to + s * 4, (v >> (s * 32ul)) & 0xffffFFFFul);
   }
 #endif
 }
@@ -296,8 +305,9 @@ void DebuggerBegin() {
               }
 #if defined(__x86_64__)
               // IF you are blessed you are running on a platform that has these
-              ptrace(PTRACE_SETREGS, tid, 0, &fu->regs);
-              ptrace(PTRACE_SETFPREGS, tid, 0, &fu->fp);
+              //Here's the deal Linux takes it in data/freebsd takes it in addr(only 1 is used my homie)
+              ptrace(PTRACE_SETREGS, tid, &fu->regs, &fu->regs);
+              ptrace(PTRACE_SETFPREGS, tid, &fu->fp, &fu->fp);
 #else
               poop.iov_len  = sizeof(fu->regs);
               poop.iov_base = &fu->regs;
@@ -310,7 +320,7 @@ void DebuggerBegin() {
               if (*ptr == ',') {
                 if (strtoul(ptr + 1, NULL, 10))
 #if defined(__FreeBSD__)
-                  ptrace(PT_STEP, tid, 1, SIGTRAP);
+                  ptrace(PT_STEP, tid, 1, 0);
 #else
                   ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
 #endif
@@ -346,8 +356,9 @@ void DebuggerBegin() {
           fu->pid  = tid;
 #if defined(__x86_64__)
           // IF you are blessed you are running on a platform that has these
-          ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
-          ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
+          //Here's the deal Linux takes it in data/freebsd takes it in addr(only 1 is used my homie)
+          ptrace(PTRACE_GETREGS, tid, &fu->regs, &fu->regs);
+          ptrace(PTRACE_GETFPREGS, tid, &fu->fp, &fu->fp);
 #elif defined(PTRACE_GETREGSET)
           poop.iov_len  = sizeof(fu->regs);
           poop.iov_base = &fu->regs;
