@@ -602,7 +602,7 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DebuggerClientStart(int64_t *s) {
-  DebuggerClientStart(*s);
+  DebuggerClientStart(*s,s[1]);
   return 0;
 }
 
@@ -1304,7 +1304,7 @@ void BootAiwnios(char *bootstrap_text) {
         ->val = GetHolyGsPtr();
 #endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
-    PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 1);
+    PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
     PrsAddSymbol("SpawnCore", STK_SpawnCore, 3);
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);

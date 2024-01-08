@@ -3819,7 +3819,8 @@ class CProgress
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
-import U0 DebuggerClientStart(CTask*);
+//This will cause the debugger to write the regs into reg_dump
+import U0 DebuggerClientStart(CTask*,U8 **reg_dump);
 import U0 DebuggerClientEnd(CTask*,I64 single_step);
 import U0 SetVolume(F64);
 import Bool IsCmdLineMode();
@@ -3990,7 +3991,7 @@ extern U8 *__StrNew(U8 *,CTask *t=NULL);
 extern U0 DbgPutS(U8 *);
 extern U0 PrintI(U8 *,I64);
 extern U0 PrintF(U8 *,F64);
-extern U0 Free(U8 *);
+extern U0 Free(U8 *);
 extern U0 MemCpy(U8*,U8*,I64);
 extern I64 MSize(U8i *);
 extern U8 *MemSet(U8i *,U8 ch,I64 sz);

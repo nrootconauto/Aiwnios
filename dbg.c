@@ -3,7 +3,7 @@
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #define DBG_MSG_RESUME   "%ld:%d,RESUME,%d\n"     //(task,pid,single_step)
-#define DBG_MSG_START    "%ld:%d,START\n"         //(task,pid)
+#define DBG_MSG_START    "%ld:%d,START,%ld\n"     //(task,pid,dump_regs_to)
 #define DBG_MSG_SET_GREG "%ld:%d,SGREG,%ld,%ld\n" //(task,pid,which_reg,value)
 #define DBG_MSG_WATCH_TID                                                      \
   "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
@@ -115,6 +115,17 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
     return sig;
   }
 }
+static void PTWriteAPtr(int64_t tid, void *to, int64_t v) {
+  int64_t s;
+#if defined(_M_ARM64) || defined(__aarch64__)
+  for (s = 0; s != 8 / 2; s++) {
+    if (!s)
+      ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
+    else
+      ptrace(PTRACE_POKETEXT, tid, to + s * 2, (v >> (s * 16)) & 0xffff);
+  }
+#endif
+}
 void DebuggerBegin() {
   pipe(debugger_pipe);
   int   code, sig;
@@ -145,7 +156,7 @@ void DebuggerBegin() {
     CQue          fuckups;
     CFuckup      *fu, *last;
     char         *ptr, *name;
-    int64_t       which, value, sig;
+    int64_t       which, value, sig, *write_regs_to;
     QueInit(&fuckups);
     while (1) {
       memset(&poll_for, 0, sizeof(struct pollfd));
@@ -165,7 +176,7 @@ void DebuggerBegin() {
           }
           if (*ptr == 0) {
             if (!strncmp(name, "SGREG", strlen("SGREG"))) {
-				while (DebuggerWait(&fuckups, &tid)) {
+              while (DebuggerWait(&fuckups, &tid)) {
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
@@ -207,6 +218,20 @@ void DebuggerBegin() {
                   // DONT RELY ON CHANGING GPs
                 }
 #endif
+#if defined(__linux__) && (defined(_M_ARM64) || defined(__aarch64__))
+                switch (which) {
+                case 0:
+                  fu->regs.pc = value;
+                  break;
+                case 21:
+                  fu->regs.sp = value;
+                  break;
+                case 11:
+                  fu->regs.regs[29] = value;
+                  break;
+                  // DONT RELY ON CHANGING GPs
+                }
+#endif
               }
               ptrace(PT_CONTINUE, tid, 1, 0);
               break;
@@ -218,6 +243,7 @@ void DebuggerBegin() {
               ptrace(PTRACE_ATTACH, strtoul(ptr, NULL, 10), NULL, NULL);
               break;
             } else if (!strncmp(name, "START", strlen("START"))) {
+              write_regs_to = strtoul(name + strlen("START,"), NULL, 10);
               while (DebuggerWait(&fuckups, &tid)) {
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
@@ -226,6 +252,31 @@ void DebuggerBegin() {
                     break;
                   }
                 }
+              }
+              if (!fu)
+                puts("undef Fu");
+              else {
+// See your swapctx for your arch(swapctxAARCH64/swapctxX86)
+#if defined(__x86_64__)
+  #if defined(__linux__)
+                PTWriteAPtr(tid, &write_regs_to[0], fu->regs.rip);
+                PTWriteAPtr(tid, &write_regs_to[1], fu->regs.rsp);
+                PTWriteAPtr(tid, &write_regs_to[2], fu->regs.rbp);
+  #elif defined(__FreeBSD__)
+                PTWriteAPtr(tid, &write_regs_to[0], fu->regs.r_rip);
+                PTWriteAPtr(tid, &write_regs_to[1], fu->regs.r_rsp);
+                PTWriteAPtr(tid, &write_regs_to[2], fu->regs.r_rbp);
+  #endif
+#endif
+
+#if defined(_M_ARM64) || defined(__aarch64__)
+  #if defined(__linux__)
+                PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
+                PTWriteAPtr(tid, &write_regs_to[21], fu->regs.sp);
+                PTWriteAPtr(tid, &write_regs_to[11], fu->regs.regs[29]);
+  #elif defined(__FreeBSD__)
+  #endif
+#endif
               }
               ptrace(PT_CONTINUE, tid, 1, 0);
               break;
@@ -258,11 +309,11 @@ void DebuggerBegin() {
               ptr = name + strlen("RESUME");
               if (*ptr == ',') {
                 if (strtoul(ptr + 1, NULL, 10))
-                #if defined (__FreeBSD__)
+#if defined(__FreeBSD__)
                   ptrace(PT_STEP, tid, 1, SIGTRAP);
-                #else
+#else
                   ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
-                #endif
+#endif
                 else {
 #if defined(__x86_64__)
                   ptrace(PT_CONTINUE, tid, 1, 0);
@@ -298,10 +349,10 @@ void DebuggerBegin() {
           ptrace(PTRACE_GETREGS, tid, 0, &fu->regs);
           ptrace(PTRACE_GETFPREGS, tid, 0, &fu->fp);
 #elif defined(PTRACE_GETREGSET)
-          poop.iov_len = sizeof(fu->regs);
+          poop.iov_len  = sizeof(fu->regs);
           poop.iov_base = &fu->regs;
           ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
-          poop.iov_len = sizeof(fu->fp);
+          poop.iov_len  = sizeof(fu->fp);
           poop.iov_base = &fu->fp;
           ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
 #endif
@@ -392,14 +443,14 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t               *ctx = &_ctx->uc_mcontext;
-  CHashExport              *exp;
-  int64_t                   is_single_step;
+  mcontext_t  *ctx = &_ctx->uc_mcontext;
+  CHashExport *exp;
+  int64_t      is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -532,9 +583,9 @@ void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
   write(debugger_pipe[1], buf, 256);
   raise(SIGCONT);
 }
-void DebuggerClientStart(void *task) {
+void DebuggerClientStart(void *task, void **write_regs_to) {
   char buf[256], *ptr;
-  sprintf(buf, DBG_MSG_START, task, gettid());
+  sprintf(buf, DBG_MSG_START, task, gettid(), write_regs_to);
   write(debugger_pipe[1], buf, 256);
   raise(SIGCONT);
 }

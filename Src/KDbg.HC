@@ -125,8 +125,10 @@ U0 DumbStackTrace(U8 **rbp,U8 *rip) {
   }
 }
 
-U0 AiwniosDbgCB(I64 sig,I64 *gps) {
-  DebuggerClientStart(Fs);
+U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
+  I64 gps[33];
+  MemCpy(gps,_gps,8*33);
+  DebuggerClientStart(Fs,gps);
   CBpt *bp;
   CTask clone;
   I64 idx;
