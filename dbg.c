@@ -115,9 +115,9 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
     return sig;
   }
 }
-static void PTWriteAPtr(int64_t tid, void *to, int64_t v) {
+static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   int64_t s;
-#if defined(_M_ARM64) || defined(__aarch64__)
+#if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
       ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
