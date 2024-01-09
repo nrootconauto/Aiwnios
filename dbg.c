@@ -2,9 +2,9 @@
 #include <signal.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
-#define DBG_MSG_RESUME   "%ld:%d,RESUME,%d\n"     //(task,pid,single_step)
-#define DBG_MSG_START    "%ld:%d,START,%ld\n"     //(task,pid,dump_regs_to)
-#define DBG_MSG_SET_GREG "%ld:%d,SGREG,%ld,%ld\n" //(task,pid,which_reg,value)
+#define DBG_MSG_RESUME   "%p:%d,RESUME,%p\n"   //(task,pid,single_step)
+#define DBG_MSG_START    "%p:%d,START,%p\n"    //(task,pid,dump_regs_to)
+#define DBG_MSG_SET_GREG "%p:%d,SGREG,%p,%p\n" //(task,pid,which_reg,value)
 #define DBG_MSG_WATCH_TID                                                      \
   "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
                       // the important TIDs(cores))
@@ -27,8 +27,9 @@
 #else
   #include <windows.h>
   #include <errhandlingapi.h>
+  #include <handleapi.h>
+  #include <processthreadsapi.h>
 #endif
-static int debugger_pipe[2];
 #if defined(__FreeBSD__)
 typedef struct CFuckup {
   struct CQue  base;
@@ -62,7 +63,18 @@ typedef struct CFuckup {
   struct user_regs_struct   regs;
   #endif
 } CFuckup;
-
+#elif defined(WIN32) || defined(_WIN32)
+  #include <winnt.h>
+typedef struct CFuckup {
+  struct CQue base;
+  int64_t     signal;
+  int64_t     pid; // Yeah GetThreadId
+  void       *task;
+  CONTEXT    *_regs; // regs may be alligned
+} CFuckup;
+  #ifndef SIGCONT
+    #define SIGCONT 0x101
+  #endif
 #endif
 CFuckup *GetFuckupByTask(CQue *head, void *t) {
   CFuckup *fu;
@@ -72,7 +84,7 @@ CFuckup *GetFuckupByTask(CQue *head, void *t) {
   }
   return NULL;
 }
-CFuckup *GetFuckupByPid(CQue *head, pid_t pid) {
+CFuckup *GetFuckupByPid(CQue *head, int64_t pid) {
   CFuckup *fu;
   for (fu = head->next; fu != head; fu = fu->base.next) {
     if (fu->pid == pid)
@@ -80,13 +92,139 @@ CFuckup *GetFuckupByPid(CQue *head, pid_t pid) {
   }
   return NULL;
 }
+// Im making fuckups global on windows because debugging is not event driven on
+// windows
+static CQue fuckups;
+#if defined(WIN32) || defined(_WIN32)
+static int64_t gettid() {
+  return GetCurrentThreadId();
+}
+// Windows aint unix so I will push P with  message Que
+typedef struct _CDbgMsgQue {
+  CQue base;
+  char msg[0x100];
+} _CDbgMsgQue;
+static CQue   debugger_msgs;
+static HANDLE debugger_mtx;
+  #define HARD_CORE_CNT 64
+static HANDLE  active_threads[HARD_CORE_CNT];
+static CONTEXT thread_use_ctx[HARD_CORE_CNT];
+static int64_t fault_codes[HARD_CORE_CNT];
+static int64_t something_happened = 0;
+static void    WriteMsg(char *buf) {
+  WaitForSingleObject(debugger_mtx, INFINITE);
+  _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
+  QueIns(msg, debugger_msgs.last);
+  strcpy(msg->msg, buf);
+  ReleaseMutex(debugger_mtx);
+}
+static int64_t MsgPoll() {
+  WaitForSingleObject(debugger_mtx, 5);
+  int64_t r = QueCnt(&debugger_msgs) != 0;
+  ReleaseMutex(debugger_mtx);
+  return r;
+}
+static void ReadMsg(char *buf) {
+  while (!MsgPoll())
+    ;
+  WaitForSingleObject(debugger_mtx, INFINITE);
+  _CDbgMsgQue *msg = debugger_msgs.last;
+  strcpy(buf, msg->msg);
+  QueRem(msg);
+  free(msg);
+  ReleaseMutex(debugger_mtx);
+}
+static void GrabDebugger(int64_t code) {
+  HANDLE  h = GetCurrentThread();
+  int64_t tr;
+  for (tr = 0; tr != HARD_CORE_CNT; tr++) {
+    if (!active_threads[tr])
+      break;
+    if (GetThreadId(h) == GetThreadId(active_threads[tr]))
+      goto found;
+  }
+  abort();
+found:
+  fault_codes[tr] = code;
+
+  while (!Misc_LBts(&something_happened, tr)) {
+    YieldProcessor(); // Wait for our "signal" to go through
+  }
+  SuspendThread(h);
+}
+static void AllowNext(int64_t pid) {
+  int64_t tr;
+  for (tr = 0; tr != HARD_CORE_CNT; tr++) {
+    if (!active_threads[tr])
+      break;
+    if (GetThreadId(active_threads[tr]) == pid)
+      goto found;
+  }
+  abort();
+found:;
+  ResumeThread(active_threads[tr]);
+}
+#else
+static int  debugger_pipe[2];
+static void ReadMsg(char *buf) {
+  read(debugger_pipe[0], buf, 0x100);
+}
+static void WriteMsg(char *buf) {
+  write(debugger_pipe[1], buf, 0x100);
+}
+static int64_t MsgPoll() {
+  struct pollfd poll_for;
+  memset(&poll_for, 0, sizeof(struct pollfd));
+  poll_for.fd     = debugger_pipe[0];
+  poll_for.events = POLL_IN;
+  if (poll(&poll_for, 1, 2))
+    return 1;
+  return 0;
+}
+static void GrabDebugger(int64_t code) {
+  raise(code);
+}
+#endif
 
 void DebuggerClientWatchThisTID() {
+#if defined(_WIN32) || defined(WIN32)
+  int64_t tr;
+  WaitForSingleObject(debugger_mtx, INFINITE);
+  for (tr = 0; active_threads[tr]; tr++)
+    ;
+
+  DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(),
+                  &active_threads[tr], 0, FALSE, DUPLICATE_SAME_ACCESS);
+  ReleaseMutex(debugger_mtx);
+#else
   int64_t tid = gettid();
   char    buf[256];
   sprintf(buf, DBG_MSG_WATCH_TID, tid);
-  write(debugger_pipe[1], buf, 256);
+  WriteMsg(buf);
+#endif
 }
+#if defined(_WIN32) || defined(WIN32)
+static int64_t DebuggerWait(CQue *head, pid_t *got) {
+  int64_t  s, tid;
+  CFuckup *fu;
+  for (s = 0; s != HARD_CORE_CNT; s++) {
+    if (Misc_LBtr(&something_happened, s)) {
+      tid = GetThreadId(active_threads[s]);
+      if (fu = GetFuckupByPid(head, tid))
+        ;
+      else {
+        abort();
+      }
+      fu->signal     = fault_codes[s];
+      fault_codes[s] = 0;
+      if (got)
+        *got = tid;
+      return 1;
+    }
+  }
+  return 0;
+}
+#else
 static int64_t DebuggerWait(CQue *head, pid_t *got) {
   int      code, sig;
   pid_t    pid = waitpid(-1, &code, WNOHANG | WUNTRACED | WCONTINUED);
@@ -110,24 +248,47 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
       abort();
     if (fu = GetFuckupByPid(head, pid))
       fu->signal = sig;
+    else {
+      fu = calloc(sizeof(CFuckup), 1);
+      QueIns(fu, head);
+      fu->pid = pid;
+  #if defined(__x86_64__)
+      // IF you are blessed you are running on a platform that has these
+      // Here's the deal Linux takes it in data/freebsd takes it in
+      // addr(only 1 is used my homie)
+      ptrace(PTRACE_GETREGS, tid, &fu->regs, &fu->regs);
+      ptrace(PTRACE_GETFPREGS, tid, &fu->fp, &fu->fp);
+  #elif defined(PTRACE_GETREGSET)
+      poop.iov_len  = sizeof(fu->regs);
+      poop.iov_base = &fu->regs;
+      ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
+      poop.iov_len  = sizeof(fu->fp);
+      poop.iov_base = &fu->fp;
+      ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
+  #endif
+    }
     if (got)
       *got = pid;
     return sig;
   }
 }
+#endif
 static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   int64_t s;
-  #if defined (__linux__)
-#if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__)
+#if defined(_WIN32) || defined(WIN32)
+  *(void **)to = (void *)v;
+#endif
+#if defined(__linux__)
+  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
       ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
     else
       ptrace(PTRACE_POKETEXT, tid, to + s * 2, (v >> (s * 16ul)) & 0xfffful);
   }
-#endif
-#elif defined (__FreeBSD__)
-for (s = 0; s != 8 / 4; s++) {
+  #endif
+#elif defined(__FreeBSD__)
+  for (s = 0; s != 8 / 4; s++) {
     if (!s)
       ptrace(PT_WRITE_D, tid, to + s, v & 0xffffFFFFul);
     else
@@ -136,22 +297,41 @@ for (s = 0; s != 8 / 4; s++) {
 #endif
 }
 void DebuggerBegin() {
+  pid_t tid = 0;
+#if defined(_WIN32) || defined(WIN32)
+  static int64_t init = 0;
+  if (!init) {
+    memset(active_threads, 0, 8 * HARD_CORE_CNT);
+    memset(fault_codes, 0, 8 * HARD_CORE_CNT);
+    debugger_mtx = CreateMutexA(NULL, 0, NULL);
+    QueInit(&debugger_msgs);
+  }
+#else
+  tid = fork();
   pipe(debugger_pipe);
+#endif
   int   code, sig;
   void *task;
   char  buf[4048], *ptr;
-  pid_t tid   = fork();
   pid_t child = tid;
-  if (!tid) {
+  if (!init) {
+    init = 1;
+#if !(defined(_WIN32) || defined(WIN32))
     ptrace(PTRACE_TRACEME, tid, NULL, NULL);
+#else
+    CreateThread(NULL, 0, &DebuggerBegin, NULL, 0, NULL);
+#endif
     strcpy(buf, DBG_MSG_OK);
-    write(debugger_pipe[1], buf, 256);
+    WriteMsg(buf);
     return;
   } else {
+#if !(defined(_WIN32) || defined(WIN32))
     ptrace(PT_ATTACH, tid, NULL, NULL);
     wait(NULL);
     ptrace(PT_CONTINUE, tid, 1, NULL);
-    while (read(debugger_pipe[0], buf, 256) > 0) {
+#endif
+    while (1) {
+      ReadMsg(buf);
       if (strcmp(buf, DBG_MSG_OK))
         exit(1);
       else
@@ -161,31 +341,28 @@ void DebuggerBegin() {
 #if defined(__linux__)
     struct iovec poop;
 #endif
-    struct pollfd poll_for;
-    CQue          fuckups;
-    CFuckup      *fu, *last;
-    char         *ptr, *name;
-    int64_t       which, value, sig, *write_regs_to;
+    CFuckup *fu, *last;
+    char    *ptr, *name;
+    int64_t  which, value, sig, *write_regs_to;
     QueInit(&fuckups);
     while (1) {
-      memset(&poll_for, 0, sizeof(struct pollfd));
-      poll_for.fd     = debugger_pipe[0];
-      poll_for.events = POLL_IN;
-      if (poll(&poll_for, 1, 2)) {
-        read(debugger_pipe[0], buf, 256);
+      if (MsgPoll()) {
+        ReadMsg(buf);
         ptr  = buf;
         task = NULL;
         while (1) {
           if (*ptr == ':') {
-            *ptr = 0;
-            task = strtoul(buf, NULL, 10);
-            ptr++;
-            tid  = strtoul(ptr, &ptr, 10);
+            tid = 0;
+            sscanf(buf, "%p:%d", &task, &tid);
+          } else if (*ptr == ',') {
             name = ptr + 1;
-          }
-          if (*ptr == 0) {
             if (!strncmp(name, "SGREG", strlen("SGREG"))) {
-              while (DebuggerWait(&fuckups, &tid)) {
+              void *task;
+              int   gott;
+              sscanf(buf, DBG_MSG_SET_GREG, &task, &gott, &which, &value);
+
+              while (1) {
+                DebuggerWait(&fuckups, NULL);
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
@@ -193,67 +370,81 @@ void DebuggerBegin() {
                   }
                 }
               }
-              ptr = name + strlen("SGREG,");
-              if (strtok(ptr, ",")) {
-                which = strtoul(ptr, &ptr, 10);
-                ptr++; // Skip ','
-                value = strtoul(ptr, &ptr, 10);
-                // SEE swapctxX86.s
+              // SEE swapctxX86.s
+#if defined(_WIN32) || defined(WIN32)
+              switch (which) {
+              case 0:
+                fu->_regs->Rip = value;
+                break;
+              case 1:
+                fu->_regs->Rsp = value;
+                break;
+              case 2:
+                fu->_regs->Rbp = value;
+                break;
+              }
+#endif
 #if defined(__FreeBSD__) && defined(__x86_64__)
-                switch (which) {
-                case 0:
-                  fu->regs.r_rip = value;
-                  break;
-                case 1:
-                  fu->regs.r_rsp = value;
-                  break;
-                case 2:
-                  fu->regs.r_rbp = value;
-                  break;
-                  // DONT RELY ON CHANGING GPs
-                }
+              switch (which) {
+              case 0:
+                fu->regs.r_rip = value;
+                break;
+              case 1:
+                fu->regs.r_rsp = value;
+                break;
+              case 2:
+                fu->regs.r_rbp = value;
+                break;
+                // DONT RELY ON CHANGING GPs
+              }
 #endif
 #if defined(__linux__) && defined(__x86_64__)
-                switch (which) {
-                case 0:
-                  fu->regs.rip = value;
-                  break;
-                case 1:
-                  fu->regs.rsp = value;
-                  break;
-                case 2:
-                  fu->regs.rbp = value;
-                  break;
-                  // DONT RELY ON CHANGING GPs
-                }
+              switch (which) {
+              case 0:
+                fu->regs.rip = value;
+                break;
+              case 1:
+                fu->regs.rsp = value;
+                break;
+              case 2:
+                fu->regs.rbp = value;
+                break;
+                // DONT RELY ON CHANGING GPs
+              }
 #endif
 #if defined(__linux__) && (defined(_M_ARM64) || defined(__aarch64__))
-                switch (which) {
-                case 0:
-                  fu->regs.pc = value;
-                  break;
-                case 21:
-                  fu->regs.sp = value;
-                  break;
-                case 11:
-                  fu->regs.regs[29] = value;
-                  break;
-                  // DONT RELY ON CHANGING GPs
-                }
-#endif
+              switch (which) {
+              case 0:
+                fu->regs.pc = value;
+                break;
+              case 21:
+                fu->regs.sp = value;
+                break;
+              case 11:
+                fu->regs.regs[29] = value;
+                break;
+                // DONT RELY ON CHANGING GPs
               }
-              ptrace(PT_CONTINUE, tid, 1, 0);
+#endif
+              AllowNext(tid);
               break;
             } else if (!strncmp(name, "WATCHTID", strlen("WATCHTID"))) {
+              int64_t tr;
               ptr = name + strlen("WATCHTID");
               if (*ptr != ',')
                 abort();
               ptr++;
+// On FreeBSD there is no "TID"s
+#if defined(__linux___)
               ptrace(PTRACE_ATTACH, strtoul(ptr, NULL, 10), NULL, NULL);
+#endif
               break;
             } else if (!strncmp(name, "START", strlen("START"))) {
-              write_regs_to = strtoul(name + strlen("START,"), NULL, 10);
-              while (DebuggerWait(&fuckups, &tid)) {
+              void *task;
+              int   gott;
+              sscanf(buf, DBG_MSG_START, &task, &gott, &write_regs_to);
+              while (1) {
+                DebuggerWait(&fuckups, NULL);
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
@@ -275,6 +466,10 @@ void DebuggerBegin() {
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.r_rip);
                 PTWriteAPtr(tid, &write_regs_to[1], fu->regs.r_rsp);
                 PTWriteAPtr(tid, &write_regs_to[2], fu->regs.r_rbp);
+  #elif defined(_WIN32) || defined(WIN32)
+                PTWriteAPtr(tid, &write_regs_to[0], fu->_regs->Rip);
+                PTWriteAPtr(tid, &write_regs_to[1], fu->_regs->Rsp);
+                PTWriteAPtr(tid, &write_regs_to[2], fu->_regs->Rbp);
   #endif
 #endif
 
@@ -287,10 +482,19 @@ void DebuggerBegin() {
   #endif
 #endif
               }
+#if defined(_WIN32) || defined(WIN32)
+              AllowNext(tid);
+#else
               ptrace(PT_CONTINUE, tid, 1, 0);
+#endif
               break;
             } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
-              while (DebuggerWait(&fuckups, &tid)) {
+              void   *task;
+              int     gott;
+              int64_t ss;
+              sscanf(buf, DBG_MSG_RESUME, &task, &gott, &ss);
+              while (1) {
+                DebuggerWait(&fuckups, NULL);
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
@@ -300,41 +504,59 @@ void DebuggerBegin() {
               }
               fu = GetFuckupByTask(&fuckups, task);
               if (!fu) {
+#if defined(_WIN32) || defined(WIN32)
+                AllowNext(tid);
+#else
                 ptrace(PT_CONTINUE, tid, 1, 0);
+#endif
                 break;
               }
-#if defined(__x86_64__)
-              // IF you are blessed you are running on a platform that has these
-              //Here's the deal Linux takes it in data/freebsd takes it in addr(only 1 is used my homie)
+#if !(defined(_WIN32) || defined(WIN32))
+  #if defined(__x86_64__)
+              // IF you are blessed you are running on a platform that has
+              // these Here's the deal Linux takes it in data/freebsd takes it
+              // in addr(only 1 is used my homie)
               ptrace(PTRACE_SETREGS, tid, &fu->regs, &fu->regs);
               ptrace(PTRACE_SETFPREGS, tid, &fu->fp, &fu->fp);
-#else
+  #else
               poop.iov_len  = sizeof(fu->regs);
               poop.iov_base = &fu->regs;
               ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
               poop.iov_len  = sizeof(fu->fp);
               poop.iov_base = &fu->fp;
               ptrace(PTRACE_SETREGSET, tid, NT_PRFPREG, &poop);
+  #endif
+#else
+              // See thread_use_ctx
+              int64_t tr;
+              for (tr = 0; tr != HARD_CORE_CNT; tr++) {
+                if (!active_threads[tr])
+                  abort();
+                if (GetThreadId(active_threads[tr]) == tid)
+                  break;
+              }
 #endif
-              ptr = name + strlen("RESUME");
-              if (*ptr == ',') {
-                if (strtoul(ptr + 1, NULL, 10))
+              if (ss) {
 #if defined(__FreeBSD__)
-                  ptrace(PT_STEP, tid, 1, 0);
+                ptrace(PT_STEP, tid, 1, 0);
+#elif defined(_WIN32) || defined(WIN32)
+                fu->_regs->EFlags |= 1 << 8; // Trap flag
+                AllowNext(tid);
 #else
-                  ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
+                ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
 #endif
-                else {
-#if defined(__x86_64__)
-                  ptrace(PT_CONTINUE, tid, 1, 0);
-#else
-                  ptrace(PT_CONTINUE, tid, 0, 0);
-#endif
-                  QueRem(fu);
-                  free(fu);
-                }
+                QueRem(fu);
+                free(fu);
               } else {
+#if defined(_WI32) || defined(WIN32)
+                AllowNext(tid);
+#else
+  #if defined(__x86_64__)
                 ptrace(PT_CONTINUE, tid, 1, 0);
+  #else
+                ptrace(PT_CONTINUE, tid, 0, 0);
+  #endif
+#endif
                 QueRem(fu);
                 free(fu);
               }
@@ -345,34 +567,13 @@ void DebuggerBegin() {
           ptr++;
         }
       } else if (sig = DebuggerWait(&fuckups, &tid)) {
-        switch (sig) {
-        case SIGFPE:
-        case SIGBUS:
-        case SIGSEGV:
-        case SIGTRAP:
-          fu = calloc(sizeof(CFuckup), 1);
-          QueIns(fu, &fuckups);
-          fu->task = NULL;
-          fu->pid  = tid;
-#if defined(__x86_64__)
-          // IF you are blessed you are running on a platform that has these
-          //Here's the deal Linux takes it in data/freebsd takes it in addr(only 1 is used my homie)
-          ptrace(PTRACE_GETREGS, tid, &fu->regs, &fu->regs);
-          ptrace(PTRACE_GETFPREGS, tid, &fu->fp, &fu->fp);
-#elif defined(PTRACE_GETREGSET)
-          poop.iov_len  = sizeof(fu->regs);
-          poop.iov_base = &fu->regs;
-          ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
-          poop.iov_len  = sizeof(fu->fp);
-          poop.iov_base = &fu->fp;
-          ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
+#if defined(_WIN32) || defined(WIN32)
+#else
+        if (sig == SIGSTOP) // This is used for ptrace events
+          ptrace(PT_CONTINUE, tid, 1, 0);
+        else
+          ptrace(PT_CONTINUE, tid, 1, sig);
 #endif
-        default:
-          if (sig == SIGSTOP) // This is used for ptrace events
-            ptrace(PT_CONTINUE, tid, 1, 0);
-          else
-            ptrace(PT_CONTINUE, tid, 1, sig);
-        }
       }
     }
   }
@@ -536,38 +737,30 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 }
 #endif
 #if defined(WIN32) || defined(_WIN32)
-static void VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
+static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
   CONTEXT *ctx = einfo->ContextRecord;
-  int64_t  actx[23];
-  actx[0]  = ctx->Rip;
-  actx[1]  = ctx->Rsp;
-  actx[2]  = ctx->Rbp;
-  actx[3]  = ctx->R11;
-  actx[4]  = ctx->R12;
-  actx[5]  = ctx->R13;
-  actx[6]  = ctx->R14;
-  actx[7]  = ctx->R15;
-  actx[20] = ctx->R10;
-  actx[21] = ctx->Rdi;
-  actx[22] = ctx->Rsi;
+  CFuckup *fu  = calloc(1, sizeof(CFuckup));
+  int64_t  sig = 0;
+  QueIns(fu, &fuckups);
+  fu->pid   = GetCurrentThreadId();
+  fu->_regs = ctx;
+  int64_t actx[23];
+  actx[0] = ctx->Rip;
+  actx[1] = ctx->Rsp;
+  actx[2] = ctx->Rbp;
   CHashExport *exp;
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
-    FFI_CALL_TOS_2(exp->val, 0, actx);
+    switch (einfo->ExceptionRecord->ExceptionCode) {
+    case EXCEPTION_SINGLE_STEP:
+    case EXCEPTION_BREAKPOINT:
+      sig = 5;
+    }
+    FFI_CALL_TOS_2(exp->val, sig, actx);
   } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
     FFI_CALL_TOS_0(exp->val);
   else
     abort();
-  ctx->Rsp = actx[1];
-  ctx->Rbp = actx[2];
-  ctx->R11 = actx[3];
-  ctx->R12 = actx[4];
-  ctx->R13 = actx[5];
-  ctx->R14 = actx[6];
-  ctx->R15 = actx[7];
-  ctx->R10 = actx[20];
-  ctx->Rdi = actx[21];
-  ctx->Rsi = actx[22];
-  ctx->Rip = actx[0];
+fin:
   return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif
@@ -591,18 +784,18 @@ void InstallDbgSignalsForThread() {
 void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
   char buf[256];
   sprintf(buf, DBG_MSG_SET_GREG, task, gettid(), which, v);
-  write(debugger_pipe[1], buf, 256);
-  raise(SIGCONT);
+  WriteMsg(buf);
+  GrabDebugger(SIGCONT);
 }
 void DebuggerClientStart(void *task, void **write_regs_to) {
   char buf[256], *ptr;
   sprintf(buf, DBG_MSG_START, task, gettid(), write_regs_to);
-  write(debugger_pipe[1], buf, 256);
-  raise(SIGCONT);
+  WriteMsg(buf);
+  GrabDebugger(SIGCONT);
 }
 void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
   char buf[256];
   sprintf(buf, DBG_MSG_RESUME, task, gettid(), wants_singlestep);
-  write(debugger_pipe[1], buf, 256);
-  raise(SIGCONT);
+  WriteMsg(buf);
+  GrabDebugger(SIGCONT);
 }

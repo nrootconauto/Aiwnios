@@ -157,6 +157,13 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
     bp=BptFind(oip,Fs);
     if(bp)
       *bp->addr=bp->val;
+#ifdef TARGET_X86
+//On some platforms RIP is put at the INT3 so dont move past it(if it's just sitting there)
+    if(oip==clone.context_save_area[0]&&IsValidPtr(oip)) {
+      if(oip(U8*)[0]==OC_BPT)
+	clone.context_save_area[0]++; //Move past INT3
+    }
+#endif
   }
 fin:
   Fs->task_flags=clone.task_flags;
@@ -205,8 +212,13 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
     tmpb->next=task->bpt_lst;
     task->bpt_lst=tmpb;
     if (task==GetDebuggedProcess && live)
+#ifdef TARGET_X86
+      addr(U8*)[0]=OC_BPT;
+#endif
+#ifdef TARGET_AARCH64
       //https://github.com/scottt/debugbreak
       *addr=0xd4200000;
+#endif
   }
   if(bl)
     BreakUnlock;

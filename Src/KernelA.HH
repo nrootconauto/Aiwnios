@@ -3064,8 +3064,13 @@ public class CGridGlbls
 class CBpt
 {
   CBpt	*next;
+#ifdef TARGET_X86
+  U8	*addr,val;
+#endif
+#ifdef TARGET_AARCH64
   //On ARM64 all the insts are 32bit
   U32	*addr,val;
+#endif
 };
 
 class CExcept
