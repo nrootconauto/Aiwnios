@@ -112,11 +112,11 @@ static CONTEXT thread_use_ctx[HARD_CORE_CNT];
 static int64_t fault_codes[HARD_CORE_CNT];
 static int64_t something_happened = 0;
 static void    WriteMsg(char *buf) {
-  WaitForSingleObject(debugger_mtx, INFINITE);
-  _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
-  QueIns(msg, debugger_msgs.last);
-  strcpy(msg->msg, buf);
-  ReleaseMutex(debugger_mtx);
+     WaitForSingleObject(debugger_mtx, INFINITE);
+     _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
+     QueIns(msg, debugger_msgs.last);
+     strcpy(msg->msg, buf);
+     ReleaseMutex(debugger_mtx);
 }
 static int64_t MsgPoll() {
   WaitForSingleObject(debugger_mtx, 5);
@@ -252,19 +252,25 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
       fu = calloc(sizeof(CFuckup), 1);
       QueIns(fu, head);
       fu->pid = pid;
+    }
+    switch (sig) {
+    case SIGCONT:
+    case SIGSTOP:
+      break;
+    default:
   #if defined(__x86_64__)
       // IF you are blessed you are running on a platform that has these
       // Here's the deal Linux takes it in data/freebsd takes it in
       // addr(only 1 is used my homie)
-      ptrace(PTRACE_GETREGS, tid, &fu->regs, &fu->regs);
-      ptrace(PTRACE_GETFPREGS, tid, &fu->fp, &fu->fp);
+      ptrace(PTRACE_GETREGS, pid, &fu->regs, &fu->regs);
+      ptrace(PTRACE_GETFPREGS, pid, &fu->fp, &fu->fp);
   #elif defined(PTRACE_GETREGSET)
       poop.iov_len  = sizeof(fu->regs);
       poop.iov_base = &fu->regs;
-      ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &poop);
+      ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &poop);
       poop.iov_len  = sizeof(fu->fp);
       poop.iov_base = &fu->fp;
-      ptrace(PTRACE_GETREGSET, tid, NT_PRFPREG, &poop);
+      ptrace(PTRACE_GETREGSET, pid, NT_PRFPREG, &poop);
   #endif
     }
     if (got)
@@ -300,22 +306,23 @@ void DebuggerBegin() {
   pid_t tid = 0;
 #if defined(_WIN32) || defined(WIN32)
   static int64_t init = 0;
+  tid                 = init; // SIMULATE fork sort of
   if (!init) {
     memset(active_threads, 0, 8 * HARD_CORE_CNT);
     memset(fault_codes, 0, 8 * HARD_CORE_CNT);
     debugger_mtx = CreateMutexA(NULL, 0, NULL);
     QueInit(&debugger_msgs);
+    init = 1;
   }
 #else
-  tid = fork();
   pipe(debugger_pipe);
+  tid = fork();
 #endif
   int   code, sig;
   void *task;
   char  buf[4048], *ptr;
   pid_t child = tid;
-  if (!init) {
-    init = 1;
+  if (!tid) {
 #if !(defined(_WIN32) || defined(WIN32))
     ptrace(PTRACE_TRACEME, tid, NULL, NULL);
 #else
@@ -383,6 +390,7 @@ void DebuggerBegin() {
                 fu->_regs->Rbp = value;
                 break;
               }
+              AllowNext(tid);
 #endif
 #if defined(__FreeBSD__) && defined(__x86_64__)
               switch (which) {
@@ -397,6 +405,7 @@ void DebuggerBegin() {
                 break;
                 // DONT RELY ON CHANGING GPs
               }
+              ptrace(PT_CONTINUE, tid, 1, 0);
 #endif
 #if defined(__linux__) && defined(__x86_64__)
               switch (which) {
@@ -411,6 +420,7 @@ void DebuggerBegin() {
                 break;
                 // DONT RELY ON CHANGING GPs
               }
+              ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
 #if defined(__linux__) && (defined(_M_ARM64) || defined(__aarch64__))
               switch (which) {
@@ -425,8 +435,8 @@ void DebuggerBegin() {
                 break;
                 // DONT RELY ON CHANGING GPs
               }
+              ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
-              AllowNext(tid);
               break;
             } else if (!strncmp(name, "WATCHTID", strlen("WATCHTID"))) {
               int64_t tr;
@@ -435,7 +445,7 @@ void DebuggerBegin() {
                 abort();
               ptr++;
 // On FreeBSD there is no "TID"s
-#if defined(__linux___)
+#if defined(__linux__)
               ptrace(PTRACE_ATTACH, strtoul(ptr, NULL, 10), NULL, NULL);
 #endif
               break;
@@ -569,7 +579,9 @@ void DebuggerBegin() {
       } else if (sig = DebuggerWait(&fuckups, &tid)) {
 #if defined(_WIN32) || defined(WIN32)
 #else
-        if (sig == SIGSTOP) // This is used for ptrace events
+        if (sig == SIGCONT)
+          ;
+        else if (sig == SIGSTOP) // This is used for ptrace events
           ptrace(PT_CONTINUE, tid, 1, 0);
         else
           ptrace(PT_CONTINUE, tid, 1, sig);
@@ -662,7 +674,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
