@@ -265,6 +265,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
       ptrace(PTRACE_GETREGS, pid, &fu->regs, &fu->regs);
       ptrace(PTRACE_GETFPREGS, pid, &fu->fp, &fu->fp);
   #elif defined(PTRACE_GETREGSET)
+      struct iovec poop;
       poop.iov_len  = sizeof(fu->regs);
       poop.iov_base = &fu->regs;
       ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &poop);
