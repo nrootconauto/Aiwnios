@@ -263,7 +263,7 @@ force:
       } else {
 /* Nroot removed this as not all platforms have easy access to lower 32bits
 #ifdef TARGET_X86
-//In X86_64,i will put all functions in low 32bits to avoid viener functions.
+//In X86_64,i will put all functions in low 32bits to avoid viener wfunctions.
 goto force;
 #endif
 */
@@ -271,18 +271,27 @@ goto force;
     }
   }
 }
+I64 IRegIsAvail(CHashFun *fun,I64 r) {
+  CMemberLst *mlst=fun->member_lst_and_root;
+  while(mlst) {
+    if(mlst->reg==r)
+      return FALSE;
+    mlst=mlst->next;
+  }
+  return TRUE;
+}
 #ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
-	switch(r) {
-		break;case 0: return REG_R10;
-		break;case 1: return REG_R11;
-		break;case 2: return REG_R12;
-		break;case 3: return REG_R14;
-		break;case 4: return REG_R15;
-		break;case 5: return REG_RDI;
-		break;case 6: return REG_RSI;
-	}
-	throw('Compile');
+  switch(r) {
+      break;case 0: return REG_R10;
+      break;case 1: return REG_R11;
+      break;case 2: return REG_R12;
+      break;case 3: return REG_R14;
+      break;case 4: return REG_R15;
+      break;case 5: return REG_RDI;
+      break;case 6: return REG_RSI;
+  }
+  throw('Compile');
 }
 #endif
 class CAddShortRelocData {
@@ -408,14 +417,19 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     QSort(mv,member_cnt,sizeof(COptMemberVar),&OptMVCompare);
     for(idx=0;idx!=member_cnt;idx++) {
       if(mv[idx].m->reg!=REG_NONE&&mv[idx].score&&!mv[idx].m->dim.next) {
+reg_again:;
         if(mv[idx].m->member_class->raw_type==RT_F64) {
           if(AIWNIOS_FREG_START<=fr<AIWNIOS_FREG_START+AIWNIOS_FREG_CNT) {
             mv[idx].m->reg=fr++;
           } else
             mv[idx].m->reg=REG_NONE;
-        } else {
+        } else if(mv[idx].m->reg==REG_ALLOC||mv[idx].m->reg==REG_UNDEF) {
           if(AIWNIOS_IREG_START<=ir<AIWNIOS_IREG_START+AIWNIOS_IREG_CNT) {
             #ifdef TARGET_X86
+	    if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
+	      ir++;
+	      goto reg_again;
+	    }
             mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
             #else
             mv[idx].m->reg=ir++;
