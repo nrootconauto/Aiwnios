@@ -2125,6 +2125,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   case IC_TO_F64:
   case IC_TO_I64:
   case IC_NEG:
+  case IC_TO_BOOL:
   unop:
     return SpillsTmpRegs(rpn->base.next);
     break;
@@ -2779,6 +2780,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     goto fin;
     break;
   case IC_TO_I64:
+  case IC_TO_BOOL:
   unop:
     PushTmpDepthFirst(cctrl, r->base.next, 0);
     PopTmp(cctrl, r->base.next);
@@ -5917,6 +5919,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_LOCK]              = &&ic_lock,
       [IC_GOTO]              = &&ic_goto,
       [IC_GOTO_IF]           = &&ic_goto_if,
+      [IC_TO_BOOL]            = &&ic_to_bool,
       [IC_TO_I64]            = &&ic_to_i64,
       [IC_TO_F64]            = &&ic_to_f64,
       [IC_LABEL]             = &&ic_label,
@@ -6350,6 +6353,46 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
       }
     }
+    break;
+    ic_to_bool:
+    into_reg=0;
+    tmp.mode=MD_REG;
+    tmp.raw_type=RT_I64i;
+    if(rpn->res.mode==MD_REG)
+		into_reg=rpn->res.reg;
+     tmp.reg=into_reg;
+    next     = rpn->base.next;
+    if(ModeIsDerefToSIB(next)&&next->raw_type!=RT_F64) {
+		code_off=DerefToICArg(cctrl,&tmp,next,AIWNIOS_TMP_IREG_POOP,bin,code_off);
+		switch(tmp.raw_type) {
+			case RT_I8i:
+			case RT_U8i:
+			AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, tmp.__SIB_scale,    
+                           tmp.reg2, tmp.reg, tmp.off);
+			break;
+			case RT_I16i:
+			case RT_U16i:
+			AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, tmp.__SIB_scale,    
+                           tmp.reg2, tmp.reg, tmp.off);
+			break;
+			case RT_I32i:
+			case RT_U32i:
+			AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, tmp.__SIB_scale,    
+                           tmp.reg2, tmp.reg, tmp.off);
+			break;
+			default:
+			          AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, tmp.__SIB_scale,    
+                           tmp.reg2, tmp.reg, tmp.off);
+			break;
+		}
+		AIWNIOS_ADD_CODE(X86Setcc,X86_COND_E|1,into_reg);
+	} else {
+		code_off = __OptPassFinal(cctrl, next, bin, code_off);
+		code_off=PutICArgIntoReg(cctrl,&next->res,RT_I64i,0,bin,code_off);
+		AIWNIOS_ADD_CODE(X86CmpRegImm,next->res.reg,0);
+		AIWNIOS_ADD_CODE(X86Setcc,X86_COND_E|1,into_reg);
+	}
+    code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     break;
     // These both do the same thing,only thier type detirmines what happens
   ic_to_i64:
