@@ -221,6 +221,7 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_GET_VARGS_PTR:
   case IC_TO_F64:
   case IC_TO_I64:
+  case IC_TO_BOOL:
     goto unop;
     break;
   case IC_GOTO_IF:
@@ -611,6 +612,9 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
   case IC_RELOC:
     printf("RELOC:%s\n", rpn->code_misc->str);
     return ICFwd(rpn);
+  case IC_TO_BOOL:
+    printf("TO_BOOL\n");
+	goto unop;
   case IC_GET_VARGS_PTR:
     printf("GET_VARGS_PTR:\n");
     return ParserDumpIR(rpn->base.next, indent + 1);
@@ -2883,6 +2887,8 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_I64i;
     break;
+  case IC_TO_BOOL:
+    AssignRawTypeToNode(ccmp, rpn->base.next);
   case IC_TO_I64:
     rpn->ic_class        = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_I64i;
@@ -4472,6 +4478,7 @@ CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
   cc->flags |= CCF_AOT_COMPILE;
 }
+HC_IC_BINDING(HC_ICAdd_ToBool, IC_TO_BOOL);
 HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
 HC_IC_BINDING(HC_ICAdd_BTC, IC_BTC);
 HC_IC_BINDING(HC_ICAdd_BTS, IC_BTS);

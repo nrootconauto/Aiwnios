@@ -1189,7 +1189,9 @@ char **CmdLineBootFiles() {
 int64_t CmdLineBootFileCnt() {
   return arg_boot_files->count;
 }
-
+static int64_t STK__HC_ICAdd_ToBool(void**stk)  {
+	return __HC_ICAdd_ToBool(stk[0]);
+}
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer   *lex  = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1321,6 +1323,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
     PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
     PrsAddSymbolNaked("Call", TempleOS_CallN, 3);
+    PrsAddSymbol("__HC_ICAdd_ToBool",STK__HC_ICAdd_ToBool,1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);

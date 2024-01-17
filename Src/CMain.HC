@@ -68,6 +68,7 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
         case IC_CALL_IMPORT:
         case IC_CALL_EXTERN:
         case IC_COMMA:
+        case IC_TO_BOOL:
         RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(rpn),FALSE);
         break;defualt:
         RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);

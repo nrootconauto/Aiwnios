@@ -501,6 +501,21 @@ loop:
   for (rpn = cctrl->code_ctrl->ir_code->next;
        cctrl->code_ctrl->ir_code != rpn;) {
     switch (rpn->type) {
+	  break;
+	  case IC_TO_BOOL:
+	  next=rpn->base.next;
+	  if(IsConst(next)) {
+		if (next->type == IC_F64)
+		  a2 = next->flt;
+		else                                                             
+		  a2 = next->integer;
+		rpn->integer=!!a2;
+		rpn->raw_type=RT_I64i;
+		rpn->type = IC_I64;
+		ICFree(next);
+		changed=1;
+	  } else
+		goto next1;
       break;
     case IC_GOTO:
     skip:

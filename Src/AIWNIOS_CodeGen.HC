@@ -40,6 +40,7 @@ import U8 * __HC_ICAdd_Add(U8*);
 import U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs);
 import U8 * __HC_ICAdd_Comma(U8*);
 import U0 __HC_ICSetLock(U8*);
+import U8 * __HC_ICAdd_ToBool(U8*);
 import U8 * __HC_ICAdd_Addr(U8*);
 import U8 * __HC_ICAdd_Xor(U8*);
 import U8 * __HC_ICAdd_Mod(U8*);
@@ -873,7 +874,8 @@ break;case IC_ASM:
     new=__HC_ICAdd_ToI64(cc2);
     break;case IC_TO_F64:
     new=__HC_ICAdd_ToF64(cc2);
-    break;case IC_TO_BOOL: //TODO
+    break;case IC_TO_BOOL:
+    new=__HC_ICAdd_ToBool(cc2);
     break;case IC_TOUPPER:  //TODO
     break;case IC_HOLYC_TYPECAST:
     new=__HC_ICAdd_Typecast(cc2,cur->ic_class->raw_type,0);

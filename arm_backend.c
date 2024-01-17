@@ -1325,6 +1325,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   case IC_TO_F64:
   case IC_TO_I64:
   case IC_NEG:
+  case IC_TO_BOOL:
   unop:
     return SpillsTmpRegs(rpn->base.next);
     break;
@@ -2735,6 +2736,22 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   case IC_NOP:
     // Bungis
     break;
+  case IC_TO_BOOL:
+    PushTmp(cctrl, next = rpn->base.next, &rpn->res);
+    code_off=__OptPassFinal(cctrl,next,bin,code_off);
+    code_off=PutICArgIntoReg(cctrl,&next->res,RT_I64i,0,bin,code_off);
+    AIWNIOS_ADD_CODE(ARM_cmpImmX(next->res.reg,0));
+    if(rpn->res.mode==MD_REG&&rpn->res.raw_type!=RT_F64) {
+		AIWNIOS_ADD_CODE(ARM_csetX(rpn->res.reg,ARM_NE));
+	} else {
+		AIWNIOS_ADD_CODE(ARM_csetX(0,ARM_NE));
+		tmp.mode=MD_REG;
+		tmp.raw_type=RT_I64i;
+		tmp.reg=0;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+	}
+	PopTmp(cctrl,next);
+	break;
   case IC_PAREN:
     abort();
     break;

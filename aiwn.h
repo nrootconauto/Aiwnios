@@ -570,6 +570,7 @@ enum {
   IC_LOCK, //Lock means "lock EXPRESSION;",it operates on expressions as a whole
   IC_FS,
   IC_GS,
+  IC_TO_BOOL,
   IC_CNT,           // MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -1078,6 +1079,7 @@ HC_IC_BINDINGH(HC_ICAdd_TAN)
 HC_IC_BINDINGH(HC_ICAdd_ATAN)
 HC_IC_BINDINGH(HC_ICAdd_Fs)
 HC_IC_BINDINGH(HC_ICAdd_Gs)
+HC_IC_BINDINGH(HC_ICAdd_ToBool)
 
 CRPN *__HC_ICAdd_FReg(CCodeCtrl *cc, int64_t r);
 CRPN *__HC_ICAdd_IReg(CCodeCtrl *cc, int64_t r, int64_t rt, int64_t ptr_cnt);
@@ -1270,3 +1272,4 @@ void DebuggerClientStart(void *task,void **write_regs_to);
 void DebuggerBegin(); //CALL AT THE START OF THE PROGRAM
 void DebuggerClientSetGreg(void *task,int64_t which ,int64_t v);
 void DebuggerClientWatchThisTID();
+
