@@ -19,7 +19,7 @@ CAutoCompleteDictGlbls acd;
 CAutoCompleteGlbls ac;
 F64 target_fps=30.;
 CBlkDevGlbls	blkdev;
-//CCntsGlbls	cnts={1,0,2676302000,2676302,2676302000,0,0,0,FALSE}; I DONT LIKE THIS
+CCntsGlbls	cnts={1,0,2676302000,2676302,2676302000,0,0,0,FALSE}; 
 CDbgGlbls	dbg;
 CDevGlbls	dev;
 CGridGlbls	ms_grid; //See $LK,"::/Demo/Graphics/Grid.HC"$.

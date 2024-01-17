@@ -1,4 +1,4 @@
-U0 AttackHeader(Unit *tmpu,U8 *st,Unit *target)
+U0 AttackHeader(Unit *tmpu,U8 *st,Unit *target)
 {
   I64 i=9+StrLen(st);
   if (target) {

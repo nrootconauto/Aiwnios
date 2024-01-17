@@ -450,7 +450,7 @@ U0 TaskKillDying()
 {//Delay freeing to prevent asking for trouble with quick reincarnations.
 //What if the user is doing this: $LK,"DoTreeCheckers",A="FF:::/Misc/OSTestSuite.HC,DoTreeCheckers"$.
   CTaskDying *task,*task1;
-  if (Gs->kill_jiffy<__GetTicks) {//Avoid doing as many lock operations.
+  if (Gs->kill_jiffy<cnts.jiffies) {//Avoid doing as many lock operations.
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
       ; //TODO atomic lock
     task=Gs->next_dying;
@@ -461,6 +461,6 @@ U0 TaskKillDying()
       task=task1;
     }
     LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
-    Gs->kill_jiffy=__GetTicks+DYING_JIFFIES;
+    Gs->kill_jiffy=cnts.jiffies+DYING_JIFFIES;
   }  
 }

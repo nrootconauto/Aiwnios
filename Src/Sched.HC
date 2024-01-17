@@ -71,7 +71,8 @@ U0 TaskContextRestore(CTask *task) {
 extern CTask *TaskEnd(); 
 U0 Yield() {
   CTask *task=Fs;
-  CBpt *bp;;
+  CBpt *bp;
+  cnts.jiffies=__GetTicks;
   if(!Bt(&task->task_flags,TASKf_DISABLE_BPTS)) {
     for(bp=task->bpt_lst;bp;bp=bp->next) {
       *bp->addr=bp->val;

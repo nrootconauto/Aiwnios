@@ -161,7 +161,7 @@ I64 Seed(I64 seed=0,CTask *task=NULL)
     return task->rand_seed=seed;
   } else {
     LBtr(&task->task_flags,TASKf_NONTIMER_RAND);
-    return task->rand_seed^=__GetTicks;
+    return task->rand_seed^=cnts.jiffies;
   }
 }
 

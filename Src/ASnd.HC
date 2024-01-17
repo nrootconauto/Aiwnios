@@ -90,7 +90,7 @@ public CMusicGlbls music={NULL,NULL,4,1.0,{0,2,3,5,7,8,10},FALSE,4,4,2.5,0.9,0,0
 #help_index "Snd/Music;Time/Seconds"
 public F64 tM()
 {//Time in seconds synced to music subsystem.
-  return (__GetTicks+music.tM_correction)/JIFFY_FREQ;
+  return (cnts.jiffies+music.tM_correction)/JIFFY_FREQ;
 }
 
 public F64 Beat()
@@ -222,7 +222,7 @@ per second.  It defaults to
   F64 d,on_jiffies,off_jiffies;
   music.play_note_num=0;
   while (*st) {
-    timeout_val=__GetTicks;
+    timeout_val=cnts.jiffies;
     tie=FALSE;
 
     do {

@@ -7085,3 +7085,4 @@ extern U0 D(U8 *addr,I64 cnt=0x80,Bool show_offset=TRUE);
 extern U0 Dm(U8 *addr,I64 cnt=0x80);
 extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
+public extern CCntsGlbls cnts;

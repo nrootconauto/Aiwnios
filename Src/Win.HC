@@ -2,7 +2,7 @@
 #help_file "::/Doc/Windows"
 
 CMsStateGlbls old_ms={{-1000,-1000,0},{-1000,-1000,0},{-1000,-1000,0},
-  {0,0,0},{1.0,1.0,1.0},0.0,__GetTicks,0.350,0,0,
+  {0,0,0},{1.0,1.0,1.0},0.0,cnts.jiffies,0.350,0,0,
   FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE
 };
 

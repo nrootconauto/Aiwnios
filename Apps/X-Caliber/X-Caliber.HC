@@ -463,7 +463,7 @@ U0 DrawIt(CTask *task,CDC *dc)
   GrPrint(dc,0,0,"Level:%d Score:%d High Score:%d",level,score,best_score);
   if (game_over) {
     if (Blink)
-      GrPrint(dc,(task->pix_width-9*FONT_WIDTH)/2,
+      GrPrint(dc,(task->pix_width-9*FONT_WIDTH)/2,
 	    (task->pix_height-FONT_HEIGHT)/2,"Game Over");
   } else if (show_level_msg) {
     if (Blink)

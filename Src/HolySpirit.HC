@@ -2,7 +2,7 @@
 U8 *TimeStampCB(CDoc *,CDocEntry *,CTask *mem_task)
 {
   U8 *st=MAlloc(64,mem_task);
-  StrPrint(st,"%X",__GetTicks>>GOD_BAD_BITS);
+  StrPrint(st,"%X",cnts.jiffies>>GOD_BAD_BITS);
   return st;
 }
 

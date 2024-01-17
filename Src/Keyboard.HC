@@ -358,7 +358,7 @@ U0 KBCb(I64 c,I64 s) {
     kbd.cnt++;
   kbd.last_down_scan_code=s;
   FifoI64Ins(kbd.scan_code_fifo2,s);
-  kbd.timestamp=__GetTicks;
+  kbd.timestamp=cnts.jiffies;
   c=ScanCode2Char(s&0x7f);
   if(!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&(c=='c'||c=='x')&&TaskValidate(sys_focus_task)) {
     initial_time=cpu_structs[0].total_jiffies;
@@ -403,7 +403,7 @@ loop:
       if(!Bt(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X)) {
         LBts(&SYS_CTRL_ALT_FLAGS,CTRL_ALT_X);
         await_yeild:
-        time_out=__GetTicks;
+        time_out=cnts.jiffies;
         while(time_out-__GetTicks<ToI64(0.05*1000)) {
           /*
           if(IsFrozen(cpu_structs[0])) {

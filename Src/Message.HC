@@ -137,10 +137,10 @@ I64 GetKey(I64 *_scan_code=NULL,Bool echo=FALSE,Bool raw_cursor=FALSE)
   Bool cursor_on=FALSE;
   while (!ScanKey(&ch,&sc,FALSE)) {
     if (IsRaw && raw_cursor) {
-      if (!cursor_on && ToI64(__GetTicks*5/1000)&1) {
+      if (!cursor_on && ToI64(cnts.jiffies*5/1000)&1) {
 	'Û';
 	cursor_on=TRUE;
-      } else if (cursor_on && !(ToI64(__GetTicks*5/1000)&1)) {
+      } else if (cursor_on && !(ToI64(cnts.jiffies*5/1000)&1)) {
 	"%c",CH_BACKSPACE;
 	cursor_on=FALSE;
       }
