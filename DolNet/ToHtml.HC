@@ -74,7 +74,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	if (CH_SPACE<=ch<0x7F || ch=='\n') {
 	  //Added by nroot,if non white background,be sure to fill it up
 	  //TextBase puts background color in bits 12-16
-          if((u32_attr.u8[1]>>4)!=0xf)
+          /*if((u32_attr.u8[1]>>4)!=0xf)
 	    if(ch=='\n'&&!(old_attr&DOCET_UNDEF_COLOR)) { 
 	      //Dont underline the whitesapce
 	      if(u32_attr&DOCET_UNDERLINE)
@@ -85,7 +85,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	      //restore
 	      if(u32_attr&DOCET_UNDERLINE)
 	        DocPrint(doc,"<u>");
-            }
+            }*/
 	  DocPutKey(doc,ch,0);
 	} else
 	  DocPrint(doc,".");
@@ -226,7 +226,7 @@ U0 SpriteExtentsTransform(I64 *mat,U8 *elems,I64 *min_x=NULL,I64 *max_x=NULL,
 }
 
 //Added by Nroot
-U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
+U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
   if(!filename) filename=SERVER_WWW"/TMP.DD";
   filename=FileNameAbs(filename);
   U8 *tmp2=FileNameAbs(SERVER_WWW);
@@ -256,14 +256,12 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
-//https://stackoverflow.com/questions/6040005/relatively-position-an-element-without-it-taking-up-space-in-document-flow
-  DocPrint(html_doc,"<div style=\"position: relative; width: 0; height: 0\">");
-  DocPrint(html_doc,"<div style=\"position: absolute;\">");
-  DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
-        max_x-min_x+1,
-        max_y-min_y+1
+  DocPrint(html_doc,"<div style=\"position: absolute;left:%drem\">",digits);
+  DocPrint(html_doc,"<img src=\"%Q\" width=\"%.1f\" height=\"%.1f\">",fp,
+        1.3*(max_x-min_x)+1,
+        1.3*(max_y-min_y)+1
         );
-  DocPrint(html_doc,"</div></div>");
+  DocPrint(html_doc,"</div>");
   DCDel(res);
   Free(fp),Free(to),Free(filename),Free(tmp2);
 }
@@ -310,14 +308,14 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
   if (!html_footer) html_footer=
 	  "</html>\n";
 
-  DocPrint(doc_out,"%s",html_header);
+  DocPutS(doc_out,html_header);
 
-  DocPrint(doc_out,"<style type=\"text/css\">\n");
+  DocPutS(doc_out,"<style type=\"text/css\">\n");
   style=doc_out->cur_entry->last;
-  DocPrint(doc_out,
+  DocPutS(doc_out,
         "</style>\n"
         "</head>\n");
-  DocPrint(doc_out,"%s",body_header);
+  DocPutS(doc_out,body_header);
 
   doc_e=doc_in->head.next;
   col=doc_e->x;
@@ -333,7 +331,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
       }
       while (y<doc_e->y) {
         HtmlPutS(doc_out,0xF000//.u8[1]=F0(white),no other attribs needed so it's a constant
-	      ,&old_u32_attr,FALSE,"\n",&col,style_bitmap);
+	      ,&old_u32_attr,TRUE,"\n",&col,style_bitmap);
         if (++y!=old_y) {
 	  if (old_u32_attr&DOCET_UNDERLINE) DocPutS(doc_out,"</u>");
 	  if (old_u32_attr&DOCET_BLINK) DocPutS(doc_out,"</blink>");
@@ -419,7 +417,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
         case DOCT_SPRITE:
 	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
 	        &old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
-	  ConvertSpriteToBmp(doc_out,filename,doc_e,);
+	  ConvertSpriteToBmp(doc_out,filename,doc_e,digits);
 	  break;
         default:
 	  if (doc_e->de_flags&DOCEF_TAG)
