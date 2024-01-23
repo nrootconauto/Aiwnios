@@ -270,7 +270,7 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
 
 public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	U8 *body_footer=NULL,U8 *html_footer=NULL,Bool line_anchors=TRUE,
-	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=FALSE)
+	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=TRUE)
 {//Cvt $LK,"DolDoc",A="FI:::/Doc/DolDocOverview.DD"$doc to HTML file.
   CDocEntry *doc_e,*style,*doc_e2;
   I64 i,y,old_y=I64_MIN,col,old_u32_attr=DOCET_UNDEF_COLOR,old_attr,digits;
@@ -327,7 +327,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	if (line_anchors)
 	  DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
 	if (line_nums)
-	  DocPrint(doc_out,"%0*d",digits,y+1);
+          DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
 	old_y=y;
       }
       while (y<doc_e->y) {
@@ -337,7 +337,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	  if (line_anchors)
 	    DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
 	  if (line_nums)
-	    DocPrint(doc_out,"%0*d",digits,y+1);
+            DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
 	  old_y=y;
 	}
 	col=0;
@@ -475,7 +475,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
 	U8 *body_header=NULL,U8 *body_footer=NULL,U8 *html_footer=NULL,
 	I64 width=80,Bool line_anchors=TRUE,
-	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=FALSE)
+	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=TRUE)
 {//Convert $LK,"DolDoc",A="FI:::/Doc/DolDocOverview.DD"$file to HTML.
 //Supply your own link_cvt routine.
   U8 *in_name,*out_name;

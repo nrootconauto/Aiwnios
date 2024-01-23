@@ -158,7 +158,7 @@ if (BUILD_HCRT)
   add_custom_command(
     TARGET HCRT2.BIN
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED😇😇"
+    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!"
   )
 endif ()
 
