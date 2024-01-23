@@ -155,10 +155,17 @@ if (BUILD_HCRT)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  add_custom_command(
+    TARGET HCRT2.BIN
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED😇😇"
+  )
 endif ()
+
 
 set(COMP_OPTS
   -Wno-all
+  -Wno-incompatible-function-pointer-types
   -Wno-int-conversion
   -fno-math-errno
   -fno-trapping-math
