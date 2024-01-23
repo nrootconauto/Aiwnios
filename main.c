@@ -602,7 +602,7 @@ static int64_t STK_Bsr(int64_t *stk) {
 }
 
 static int64_t STK_DebuggerClientStart(int64_t *s) {
-  DebuggerClientStart(*s,s[1]);
+  DebuggerClientStart(*s, s[1]);
   return 0;
 }
 
@@ -1160,27 +1160,19 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
   NetUDPAddrDel(stk[0]);
 }
 
-int64_t IsCmdLineMode() {
-  return arg_cmd_line->count != 0;
+static int64_t IsCmdLineMode() {
+  return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
-#if !(defined(_WIN32) || defined(WIN32))
-  #include "linenoise/linenoise.h"
-#endif
-char *CmdLineGetStr(char **stk) {
-#if defined(_WIN32) || defined(WIN32)
-  printf("%s", stk[0]);
-  char buf[2048];
-  fgets(buf, 2048, stdin);
-  return A_STRDUP(buf, NULL);
-#else
-  char *copy, *ln;
-  if (ln = linenoise(stk[0] ? stk[0] : "")) {
-    copy = A_STRDUP(ln, NULL);
-    linenoiseFree(ln);
-  } else
-    copy = A_STRDUP("", NULL);
-  return copy;
-#endif
+
+#include "bestline/bestline.h"
+
+static char *CmdLineGetStr(char **stk) {
+  void freestr(char **p) {
+    free(*p);
+  }
+  char __attribute__((cleanup(freestr))) *line =
+      bestlineWithHistory(stk[0], "AIWNIOS");
+  return A_STRDUP(line ?: "", NULL);
 }
 
 char **CmdLineBootFiles() {
@@ -1189,8 +1181,8 @@ char **CmdLineBootFiles() {
 int64_t CmdLineBootFileCnt() {
   return arg_boot_files->count;
 }
-static int64_t STK__HC_ICAdd_ToBool(void**stk)  {
-	return __HC_ICAdd_ToBool(stk[0]);
+static int64_t STK__HC_ICAdd_ToBool(void **stk) {
+  return __HC_ICAdd_ToBool(stk[0]);
 }
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
@@ -1323,7 +1315,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
     PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
     PrsAddSymbolNaked("Call", TempleOS_CallN, 3);
-    PrsAddSymbol("__HC_ICAdd_ToBool",STK__HC_ICAdd_ToBool,1);
+    PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);

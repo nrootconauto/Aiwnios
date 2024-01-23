@@ -724,9 +724,17 @@ nxt:;
 U0 Serve(CServer *srv) {
   I64 core=-1;
   CTask *srv_task;
-  "Press a button to quit serving\n";
+  U8 *what;
+  if (IsCmdLineMode)
+    what="the enter key";
+  else
+    what="a button";
+  "Press %s to quit serving\n",what;
   srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
-  PressAKey;
+  if (!IsCmdLineMode)
+    PressAKey;
+  else
+    fp_getstr2();//func ptrs need explicit ()
   Kill(srv_task);
 }
 

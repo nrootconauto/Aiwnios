@@ -5049,6 +5049,7 @@ class CFMUncollapsedLst
   U8 *name;
 };
 extern U0 (*fp_update_ctrls)(CTask *task);
+extern U8  *(*fp_getstr2)(I64 flags=0);
 extern class CTemplateCS;
 extern class CSoundEffectFrame;
 extern CGodGlbls god;

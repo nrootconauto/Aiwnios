@@ -207,7 +207,10 @@ public Bool Ed(U8 *link_st,I64 edf_dof_flags=0)
   I64 i,num;
   Bool cont,res=FALSE;
   CDoc *doc;
-
+  if (IsRaw) {
+    "Use a real editor\n";
+    return FALSE;
+  }
   switch (i=EdLinkCvt(link_st,&filename,&needle_str,&num,edf_dof_flags)) {
     case -1:
       break;
@@ -229,9 +232,8 @@ ej_doc:
 	res=TRUE;
       break;
     default:
-      if (IsRaw)
-  ;//res=EdLite(filename,num,edf_dof_flags); TODO RESTORE
-      else {
+      //if (IsRaw) res=EdLite(filename,num,edf_dof_flags); //TODO RESTORE
+      //else {
 	cont=TRUE;
 	if (!(edf_dof_flags&EDF_BAIL) && !(LK_DOC<=i<=LK_DOC_LINE) &&
 	      !FilesFindMatch(filename,FILEMASK_TXT) &&
@@ -239,7 +241,7 @@ ej_doc:
 	  cont=FALSE;
 	if (cont)
 	  res=DocFileEd(i,filename,needle_str,&num,edf_dof_flags);
-      }
+      //}
   }
   Free(filename);
   Free(needle_str);

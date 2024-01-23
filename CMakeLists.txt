@@ -33,7 +33,7 @@ if ("${ARCH}" STREQUAL "x86_64")
       ffi_call_tos.s
       miscTOSX86.s
     )
-endif ()
+  endif ()
   set(
     C_SOURCES
     x86_64_backend.c 
@@ -56,6 +56,7 @@ endif ()
     ffi_gen.c
     argtable3.c
     socket.c
+    bestline/bestline.c
   )
 elseif ("${ARCH}" STREQUAL "arm64")
   #For SDL2 cmake modules
@@ -89,10 +90,8 @@ elseif ("${ARCH}" STREQUAL "arm64")
     ffi_gen.c
     argtable3.c
     socket.c
+    bestline/bestline.c
   )
-endif()
-if(NOT WIN32)
-list(APPEND C_SOURCES linenoise/linenoise.c)
 endif()
 add_executable(
   aiwnios

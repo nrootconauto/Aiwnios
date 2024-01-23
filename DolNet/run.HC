@@ -1,6 +1,6 @@
 Cd("T:/");; //We are not serving from RootFS
 Cd("/DolNet");
-if (IsCmdLineMode) Silent(ON);
+//if (IsCmdLineMode) Silent(ON);
 #define SERVER_HTML "../HTML"
 #define SERVER_WWW "../WWW"
 #define SERVER_PORT 8080

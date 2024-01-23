@@ -154,9 +154,8 @@ U0 InitCPUs() {
     c->idle_factor=0.01;
     QueInit(&c->next_dying);
     SpawnCore(&SCRoutine,c,idx);
-    do 
-	  __SleepHP(2000);
-	while(!Bt(&c->ready,0));
+    do __SleepHP(2000);
+    while (!Bt(&c->ready,0));
   }
  }
 InitCPUs;

@@ -20,10 +20,8 @@ static int64_t       screen_ready = 0;
 #define USER_CODE_UPDATE       2
 
 static void _DrawWindowNew() {
-  if (SDL_Init(SDL_INIT_VIDEO)) {
+  if (SDL_Init(SDL_INIT_VIDEO))
     return;
-  }
-  int          rends;
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
@@ -34,6 +32,8 @@ static void _DrawWindowNew() {
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
   SDL_FreeSurface(window_icon_proto);
+  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
+                          SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
@@ -556,27 +556,24 @@ void SetMSCallback(void *fptr) {
     SDL_AddEventWatch(MSCallback, NULL);
   }
 }
-static void UserEvHandler(void *ul, SDL_Event *ev) {
-  if (ev->type == SDL_USEREVENT) {
-    switch (ev->user.code) {
-      break;
-    case USER_CODE_DRAW_WIN_NEW:
-      _DrawWindowNew();
-      break;
-    case USER_CODE_UPDATE:
-      _UpdateScreen(ev->user.data1, 640, 480, ev->user.data2);
-    }
-  }
-}
+
 void InputLoop(void *ul) {
   SDL_Event e;
-  for (; !*(int64_t *)ul;) {
+  while (!*(uint64_t *)ul) {
     if (!SDL_WaitEvent(&e))
       continue;
-    if (e.type == SDL_QUIT)
-      break;
-    if (e.type == SDL_USEREVENT)
-      UserEvHandler(NULL, &e);
+    switch (e.type) {
+    case SDL_QUIT:
+      return;
+    case SDL_USEREVENT:
+      switch (e.user.code) {
+      case USER_CODE_UPDATE:
+        _UpdateScreen(e.user.data1, 640, 480, e.user.data2);
+        break;
+      case USER_CODE_DRAW_WIN_NEW:
+        _DrawWindowNew();
+      }
+    }
   }
 }
 
