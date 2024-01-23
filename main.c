@@ -1164,14 +1164,22 @@ static int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
 
-#include "bestline/bestline.h"
+#ifndef _WIN32
+  #include "cli_vendor/bestline.h"
+#else
+  #include "cli_vendor/linenoise.h"
+#endif
 
+static void _freestr(char **p) {
+  free(*p);
+}
 static char *CmdLineGetStr(char **stk) {
-  void freestr(char **p) {
-    free(*p);
-  }
-  char __attribute__((cleanup(freestr))) *line =
+  char __attribute__((cleanup(_freestr))) *line =
+#ifndef _WIN32
       bestlineWithHistory(stk[0], "AIWNIOS");
+#else
+      linenoise(stk[0]);
+#endif
   return A_STRDUP(line ?: "", NULL);
 }
 
