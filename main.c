@@ -1179,6 +1179,7 @@ static char *CmdLineGetStr(char **stk) {
       bestlineWithHistory(stk[0], "AIWNIOS");
 #else
       linenoise(stk[0]);
+  linenoiseHistoryAdd(line);
 #endif
   return A_STRDUP(line ?: "", NULL);
 }
