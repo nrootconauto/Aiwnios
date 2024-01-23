@@ -15,7 +15,9 @@
 #define RISCV_FPOOP2 1
 #define RISCV_IRET   10
 #define RISCV_FRET   10
-
+#define RISCV_FASSIGN_TMP 12
+#define RISCV_IASSIGN_TMP 12
+#define RISCV_ASSIGN_ADDR_TMP 13
 
 static int64_t IsConst(CRPN *rpn);
 static int64_t ConstVal(CRPN *rpn);
@@ -1655,8 +1657,9 @@ enter:;
   case IC_FREG:                                                                \
   case IC_BASE_PTR:                                                            \
     rpn->res = next->res;                                                      \
+    dummy=next->res; \
     if (use_f64) {                                                             \
-      if (next->res.raw_type != RT_F64) {                                      \
+      if (rpn->res.raw_type != RT_F64) {                                      \
         rpn->res.raw_type = RT_F64;                                            \
         rpn->res.reg      = RISCV_FRET;                                        \
         rpn->res.mode     = MD_REG;                                            \
@@ -1664,31 +1667,31 @@ enter:;
       rpn->raw_type = RT_F64;                                                  \
     }                                                                          \
     code_off      = __OptPassFinal(cctrl, rpn, bin, code_off);                 \
-    set_flags     = rpn->res.set_flags;                                        \
     rpn->raw_type = old_raw_type;                                              \
-    code_off      = ICMov(cctrl, &next->res, &rpn->res, bin, code_off);        \
+    code_off      = ICMov(cctrl, &dummy, &rpn->res, bin, code_off);        \
     code_off      = ICMov(cctrl, &old, &rpn->res, bin, code_off);              \
+    rpn->res=old; \
     break;                                                                     \
   case IC_DEREF:                                                               \
-    code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);          \
     code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
+    code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);          \
     dummy    = ((CRPN *)next->base.next)->res;                                 \
-    old2     = dummy;                                                          \
     code_off =                                                                 \
-        PutICArgIntoReg(cctrl, &next2->res, next2->res.raw_type,               \
+        PutICArgIntoReg(cctrl, &next2->res, use_f64 ? RT_F64:next2->res.raw_type,               \
                         use_f64 ? RISCV_FPOOP2 : RISCV_IPOOP2, bin, code_off); \
     code_off =                                                                 \
-        PutICArgIntoReg(cctrl, &dummy, RT_U64i, RISCV_IPOOP1, bin, code_off);  \
+        PutICArgIntoReg(cctrl, &dummy, RT_U64i, RISCV_ASSIGN_ADDR_TMP, bin, code_off);  \
     next->res.reg  = dummy.reg;                                                \
     next->res.mode = MD_INDIR_REG;                                             \
     next->res.off  = 0;                                                        \
+    old2     = next->res;                                                          \
     code_off       = PutICArgIntoReg(                                          \
               cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,        \
         use_f64 ? RISCV_FPOOP1 : RISCV_IPOOP1, bin, code_off);           \
-    next->flags   = ICF_PRECOMPUTED;                                           \
-    next2->flags  = ICF_PRECOMPUTED;                                           \
+    next->flags   |= ICF_PRECOMPUTED;                                           \
+    next2->flags  |= ICF_PRECOMPUTED;                                           \
     rpn->res.mode = MD_REG;                                                    \
-    rpn->res.reg  = use_f64 ? RISCV_FPOOP2 : RISCV_IPOOP2;                         \
+    rpn->res.reg  = use_f64 ? RISCV_FASSIGN_TMP : RISCV_IASSIGN_TMP;                         \
     if (use_f64)                                                               \
       rpn->raw_type = RT_F64;                                                  \
     rpn->res.raw_type = rpn->raw_type;                                         \
@@ -1697,16 +1700,14 @@ enter:;
     rpn->raw_type     = old_raw_type;                                          \
     next->flags &= ~ICF_PRECOMPUTED;                                           \
     next2->flags &= ~ICF_PRECOMPUTED;                                          \
-    code_off =                                                                 \
-        PutICArgIntoReg(cctrl, &old2, RT_PTR, RISCV_IPOOP1, bin, code_off);    \
     if (!use_tc)                                                               \
       old2.raw_type = next->raw_type;                                          \
     else                                                                       \
       old2.raw_type = use_raw_type;                                            \
-    old2.mode   = MD_INDIR_REG;                                                \
     old2.off    = 0;                                                           \
     code_off    = ICMov(cctrl, &old2, &rpn->res, bin, code_off);               \
     code_off    = ICMov(cctrl, &old, &rpn->res, bin, code_off);                \
+    rpn->res=old; \
     next->flags = old_flags, next2->flags = old_flags2;                        \
     break;                                                                     \
   default:                                                                     \
@@ -3644,21 +3645,23 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   if (rpn->res.mode == MD_REG) {                                               \
     into_reg = rpn->res.reg;                                                   \
   } else                                                                       \
-    into_reg = 0;                                                              \
+    into_reg = RISCV_IRET;                                                              \
   code_off = PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, RISCV_IPOOP2,   \
                              bin, code_off);                                   \
   code_off = PutICArgIntoReg(cctrl, &next2->res, rpn->raw_type, RISCV_IPOOP1,  \
                              bin, code_off);                                   \
   F64_TO_BOOL_IF_NEEDED(&next->res, RISCV_IPOOP1);                             \
   F64_TO_BOOL_IF_NEEDED(&next2->res, RISCV_IPOOP2);                            \
-  AIWNIOS_ADD_CODE((into_reg, next->res.reg, next->res.reg2));                 \
+  AIWNIOS_ADD_CODE(RISCV_SLTU(RISCV_IPOOP2,0,next->res.reg)); \
+  AIWNIOS_ADD_CODE(RISCV_SLTU(RISCV_IPOOP1,0,next2->res.reg)); \
+  AIWNIOS_ADD_CODE(op(into_reg,RISCV_IPOOP1, RISCV_IPOOP2));                 \
   if (rpn->res.mode != MD_REG) {                                               \
     tmp.raw_type = rpn->raw_type;                                              \
     tmp.reg      = RISCV_IRET;                                                          \
     tmp.mode     = MD_REG;                                                     \
     code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);               \
   }
-    BACKEND_LOGICAL_BINOP(X86XorReg);
+    BACKEND_LOGICAL_BINOP(RISCV_XOR);
     break;
   ic_eq_eq:
 #define BACKEND_CMP(cond)                                                      \
