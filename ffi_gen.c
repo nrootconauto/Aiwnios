@@ -111,7 +111,25 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
-  // TODO
+  return fptr;
+}
+#endif
+#if defined (__riscv__) || defined (__riscv)
+void *GenFFIBinding(void *fptr, int64_t arity) {
+  int32_t *blob = A_MALLOC(8*11, NULL);
+  blob[0]=RISCV_ADDI(10,2,0); //2 is stack pointer,10 is 1st argument
+  blob[1]=RISCV_ADDI(2,2,-48);
+  blob[2]=RISCV_SD(1,2,40); //1 is return address
+  blob[3]=RISCV_AUIPC(6,0);//6 is 1st temporoary
+  blob[4]=RISCV_LD(6,6,4*(1+(10-4))); //+4 for LD,+4 for JALR,+4 for AUIPC(address starts at AUIPC)
+  blob[5]=RISCV_JALR(1,6,0);
+  blob[6]=RISCV_LD(1,2,40); //1 is return address
+  blob[7]=RISCV_ADDI(2,2,48+arity*8);
+  blob[8]=RISCV_JALR(0,1,0);
+  *(void**)(blob+10)=fptr; //16 aligned
+  return blob;
+}
+void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;
 }
 #endif

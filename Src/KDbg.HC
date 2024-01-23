@@ -219,6 +219,9 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
       //https://github.com/scottt/debugbreak
       *addr=0xd4200000;
 #endif
+#ifdef TARGET_RISCV
+;//TODO TODO TODO RISCV
+#endif
   }
   if(bl)
     BreakUnlock;

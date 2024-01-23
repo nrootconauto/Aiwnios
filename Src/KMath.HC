@@ -29,6 +29,9 @@ I64 FloorI64(I64 num,I64 to)
   }
 }
 
+I64 MaxI64(I64 a,I64 b) {if(a>b) return a;return b;}
+I64 MinI64(I64 a,I64 b) {if(a<b) return a;return b;}
+
 I64 CeilI64(I64 num,I64 to)
 {//Int multiples of num.
   if (num>=0) {

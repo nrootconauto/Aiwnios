@@ -3071,6 +3071,10 @@ class CBpt
   //On ARM64 all the insts are 32bit
   U32	*addr,val;
 #endif
+#ifdef TARGET_RISCV
+  //On RISCV all the insts are 32bit unless compressed ISA 8|
+  U32	*addr,val;
+#endif
 };
 
 class CExcept
@@ -7086,3 +7090,4 @@ extern U0 Dm(U8 *addr,I64 cnt=0x80);
 extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
+extern I64 GetRBP();

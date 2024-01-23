@@ -61,7 +61,10 @@ typedef struct CFuckup {
   #elif defined(__x86_64__)
   struct user_fpregs_struct fp;
   struct user_regs_struct   regs;
-  #endif
+  #elif defined (__riscv__) ||defined (__riscv)
+  struct user_regs_struct   regs;
+  union __riscv_fp_state fp;
+  #endif  
 } CFuckup;
 #elif defined(WIN32) || defined(_WIN32)
   #include <winnt.h>

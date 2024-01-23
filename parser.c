@@ -3687,14 +3687,14 @@ int64_t PrsSwitch(CCmpCtrl *cctrl) {
           .lb_exit       = CodeMiscNew(cctrl, CMT_LABEL),
       };
       QueIns(tmpss, subs.base.last);
-      // set cctrl->code_ctrl->break_to to the exit of the subswitch
-      cctrl->code_ctrl->break_to                   = tmpss->lb_exit;
-      (tmpir = A_CALLOC(sizeof(CRPN), NULL))->type = IC_SUB_PROLOG;
-      QueIns(tmpir, cctrl->code_ctrl->ir_code);
       // Make a start label(IC_LABEL consumed the next ir)
       (label = A_CALLOC(sizeof(CRPN), NULL))->type = IC_LABEL;
       tmpss->lb_start = label->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
       QueIns(label, cctrl->code_ctrl->ir_code);
+      // set cctrl->code_ctrl->break_to to the exit of the subswitch
+      cctrl->code_ctrl->break_to                   = tmpss->lb_exit;
+      (tmpir = A_CALLOC(sizeof(CRPN), NULL))->type = IC_SUB_PROLOG;
+      QueIns(tmpir, cctrl->code_ctrl->ir_code);
       // look here
       in_start_code = 1;
     add_stmt:

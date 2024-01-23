@@ -217,6 +217,71 @@ extern U8 * __HC_ICAdd_Gs(U8*)
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #endif
 
+#ifdef TARGET_RISCV
+#define AIWNIOS_IREG_START 0
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_IREG_CNT (27-18+1+1)
+#define AIWNIOS_FREG_CNT (27-18+1+2)
+I64 VarFRegToReg(I64 r)  {
+  switch(r) {
+     case 0:
+       return 9;
+     case 1:
+       return 8;
+     case 2:
+       return 18;
+     case 3:
+       return 19;
+     case 4:
+       return 20;
+     case 5:
+       return 21;
+     case 6:
+       return 22;
+     case 7:
+       return 23;
+     case 8:
+       return 24;
+     case 9:
+       return 25;
+     case 10:
+       return 26;
+     case 11:
+       return 27;
+   }
+   throw('Compiler');
+}
+I64 VarIRegToReg(I64 r)  {
+  switch(r) {
+     case 0:
+       return 9;
+     case 1:
+       return 18;
+     case 2:
+       return 19;
+     case 3:
+       return 20;
+     case 4:
+       return 21;
+     case 5:
+       return 22;
+     case 6:
+       return 23;
+     case 7:
+       return 24;
+     case 8:
+       return 25;
+     case 9:
+       return 26;
+     case 10:
+       return 27;
+   }
+   throw('Compiler');
+}
+
+#endif
+
+
 #ifdef TARGET_X86
 #define	REG_RAX 0
 #define	REG_RCX 1
@@ -275,12 +340,24 @@ goto force;
 I64 IRegIsAvail(CHashFun *fun,I64 r) {
   CMemberLst *mlst=fun->member_lst_and_root;
   while(mlst) {
-    if(mlst->reg==r)
+    if(mlst->reg==r&&mlst->member_class->raw_type!=RT_F64)
       return FALSE;
     mlst=mlst->next;
   }
   return TRUE;
 }
+
+I64 FRegIsAvail(CHashFun *fun,I64 r) {
+  CMemberLst *mlst=fun->member_lst_and_root;
+  while(mlst) {
+    if(mlst->reg==r&&mlst->member_class->raw_type==RT_F64)
+      return FALSE;
+    mlst=mlst->next;
+  }
+  return TRUE;
+}
+
+
 #ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
   switch(r) {
@@ -421,19 +498,35 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 reg_again:;
         if(mv[idx].m->member_class->raw_type==RT_F64) {
           if(AIWNIOS_FREG_START<=fr<AIWNIOS_FREG_START+AIWNIOS_FREG_CNT) {
+            #ifdef TARGET_RISCV
+            if(!FRegIsAvail(cc->htc.fun,VarFRegToReg(fr-AIWNIOS_IREG_START))) {
+	          fr++;
+	          goto reg_again;
+	        }
+            mv[idx].m->reg=VarFRegToReg(fr++ -AIWNIOS_IREG_START);
+            #else
             mv[idx].m->reg=fr++;
+            #endif
           } else
             mv[idx].m->reg=REG_NONE;
         } else if(mv[idx].m->reg==REG_ALLOC||mv[idx].m->reg==REG_UNDEF) {
           if(AIWNIOS_IREG_START<=ir<AIWNIOS_IREG_START+AIWNIOS_IREG_CNT) {
+            #ifdef TARGET_RISCV
+            if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
+	          ir++;
+	          goto reg_again;
+	        }
+            mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
+            #else
             #ifdef TARGET_X86
-	    if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
-	      ir++;
-	      goto reg_again;
-	    }
+	        if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
+	          ir++;
+	          goto reg_again;
+	        }
             mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
             #else
             mv[idx].m->reg=ir++;
+            #endif
             #endif
           } else {
             mv[idx].m->reg=REG_NONE;
@@ -479,8 +572,7 @@ reg_again:;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
         if(foff&(align-1))
           foff+=align-(foff&(align-1)); //Align to 8
-        #endif
-        #ifdef TARGET_X86
+        #else 
 	if(IsFunArg(cc->htc.fun,mlst)&&!(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv"))) {
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
@@ -513,7 +605,7 @@ reg_again:;
     }
     if(foff&7)
       foff+=8-(foff&7); //Align to 8    
-    cc->htc.fun->size=foff;
+    cc->htc.fun->size=foff+16;
   }
   
   //Replace the old frame address with the new one 
@@ -522,7 +614,7 @@ reg_again:;
       for(idx=0;idx!=member_cnt;idx++) {
         foff=foff_lookup[idx].i32[0];
         if(foff==cur->ic_data) {
-          cur->ic_data=foff_lookup[idx].u32[1];
+          cur->ic_data=foff_lookup[idx].i32[1];
           break;
         }
       }
@@ -547,6 +639,13 @@ reg_again:;
       }
 
 #ifdef TARGET_X86
+//Not yet implemented for AARCH64
+      if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
+        __HC_ICAdd_GetVargsPtr(cc2);
+      } else
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
+#ifdef TARGET_RISCV
 //Not yet implemented for AARCH64
       if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
         __HC_ICAdd_GetVargsPtr(cc2);

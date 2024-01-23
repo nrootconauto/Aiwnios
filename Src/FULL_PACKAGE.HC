@@ -174,6 +174,9 @@ U8 *body=
 	#ifdef TARGET_AARCH64
 	"#define TARGET_AARCH64 1\n"
 	#endif
+	#ifdef TARGET_RISCV
+	"#define TARGET_RISCV 1\n"
+	#endif
 	"#define STAGE1 1\n"
 	"#include \"HCRT_TOS.HC\";;\n"
 ;
@@ -243,6 +246,9 @@ U0 InitSymbols() {
 #endif
 #ifdef TARGET_AARCH64
   ExePrint("#define TARGET_AARCH64\n;");
+#endif
+#ifdef TARGET_RISCV
+  ExePrint("#define TARGET_RISCV\n;");
 #endif
   ExeFile("T:/Src/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);

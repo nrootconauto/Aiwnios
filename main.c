@@ -1192,11 +1192,19 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void**stk)  {
 	return __HC_ICAdd_ToBool(stk[0]);
 }
+void Misc_BP();
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer   *lex  = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
+  char poo_poo[16];
+  memset(poo_poo,0,16);
+  int64_t *dummy=poo_poo+5,b=0;
+  while(++b<=63-8) {
+	  Misc_LBts(poo_poo+1,b+32);
+	  printf("dummy:%ld\n",*dummy);
+  }
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
@@ -1279,6 +1287,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", GetHolyFs, 0);
+    PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
 #if defined(__x86_64__)
   #if defined(__linux__) || defined(__FreeBSD__)
     //__Fs is special
@@ -1479,9 +1488,9 @@ static void        Boot() {
   InstallDbgSignalsForThread();
   TaskInit(Fs, NULL, 0);
   VFsMountDrive('T', t_drive);
-  /*FuzzTest1();
+  FuzzTest1();
   FuzzTest2();
-  FuzzTest3();*/
+  FuzzTest3();
   if (arg_bootstrap_bin->count) {
 #define BOOTSTRAP_FMT                                                          \
   "#define TARGET_%s \n"                                                       \
@@ -1499,6 +1508,10 @@ static void        Boot() {
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86");
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "X86");
+#elif defined (__riscv) || defined (__riscv__)
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV");
+    char buf[len + 1];
+    sprintf(buf, BOOTSTRAP_FMT, "RISCV");
 #else
   #error "Arch not supported"
 #endif
@@ -1520,7 +1533,7 @@ static void ExitAiwnios(int64_t *stk) {
   #undef main
 #endif
 int main(int argc, char **argv) {
-  DebuggerBegin();
+//  DebuggerBegin();
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =
