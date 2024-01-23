@@ -216,7 +216,6 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
 static void LoadPass2(char *src, char *module_base) {
   char   *st_ptr;
   int64_t i, etype;
-  int32_t o=*(int32_t*)0x0000003ff134b91cll;
   void (*fptr)();
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
@@ -226,8 +225,6 @@ static void LoadPass2(char *src, char *module_base) {
     switch (etype) {
     case IET_MAIN:
       fptr = (i + module_base);
-      if(o!=*(int32_t*)0x0000003ff134b91cll)
-      raise(SIGTRAP);
       FFI_CALL_TOS_0(fptr);
       break;
     case IET_ABS_ADDR:
