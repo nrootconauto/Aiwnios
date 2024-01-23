@@ -275,7 +275,8 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
   CDocEntry *doc_e,*style,*doc_e2;
   I64 i,y,old_y=I64_MIN,col,old_u32_attr=DOCET_UNDEF_COLOR,old_attr,digits;
   U32 *hl,*src;
-  U8 *st,st_2[2],*link_st,*style_bitmap=CAlloc(256/8);
+  U8 *st,st_2[2],*link_st,style_bitmap[256/8];
+  MemSet(style_bitmap,0,sizeof style_bitmap);
   CBGR48 p[COLORS_NUM];
   GrPaletteGet(p);
   CDoc *doc_out=DocNew;
@@ -327,7 +328,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	if (line_anchors)
 	  DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
 	if (line_nums)
-          DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
+          DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
 	old_y=y;
       }
       while (y<doc_e->y) {
@@ -337,7 +338,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	  if (line_anchors)
 	    DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
 	  if (line_nums)
-            DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
+            DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
 	  old_y=y;
 	}
 	col=0;
@@ -417,9 +418,6 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
 		&old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
           ConvertSpriteToBmp(doc_out,filename,doc_e,);
-/*	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
-		&old_u32_attr,TRUE,"/* Graphics Not Rendered in HTML */",
-		&col,style_bitmap);*/
 	  break;
 	default:
 	  if (doc_e->de_flags&DOCEF_TAG)

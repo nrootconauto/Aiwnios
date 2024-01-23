@@ -215,8 +215,7 @@ U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   if(!StrICmp(dot,".DD")
         ||!StrICmp(dot,".DD.Z")
         ||!StrICmp(dot,".HC")
-        ||!StrICmp(dot,".HC.Z")
-  ) {
+        ||!StrICmp(dot,".HC.Z")||!StrICmp(dot,".GMR")) {
     DolDocGet(srv,stream,url,req);
     goto fin;
   }
