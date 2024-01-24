@@ -320,13 +320,17 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
-      if(!(misc->h->type&HTF_IMPORT)) {
+      if(!(misc->h->type&HTF_IMPORT)&&(misc->flags&CMF_SHORT_ADDR)) {
 force:
-        cur->misc=misc;
-        cur->misc->flags|=CMF_SHORT_ADDR;
-        cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
+       
+        cur->misc=CodeMiscHashNew(cc,misc->h);
+        misc=cur->misc;
+        misc->flags|=CMF_SHORT_ADDR;
+        misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       } else {
+      //No use imports as short addresses
+        misc->flags&=~CMF_SHORT_ADDR;
 /* Nroot removed this as not all platforms have easy access to lower 32bits
 #ifdef TARGET_X86
 //In X86_64,i will put all functions in low 32bits to avoid viener wfunctions.
@@ -335,6 +339,7 @@ goto force;
 */
       }
     }
+next:;
   }
 }
 I64 IRegIsAvail(CHashFun *fun,I64 r) {
@@ -379,7 +384,11 @@ class CAddShortRelocData {
 };
 U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   CAOTImportExport *tmpaie=CAlloc(sizeof(CAOTImportExport));
+  #ifdef TARGET_RISCV
+  tmpaie->type=IET_REL_RISCV; //FOR FUNCTION CALLS ONLY
+  #else
   tmpaie->type=IET_REL_I32;
+  #endif
   tmpaie->str=StrNew(data->cm->h->str);
   tmpaie->rip=data->cc->aotc->rip+(addr-data->machine_code);
   tmpaie->offset=data->cm->offset;
@@ -447,6 +456,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     }    
   }
   #ifdef TARGET_X86
+  if(cc->flags&CCF_AOT_COMPILE)
+    AiwniosMakeShortJmps(cc,acc);
+  #endif
+  #ifdef TARGET_RISCV
   if(cc->flags&CCF_AOT_COMPILE)
     AiwniosMakeShortJmps(cc,acc);
   #endif
@@ -673,7 +686,7 @@ reg_again:;
     break;case CMT_HASH_ENTRY:
       //See spider thing for more notes 
     break;case CMT_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
+    misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_GOTO_LABEL:
       if(!(misc->flags&CMF_DEFINED)&&misc->str) {
 	PrintErr("Undefined reference to label \"%s\".\n",misc->str);
@@ -1130,7 +1143,6 @@ break;case IC_ASM:
   aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+2));
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
   if(res_sz) *res_sz=idx;
-  __HC_CodeCtrlPop(acc);
   if(info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
       if(reported_max_ln<=cc->max_line)
@@ -1220,7 +1232,8 @@ break;case IC_ASM:
       }
     }
   }
-
+  __HC_CodeCtrlPop(acc);
+  
   //
   // For CAiwniosAOTBlob,Fill in the relocations
   //

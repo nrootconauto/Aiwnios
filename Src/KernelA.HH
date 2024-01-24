@@ -402,6 +402,7 @@ class CPatchTableAbsAddr
 #define IET_IMM_U32		9
 #define IET_REL_I64		10
 #define IET_IMM_I64		11
+#define IET_REL_RISCV	12
 #define IEF_IMM_NOT_REL		1
 //reserved
 #define IET_REL32_EXPORT	16
