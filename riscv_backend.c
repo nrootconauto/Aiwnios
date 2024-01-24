@@ -2284,6 +2284,12 @@ static int64_t RISCV_SUBI(int64_t d, int64_t a,int64_t imm) {
 }
 //This will account for long jumps
 static int64_t RISCV_JccToLabel(CCodeMisc *misc,int64_t cond,int64_t a,int64_t b,char *bin,int64_t code_off) {
+	//First pass assumes worst case jumps
+	if(bin&&Is12Bit(misc->code_off-code_off)) {
+		AIWNIOS_ADD_CODE(RISCV_Jcc(cond,a,b,0));
+		if(bin) CodeMiscAddRef(misc,bin+code_off-4)->is_4_bytes=1;
+		return code_off;
+	}
 	AIWNIOS_ADD_CODE(RISCV_Jcc(cond^1,a,b,8)); //+4
 	AIWNIOS_ADD_CODE(RISCV_JAL(0,0)); //+4
 	if(bin) CodeMiscAddRef(misc,bin+code_off-4)->is_jal=1;
@@ -2679,12 +2685,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           cctrl->backend_user_data6 = (int64_t)rpn->code_misc;
           code_off              = __OptPassFinal(cctrl, next, bin, code_off);
           rpn->code_misc2->addr = bin + code_off;
+          rpn->code_misc->code_off=code_off;
           goto ret;
         } else {
           cctrl->backend_user_data5 = (int64_t)rpn->code_misc;
           cctrl->backend_user_data6 = (int64_t)rpn->code_misc2;
           code_off              = __OptPassFinal(cctrl, next, bin, code_off);
           rpn->code_misc2->addr = bin + code_off;
+          rpn->code_misc2->code_off=code_off;
           goto ret;
         }
       }
@@ -2784,6 +2792,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   ic_label:
     rpn->code_misc->addr = bin + code_off;
+    rpn->code_misc->code_off=code_off;
     break;
   ic_global:
     //
@@ -3466,8 +3475,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       exit_addr    = bin + code_off;
       AIWNIOS_ADD_CODE(0);
-      if(rpn->code_misc)
+      if(rpn->code_misc) {
         rpn->code_misc->addr=bin+code_off;
+        rpn->code_misc->code_off=code_off;
+      }
       tmp.mode     = MD_I64;
       tmp.integer  = 0;
       tmp.raw_type = RT_I64i;
@@ -3583,8 +3594,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off                  = __OptPassFinal(cctrl, a, bin, code_off);
     cctrl->backend_user_data6 = (int64_t)rpn->code_misc3;
     rpn->code_misc2->addr     = bin + code_off;
+    rpn->code_misc2->code_off=code_off;
     code_off                  = __OptPassFinal(cctrl, b, bin, code_off);
     rpn->code_misc->addr      = bin + code_off;
+    rpn->code_misc->code_off=code_off;
     tmp.mode                  = MD_I64;
     tmp.raw_type              = RT_I64i;
     tmp.integer               = 0;
@@ -3592,9 +3605,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     AIWNIOS_ADD_CODE(RISCV_JAL(0, 0));
     CodeMiscAddRef(rpn->code_misc4, bin + code_off - 4)->is_jal = 1;
     rpn->code_misc3->addr = bin + code_off;
+    rpn->code_misc3->code_off=code_off;
     tmp.integer           = 1;
     code_off              = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     rpn->code_misc4->addr = bin + code_off;
+    rpn->code_misc4->code_off=code_off;
     break;
   ic_or_or:
     if (old_pass_misc || old_fail_misc) {
@@ -3635,9 +3650,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     cctrl->backend_user_data6 = (int64_t)rpn->code_misc;
     code_off                  = __OptPassFinal(cctrl, a, bin, code_off);
     rpn->code_misc3->addr     = bin + code_off;
+    rpn->code_misc3->code_off=code_off;
     cctrl->backend_user_data5 = (int64_t)rpn->code_misc4;
     code_off                  = __OptPassFinal(cctrl, b, bin, code_off);
     rpn->code_misc4->addr     = bin + code_off;
+    rpn->code_misc4->code_off=code_off;
     tmp.mode                  = MD_I64;
     tmp.integer               = 0;
     tmp.raw_type              = RT_I64i;
@@ -3645,9 +3662,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     AIWNIOS_ADD_CODE(RISCV_JAL(0, 0));
     CodeMiscAddRef(rpn->code_misc2, bin + code_off - 4)->is_jal = 1;
     rpn->code_misc->addr  = bin + code_off;
+    rpn->code_misc->code_off=code_off;
     tmp.integer           = 1;
     code_off              = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     rpn->code_misc2->addr = bin + code_off;
+    rpn->code_misc2->code_off=code_off;
     break;
   ic_xor_xor:
 #define BACKEND_LOGICAL_BINOP(op)                                              \
@@ -4131,6 +4150,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
       }
     }
     cctrl->epilog_label->addr = bin + code_off;
+    cctrl->epilog_label->code_off=code_off;
     code_off                  = FuncEpilog(cctrl, bin, code_off);
     for (misc = cctrl->code_ctrl->code_misc->next;
          misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {

@@ -409,6 +409,7 @@ typedef struct CCodeMisc {
   };
   int32_t aot_before_hint; // See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
+  int32_t code_off; //Used for riscv_backend.c for choosing big/small jumps
   // The bit is set if the floating point register is alive at this inst
   int64_t       freg_alive_bmp;
   CCodeMiscRef *refs;

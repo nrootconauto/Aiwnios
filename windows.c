@@ -88,6 +88,7 @@ void DrawWindowNew() {
 }
 void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_Event event;
+  Misc_LBts(&screen_update_in_progress,0);
   memset(&event, 0, sizeof event);
   event.user.code  = USER_CODE_UPDATE;
   event.user.data1 = px;
@@ -105,7 +106,6 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   int64_t      idx;
   SDL_Texture *text;
   SDL_LockMutex(screen_mutex);
-  Misc_LBts(&screen_update_in_progress,0);
   SDL_LockSurface(screen);
   char *dst = screen->pixels;
   for (idx = 0; idx != h; idx++) {
