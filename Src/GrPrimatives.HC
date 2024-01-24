@@ -701,7 +701,10 @@ I64 GrLineFat3(CDC *dc=0,I64 x1,I64 y1,I64 z1,I64 x2,I64 y2,I64 z2,
 	    x1+=dx; y1+=dy; z1+=dz;
 	  }
 	else {
-	  i=width*Sqrt(SqrI64(adx)+SqrI64(ady))/adx;
+	  if(adx)
+	    i=width*Sqrt(SqrI64(adx)+SqrI64(ady))/adx;
+	  else
+		i=0;
 	  d_lo=i>>1; d_hi=(i-1)>>1;
 
 	  if (dx>=0)
@@ -756,7 +759,10 @@ I64 GrLineFat3(CDC *dc=0,I64 x1,I64 y1,I64 z1,I64 x2,I64 y2,I64 z2,
 	    x1+=dx; y1+=dy; z1+=dz;
 	  }
 	else {
-	  i=width*Sqrt(SqrI64(ady)+SqrI64(adx))/ady;
+	  if(ady)
+	    i=width*Sqrt(SqrI64(ady)+SqrI64(adx))/ady;
+	  else
+	    i=1;
 	  d_lo=i>>1; d_hi=(i-1)>>1;
 
 	  if (dy>=0)

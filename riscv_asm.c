@@ -225,7 +225,7 @@ int64_t RISCV_FLD(int64_t d, int64_t s, int64_t imm) {
 int64_t RISCV_FSD(int64_t a, int64_t b, int64_t imm) {
   return RISCV_S(imm, a, b, 0b11, 0b0100111);
 }
-#define ROUND_MODE 0b111 //System rounding mode
+#define ROUND_MODE 0b001 // Towards 0
 int64_t RISCV_FADD_D(int64_t d, int64_t a, int64_t b) {
   return RISCV_R(0b0000001, b, a, ROUND_MODE, d, 0b1010011);
 }
