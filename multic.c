@@ -30,7 +30,8 @@ void *GetHolyFsPtr() {
   #else
 __thread void *ThreadGs;
 __thread void *ThreadFs;
-void          *GetHolyGsPtr() {
+
+void *GetHolyGsPtr() {
   return &ThreadGs;
 }
 void *GetHolyFsPtr() {
@@ -317,8 +318,7 @@ void InteruptCore(int64_t core) {
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
-  ctx.Rsp -= 8;
-  ((int64_t *)ctx.Rsp)[0] = ctx.Rip;
+  *(uint64_t*)(ctx.Rsp -= 8) = ctx.Rip;
   ctx.Rip = &Misc_ForceYield; // THIS ONE SAVES ALL THE REGISTERS
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);

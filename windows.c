@@ -11,7 +11,6 @@ static SDL_Surface  *window_icon;
 static SDL_Window   *window;
 static SDL_Rect      view_port;
 static SDL_Renderer *renderer;
-static uint32_t      palette[0x100];
 static SDL_Thread   *sdl_main_thread;
 int64_t              user_ev_num;
 static SDL_mutex    *screen_mutex, *screen_mutex2;
@@ -122,16 +121,18 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
 void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
   if (!screen)
     return;
-  int64_t repeat = 256 / 16;
-  int64_t i2;
-  int64_t b   = (bgr48 & 0xffff) / (double)0xffff * 0xff;
-  int64_t g   = ((bgr48 >> 16) & 0xffff) / (double)0xffff * 0xff;
-  int64_t r   = ((bgr48 >> 32) & 0xffff) / (double)0xffff * 0xff;
-  palette[i]  = r | (g << 8) | (b << 16);
-  SDL_Color c = {r, g, b, 0x0};
+  union {
+    uint64_t i;
+    struct {
+      uint16_t b, g, r, pad
+    };
+  } u       = {.i = bgr48};
+  uint8_t b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
+          r   = u.r / (double)0xffff * 0xff;
+  SDL_Color c = {r, g, b, 0};
   SDL_LockSurface(screen);
   // I will repeat the color to simulate ignoring the upper 4 bits
-  for (i2 = 0; i2 != repeat; i2++)
+  for (int i2 = 0; i2 < 16; i2++)
     SDL_SetPaletteColors(screen->format->palette, &c, i2 * 16 + i, 1);
   SDL_UnlockSurface(screen);
 }

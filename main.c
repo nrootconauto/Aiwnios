@@ -388,39 +388,26 @@ static int64_t STK_CmpCtrlDel(void **stk) {
   CmpCtrlDel((CCmpCtrl *)stk[0]);
 }
 
-static int64_t STK_cos(double *stk) {
-  double r = cos(stk[0]);
-  return *(int64_t *)&r;
-}
+_Static_assert(sizeof(double) == sizeof(uint64_t));
+typedef union {
+  double   d;
+  uint64_t i
+} dbl2u64;
 
-static int64_t STK_sin(double *stk) {
-  double r = sin(stk[0]);
-  return *(int64_t *)&r;
-}
+#define MATHFUNDEF(x)                                                          \
+  static uint64_t STK_##x(double *stk) {                                       \
+    return ((dbl2u64)x(stk[0])).i;                                             \
+  }
 
-static int64_t STK_tan(double *stk) {
-  double r = tan(stk[0]);
-  return *(int64_t *)&r;
-}
+MATHFUNDEF(cos);
+MATHFUNDEF(sin);
+MATHFUNDEF(tan);
+MATHFUNDEF(acos);
+MATHFUNDEF(atan);
+MATHFUNDEF(asin);
 
-static int64_t STK_Arg(double *stk) {
-  double r = Arg(stk[0], stk[1]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_acos(double *stk) {
-  double r = acos(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_asin(double *stk) {
-  double r = asin(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_atan(double *stk) {
-  double r = atan(stk[0]);
-  return *(int64_t *)&r;
+static uint64_t STK_Arg(double *stk) {
+  return ((dbl2u64)Arg(stk[0], stk[1])).i;
 }
 
 static int64_t STK_Misc_Btc(int64_t *stk) {

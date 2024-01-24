@@ -655,7 +655,7 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
 CUniqueToken unique_tokens[BACKLOG];
 I64 fds[BACKLOG];
 U0 ServeExit() {
-  CServer *server=Fs->user_data(CServer *);
+  CServer *server=Fs->user_data;
   I64 idx;
   for(idx=0;idx!=BACKLOG;idx++) {
     if(fds[idx]!=-1)
