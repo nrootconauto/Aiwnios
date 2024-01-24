@@ -295,12 +295,8 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   }
   #endif
 #elif defined(__FreeBSD__)
-  for (s = 0; s != 8 / 4; s++) {
-    if (!s)
-      ptrace(PT_WRITE_D, tid, to + s, v & 0xffffFFFFul);
-    else
-      ptrace(PT_WRITE_D, tid, to + s * 4, (v >> (s * 32ul)) & 0xffffFFFFul);
-  }
+  for (s = 0; s != 8 / 4; s++)
+    ptrace(PT_WRITE_D, tid, to + s * 4, (v >> (s * 32ul)) & 0xffffFFFFul);
 #endif
 }
 void DebuggerBegin() {

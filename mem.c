@@ -336,7 +336,7 @@ static void *GetAvailRegion32(int64_t len) {
         wrapped_around = 1;
       }
     } else
-      abort();
+        return NULL;
   }
   return NULL;
 }

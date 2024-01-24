@@ -3856,7 +3856,7 @@ import F64 ACos(F64);
 import U0 UpdateScreen(U8*,I64,I64,I64);
 import U0 DrawWindowNew();
 import U0 __GrPaletteColorSet(I64,CBGR48);
-import U8 *HeapCtrlInit(U8 *DO_NOT_USE,CTask *,I64 is_code);
+import U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 import U0 HeapCtrlDel(U8 *);
 import U8 *__MAlloc(I64i sz,CTask *t=NULL);
 import U8 *__CAlloc(I64i sz,CTask *t=NULL);
@@ -3988,7 +3988,7 @@ extern F64 ACos(F64);
 //From AIWNIOS
 extern F64 Exp(F64);
 extern I64 MemCmp(U8*,U8*,I64);
-extern U8 *HeapCtrlInit(U8 *DO_NOT_USE,CTask *,I64 is_code);
+extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 HeapCtrlDel(U8 *);
 extern U8 *__MAlloc(I64i sz,CTask *t=NULL);
 extern U8 *__CAlloc(I64i sz,CTask *t=NULL);

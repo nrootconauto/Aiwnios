@@ -358,16 +358,13 @@ err:
   Exit;
 }
 
+extern Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut);
 U8 *LookForLine(U8 *ptr,I64 len) {
   U8 *cap=ptr+len;
-  while(ptr<cap) {
-    if(*ptr++ =='\n') {return ptr;}
-  }
+  while (ptr<cap)
+    if (*ptr++ =='\n')
+      return ptr;
   return NULL;
-}
-extern Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut);
-U0 DoNothing(I64) {
-  while(TRUE) {Sleep(1000000);};
 }
 U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   CConnection *con;
@@ -379,7 +376,7 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     goto found;
   }
   con=CAlloc(sizeof(CConnection));
-  con->hc=Spawn(&DoNothing,,,,Fs);
+  con->hc=HeapCtrlInit(,Fs,FALSE);
   con->buffer=MAlloc(0xB00,con->hc);
   con->buffer_ptr=con->buffer;
   con->buffer_len=0;
@@ -650,7 +647,7 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
 //All memory will be Free'd on killing con->hc
   Free(con->session_cookie);
   NetClose(con->stream);
-  Kill(con->hc);
+  HeapCtrlDel(con->hc);
   Free(con);
   return;
 }
@@ -724,17 +721,12 @@ nxt:;
 U0 Serve(CServer *srv) {
   I64 core=-1;
   CTask *srv_task;
-  U8 *what;
-  if (IsCmdLineMode)
-    what="the enter key";
-  else
-    what="a button";
-  "Press %s to quit serving\n",what;
   srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
-  if (!IsCmdLineMode)
+  if (!IsCmdLineMode) {
+    "Press a key to stop serving\n";
     PressAKey;
-  else
-    fp_getstr2();//func ptrs need explicit ()
+  } else
+    Free(CmdLineGetStr("Press enter to stop serving"));
   Kill(srv_task);
 }
 
