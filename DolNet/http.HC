@@ -720,15 +720,23 @@ nxt:;
 }
 U0 Serve(CServer *srv) {
   CTask *srv_task;
-  srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
+  I64 core;
+  if (mp_cnt==1) core=-1;
+  else core=RandU16%(mp_cnt-1)+1;
+  srv_task=Spawn(&ServeTask,srv,"Server",core,Fs);
   if (!IsCmdLineMode) {
     "Press a key to stop serving\n";
     PressAKey;
   } else {
-    "Ctrl+C to quit serving\n"; //TODO find a less stupid way to do this
-    while (TRUE) Sleep(10);
+    if (core==-1) {
+      "Ctrl+C to quit serving\n"; /*I know this is stupid but
+       if there's only one there's no other way because
+       CmdLineGetStr() doesn't yield (of course not) and
+       Im not going to go through the effort of modifying linenoise to yield
+       force setting mp_cnt to 2 mininum didnt seem to work*/
+      while (TRUE) Sleep(10);
+    } else Free(CmdLineGetStr("Press enter to stop serving"));
   }
-    //Free(CmdLineGetStr("Press enter to stop serving"));
   Kill(srv_task);
 }
 
