@@ -719,14 +719,16 @@ nxt:;
   }
 }
 U0 Serve(CServer *srv) {
-  I64 core=-1;
   CTask *srv_task;
   srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
   if (!IsCmdLineMode) {
     "Press a key to stop serving\n";
     PressAKey;
-  } else
-    Free(CmdLineGetStr("Press enter to stop serving"));
+  } else {
+    "Ctrl+C to quit serving\n"; //TODO find a less stupid way to do this
+    while (TRUE) Sleep(10);
+  }
+    //Free(CmdLineGetStr("Press enter to stop serving"));
   Kill(srv_task);
 }
 

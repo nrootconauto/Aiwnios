@@ -912,7 +912,7 @@ U8 *MStrPrint(U8 *fmt,...)
 U0 PrintErr(U8 *fmt,...)
 {//Print "Err:" and msg in blinking red.
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv),*s=ST_ERR_ST;
-  if (IsRaw) s="";
+  if (IsRaw) s="ERROR: ";
   GetOutOfDollar;
   "%,p %,p %,p %,p %s%s",Caller,Caller(2),Caller(3),Caller(4),s,buf;
   Free(buf);
@@ -921,7 +921,7 @@ U0 PrintErr(U8 *fmt,...)
 U0 PrintWarn(U8 *fmt,...)
 {//Print "Warn:" and msg in blinking red.
   U8 *buf=StrPrintJoin(NULL,fmt,argc,argv),*s=ST_WARN_ST;
-  if (IsRaw) s="";
+  if (IsRaw) s="WARNING: ";
   GetOutOfDollar;
   "%,p %,p %,p %,p %s%s",Caller,Caller(2),Caller(3),Caller(4),s,buf;
   Free(buf);
