@@ -1367,3 +1367,4 @@ int64_t RISCV_B(int64_t imm,int64_t s1,int64_t s2,int64_t f3,int64_t opc);
 int64_t RISCV_S(int64_t imm115,int64_t s1,int64_t d,int64_t f3,int64_t opc);
 int64_t RISCV_I(int64_t imm,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t RISCV_R(int64_t f7,int64_t s2,int64_t s1,int64_t f3,int64_t d,int64_t opc);
+int64_t ScreenUpdateInProgress();

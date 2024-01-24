@@ -3949,6 +3949,7 @@ import U8 *CmdLineGetStr(U8 *);
 import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
+import I64 ScreenUpdateInProgress();
 #else
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
@@ -5453,7 +5454,7 @@ extern U0 GrUpdateTextBG();
 extern U0 GrUpdateTextFG();
 extern U0 DCBlotColor8(CDC *dc,CDC *img);
 extern U0 GrUpdateTextModeText();
-extern U0 GrUpdateScrn();
+extern Bool GrUpdateScrn();
 extern U0 Sprite3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,	Bool just_one_elem=FALSE);
 extern U0 Sprite3B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems);
 extern U0 Sprite3Mat4x4B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,I64 *m);

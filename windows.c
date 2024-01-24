@@ -15,7 +15,7 @@ static uint32_t      palette[0x100];
 static SDL_Thread   *sdl_main_thread;
 int64_t              user_ev_num;
 static SDL_mutex    *screen_mutex, *screen_mutex2;
-static int64_t       screen_ready = 0;
+static int64_t       screen_ready = 0,screen_update_in_progress=0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 
@@ -98,10 +98,14 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_UnlockMutex(screen_mutex);
   return;
 }
+int64_t ScreenUpdateInProgress() {
+  return Misc_Bt(&screen_update_in_progress,0);
+}
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   int64_t      idx;
   SDL_Texture *text;
   SDL_LockMutex(screen_mutex);
+  Misc_LBts(&screen_update_in_progress,0);
   SDL_LockSurface(screen);
   char *dst = screen->pixels;
   for (idx = 0; idx != h; idx++) {
@@ -117,6 +121,7 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_RenderPresent(renderer);
   SDL_DestroyTexture(text);
   SDL_UnlockMutex(screen_mutex);
+  Misc_LBtr(&screen_update_in_progress,0);
 }
 
 void GrPaletteColorSet(int64_t i, uint64_t bgr48) {

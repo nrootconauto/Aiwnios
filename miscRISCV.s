@@ -37,12 +37,8 @@ Misc_LBtc:
   andi t1,a1,0x1f
   addi t2,zero,1
   sll t1,t2,t1
-.LBtc_loop:
-  lr.w t2,(t0)
+  amoxor.w t2,t1,(t0)
   and a0,t2,t1
-  xor t3,t2,t1
-  sc.w t4,t3,(t0)
-  bne t4,zero,.LBtc_loop
   snez a0,a0
   jalr zero,ra
 
@@ -116,12 +112,8 @@ Misc_LBts:
   andi t1,a1,0x1f
   li t2,1
   sll t1,t2,t1
-.LBts_loop:
-  lr.w t2,(t0)
+  amoor.w t2,t1,(t0)
   and a0,t2,t1
-  or t3,t2,t1
-  sc.w t4,t3,(t0)
-  bne t4,zero,.LBts_loop
   snez a0,a0
   jalr zero,ra
 
@@ -153,13 +145,9 @@ Misc_LBtr:
   andi t1,a1,0x1f
   li t2,1
   sll t1,t2,t1
-.LBtr_loop:
-  lr.w t2,(t0)
-  and a0,t2,t1
   not t4,t1
-  and t3,t2,t4
-  sc.w t4,t3,(t0)
-  bne t4,zero,.LBtr_loop
+  amoand.w t2,t4,(t0)
+  and a0,t2,t1
   snez a0,a0
   jalr zero,ra
 

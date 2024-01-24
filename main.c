@@ -1207,6 +1207,7 @@ void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
     PrsAddSymbol("GetVolume", STK_AiwniosGetVolume, 0);
     PrsAddSymbol("__HC_ICAdd_Min_F64", STK___HC_ICAdd_Min_F64, 1);
@@ -1521,7 +1522,6 @@ static void ExitAiwnios(int64_t *stk) {
   quit = 1;
   exit(stk[0]);
 }
-
 #ifdef main
   #undef main
 #endif
