@@ -1036,19 +1036,32 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   int64_t i, has_vargs = 0;
   CICArg  tmp = {0};
   CRPN   *rpn2;
-  int64_t to_pop = rpn->length * 8;
+  int64_t to_pop = rpn->length * 8,to_pop2=to_pop,ptr=to_pop;
   void   *fptr;
+	  for (i = 0; i < rpn->length; i++)
+	  if((rpn2=ICArgN(rpn,i))->type==__IC_VARGS) {
+	  to_pop -= 8; // We dont count argv
+	  to_pop2=to_pop;
+	  ptr-=8;
+	  to_pop += rpn2->length * 8;
+      has_vargs = 1;
+      code_off  = __OptPassFinal(cctrl, rpn2, bin, code_off);
+      break;
+	}
+  if(to_pop2)
+    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP,RISCV_REG_SP,-to_pop2));
   for (i = 0; i < rpn->length; i++) {
     rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {
-      to_pop -= 8; // We dont count argv
-      to_pop += rpn2->length * 8;
-      has_vargs = 1;
-      code_off  = __OptPassFinal(cctrl, rpn2, bin, code_off);
     } else {
-      code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-      // TODO improve
-      code_off = PushToStack(cctrl, &rpn2->res, bin, code_off);
+		ptr-=8; //Arguments are reversed
+		tmp.mode=MD_INDIR_REG;
+		tmp.reg=RISCV_REG_SP;
+		tmp.off=ptr;
+		//PROMOTE to 64bit
+		tmp.raw_type=rpn2->res.raw_type==RT_F64?RT_F64:RT_I64i;
+		code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
+        code_off=ICMov(cctrl,&tmp,&rpn2->res,bin,code_off);
     }
   }
   rpn2 = ICArgN(rpn, rpn->length);
