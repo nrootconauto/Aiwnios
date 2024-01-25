@@ -60,11 +60,11 @@ typedef struct CFuckup {
   struct user_fpsimd_struct fp;
   #elif defined(__x86_64__)
   struct user_fpregs_struct fp;
-  struct user_regs_struct   regs;
-  #elif defined (__riscv__) ||defined (__riscv)
-  struct user_regs_struct   regs;
+  struct user_regs_struct regs;
+  #elif defined(__riscv__) || defined(__riscv)
+  struct user_regs_struct regs;
   union __riscv_fp_state fp;
-  #endif  
+  #endif
 } CFuckup;
 #elif defined(WIN32) || defined(_WIN32)
   #include <winnt.h>
@@ -289,7 +289,8 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   *(void **)to = (void *)v;
 #endif
 #if defined(__linux__)
-  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__) || defined(__riscv) || defined(__riscv__)
+  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__) ||      \
+      defined(__riscv) || defined(__riscv__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
       ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
@@ -437,7 +438,7 @@ void DebuggerBegin() {
               }
               ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
-#if (defined (__riscv) || defined (__riscv__)) && defined(__linux__)
+#if (defined(__riscv) || defined(__riscv__)) && defined(__linux__)
               switch (which) {
               case 0:
                 fu->regs.pc = value;
@@ -448,7 +449,39 @@ void DebuggerBegin() {
               case 2:
                 fu->regs.s0 = value;
                 break;
-                // DONT RELY ON CHANGING GPs
+              case 3:
+                fu->regs.s1 = value;
+                break;
+              case 4:
+                fu->regs.s2 = value;
+                break;
+              case 5:
+                fu->regs.s3 = value;
+                break;
+              case 6:
+                fu->regs.s4 = value;
+                break;
+              case 7:
+                fu->regs.s5 = value;
+                break;
+              case 8:
+                fu->regs.s6 = value;
+                break;
+              case 9:
+                fu->regs.s7 = value;
+                break;
+              case 10:
+                fu->regs.s8 = value;
+                break;
+              case 11:
+                fu->regs.s9 = value;
+                break;
+              case 12:
+                fu->regs.s10 = value;
+                break;
+              case 13:
+                fu->regs.s11 = value;
+                break;
               }
               ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
@@ -506,10 +539,21 @@ void DebuggerBegin() {
   #elif defined(__FreeBSD__)
   #endif
 #endif
-#if (defined (__riscv) || defined (__riscv__)) && defined(__linux__)
+#if (defined(__riscv) || defined(__riscv__)) && defined(__linux__)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
                 PTWriteAPtr(tid, &write_regs_to[1], fu->regs.sp);
                 PTWriteAPtr(tid, &write_regs_to[2], fu->regs.s0);
+                PTWriteAPtr(tid, &write_regs_to[3], fu->regs.s1);
+                PTWriteAPtr(tid, &write_regs_to[4], fu->regs.s2);
+                PTWriteAPtr(tid, &write_regs_to[5], fu->regs.s3);
+                PTWriteAPtr(tid, &write_regs_to[6], fu->regs.s4);
+                PTWriteAPtr(tid, &write_regs_to[7], fu->regs.s5);
+                PTWriteAPtr(tid, &write_regs_to[8], fu->regs.s6);
+                PTWriteAPtr(tid, &write_regs_to[9], fu->regs.s7);
+                PTWriteAPtr(tid, &write_regs_to[10], fu->regs.s8);
+                PTWriteAPtr(tid, &write_regs_to[11], fu->regs.s9);
+                PTWriteAPtr(tid, &write_regs_to[12], fu->regs.s10);
+                PTWriteAPtr(tid, &write_regs_to[13], fu->regs.s11);
 #endif
               }
 #if defined(_WIN32) || defined(WIN32)
@@ -694,7 +738,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -766,7 +810,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   } else
     abort();
   #endif
-  #if (defined (__riscv__) || defined(__riscv)) && defined (__linux__)
+  #if (defined(__riscv__) || defined(__riscv)) && defined(__linux__)
   UnblockSignals();
   CHashExport *exp;
   void *fp;

@@ -14,7 +14,7 @@ static SDL_Renderer *renderer;
 static SDL_Thread *sdl_main_thread;
 int64_t user_ev_num;
 static SDL_mutex *screen_mutex, *screen_mutex2;
-static int64_t screen_ready = 0;
+static int64_t screen_ready = 0, screen_update_in_progress = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 
@@ -87,7 +87,7 @@ void DrawWindowNew() {
 }
 void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_Event event;
-  Misc_LBts(&screen_update_in_progress,0);
+  Misc_LBts(&screen_update_in_progress, 0);
   memset(&event, 0, sizeof event);
   event.user.code  = USER_CODE_UPDATE;
   event.user.data1 = px;
@@ -99,7 +99,7 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   return;
 }
 int64_t ScreenUpdateInProgress() {
-  return Misc_Bt(&screen_update_in_progress,0);
+  return Misc_Bt(&screen_update_in_progress, 0);
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   int64_t idx;
@@ -120,7 +120,7 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_RenderPresent(renderer);
   SDL_DestroyTexture(text);
   SDL_UnlockMutex(screen_mutex);
-  Misc_LBtr(&screen_update_in_progress,0);
+  Misc_LBtr(&screen_update_in_progress, 0);
 }
 
 void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
