@@ -39,7 +39,7 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     return NULL;
 #ifdef TARGET_X86
   x29=task->context_save_area[2];
-#else
+#endif
 #ifdef TARGET_AARCH64
   x29=task->context_save_area[11];
 #endif

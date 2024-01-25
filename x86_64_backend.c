@@ -8144,7 +8144,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
       bin      = NULL;
     } else if (run == 1) {
       // Dont allocate on cctrl->hc heap ctrl as we want to share our data
-      bin      = A_MALLOC(64 + code_off, NULL);
+      bin      = A_CALLOC(1024 + code_off, NULL);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);

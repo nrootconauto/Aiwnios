@@ -322,13 +322,8 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
       misc=cur->ic_data;
       if(!(misc->h->type&HTF_IMPORT)&&(misc->flags&CMF_SHORT_ADDR)) {
 force:
-       
-        cur->misc=CodeMiscHashNew(cc,misc->h);
-        misc=cur->misc;
-        misc->flags|=CMF_SHORT_ADDR;
         misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
-        cur->ic_data=misc;
       } else {
       //No use imports as short addresses
         misc->flags&=~CMF_SHORT_ADDR;
@@ -1144,15 +1139,16 @@ break;case IC_ASM:
     if(cur->ic_flags&ICF_LOCK)
 		__HC_ICSetLock(new);
   }
-  aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+2));
+  if(reported_min_ln!=I16_MAX) {
+    aiwnios_dbg_info=CAlloc(8*(reported_max_ln-reported_min_ln+2));
+  } else 
+	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
   if(res_sz) *res_sz=idx;
   if(info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
-      if(reported_max_ln<=cc->max_line)
-        MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(reported_max_ln-reported_min_ln+1));
-      else
-        MemCpy(info[0]->body+(reported_min_ln-cc->min_line)+1,aiwnios_dbg_info,8*(cc->max_line-reported_min_ln+1));
+      idx=reported_min_ln-cc->min_line;
+      MemCpy(info[0]->body+idx+1,aiwnios_dbg_info,ClampI64(reported_max_ln-reported_min_ln-idx+1,0,reported_max_ln-reported_min_ln+1));
     }
     info[0]->body[0]=machine_code;
     info[0]->body[cc->max_line-cc->min_line+1]=machine_code+idx;

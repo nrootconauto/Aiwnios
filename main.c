@@ -1190,7 +1190,7 @@ void BootAiwnios(char *bootstrap_text) {
   while (PrsStmt(ccmp)) {
     to_run = Compile(ccmp, NULL, NULL);
     FFI_CALL_TOS_0(to_run);
-    A_FREE(to_run);
+    //A_FREE(to_run); DONT FREE THE STRINGS TODO FIX
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
