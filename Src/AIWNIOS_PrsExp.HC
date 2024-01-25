@@ -1510,6 +1510,9 @@ ins_label:
 		      CodeMiscHashNew(cc,cc->hash_entry),
 		      cc->hash_entry,
 		      );
+		      #ifdef TARGET_RISCV
+		      rpn->ic_data(CCodeMisc*)->flags|=CMF_SHORT_ADDR;
+		      #endif
 	      } else
 	        rpn=RPNAddNew(
 		      cc,

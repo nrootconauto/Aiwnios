@@ -9,6 +9,7 @@
 .global Misc_LBtr
 .global Misc_LBts
 .global Misc_BP
+.global Misc_ThreadReg
 # I dont know the psudeo ops,sorry profressionals
 Misc_Btc:
   srli t0,a1,3 # divide by 8 bits
@@ -156,4 +157,8 @@ TempleOS_CallN:
 
 Misc_BP:
   mv a0,s0
+  ret
+
+Misc_ThreadReg:
+  mv a0,tp
   ret

@@ -11,7 +11,20 @@
 //
 // Unsupported
 //  CALL &GetHolyGs/GetHolyFs
-#if defined(__x86_64__) && defined(__SEG_FS)
+#if defined(__riscv) || defined(__riscv__)
+__thread void *ThreadGs;
+__thread void *ThreadFs;
+void *Misc_ThreadReg();
+void *GetHolyGsPtr() {
+  char *fs = (char *)&ThreadGs; // thread tls register is FS
+  char *base;
+  return (char *)fs - (char *)Misc_ThreadReg;
+}
+void *GetHolyFsPtr() {
+  char *fs = (char *)&ThreadFs;
+  return (char *)fs - (char *)Misc_ThreadReg;
+}
+#elif defined(__x86_64__) && defined(__SEG_FS)
   #if defined(__FreeBSD__) || defined(__linux__)
 __thread void *ThreadFs;
 __thread void *ThreadGs;
@@ -37,7 +50,7 @@ void *GetHolyGsPtr() {
 void *GetHolyFsPtr() {
   return &ThreadFs;
 }
-  #endif
+#endif
 #elif (defined(_M_ARM64) || defined(__aarch64__))
 __thread void *ThreadGs;
 __thread void *ThreadFs;
