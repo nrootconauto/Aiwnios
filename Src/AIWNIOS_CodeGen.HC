@@ -328,6 +328,7 @@ force:
         misc->flags|=CMF_SHORT_ADDR;
         misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
+        cur->ic_data=misc;
       } else {
       //No use imports as short addresses
         misc->flags&=~CMF_SHORT_ADDR;
@@ -783,6 +784,7 @@ reg_again:;
     }
     misc=cur->ic_data;
     misc->addr=INVALID_PTR;
+    misc->flags&=~CMF_SHORT_ADDR;
     if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
     } else
@@ -804,6 +806,7 @@ reg_again:;
         misc->h=HashFind("__Gs",Fs->hash_table,HTT_FUN); //Maybe we arent AOT Compiling
     }
     misc=cur->ic_data;
+    misc->flags&=~CMF_SHORT_ADDR;
     misc->addr=INVALID_PTR;
     if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
@@ -893,6 +896,7 @@ break;case IC_ASM:
     break;case IC_ABS_ADDR:
     misc=COCMiscNew(cc,CMT_LABEL);
     misc->str=MStrPrint("0x%x",cur->imm_i64);
+    misc->flags&=~CMF_SHORT_ADDR;
     misc->addr=INVALID_PTR;
     new=__HC_ICAdd_Reloc(
           acc,

@@ -1510,8 +1510,6 @@ ins_label:
 		      CodeMiscHashNew(cc,cc->hash_entry),
 		      cc->hash_entry,
 		      );
-		      if(cc->flags&CCF_AOT_COMPILE)
-		        rpn->ic_data(CCodeMisc*)->flags|=CMF_SHORT_ADDR;
 	      } else
 	        rpn=RPNAddNew(
 		      cc,

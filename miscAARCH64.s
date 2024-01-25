@@ -8,6 +8,10 @@
 .global Misc_Bts
 .global Misc_TLS_Base
 .global Misc_Caller
+.global Misc_BP
+Misc_BP:
+  mov x0,x29
+  ret
 Misc_TLS_Base:
   mrs x0, tpidr_el0
   ret
