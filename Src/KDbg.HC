@@ -40,7 +40,11 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
 #ifdef TARGET_X86
   x29=task->context_save_area[2];
 #else
+#ifdef TARGET_AARCH64
   x29=task->context_save_area[11];
+#endif
+#ifdef TARGET_RISCV
+  x29=task->context_save_area[2];
 #endif
   if (num) {
     while (x29) {
@@ -56,6 +60,9 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     }
     return NULL;
   } else {
+#ifdef TARGET_RISCV
+  return task->context_save_area[0];
+#endif
 #ifdef TARGET_X86
     return task->context_save_area[0];
 #else    
@@ -79,7 +86,8 @@ U0 CallerRep(U8 **x29=NULL,CTask *task=NULL)
     else
       x29=task->context_save_area[2];
   }
-  #else
+  #endif
+  #ifdef TARGET_AARCH64
   if (!x29) {
     if (task==Fs)
       x29=Fs->context_save_area[11];
@@ -87,6 +95,15 @@ U0 CallerRep(U8 **x29=NULL,CTask *task=NULL)
       x29=task->context_save_area[11];
   }
   #endif
+  #ifdef TARGET_RISCV
+  if (!x29) {
+    if (task==Fs)
+      x29=Fs->context_save_area[2];
+    else
+      x29=task->context_save_area[2];
+  }
+  #endif
+
   "CallerRep:\n";
   while (ChkOnStk(x29,task)) {
     ptr=x29+1;
@@ -134,8 +151,12 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   I64 idx;
   #ifdef TARGET_X86
   I64 oip=gps[0],rbp=gps[2]; 
-  #else
+  #endif
+  #ifdef TARGET_AARCH64
   I64 oip=gps[0],rbp=gps[11]; 
+  #endif
+  #ifdef TARGET_RISCV
+  I64 oip=gps[0],rbp=gps[2]; 
   #endif
   Fs->is_single_step=FALSE;
   if(Fs==sys_winmgr_task) {

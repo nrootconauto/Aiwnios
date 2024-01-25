@@ -1526,7 +1526,7 @@ static void ExitAiwnios(int64_t *stk) {
   #undef main
 #endif
 int main(int argc, char **argv) {
-  //DebuggerBegin();
+  DebuggerBegin();
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =

@@ -289,7 +289,7 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   *(void **)to = (void *)v;
 #endif
 #if defined(__linux__)
-  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__)
+  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__) || defined(__riscv) || defined(__riscv__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
       ptrace(PTRACE_POKETEXT, tid, to + s, v & 0xffff);
@@ -441,6 +441,21 @@ void DebuggerBegin() {
               }
               ptrace(PT_CONTINUE, tid, 0, 0);
 #endif
+#if (defined (__riscv) || defined (__riscv__)) && defined(__linux__)
+              switch (which) {
+              case 0:
+                fu->regs.pc = value;
+                break;
+              case 1:
+                fu->regs.sp = value;
+                break;
+              case 2:
+                fu->regs.s0 = value;
+                break;
+                // DONT RELY ON CHANGING GPs
+              }
+              ptrace(PT_CONTINUE, tid, 0, 0);
+#endif
               break;
             } else if (!strncmp(name, "WATCHTID", strlen("WATCHTID"))) {
               int64_t tr;
@@ -494,6 +509,11 @@ void DebuggerBegin() {
                 PTWriteAPtr(tid, &write_regs_to[11], fu->regs.regs[29]);
   #elif defined(__FreeBSD__)
   #endif
+#endif
+#if (defined (__riscv) || defined (__riscv__)) && defined(__linux__)
+                PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
+                PTWriteAPtr(tid, &write_regs_to[1], fu->regs.sp);
+                PTWriteAPtr(tid, &write_regs_to[2], fu->regs.s0);
 #endif
               }
 #if defined(_WIN32) || defined(WIN32)
@@ -747,6 +767,22 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   call_exit:
     fp2 = exp->val;
     FFI_CALL_TOS_0(fp2);
+  } else
+    abort();
+  #endif
+  #if (defined (__riscv__) || defined(__riscv)) && defined (__linux__)
+  UnblockSignals();
+  CHashExport *exp;
+  void *fp;
+  int64_t actx[64];
+  // AiwniosDbgCB will return 1 for singlestep
+  if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+    fp = exp->val;
+    FFI_CALL_TOS_2(fp, sig, actx);
+  } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+  call_exit:
+    fp = exp->val;
+    FFI_CALL_TOS_0(fp);
   } else
     abort();
   #endif
