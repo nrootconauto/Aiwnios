@@ -22,7 +22,7 @@ void QueRem(CQue *a) {
 
 int64_t QueCnt(CQue *head) {
   int64_t r = 0;
-  CQue   *q;
+  CQue *q;
   for (q = head->next; q != head; q = q->next)
     r++;
   return r;

@@ -26,7 +26,7 @@ int64_t LexAdvChr(CLexer *lex) {
   }
 enter:;
   CLexFile *file = lex->file, *last;
-  int64_t   ret;
+  int64_t ret;
   if (!lex->file)
     return 0;
   // We terminate the silly sauces with 0 as per ASCII nul character
@@ -59,7 +59,7 @@ enter:;
 }
 static void LexErr(CLexer *lex, char *fmt, ...) {
   va_list lst;
-  char    buffer[STR_LEN];
+  char buffer[STR_LEN];
   va_start(lst, fmt);
   vsprintf(buffer, fmt, lst);
   va_end(lst);
@@ -74,7 +74,7 @@ static void LexErr(CLexer *lex, char *fmt, ...) {
 
 static void LexWarn(CLexer *lex, char *fmt, ...) {
   va_list lst;
-  char    buffer[STR_LEN];
+  char buffer[STR_LEN];
   va_start(lst, fmt);
   vsprintf(buffer, fmt, lst);
   va_end(lst);
@@ -254,11 +254,11 @@ re_enter:;
   int64_t chr1     = LexAdvChr(lex), chr2;
   int64_t has_base = 0, base = 10, integer = 0, decimal = 0, exponet = 0,
           zeros = 0, idx = 0, old_flags, in_else;
-  FILE           *f;
-  char            macro_name[STR_LEN];
+  FILE *f;
+  char macro_name[STR_LEN];
   CHashDefineStr *define;
-  CLexFile       *new_file, *actual_file;
-  char           *dir;
+  CLexFile *new_file, *actual_file;
+  char *dir;
   switch (chr1) {
     break;
   case '`':
@@ -837,7 +837,7 @@ CLexer *LexerNew(char *filename, char *text) {
   CLexer *new    = A_CALLOC(sizeof(CLexer), NULL);
   new->file      = file;
   struct {
-    char   *name;
+    char *name;
     int64_t tok;
   } kws[] = {
       //{"include",TK_KW_INCLUDE},
@@ -889,7 +889,7 @@ CLexer *LexerNew(char *filename, char *text) {
       {"argpop", TK_KW_ARGPOP},
       {"noargpop", TK_KW_NOARGPOP},
   };
-  int64_t       i;
+  int64_t i;
   CHashKeyword *kw;
   for (i = 0; i != sizeof(kws) / sizeof(*kws); i++) {
     kw            = A_CALLOC(sizeof(CHashKeyword), NULL);

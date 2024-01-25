@@ -9,6 +9,10 @@ CDocEntry *DocPutS(CDoc *doc,U8 *st)
   Bool unlock;
   I64 ch,j;
   CDocEntry *doc_e=NULL,*res=NULL,*doc_ce;
+  if (IsCmdLineMode && doc==DocPut) {
+    PutS2(st);
+    return NULL;
+  }
   if (!st || !doc && !(doc=DocPut) || doc->doc_signature!=DOC_SIGNATURE_VAL)
     return NULL;
   unlock=DocLock(doc);

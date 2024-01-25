@@ -426,7 +426,7 @@ to avoid this.
 	  if (cur_arg>=argc)
 	    throw('StrPrint');
 	  StrPrintFunSeg(tmp_buf,argv[cur_arg],len,flags);
-	  if (1) { //TODO RESTORE?
+	  if (!IsCmdLineMode || !buf) {
 	    StrPrint(tmp_buf2,"\dLK,\"%s\",A=\"AD:0x%X\"\d",
 		  tmp_buf,argv[cur_arg]);
 	    OutStr(tmp_buf2,_buf,_dst,len,flags);
@@ -911,17 +911,19 @@ U8 *MStrPrint(U8 *fmt,...)
 
 U0 PrintErr(U8 *fmt,...)
 {//Print "Err:" and msg in blinking red.
-  U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
+  U8 *buf=StrPrintJoin(NULL,fmt,argc,argv),*s=ST_ERR_ST;
+  if (IsRaw) s="ERROR: ";
   GetOutOfDollar;
-  "%,p %,p %,p %,p " ST_ERR_ST "%s",Caller,Caller(2),Caller(3),Caller(4),buf;
+  "%,p %,p %,p %,p %s%s",Caller,Caller(2),Caller(3),Caller(4),s,buf;
   Free(buf);
 }
 
 U0 PrintWarn(U8 *fmt,...)
 {//Print "Warn:" and msg in blinking red.
-  U8 *buf=StrPrintJoin(NULL,fmt,argc,argv);
+  U8 *buf=StrPrintJoin(NULL,fmt,argc,argv),*s=ST_WARN_ST;
+  if (IsRaw) s="WARNING: ";
   GetOutOfDollar;
-  "%,p %,p %,p %,p " ST_WARN_ST "%s",Caller,Caller(2),Caller(3),Caller(4),buf;
+  "%,p %,p %,p %,p %s%s",Caller,Caller(2),Caller(3),Caller(4),s,buf;
   Free(buf);
 }
 

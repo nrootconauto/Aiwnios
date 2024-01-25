@@ -34,5 +34,5 @@ void AIWNIOS_throw(uint64_t c) {
   if (exp = HashFind("throw", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     FFI_CALL_TOS_1(exp->val, c);
   }
-  abort();
+  __builtin_unreachable();
 }

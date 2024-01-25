@@ -203,14 +203,18 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
   tmpm=cc->htc.fun->member_lst_and_root;
   while (tmpm) {
     if (tmpm->flags & MLF_NO_UNUSED_WARN) {
-      if (tmpm->use_cnt>1&&StrCmp(tmpm->str,"_anon_"))
-	PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
+      if (tmpm->use_cnt>1&&StrCmp(tmpm->str,"_anon_")) {
+	if (!IsCmdLineMode) PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
 	      cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
 	      tmpm->str,cc->htc.fun->str);
-    } else if (!tmpm->use_cnt && GetOption(OPTf_WARN_UNUSED_VAR))
-      PrintWarn("Unused var\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
+        else PrintWarn("Unneeded no_warn '%s' in '%s' at %s\n",tmpm->str,cc->htc.fun->str,cc->lex_include_stk->full_name);
+     }
+    } else if (!tmpm->use_cnt && GetOption(OPTf_WARN_UNUSED_VAR)) {
+      if (!IsCmdLineMode) PrintWarn("Unused var $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
 	    cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
 	    tmpm->str,cc->htc.fun->str);
+      else PrintWarn("Unused var '%s' in '%s' at %s\n",tmpm->str,cc->htc.fun->str,cc->lex_include_stk->full_name);
+    }
     tmpm=tmpm->next;
   }
   cc->htc.local_var_lst=cc->htc.fun=cc->fun_lex_file=NULL;

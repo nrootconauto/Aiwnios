@@ -19,7 +19,7 @@ static void InitSock() {
   #include <iphlpapi.h>
   #include <ws2tcpip.h>
 static int64_t was_init = 0;
-WSADATA        ws_data;
+WSADATA ws_data;
 
 static void InitWS2() {
   WSAStartup(MAKEWORD(2, 2), &ws_data);
@@ -27,8 +27,8 @@ static void InitWS2() {
 }
 #endif
 typedef struct CInAddr {
-  char              *address;
-  int64_t            port;
+  char *address;
+  int64_t port;
   struct sockaddr_in sa;
 } CInAddr;
 
@@ -60,8 +60,8 @@ CNetAddr *NetAddrNew(char *host, int64_t port) {
 #else
   InitSock();
 #endif
-  CNetAddr       *ret = A_CALLOC(sizeof(CNetAddr), NULL);
-  char            buf[1024];
+  CNetAddr *ret = A_CALLOC(sizeof(CNetAddr), NULL);
+  char buf[1024];
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_family   = AF_UNSPEC;
@@ -89,8 +89,8 @@ void NetListen(int64_t socket, int64_t max) {
 }
 int64_t NetAccept(int64_t socket, CNetAddr **addr) {
   struct sockaddr sa;
-  socklen_t       ul  = sizeof(sa);
-  int64_t         con = accept(socket, &sa, &ul);
+  socklen_t ul = sizeof(sa);
+  int64_t con  = accept(socket, &sa, &ul);
   if (addr)
     *addr = NULL;
   /*	if(addr) {
@@ -125,7 +125,7 @@ int64_t NetRead(int64_t s, char *data, int64_t len) {
 }
 static int64_t _PollFor(int64_t _for, int64_t argc, int64_t *argv) {
   struct pollfd poll_for[argc];
-  int64_t       idx;
+  int64_t idx;
   for (idx = 0; idx != argc; idx++) {
     poll_for[idx].fd      = argv[0];
     poll_for[idx].events  = _for;
@@ -191,8 +191,8 @@ int64_t NetUDPSocketNew() {
 
 int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
   CInAddr tmp;
-  int     alen = sizeof(tmp.sa);
-  int64_t r    = recvfrom(s, buf, len, 0, &tmp.sa, &alen);
+  int alen  = sizeof(tmp.sa);
+  int64_t r = recvfrom(s, buf, len, 0, &tmp.sa, &alen);
 #if defined(WIN32) || defined(_WIN32)
   char buf2[2048];
   inet_ntop(tmp.sa.sin_family, &tmp.sa.sin_addr, buf2, 2048);
@@ -216,7 +216,7 @@ CInAddr *NetUDPAddrNew(char *host, int64_t port) {
 #else
   InitSock();
 #endif
-  CInAddr        *ret   = A_CALLOC(sizeof(CInAddr), NULL);
+  CInAddr *ret          = A_CALLOC(sizeof(CInAddr), NULL);
   struct hostent *hoste = gethostbyname(host);
   ret->sa.sin_family    = AF_INET;
   ret->sa.sin_port      = htons(port);

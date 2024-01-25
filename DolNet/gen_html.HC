@@ -65,7 +65,7 @@ U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   I64 len;
   CDoc *tmpd=DocNew("/tmp_doc.DD"),*html;
   DocPrint(tmpd,"$$FG,PURPLE$$$$TX+CX,\"Pro Tip!!!\"$$$$FD$$$$WW,1$$\n\n");
-  DocPrint(tmpd,"  You can download the whole directory in a TempleOS $$RED$$.ISO.C$$FD$$ format which you get the files out via $$HL,1$$MountFile(\"File.ISO.C\");$$HL,0$$ by clicking the typing in $$RED$$aiwnios.com/raw_dir/some_directory.ISO.C$$FD$$ or by clicking here $$LK,\"%Q.ISO.C\",A=\"FL:/raw_dir%Q.ISO.C\"$$\n\n",url->abs_path,url->abs_path);
+  DocPrint(tmpd,"  You can download the whole directory in a TempleOS $$RED$$.ISO.C$$FD$$ format which you get the files out via $$HL,1$$MountFile(\"File.ISO.C\");$$HL,0$$ by clicking the typing in \n$$RED$$aiwnios.com/raw_dir/some_directory.ISO.C$$FD$$ or by clicking here $$LK,\"%Q.ISO.C\",A=\"FL:/raw_dir%Q.ISO.C\"$$\n\n",url->abs_path,url->abs_path);
   DocPrint(tmpd,"  You can download indivual files raw with $$RED$$aiwnios.com/raw/some_file$$FD$$\n\n");
   DocPrint(tmpd,"$$FG,PURPLE$$$$TX+CX,\"Directory listing of %Q:\"$$$$FD$$\n\n",url->abs_path);
   DocPrint(tmpd,"$$ID,2$$");
@@ -215,8 +215,7 @@ U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   if(!StrICmp(dot,".DD")
         ||!StrICmp(dot,".DD.Z")
         ||!StrICmp(dot,".HC")
-        ||!StrICmp(dot,".HC.Z")
-  ) {
+        ||!StrICmp(dot,".HC.Z")||!StrICmp(dot,".GMR")) {
     DolDocGet(srv,stream,url,req);
     goto fin;
   }

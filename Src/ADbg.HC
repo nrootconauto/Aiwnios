@@ -292,7 +292,7 @@ public U0 Uf(U8 *st)
       i=dbg_info->body[dbg_info->max_line+1-dbg_info->min_line];
       ptr=dbg_info->body[0];
       while(ptr<i)
-        ptr=DisasOpc(DocPut,ptr);
+        ptr=DisasOpc(DocPut,ptr);
       "Code Size:%04X\n",i-dbg_info->body[0](U8*);
     } else
       ;//U(HashVal(tmpf));
