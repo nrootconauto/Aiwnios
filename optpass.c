@@ -1252,13 +1252,97 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
     if (mv[i].m->reg == REG_MAYBE || mv[i].m->reg == REG_ALLOC) {
       if (mv[i].m->member_class->raw_type == RT_F64) {
         if (freg - AIWNIOS_FREG_START < AIWNIOS_FREG_CNT) {
+#if defined(__riscv__) || defined(__riscv)
+          switch (freg++ - AIWNIOS_FREG_START) {
+            break;
+          case 0:
+            mv[i].m->reg = 9;
+            break;
+          case 1:
+            mv[i].m->reg = 18;
+            break;
+          case 2:
+            mv[i].m->reg = 19;
+            break;
+          case 3:
+            mv[i].m->reg = 20;
+            break;
+          case 4:
+            mv[i].m->reg = 21;
+            break;
+          case 5:
+            mv[i].m->reg = 22;
+            break;
+          case 6:
+            mv[i].m->reg = 23;
+            break;
+          case 7:
+            mv[i].m->reg = 24;
+            break;
+          case 8:
+            mv[i].m->reg = 25;
+            break;
+          case 9:
+            mv[i].m->reg = 26;
+            break;
+          case 10:
+            mv[i].m->reg = 27;
+            break;
+          case 11:
+            mv[i].m->reg = 8;
+            break;
+          default:
+            abort();
+          }
+#else
           mv[i].m->reg = freg++;
+#endif
         } else
           mv[i].m->reg = REG_NONE;
       } else if (RT_I8i <= mv[i].m->member_class->raw_type &&
                  mv[i].m->member_class->raw_type <= RT_PTR &&
                  !mv[i].m->dim.next) {
         if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
+#if defined(__riscv__) || defined(__riscv)
+          switch (ireg++ - AIWNIOS_IREG_START) {
+            break;
+          case 0:
+            mv[i].m->reg = 9;
+            break;
+          case 1:
+            mv[i].m->reg = 18;
+            break;
+          case 2:
+            mv[i].m->reg = 19;
+            break;
+          case 3:
+            mv[i].m->reg = 20;
+            break;
+          case 4:
+            mv[i].m->reg = 21;
+            break;
+          case 5:
+            mv[i].m->reg = 22;
+            break;
+          case 6:
+            mv[i].m->reg = 23;
+            break;
+          case 7:
+            mv[i].m->reg = 24;
+            break;
+          case 8:
+            mv[i].m->reg = 25;
+            break;
+          case 9:
+            mv[i].m->reg = 26;
+            break;
+          case 10:
+            mv[i].m->reg = 27;
+            break;
+          default:
+            abort();
+          }
+#endif
 #if defined(__x86_64__)
           switch (ireg++ - AIWNIOS_IREG_START) {
             break;
@@ -1332,7 +1416,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       sz = mv[i].m->member_class->sz;
       sz *= mv[i].m->dim.total_cnt;
       mv[i].m->off = off;
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__)
       // In X86_64 the base pointer above of the  stack's bottom,
       // I will move the items down by thier size so they are at the bottom
       //
@@ -1501,7 +1585,7 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
           break;
         case IC_BASE_PTR:
 // Stack grows down
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined (__riscv) || defined(__riscv__)
           base->integer -= off->integer;
 #else
           base->integer += off->integer;

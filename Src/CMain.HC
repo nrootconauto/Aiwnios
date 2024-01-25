@@ -520,10 +520,27 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
   I64 i;
   for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
     tmpaotie1=tmpaotie->next;
-    if(tmpaotie->short_jmp) {
+    if(tmpaotie->short_jmp) {		  
       fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,HTT_FUN|HTT_GLBL_VAR);
       if(fun&&fun->type&HTT_FUN) {
 		if(fun->type&HTF_RESOLVE) {
+		  #ifdef TARGET_RISCV
+		  return; //Let the loader.c do it,I give up
+		  if(-(1<<12)<=fun->exe_addr-tmpaotie->rip<=1<<12-1) {/*Chekc for bit 12 being set*/
+		    //AUIPC imm20
+		    i=((fun->exe_addr-tmpaotie->rip)>>12)<<12;
+            AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+            //JALR imm12
+		    i=((fun->exe_addr-tmpaotie->rip)&(1<<12-1))<<20;
+			AOTOrBytesU8At(cc,tmpaotie->rip(I64)+4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+          } else {
+			i=fun->exe_addr-tmpaotie->rip;
+			i=(i>>12+1)<<12;
+		    AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+		    i=(1<<12-(fun->exe_addr-tmpaotie->rip&(1<<12-1)))<<20;
+			AOTOrBytesU8At(cc,tmpaotie->rip(I64)+4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+	      }
+		  #endif
 		  #ifdef TARGET_AARCH64
           i=((fun->exe_addr-tmpaotie->rip)>>2)&(1<<26-1);
           AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);

@@ -1503,14 +1503,16 @@ ins_label:
 		      cc->hash_entry(CHashFun*)->exe_addr,
 		      cc->hash_entry,
 		      );
-	      } else if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN))
+	      } else if(cc->flags&CCF_AOT_COMPILE||Bt(&cc->hash_entry(CHashFun*)->flags,Cf_EXTERN)) {
 	        rpn=RPNAddNew(
 		      cc,
 		      IC_ADDR_IMPORT,
 		      CodeMiscHashNew(cc,cc->hash_entry),
 		      cc->hash_entry,
 		      );
-	      else
+		      if(cc->flags&CCF_AOT_COMPILE)
+		        rpn->ic_data(CCodeMisc*)->flags|=CMF_SHORT_ADDR;
+	      } else
 	        rpn=RPNAddNew(
 		      cc,
 		      IC_IMM_I64,

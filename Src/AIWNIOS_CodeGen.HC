@@ -217,6 +217,71 @@ extern U8 * __HC_ICAdd_Gs(U8*)
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 #endif
 
+#ifdef TARGET_RISCV
+#define AIWNIOS_IREG_START 0
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_IREG_CNT (27-18+1+1)
+#define AIWNIOS_FREG_CNT (27-18+1+2)
+I64 VarFRegToReg(I64 r)  {
+  switch(r) {
+     case 0:
+       return 9;
+     case 1:
+       return 8;
+     case 2:
+       return 18;
+     case 3:
+       return 19;
+     case 4:
+       return 20;
+     case 5:
+       return 21;
+     case 6:
+       return 22;
+     case 7:
+       return 23;
+     case 8:
+       return 24;
+     case 9:
+       return 25;
+     case 10:
+       return 26;
+     case 11:
+       return 27;
+   }
+   throw('Compiler');
+}
+I64 VarIRegToReg(I64 r)  {
+  switch(r) {
+     case 0:
+       return 9;
+     case 1:
+       return 18;
+     case 2:
+       return 19;
+     case 3:
+       return 20;
+     case 4:
+       return 21;
+     case 5:
+       return 22;
+     case 6:
+       return 23;
+     case 7:
+       return 24;
+     case 8:
+       return 25;
+     case 9:
+       return 26;
+     case 10:
+       return 27;
+   }
+   throw('Compiler');
+}
+
+#endif
+
+
 #ifdef TARGET_X86
 #define	REG_RAX 0
 #define	REG_RCX 1
@@ -255,13 +320,17 @@ U0 AiwniosMakeShortJmps(CCmpCtrl *cc,U8 *cc2) {
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->type==IC_ADDR_IMPORT) {
       misc=cur->ic_data;
-      if(!(misc->h->type&HTF_IMPORT)) {
+      if(!(misc->h->type&HTF_IMPORT)&&(misc->flags&CMF_SHORT_ADDR)) {
 force:
-        cur->misc=misc;
-        cur->misc->flags|=CMF_SHORT_ADDR;
-        cur->misc->addr=__HC_CodeMiscLabelNew(cc2);
+       
+        cur->misc=CodeMiscHashNew(cc,misc->h);
+        misc=cur->misc;
+        misc->flags|=CMF_SHORT_ADDR;
+        misc->addr=__HC_CodeMiscLabelNew(cc2);
         cur->ic_flags|=ICF_SHORT_JMP;
       } else {
+      //No use imports as short addresses
+        misc->flags&=~CMF_SHORT_ADDR;
 /* Nroot removed this as not all platforms have easy access to lower 32bits
 #ifdef TARGET_X86
 //In X86_64,i will put all functions in low 32bits to avoid viener wfunctions.
@@ -270,17 +339,30 @@ goto force;
 */
       }
     }
+next:;
   }
 }
 I64 IRegIsAvail(CHashFun *fun,I64 r) {
   CMemberLst *mlst=fun->member_lst_and_root;
   while(mlst) {
-    if(mlst->reg==r)
+    if(mlst->reg==r&&mlst->member_class->raw_type!=RT_F64)
       return FALSE;
     mlst=mlst->next;
   }
   return TRUE;
 }
+
+I64 FRegIsAvail(CHashFun *fun,I64 r) {
+  CMemberLst *mlst=fun->member_lst_and_root;
+  while(mlst) {
+    if(mlst->reg==r&&mlst->member_class->raw_type==RT_F64)
+      return FALSE;
+    mlst=mlst->next;
+  }
+  return TRUE;
+}
+
+
 #ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
   switch(r) {
@@ -302,7 +384,11 @@ class CAddShortRelocData {
 };
 U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   CAOTImportExport *tmpaie=CAlloc(sizeof(CAOTImportExport));
+  #ifdef TARGET_RISCV
+  tmpaie->type=IET_REL_RISCV; //FOR FUNCTION CALLS ONLY
+  #else
   tmpaie->type=IET_REL_I32;
+  #endif
   tmpaie->str=StrNew(data->cm->h->str);
   tmpaie->rip=data->cc->aotc->rip+(addr-data->machine_code);
   tmpaie->offset=data->cm->offset;
@@ -373,6 +459,10 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   if(cc->flags&CCF_AOT_COMPILE)
     AiwniosMakeShortJmps(cc,acc);
   #endif
+  #ifdef TARGET_RISCV
+  if(cc->flags&CCF_AOT_COMPILE)
+    AiwniosMakeShortJmps(cc,acc);
+  #endif
   if(cc->flags&CCF_AOT_COMPILE)
     __HC_CmpCtrl_SetAOT(acc);
   if(info) {
@@ -421,19 +511,35 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 reg_again:;
         if(mv[idx].m->member_class->raw_type==RT_F64) {
           if(AIWNIOS_FREG_START<=fr<AIWNIOS_FREG_START+AIWNIOS_FREG_CNT) {
+            #ifdef TARGET_RISCV
+            if(!FRegIsAvail(cc->htc.fun,VarFRegToReg(fr-AIWNIOS_IREG_START))) {
+	          fr++;
+	          goto reg_again;
+	        }
+            mv[idx].m->reg=VarFRegToReg(fr++ -AIWNIOS_IREG_START);
+            #else
             mv[idx].m->reg=fr++;
+            #endif
           } else
             mv[idx].m->reg=REG_NONE;
         } else if(mv[idx].m->reg==REG_ALLOC||mv[idx].m->reg==REG_UNDEF) {
           if(AIWNIOS_IREG_START<=ir<AIWNIOS_IREG_START+AIWNIOS_IREG_CNT) {
+            #ifdef TARGET_RISCV
+            if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
+	          ir++;
+	          goto reg_again;
+	        }
+            mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
+            #else
             #ifdef TARGET_X86
-	    if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
-	      ir++;
-	      goto reg_again;
-	    }
+	        if(!IRegIsAvail(cc->htc.fun,VarIRegToReg(ir-AIWNIOS_IREG_START))) {
+	          ir++;
+	          goto reg_again;
+	        }
             mv[idx].m->reg=VarIRegToReg(ir++ -AIWNIOS_IREG_START);
             #else
             mv[idx].m->reg=ir++;
+            #endif
             #endif
           } else {
             mv[idx].m->reg=REG_NONE;
@@ -479,8 +585,7 @@ reg_again:;
         foff+=mlst->member_class->size*mlst->dim.total_cnt;  
         if(foff&(align-1))
           foff+=align-(foff&(align-1)); //Align to 8
-        #endif
-        #ifdef TARGET_X86
+        #else 
 	if(IsFunArg(cc->htc.fun,mlst)&&!(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv"))) {
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
@@ -513,7 +618,7 @@ reg_again:;
     }
     if(foff&7)
       foff+=8-(foff&7); //Align to 8    
-    cc->htc.fun->size=foff;
+    cc->htc.fun->size=foff+16;
   }
   
   //Replace the old frame address with the new one 
@@ -522,7 +627,7 @@ reg_again:;
       for(idx=0;idx!=member_cnt;idx++) {
         foff=foff_lookup[idx].i32[0];
         if(foff==cur->ic_data) {
-          cur->ic_data=foff_lookup[idx].u32[1];
+          cur->ic_data=foff_lookup[idx].i32[1];
           break;
         }
       }
@@ -553,6 +658,13 @@ reg_again:;
       } else
         __HC_ICAdd_Arg(cc2,idx);
 #endif
+#ifdef TARGET_RISCV
+//Not yet implemented for AARCH64
+      if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
+        __HC_ICAdd_GetVargsPtr(cc2);
+      } else
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
 #ifdef TARGET_AARCH64
         __HC_ICAdd_Arg(cc2,idx);
 #endif
@@ -574,7 +686,7 @@ reg_again:;
     break;case CMT_HASH_ENTRY:
       //See spider thing for more notes 
     break;case CMT_LABEL:
-      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
+    misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
     break;case CMT_GOTO_LABEL:
       if(!(misc->flags&CMF_DEFINED)&&misc->str) {
 	PrintErr("Undefined reference to label \"%s\".\n",misc->str);
@@ -1031,7 +1143,6 @@ break;case IC_ASM:
   aiwnios_dbg_info=CAlloc(8*(cc->max_line-cc->min_line+2));
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
   if(res_sz) *res_sz=idx;
-  __HC_CodeCtrlPop(acc);
   if(info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
       if(reported_max_ln<=cc->max_line)
@@ -1121,7 +1232,8 @@ break;case IC_ASM:
       }
     }
   }
-
+  __HC_CodeCtrlPop(acc);
+  
   //
   // For CAiwniosAOTBlob,Fill in the relocations
   //

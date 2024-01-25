@@ -18,6 +18,7 @@ typedef struct _CHashImport {
 #define IET_IMM_U32     9
 #define IET_REL_I64     10
 #define IET_IMM_I64     11
+#define IET_REL_RISCV	12
 #define IEF_IMM_NOT_REL 1
 // reserved
 #define IET_REL32_EXPORT     16
@@ -30,6 +31,10 @@ typedef struct _CHashImport {
 #define IET_DATA_HEAP        23
 #define IET_ZEROED_DATA_HEAP 24 // Not really used
 #define IET_MAIN             25
+
+static int64_t Is12Bit(int64_t i) {
+  return i >= -(1 << 11) && i < (1 << 11) - 1;
+}
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   char *src = *_src, *ptr2, *st_ptr;
@@ -115,6 +120,18 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
       case IET_IMM_I64:
         IMM(int64_t);
         break;
+      case IET_REL_RISCV: {
+      int64_t low12,idx;
+				idx=(char *)i - (char *)ptr2;
+				low12=idx-(idx&~((1<<12)-1));
+				if(Is12Bit(low12)) {/*Chekc for bit 12 being set*/
+				  *(int32_t*)(ptr2)|=(idx>>12)<<12;
+				  *(int32_t*)((char*)ptr2+4)|=low12<<20;
+			    } else {
+				  *(int32_t*)(ptr2)|=((idx>>12)+1)<<12;
+				  *(int32_t*)((char*)ptr2+4)|=low12<<20;
+				}
+	    }
       }
 #undef OFF
 #undef REL
@@ -162,7 +179,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       HashAdd(tmpex, Fs->hash_table);
       SysSymImportsResolve2(st_ptr, ld_flags);
       break;
-    case IET_REL_I0 ... IET_IMM_I64:
+    case IET_REL_I0 ... IET_REL_RISCV:
       src = st_ptr - 5;
       LoadOneImport(&src, module_base, ld_flags);
       break;

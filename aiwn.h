@@ -373,7 +373,10 @@ typedef struct CCodeMiscRef {
   int32_t (*patch_uncond_br)(int64_t);
   int64_t user_data1;
   int64_t user_data2;
-  int64_t is_abs64;
+  int8_t is_abs64;
+  //Used for RISC-V
+  int8_t is_jal; //Not JALR
+  int8_t is_4_bytes; //Default is 8 bytes
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;
@@ -406,6 +409,7 @@ typedef struct CCodeMisc {
   };
   int32_t aot_before_hint; // See __HC_SetAOTRelocBeforeRIP
   int32_t use_cnt;
+  int32_t code_off; //Used for riscv_backend.c for choosing big/small jumps
   // The bit is set if the floating point register is alive at this inst
   int64_t freg_alive_bmp;
   CCodeMiscRef *refs;
@@ -833,7 +837,14 @@ enum {
   #define AIWNIOS_TMP_FREG_START 16
   #define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
 #endif
-
+#if defined (__riscv__) || defined (__riscv)
+#define AIWNIOS_IREG_START 0
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_TMP_IREG_CNT 5
+#define AIWNIOS_TMP_FREG_CNT 13
+#define AIWNIOS_IREG_CNT (27-18+1+1)
+#define AIWNIOS_FREG_CNT (27-18+1+2)
+#endif
 #if defined(_WIN32) || defined(WIN32)
   #define AIWNIOS_OSTREAM      stdout
   #define AIWNIOS_TEMPLATE_DIR "TODO"
@@ -1273,3 +1284,89 @@ void DebuggerClientStart(void *task, void **write_regs_to);
 void DebuggerBegin(); // CALL AT THE START OF THE PROGRAM
 void DebuggerClientSetGreg(void *task, int64_t which, int64_t v);
 void DebuggerClientWatchThisTID();
+
+int64_t RISCV_FMV_D_X(int64_t d,int64_t a);
+int64_t RISCV_FMV_X_D(int64_t d,int64_t a);
+int64_t RISCV_FCVT_D_L(int64_t d,int64_t a);
+int64_t RISCV_FCVT_L_D(int64_t d,int64_t a);
+int64_t RISCV_SGNJX(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SGNJN(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SGNJ(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FLE_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FLT_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FEQ_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FMAX_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FMIN_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FSQRT_D(int64_t d,int64_t a);
+int64_t RISCV_FDIV_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FMUL_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FSUB_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FADD_D(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_FSD(int64_t a,int64_t b,int64_t imm);
+int64_t RISCV_FLD(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_REMU(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_REM(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_DIVU(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_DIV(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_MULHU(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_MULHSU(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_MULH(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_MUL(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SRAW(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SRLW(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SLLW(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SUBW(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_ADDW(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SRAIW(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SRLIW(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SLLIW(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_ADDIW(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SRAI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SRLI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SLLI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SD(int64_t s1,int64_t s2,int64_t imm);
+int64_t RISCV_LD(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_LWU(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_ECALL();
+int64_t RISCV_AND(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_OR(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SRA(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SRL(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_XOR(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SLTU(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SLT(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SLL(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_SUB(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_ADD(int64_t d,int64_t a,int64_t b);
+int64_t RISCV_ANDI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_ORI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_XORI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SLTIU(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SLTI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_ADDI(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_SW(int64_t s2,int64_t s1,int64_t off);
+int64_t RISCV_SH(int64_t s2,int64_t s1,int64_t off);
+int64_t RISCV_SB(int64_t s2,int64_t s1,int64_t off);
+int64_t RISCV_LHU(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_LBU(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_LW(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_LH(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_LB(int64_t d,int64_t s,int64_t imm);
+int64_t RISCV_BGEU(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_BLTU(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_BGE(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_BLT(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_BNE(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_BEQ(int64_t s2,int64_t s,int64_t off);
+int64_t RISCV_JALR(int64_t d,int64_t s,int64_t off);
+int64_t RISCV_JAL(int64_t d,int64_t off);
+int64_t RISCV_AUIPC(int64_t d,int64_t off);
+int64_t RISCV_LUI(int64_t d,int64_t off);
+int64_t RISCV_J(int64_t imm_wtf,int64_t d,int64_t opc);
+int64_t RISCV_U(int64_t imm3112,int64_t d,int64_t opc);
+int64_t RISCV_B(int64_t imm,int64_t s1,int64_t s2,int64_t f3,int64_t opc);
+int64_t RISCV_S(int64_t imm115,int64_t s1,int64_t d,int64_t f3,int64_t opc);
+int64_t RISCV_I(int64_t imm,int64_t s1,int64_t f3,int64_t d,int64_t opc);
+int64_t RISCV_R(int64_t f7,int64_t s2,int64_t s1,int64_t f3,int64_t d,int64_t opc);
+int64_t ScreenUpdateInProgress();
+

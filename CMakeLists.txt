@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR) #For sauce I have come,and to sauce I shall return
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS
-  LANGUAGES C CXX ASM
+  LANGUAGES C ASM
 )
 option(BUILD_HCRT "Build HCRT" YES)
 set(default_build_type "Release")
@@ -18,7 +18,38 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif ()
 
 target_architecture(ARCH)
-if ("${ARCH}" STREQUAL "x86_64")
+message("A IS ${ARCH}")
+if ("${ARCH}" STREQUAL "riscv64")
+  set(
+    C_SOURCES
+    riscv_backend.c 
+    riscv_asm.c
+    bungis.c
+    cque.c
+    except.c
+    fs.c
+    hash.c
+    lex.c
+    main.c
+    mem.c
+    misc.c
+    optpass.c
+    parser.c
+    loader.c
+    windows.c
+    sound.c
+    dbg.c
+    multic.c
+    ffi_gen.c
+    argtable3.c
+    socket.c
+  )
+  set(ASM_SOURCES
+      miscRISCV.s
+      swapctxRISCV.s
+      ffi_call_tos_RISCV.s
+    )
+elseif ("${ARCH}" STREQUAL "x86_64")
   if (WIN32)
     set(ASM_SOURCES
       miscWIN.s
@@ -31,7 +62,6 @@ if ("${ARCH}" STREQUAL "x86_64")
       miscX86.s
       swapctxX86.s
       ffi_call_tos.s
-      miscTOSX86.s
     )
   endif ()
   set(
@@ -123,13 +153,13 @@ target_compile_options(aiwnios PRIVATE -w)
 
 add_library(FFI STATIC ${ASM_SOURCES})
 target_compile_options(FFI PRIVATE -w)
-set_target_properties(FFI PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(FFI PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(aiwnios PRIVATE FFI m)
 
 if (WIN32)
   target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 -static)
 else()
-  target_link_libraries(aiwnios PRIVATE pthread)
+  target_link_libraries(aiwnios PRIVATE SDL2 pthread)
 endif()
 
 

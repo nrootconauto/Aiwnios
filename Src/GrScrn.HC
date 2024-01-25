@@ -360,9 +360,11 @@ U0 GrUpdateTextModeText()
 }
 
 
-U0 GrUpdateScrn()
+Bool GrUpdateScrn()
 {//Called by the Window Manager $LK,"HERE",A="FF:::/Adam/WinMgr.HC,GrUpdateScrn"$, 30 times a second.
   CDC *dc;
+  //Finish rendering previous frame
+  if(ScreenUpdateInProgress) return FALSE;
   if (0) //if text mode
     ;//GrUpdateTasks; TODO RESTORE
   else {
@@ -387,4 +389,6 @@ U0 GrUpdateScrn()
   
   UpdateScreen(dc->body,dc->width,dc->height,dc->width_internal);
   MemCpy(gr.scrn_image->body,dc->body,dc->width_internal*dc->height);
+  
+  return TRUE;
 }

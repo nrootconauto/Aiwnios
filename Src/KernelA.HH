@@ -49,7 +49,7 @@ extern class CTask;
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
 #define inf	(0x7FF0000000000000(F64))
 #ifndef BOOTSTRAP
-#define �	(0x400921FB54442D18(F64))
+#define ã	(0x400921FB54442D18(F64))
 #endif
 #define pi	(0x400921FB54442D18(F64))
 #define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
@@ -402,6 +402,7 @@ class CPatchTableAbsAddr
 #define IET_IMM_U32		9
 #define IET_REL_I64		10
 #define IET_IMM_I64		11
+#define IET_REL_RISCV	12
 #define IEF_IMM_NOT_REL		1
 //reserved
 #define IET_REL32_EXPORT	16
@@ -1523,7 +1524,7 @@ public class CAutoCompleteDictGlbls
 #define OPTf_KEEP_PRIVATE	0x21
 #define OPTf_NO_REG_VAR		0x22  //Applied to funs, not stmts
 #define OPTf_GLBLS_ON_DATA_HEAP	0x23
-//Disable 10-byte float consts for ã,log2_10,log10_2,loge_2
+//Disable 10-byte float consts for Ã£,log2_10,log10_2,loge_2
 #define OPTf_NO_BUILTIN_CONST	0x24 //Applied to funs, not stmts
 #define OPTf_USE_IMM64		0x25 //Not completely implemented
 #define OPTf_KEEP_RELOCATIONS 0x26 //Added by nroot,will keep the CHashImport's
@@ -3071,6 +3072,10 @@ class CBpt
   //On ARM64 all the insts are 32bit
   U32	*addr,val;
 #endif
+#ifdef TARGET_RISCV
+  //On RISCV all the insts are 32bit unless compressed ISA 8|
+  U32	*addr,val;
+#endif
 };
 
 class CExcept
@@ -3945,6 +3950,7 @@ import U8 *CmdLineGetStr(U8 *);
 import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
+import I64 ScreenUpdateInProgress();
 #else
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
@@ -5450,7 +5456,7 @@ extern U0 GrUpdateTextBG();
 extern U0 GrUpdateTextFG();
 extern U0 DCBlotColor8(CDC *dc,CDC *img);
 extern U0 GrUpdateTextModeText();
-extern U0 GrUpdateScrn();
+extern Bool GrUpdateScrn();
 extern U0 Sprite3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,	Bool just_one_elem=FALSE);
 extern U0 Sprite3B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems);
 extern U0 Sprite3Mat4x4B(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,I64 *m);
@@ -7087,3 +7093,5 @@ extern U0 Dm(U8 *addr,I64 cnt=0x80);
 extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
+extern I64 GetRBP();
+
