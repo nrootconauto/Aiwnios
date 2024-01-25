@@ -32,11 +32,11 @@
 #endif
 #if defined(__FreeBSD__)
 typedef struct CFuckup {
-  struct CQue  base;
-  int64_t      signal;
-  pid_t        pid;
-  void        *task;
-  struct reg   regs;
+  struct CQue base;
+  int64_t signal;
+  pid_t pid;
+  void *task;
+  struct reg regs;
   struct fpreg fp;
 } CFuckup;
   #define PTRACE_TRACEME   PT_TRACE_ME
@@ -52,25 +52,25 @@ typedef struct CFuckup {
   #include <sys/user.h>
 typedef struct CFuckup {
   struct CQue base;
-  int64_t     signal;
-  pid_t       pid;
-  void       *task;
+  int64_t signal;
+  pid_t pid;
+  void *task;
   #if defined(_M_ARM64) || defined(__aarch64__)
-  struct user_pt_regs       regs;
+  struct user_pt_regs regs;
   struct user_fpsimd_struct fp;
   #elif defined(__x86_64__)
   struct user_fpregs_struct fp;
-  struct user_regs_struct   regs;
+  struct user_regs_struct regs;
   #endif
 } CFuckup;
 #elif defined(WIN32) || defined(_WIN32)
   #include <winnt.h>
 typedef struct CFuckup {
   struct CQue base;
-  int64_t     signal;
-  int64_t     pid; // Yeah GetThreadId
-  void       *task;
-  CONTEXT    *_regs; // regs may be alligned
+  int64_t signal;
+  int64_t pid; // Yeah GetThreadId
+  void *task;
+  CONTEXT *_regs; // regs may be alligned
 } CFuckup;
   #ifndef SIGCONT
     #define SIGCONT 0x101
@@ -104,19 +104,19 @@ typedef struct _CDbgMsgQue {
   CQue base;
   char msg[0x100];
 } _CDbgMsgQue;
-static CQue   debugger_msgs;
+static CQue debugger_msgs;
 static HANDLE debugger_mtx;
   #define HARD_CORE_CNT 64
-static HANDLE  active_threads[HARD_CORE_CNT];
+static HANDLE active_threads[HARD_CORE_CNT];
 static CONTEXT thread_use_ctx[HARD_CORE_CNT];
 static int64_t fault_codes[HARD_CORE_CNT];
 static int64_t something_happened = 0;
-static void    WriteMsg(char *buf) {
-     WaitForSingleObject(debugger_mtx, INFINITE);
-     _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
-     QueIns(msg, debugger_msgs.last);
-     strcpy(msg->msg, buf);
-     ReleaseMutex(debugger_mtx);
+static void WriteMsg(char *buf) {
+  WaitForSingleObject(debugger_mtx, INFINITE);
+  _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
+  QueIns(msg, debugger_msgs.last);
+  strcpy(msg->msg, buf);
+  ReleaseMutex(debugger_mtx);
 }
 static int64_t MsgPoll() {
   WaitForSingleObject(debugger_mtx, 5);
@@ -135,7 +135,7 @@ static void ReadMsg(char *buf) {
   ReleaseMutex(debugger_mtx);
 }
 static void GrabDebugger(int64_t code) {
-  HANDLE  h = GetCurrentThread();
+  HANDLE h = GetCurrentThread();
   int64_t tr;
   for (tr = 0; tr != HARD_CORE_CNT; tr++) {
     if (!active_threads[tr])
@@ -165,7 +165,7 @@ found:;
   ResumeThread(active_threads[tr]);
 }
 #else
-static int  debugger_pipe[2];
+static int debugger_pipe[2];
 static void ReadMsg(char *buf) {
   read(debugger_pipe[0], buf, 0x100);
 }
@@ -198,14 +198,14 @@ void DebuggerClientWatchThisTID() {
   ReleaseMutex(debugger_mtx);
 #else
   int64_t tid = gettid();
-  char    buf[256];
+  char buf[256];
   sprintf(buf, DBG_MSG_WATCH_TID, tid);
   WriteMsg(buf);
 #endif
 }
 #if defined(_WIN32) || defined(WIN32)
 static int64_t DebuggerWait(CQue *head, pid_t *got) {
-  int64_t  s, tid;
+  int64_t s, tid;
   CFuckup *fu;
   for (s = 0; s != HARD_CORE_CNT; s++) {
     if (Misc_LBtr(&something_happened, s)) {
@@ -226,8 +226,8 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
 }
 #else
 static int64_t DebuggerWait(CQue *head, pid_t *got) {
-  int      code, sig;
-  pid_t    pid = waitpid(-1, &code, WNOHANG | WUNTRACED | WCONTINUED);
+  int code, sig;
+  pid_t pid = waitpid(-1, &code, WNOHANG | WUNTRACED | WCONTINUED);
   CFuckup *fu;
   if (pid <= 0)
     return 0;
@@ -315,9 +315,9 @@ void DebuggerBegin() {
   pipe(debugger_pipe);
   tid = fork();
 #endif
-  int   code, sig;
+  int code, sig;
   void *task;
-  char  buf[4048], *ptr;
+  char buf[4048], *ptr;
   pid_t child = tid;
   if (!tid) {
 #if !(defined(_WIN32) || defined(WIN32))
@@ -346,8 +346,8 @@ void DebuggerBegin() {
     struct iovec poop;
 #endif
     CFuckup *fu, *last;
-    char    *ptr, *name;
-    int64_t  which, value, sig, *write_regs_to;
+    char *ptr, *name;
+    int64_t which, value, sig, *write_regs_to;
     QueInit(&fuckups);
     while (1) {
       if (MsgPoll()) {
@@ -362,7 +362,7 @@ void DebuggerBegin() {
             name = ptr + 1;
             if (!strncmp(name, "SGREG", strlen("SGREG"))) {
               void *task;
-              int   gott;
+              int gott;
               sscanf(buf, DBG_MSG_SET_GREG, &task, &gott, &which, &value);
 
               while (1) {
@@ -448,7 +448,7 @@ void DebuggerBegin() {
               break;
             } else if (!strncmp(name, "START", strlen("START"))) {
               void *task;
-              int   gott;
+              int gott;
               sscanf(buf, DBG_MSG_START, &task, &gott, &write_regs_to);
               while (1) {
                 DebuggerWait(&fuckups, NULL);
@@ -496,8 +496,8 @@ void DebuggerBegin() {
 #endif
               break;
             } else if (!strncmp(name, "RESUME", strlen("RESUME"))) {
-              void   *task;
-              int     gott;
+              void *task;
+              int gott;
               int64_t ss;
               sscanf(buf, DBG_MSG_RESUME, &task, &gott, &ss);
               while (1) {
@@ -625,7 +625,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   };
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
-  int64_t     actx[32];
+  int64_t actx[32];
   actx[0] = ctx->gregs[REG_RIP];
   actx[1] = ctx->gregs[REG_RSP];
   actx[2] = ctx->gregs[REG_RBP];
@@ -645,7 +645,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     #elif defined(__FreeBSD__)
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
-  int64_t     actx[32];
+  int64_t actx[32];
   actx[0] = ctx->mc_rip;
   actx[1] = ctx->mc_rsp;
   actx[2] = ctx->mc_rbp;
@@ -664,14 +664,14 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   setcontext(_ctx);
     #endif
   #elif defined(__aarch64__) || defined(_M_ARM64)
-  mcontext_t  *ctx = &_ctx->uc_mcontext;
+  mcontext_t *ctx = &_ctx->uc_mcontext;
   CHashExport *exp;
-  int64_t      is_single_step;
+  int64_t is_single_step;
   // See swapctxAARCH64.s
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -749,7 +749,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
   CONTEXT *ctx = einfo->ContextRecord;
   CFuckup *fu  = calloc(1, sizeof(CFuckup));
-  int64_t  sig = 0;
+  int64_t sig  = 0;
   QueIns(fu, &fuckups);
   fu->pid   = GetCurrentThreadId();
   fu->_regs = ctx;

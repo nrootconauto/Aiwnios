@@ -182,7 +182,7 @@ static uint8_t MODRMSIB(int64_t a) {
 
 static int64_t X86CmpRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -193,7 +193,7 @@ static int64_t X86CmpRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86CmovaRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -204,7 +204,7 @@ static int64_t X86CmovaRegReg(char *to, int64_t a, int64_t b) {
 }
 static int64_t X86CmovbRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -216,7 +216,7 @@ static int64_t X86CmovbRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86CmovlRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -227,7 +227,7 @@ static int64_t X86CmovlRegReg(char *to, int64_t a, int64_t b) {
 }
 static int64_t X86CmovgRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -240,7 +240,7 @@ static int64_t X86CmovgRegReg(char *to, int64_t a, int64_t b) {
 static int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 7, s, i, b, o);
@@ -253,7 +253,7 @@ static int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86CmpSIB32Imm(char *to, int64_t imm, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 7, s, i, b, o);
@@ -266,7 +266,7 @@ static int64_t X86CmpSIB32Imm(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86CmpSIB16Imm(char *to, int64_t imm, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -280,7 +280,7 @@ static int64_t X86CmpSIB16Imm(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86CmpSIB8Imm(char *to, int64_t imm, int64_t s, int64_t i,
                              int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 7, s, i, b, o);
@@ -292,7 +292,7 @@ static int64_t X86CmpSIB8Imm(char *to, int64_t imm, int64_t s, int64_t i,
 
 static int64_t X86CmpRegImm(char *to, int64_t a, int64_t imm) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -304,7 +304,7 @@ static int64_t X86CmpRegImm(char *to, int64_t a, int64_t imm) {
 
 static int64_t X86MovRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, b, 0, a));
@@ -315,7 +315,7 @@ static int64_t X86MovRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86CMovsRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -327,7 +327,7 @@ static int64_t X86CMovsRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86Leave(char *to, int64_t ul) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xc9);
@@ -336,7 +336,7 @@ static int64_t X86Leave(char *to, int64_t ul) {
 
 static int64_t X86Ret(char *to, int64_t ul) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (!ul) {
@@ -350,7 +350,7 @@ static int64_t X86Ret(char *to, int64_t ul) {
 
 int64_t X86MovImm(char *to, int64_t a, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (((1ll << 32) - 1) >= off && off >= 0) {
@@ -379,7 +379,7 @@ int64_t X86MovImm(char *to, int64_t a, int64_t off) {
 static int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, o);
@@ -390,7 +390,7 @@ static int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
 static int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -403,7 +403,7 @@ static int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
 static int64_t X86AddIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, r, s, i, b, o);
@@ -414,7 +414,7 @@ static int64_t X86AddIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
 
 static int64_t X86MovF64RIP(char *to, int64_t a, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xF2);
@@ -427,7 +427,7 @@ static int64_t X86MovF64RIP(char *to, int64_t a, int64_t off) {
 
 static int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -440,7 +440,7 @@ static int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
 static int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 0, s, i, b, o);
@@ -452,7 +452,7 @@ static int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 0, s, i, b, o);
@@ -464,7 +464,7 @@ static int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -477,7 +477,7 @@ static int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                  int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 0, s, i, b, o);
@@ -490,7 +490,7 @@ static int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 5, s, i, b, o);
@@ -502,7 +502,7 @@ static int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 5, s, i, b, o);
@@ -514,7 +514,7 @@ static int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                   int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -527,7 +527,7 @@ static int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
                                  int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 5, s, i, b, o);
@@ -540,7 +540,7 @@ static int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
 static int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, o);
@@ -551,7 +551,7 @@ static int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i,
 static int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -564,7 +564,7 @@ static int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i,
 static int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
                                 int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, r, s, i, b, o);
@@ -577,7 +577,7 @@ static int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
 
 static int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, a));
@@ -589,7 +589,7 @@ static int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
 
 static int64_t X86SubReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -600,7 +600,7 @@ static int64_t X86SubReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86AddReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -612,7 +612,7 @@ static int64_t X86AddReg(char *to, int64_t a, int64_t b) {
 static int64_t X86AddSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -624,7 +624,7 @@ static int64_t X86AddSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 static int64_t X86SubSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -635,7 +635,7 @@ static int64_t X86SubSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86IncReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -647,7 +647,7 @@ static int64_t X86IncReg(char *to, int64_t a) {
 static int64_t X86IncSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 0, s, i, b, off);
@@ -658,7 +658,7 @@ static int64_t X86IncSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86DecReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -670,7 +670,7 @@ static int64_t X86DecReg(char *to, int64_t a) {
 static int64_t X86DecSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 1, s, i, b, off);
@@ -682,7 +682,7 @@ static int64_t X86DecSIB64(char *to, int64_t s, int64_t i, int64_t b,
 static int64_t X86CVTTSD2SIRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
                                     int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -695,7 +695,7 @@ static int64_t X86CVTTSD2SIRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86CVTTSD2SIRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -708,7 +708,7 @@ static int64_t X86CVTTSD2SIRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86CVTTSI2SDRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -722,7 +722,7 @@ static int64_t X86CVTTSI2SDRegReg(char *to, int64_t a, int64_t b) {
 static int64_t X86CVTTSI2SDRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
                                     int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -735,7 +735,7 @@ static int64_t X86CVTTSI2SDRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86AndPDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -750,7 +750,7 @@ static int64_t X86AndPDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86AndPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -763,7 +763,7 @@ static int64_t X86AndPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86OrPDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -778,7 +778,7 @@ static int64_t X86OrPDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86OrPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                             int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -791,7 +791,7 @@ static int64_t X86OrPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86XorPDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -806,7 +806,7 @@ static int64_t X86XorPDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86XorPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -819,7 +819,7 @@ static int64_t X86XorPDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86COMISDRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -833,7 +833,7 @@ static int64_t X86COMISDRegReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86Test(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -844,7 +844,7 @@ static int64_t X86Test(char *to, int64_t a, int64_t b) {
 
 static int64_t X86AddSDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -859,7 +859,7 @@ static int64_t X86AddSDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86AddSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -872,7 +872,7 @@ static int64_t X86AddSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86SubSDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -887,7 +887,7 @@ static int64_t X86SubSDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86SubSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -900,7 +900,7 @@ static int64_t X86SubSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86RoundSD(char *to, int64_t a, int64_t b, int64_t mode) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -915,7 +915,7 @@ static int64_t X86RoundSD(char *to, int64_t a, int64_t b, int64_t mode) {
 
 static int64_t X86MulSDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -930,7 +930,7 @@ static int64_t X86MulSDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86MulSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -943,7 +943,7 @@ static int64_t X86MulSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86DivSDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -958,7 +958,7 @@ static int64_t X86DivSDReg(char *to, int64_t a, int64_t b) {
 static int64_t X86DivSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -971,7 +971,7 @@ static int64_t X86DivSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86AndReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -982,7 +982,7 @@ static int64_t X86AndReg(char *to, int64_t a, int64_t b) {
 
 static int64_t X86AndImm(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -995,7 +995,7 @@ static int64_t X86AndImm(char *to, int64_t a, int64_t b) {
 static int64_t X86AndSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -1006,7 +1006,7 @@ static int64_t X86AndSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86OrReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -1018,7 +1018,7 @@ static int64_t X86OrReg(char *to, int64_t a, int64_t b) {
 static int64_t X86OrSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                           int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -1029,7 +1029,7 @@ static int64_t X86OrSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86OrImm(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1041,7 +1041,7 @@ static int64_t X86OrImm(char *to, int64_t a, int64_t b) {
 
 static int64_t X86XorReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -1053,7 +1053,7 @@ static int64_t X86XorReg(char *to, int64_t a, int64_t b) {
 static int64_t X86XorSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -1064,7 +1064,7 @@ static int64_t X86XorSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86XorImm(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1076,7 +1076,7 @@ static int64_t X86XorImm(char *to, int64_t a, int64_t b) {
 
 static int64_t X86Cqo(char *to, int64_t unused) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, 0));
@@ -1086,7 +1086,7 @@ static int64_t X86Cqo(char *to, int64_t unused) {
 
 static int64_t X86DivReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 6, 0, a));
@@ -1098,7 +1098,7 @@ static int64_t X86DivReg(char *to, int64_t a) {
 static int64_t X86DivSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 6, s, i, b, off);
@@ -1109,7 +1109,7 @@ static int64_t X86DivSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86IDivReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1121,7 +1121,7 @@ static int64_t X86IDivReg(char *to, int64_t a) {
 static int64_t X86IDivSIB64(char *to, int64_t s, int64_t i, int64_t b,
                             int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 7, s, i, b, off);
@@ -1132,7 +1132,7 @@ static int64_t X86IDivSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86SarRCX(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1144,7 +1144,7 @@ static int64_t X86SarRCX(char *to, int64_t a) {
 static int64_t X86SarRCXSIB64(char *to, int64_t s, int64_t i, int64_t b,
                               int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 7, s, i, b, off);
@@ -1155,7 +1155,7 @@ static int64_t X86SarRCXSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86SarImm(char *to, int64_t a, int64_t imm) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1168,7 +1168,7 @@ static int64_t X86SarImm(char *to, int64_t a, int64_t imm) {
 static int64_t X86SarImmSIB64(char *to, int64_t s, int64_t i, int64_t b,
                               int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 7, s, i, b, off);
@@ -1179,7 +1179,7 @@ static int64_t X86SarImmSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86ShrRCX(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1190,7 +1190,7 @@ static int64_t X86ShrRCX(char *to, int64_t a) {
 
 static int64_t X86ShrImm(char *to, int64_t a, int64_t imm) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1202,7 +1202,7 @@ static int64_t X86ShrImm(char *to, int64_t a, int64_t imm) {
 
 static int64_t X86ShlRCX(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1213,7 +1213,7 @@ static int64_t X86ShlRCX(char *to, int64_t a) {
 
 static int64_t X86ShlImm(char *to, int64_t a, int64_t imm) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1225,7 +1225,7 @@ static int64_t X86ShlImm(char *to, int64_t a, int64_t imm) {
 
 static int64_t X86MulReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1237,7 +1237,7 @@ static int64_t X86MulReg(char *to, int64_t a) {
 static int64_t X86MulSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 4, s, i, b, off);
@@ -1248,7 +1248,7 @@ static int64_t X86MulSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86IMulReg(char *to, int64_t a) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, a));
@@ -1259,7 +1259,7 @@ static int64_t X86IMulReg(char *to, int64_t a) {
 static int64_t X86IMulSIB64(char *to, int64_t s, int64_t i, int64_t b,
                             int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 5, s, i, b, off);
@@ -1270,7 +1270,7 @@ static int64_t X86IMulSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86IMul2Reg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, a, 0, b));
@@ -1283,7 +1283,7 @@ static int64_t X86IMul2Reg(char *to, int64_t a, int64_t b) {
 static int64_t X86IMul2SIB64(char *to, int64_t r, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, off);
@@ -1295,7 +1295,7 @@ static int64_t X86IMul2SIB64(char *to, int64_t r, int64_t s, int64_t i,
 
 int64_t X86Call32(char *to, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xe8);
@@ -1305,7 +1305,7 @@ int64_t X86Call32(char *to, int64_t off) {
 
 int64_t X86CallReg(char *to, int64_t reg) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 2, 0, reg));
@@ -1316,7 +1316,7 @@ int64_t X86CallReg(char *to, int64_t reg) {
 
 int64_t X86CallSIB64(char *to, int64_t s, int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 2, s, i, b, o);
@@ -1327,7 +1327,7 @@ int64_t X86CallSIB64(char *to, int64_t s, int64_t i, int64_t b, int64_t o) {
 
 int64_t X86PushReg(char *to, int64_t reg) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, reg, 0, reg));
@@ -1337,7 +1337,7 @@ int64_t X86PushReg(char *to, int64_t reg) {
 
 int64_t X86PushM16(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 6, s, i, b, off);
@@ -1348,7 +1348,7 @@ int64_t X86PushM16(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
 }
 int64_t X86PushM32(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 6, s, i, b, off);
@@ -1358,7 +1358,7 @@ int64_t X86PushM32(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
 }
 int64_t X86PushM64(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 6, s, i, b, off);
@@ -1368,7 +1368,7 @@ int64_t X86PushM64(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
 }
 int64_t X86PushImm(char *to, int64_t imm) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x68);
@@ -1378,7 +1378,7 @@ int64_t X86PushImm(char *to, int64_t imm) {
 
 int64_t X86PopReg(char *to, int64_t reg) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, reg, 0, reg));
@@ -1389,7 +1389,7 @@ int64_t X86PopReg(char *to, int64_t reg) {
 static int64_t X86CmpRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, o);
@@ -1401,7 +1401,7 @@ static int64_t X86CmpRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
 static int64_t X86CmpSIBReg64(char *to, int64_t a, int64_t s, int64_t i,
                               int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, o);
@@ -1412,7 +1412,7 @@ static int64_t X86CmpSIBReg64(char *to, int64_t a, int64_t s, int64_t i,
 
 static int64_t X86MovQF64I64(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1426,7 +1426,7 @@ static int64_t X86MovQF64I64(char *to, int64_t a, int64_t b) {
 static int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                          int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, a, s, i, b, off);
@@ -1437,7 +1437,7 @@ static int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86MovQI64F64(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1450,7 +1450,7 @@ static int64_t X86MovQI64F64(char *to, int64_t a, int64_t b) {
 
 static int64_t X86Jmp(char *to, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xe9);
@@ -1461,7 +1461,7 @@ static int64_t X86Jmp(char *to, int64_t off) {
 static int64_t X86JmpSIB(char *to, int64_t scale, int64_t idx, int64_t base,
                          int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 4, scale, idx, base, off);
@@ -1472,7 +1472,7 @@ static int64_t X86JmpSIB(char *to, int64_t scale, int64_t idx, int64_t base,
 
 static int64_t X86JmpReg(char *to, int64_t r) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 0, 0, r));
@@ -1483,7 +1483,7 @@ static int64_t X86JmpReg(char *to, int64_t r) {
 
 static int64_t X86NegReg(char *to, int64_t r) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 3, 0, r));
@@ -1495,7 +1495,7 @@ static int64_t X86NegReg(char *to, int64_t r) {
 static int64_t X86NegSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 3, s, i, b, off);
@@ -1506,7 +1506,7 @@ static int64_t X86NegSIB64(char *to, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86NotReg(char *to, int64_t r) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 2, 0, r));
@@ -1518,7 +1518,7 @@ static int64_t X86NotReg(char *to, int64_t r) {
 static int64_t X86NotSIB64(char *to, int64_t s, int64_t i, int64_t b,
                            int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 2, s, i, b, off);
@@ -1530,7 +1530,7 @@ static int64_t X86NotSIB64(char *to, int64_t s, int64_t i, int64_t b,
 // MOVSD
 static int64_t X86MovRegRegF64(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -1545,7 +1545,7 @@ static int64_t X86MovRegRegF64(char *to, int64_t a, int64_t b) {
 int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -1558,7 +1558,7 @@ int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf2);
@@ -1572,7 +1572,7 @@ int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovRegIndirI64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1584,7 +1584,7 @@ int64_t X86MovRegIndirI64(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovIndirI8Imm(char *to, int64_t imm, int64_t scale, int64_t index,
                          int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 0, scale, index, base, off);
@@ -1597,7 +1597,7 @@ int64_t X86MovIndirI8Imm(char *to, int64_t imm, int64_t scale, int64_t index,
 int64_t X86MovIndirI16Imm(char *to, int64_t imm, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1611,7 +1611,7 @@ int64_t X86MovIndirI16Imm(char *to, int64_t imm, int64_t scale, int64_t index,
 int64_t X86MovIndirI32Imm(char *to, int64_t imm, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, 0, scale, index, base, off);
@@ -1624,7 +1624,7 @@ int64_t X86MovIndirI32Imm(char *to, int64_t imm, int64_t scale, int64_t index,
 int64_t X86MovIndirI64Imm(char *to, int64_t imm, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 0, scale, index, base, off);
@@ -1637,7 +1637,7 @@ int64_t X86MovIndirI64Imm(char *to, int64_t imm, int64_t scale, int64_t index,
 int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1649,7 +1649,7 @@ int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1661,7 +1661,7 @@ int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index,
                          int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1673,7 +1673,7 @@ int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1686,7 +1686,7 @@ int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1698,7 +1698,7 @@ int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1710,7 +1710,7 @@ int64_t X86MovRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovIndirRegI32(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1722,7 +1722,7 @@ int64_t X86MovIndirRegI32(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1735,7 +1735,7 @@ int64_t X86MovRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
 static int64_t X86MovZXRegIndirI8(char *to, int64_t reg, int64_t scale,
                                   int64_t index, int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1747,7 +1747,7 @@ static int64_t X86MovZXRegIndirI8(char *to, int64_t reg, int64_t scale,
 
 static int64_t X86MovZXRegRegI8(char *to, int64_t reg, int64_t reg2) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, reg, 0, reg2))
@@ -1760,7 +1760,7 @@ static int64_t X86MovZXRegRegI8(char *to, int64_t reg, int64_t reg2) {
 static int64_t X86MovZXRegIndirI16(char *to, int64_t reg, int64_t scale,
                                    int64_t index, int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1773,7 +1773,7 @@ static int64_t X86MovZXRegIndirI16(char *to, int64_t reg, int64_t scale,
 static int64_t X86MovSXRegIndirI8(char *to, int64_t reg, int64_t scale,
                                   int64_t index, int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1786,7 +1786,7 @@ static int64_t X86MovSXRegIndirI8(char *to, int64_t reg, int64_t scale,
 static int64_t X86MovSXRegIndirI16(char *to, int64_t reg, int64_t scale,
                                    int64_t index, int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1799,7 +1799,7 @@ static int64_t X86MovSXRegIndirI16(char *to, int64_t reg, int64_t scale,
 static int64_t X86MovSXRegIndirI32(char *to, int64_t reg, int64_t scale,
                                    int64_t index, int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, reg, scale, index, base, off);
@@ -1811,7 +1811,7 @@ static int64_t X86MovSXRegIndirI32(char *to, int64_t reg, int64_t scale,
 int64_t X86MovIndirRegI16(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x66);
@@ -1824,7 +1824,7 @@ int64_t X86MovIndirRegI16(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index,
                          int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1836,7 +1836,7 @@ int64_t X86MovRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index,
 int64_t X86MovIndirRegI8(char *to, int64_t reg, int64_t scale, int64_t index,
                          int64_t base, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(0, reg, scale, index, base, off);
@@ -1847,7 +1847,7 @@ int64_t X86MovIndirRegI8(char *to, int64_t reg, int64_t scale, int64_t index,
 
 int64_t X86BtRegReg(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, b, 0, r));
@@ -1860,7 +1860,7 @@ int64_t X86BtRegReg(char *to, int64_t r, int64_t b) {
 int64_t X86BtSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                     int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, off);
@@ -1872,7 +1872,7 @@ int64_t X86BtSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtRegImm(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 4, 0, b));
@@ -1886,7 +1886,7 @@ int64_t X86BtRegImm(char *to, int64_t r, int64_t b) {
 int64_t X86BtSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                     int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 4, s, i, b, off);
@@ -1899,7 +1899,7 @@ int64_t X86BtSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtcRegReg(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, b, 0, r));
@@ -1912,7 +1912,7 @@ int64_t X86BtcRegReg(char *to, int64_t r, int64_t b) {
 int64_t X86BtcSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, off);
@@ -1924,7 +1924,7 @@ int64_t X86BtcSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 static int64_t X86Lock(char *to, int64_t ul) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0xf0);
@@ -1932,7 +1932,7 @@ static int64_t X86Lock(char *to, int64_t ul) {
 }
 int64_t X86BtcRegImm(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, r, 0, 7));
@@ -1946,7 +1946,7 @@ int64_t X86BtcRegImm(char *to, int64_t r, int64_t b) {
 int64_t X86BtcSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 7, s, i, b, off);
@@ -1959,7 +1959,7 @@ int64_t X86BtcSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtsRegReg(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, b, 0, r));
@@ -1972,7 +1972,7 @@ int64_t X86BtsRegReg(char *to, int64_t r, int64_t b) {
 int64_t X86BtsSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, off);
@@ -1984,7 +1984,7 @@ int64_t X86BtsSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtsRegImm(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 5, 0, b));
@@ -1998,7 +1998,7 @@ int64_t X86BtsRegImm(char *to, int64_t r, int64_t b) {
 int64_t X86BtsSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 5, s, i, b, off);
@@ -2011,7 +2011,7 @@ int64_t X86BtsSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtrRegReg(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, b, 0, r));
@@ -2024,7 +2024,7 @@ int64_t X86BtrRegReg(char *to, int64_t r, int64_t b) {
 int64_t X86BtrSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, r, s, i, b, off);
@@ -2036,7 +2036,7 @@ int64_t X86BtrSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
 
 int64_t X86BtrRegImm(char *to, int64_t r, int64_t b) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(ErectREX(1, 6, 0, b));
@@ -2050,7 +2050,7 @@ int64_t X86BtrRegImm(char *to, int64_t r, int64_t b) {
 int64_t X86BtrSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
                      int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   SIB_BEGIN(1, 6, s, i, b, off);
@@ -2384,7 +2384,7 @@ static CCodeMisc *GetF64LiteralMisc(CCmpCtrl *cctrl, double imm) {
 static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
                            int64_t code_off) {
   CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
-  char      *dptr;
+  char *dptr;
   for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
     if (misc->type == CMT_FLOAT_CONST)
       if (misc->integer == *(int64_t *)&imm) {
@@ -2673,7 +2673,7 @@ static CRPN *__AddOffset(CRPN *r, int64_t *const_val) {
   if (r->type != IC_ADD && r->type != IC_SUB)
     return NULL;
   int64_t mul = (r->type == IC_ADD) ? 1 : -1;
-  CRPN   *n0 = ICArgN(r, 0), *n1 = ICArgN(r, 1);
+  CRPN *n0 = ICArgN(r, 0), *n1 = ICArgN(r, 1);
   if (IsConst(n0) && Is32Bit(ConstVal(n0))) {
     if (const_val)
       *const_val = mul * ConstVal(n0);
@@ -2700,9 +2700,9 @@ static int64_t IsCompare(int64_t c) {
 
 static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
                            int64_t *scale) {
-  CRPN   *b = NULL, *idx = NULL;
+  CRPN *b = NULL, *idx = NULL;
   int64_t tmp, i = 0, i2 = -1, is_sib = 0;
-  CRPN   *arg = r;
+  CRPN *arg = r;
   while (__AddOffset(arg, &tmp)) {
     arg = __AddOffset(arg, &tmp);
     i += tmp;
@@ -3262,10 +3262,10 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
 static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
   int64_t i, has_vargs = 0;
-  CICArg  tmp = {0};
-  CRPN   *rpn2;
+  CICArg tmp = {0};
+  CRPN *rpn2;
   int64_t to_pop = rpn->length * 8;
-  void   *fptr;
+  void *fptr;
   for (i = 0; i < rpn->length; i++) {
     rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {
@@ -4034,7 +4034,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
     return code_off;
   }
   int64_t r = rpn->raw_type, rsz, off, mul, lea = 0, reg;
-  CRPN   *next = rpn->base.next, *next2, *next3, *next4, *tmp;
+  CRPN *next = rpn->base.next, *next2, *next3, *next4, *tmp;
   switch (r) {
     break;
   case RT_I8i:
@@ -4073,10 +4073,10 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
 #define TYPECAST_ASSIGN_BEGIN(DST, SRC)                                        \
   {                                                                            \
     int64_t pop = 0, pop2 = 0;                                                 \
-    CICArg  _orig = {0};                                                       \
-    CRPN   *_tc   = DST;                                                       \
-    CRPN   *SRC2  = SRC;                                                       \
-    DST           = DST->base.next;                                            \
+    CICArg _orig = {0};                                                        \
+    CRPN *_tc    = DST;                                                        \
+    CRPN *SRC2   = SRC;                                                        \
+    DST          = DST->base.next;                                             \
     if (DST->type == IC_DEREF) {                                               \
       code_off      = DerefToICArg(cctrl, &_orig, DST, 1, bin, code_off);      \
       DST->res      = _orig;                                                   \
@@ -4111,8 +4111,8 @@ static int64_t __SexyPreOp(
                          int64_t),
     char *bin, int64_t code_off) {
   int64_t code, sz;
-  CRPN   *next    = rpn->base.next, *tc;
-  CICArg  derefed = {0}, tmp = {0}, tmp2 = {0};
+  CRPN *next     = rpn->base.next, *tc;
+  CICArg derefed = {0}, tmp = {0}, tmp2 = {0};
   if (next->type == IC_TYPECAST) {
     TYPECAST_ASSIGN_BEGIN(next, next);
     switch (next->raw_type) {
@@ -4233,7 +4233,7 @@ static int64_t __SexyPreOp(
 static int64_t X86AndIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4264,7 +4264,7 @@ static int64_t X86AndIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
 static int64_t X86XorIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4295,7 +4295,7 @@ static int64_t X86XorIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
 static int64_t X86XorIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4309,7 +4309,7 @@ static int64_t X86XorIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
 static int64_t X86AndIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4323,7 +4323,7 @@ static int64_t X86AndIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
 static int64_t X86ShlIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   switch (sz) {
@@ -4347,7 +4347,7 @@ static int64_t X86ShlIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
 static int64_t X86ShrIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   switch (sz) {
@@ -4371,7 +4371,7 @@ static int64_t X86ShrIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
 static int64_t X86SarIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
                                int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   switch (sz) {
@@ -4394,7 +4394,7 @@ static int64_t X86SarIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s,
 static int64_t X86OrIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
                               int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4408,7 +4408,7 @@ static int64_t X86OrIndirXReg(char *to, int64_t sz, int64_t r, int64_t s,
 static int64_t X86OrIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
                               int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -4438,7 +4438,7 @@ static int64_t X86OrIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s,
 
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off) {
-  CRPN  *next = ICArgN(rpn, 1), *next2 = ICArgN(rpn, 0), *next_next;
+  CRPN *next = ICArgN(rpn, 1), *next2 = ICArgN(rpn, 0), *next_next;
   CICArg old = rpn->res, dummy = {0}, old2 = {0};
 enter:;
   cctrl->backend_user_data9 = 1;
@@ -5123,8 +5123,8 @@ static int64_t IsSavedIReg(int64_t r) {
 //
 static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
   CMemberLst *lst;
-  CRPN       *r;
-  int64_t     cnt = 0;
+  CRPN *r;
+  int64_t cnt = 0;
   memset(to_push, 0, 16);
   if (!cctrl->cur_fun) {
     // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
@@ -5152,7 +5152,7 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
 
 static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
   CMemberLst *lst;
-  int64_t     cnt = 0;
+  int64_t cnt = 0;
   memset(to_push, 0, 16);
   CRPN *r;
   if (!cctrl->cur_fun) {
@@ -5197,7 +5197,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
 #define X86_COND_NS 0xb1
 static int64_t X86Jcc(char *to, int64_t cond, int64_t off) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   ADD_U8(0x0f);
@@ -5281,7 +5281,7 @@ static int64_t X86Jcc(char *to, int64_t cond, int64_t off) {
 
 static int64_t X86Setcc(char *to, int64_t cond, int64_t r) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if ((r & 0b1000) || r == RSI || r == RDI)
@@ -5359,16 +5359,16 @@ static int64_t X86Setcc(char *to, int64_t cond, int64_t r) {
 }
 
 static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
-  char    push_ireg[16];
-  char    push_freg[16];
-  char    ilist[16];
-  char    flist[16];
+  char push_ireg[16];
+  char push_freg[16];
+  char ilist[16];
+  char flist[16];
   int64_t i, i2, i3, r, r2, ireg_arg_cnt, freg_arg_cnt, stk_arg_cnt, fsz, code,
       off;
-  int64_t     has_vargs = 0, arg_cnt = 0;
+  int64_t has_vargs = 0, arg_cnt = 0;
   CMemberLst *lst;
-  CICArg      fun_arg = {0}, write_to = {0}, stack = {0}, tmp = {0};
-  CRPN       *rpn, *arg;
+  CICArg fun_arg = {0}, write_to = {0}, stack = {0}, tmp = {0};
+  CRPN *rpn, *arg;
   if (cctrl->cur_fun) {
     fsz     = cctrl->cur_fun->base.sz + 16; //+16 for RBP/return address
     arg_cnt = cctrl->cur_fun->argc;
@@ -5506,12 +5506,12 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
 // DO NOT CHANGE WITHOUT LOOKING CLOSEY AT FuncProlog
 //
 static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
-  char    push_ireg[16], ilist[16];
-  char    push_freg[16], flist[16];
+  char push_ireg[16], ilist[16];
+  char push_freg[16], flist[16];
   int64_t i, r, r2, fsz, i2, i3, off, is_vargs = 0, arg_cnt = 0;
   int64_t fsave_area;
-  CICArg  spill_loc = {0}, write_to = {0};
-  CRPN   *rpn;
+  CICArg spill_loc = {0}, write_to = {0};
+  CRPN *rpn;
   /* <== OLD SP
    * saved regs
    * wiggle room
@@ -5606,7 +5606,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
 static int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i,
                             int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -5622,7 +5622,7 @@ static int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i,
 static int64_t X86DecIndirX(char *to, int64_t sz, int64_t s, int64_t i,
                             int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -5638,7 +5638,7 @@ static int64_t X86DecIndirX(char *to, int64_t sz, int64_t s, int64_t i,
 static int64_t X86AddIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s,
                                  int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -5666,7 +5666,7 @@ static int64_t X86AddIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s,
 static int64_t X86SubIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s,
                                  int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
-  char    buf[16];
+  char buf[16];
   if (!to)
     to = buf;
   if (sz == 2)
@@ -5702,10 +5702,10 @@ static int64_t __SexyPostOp(
   //
   // See hack in PushTmpDepthFirst motherfucker
   //
-  CRPN   *next = rpn->base.next, *tc;
+  CRPN *next = rpn->base.next, *tc;
   int64_t code;
   int64_t sz;
-  CICArg  derefed = {0}, tmp = {0}, tmp2 = {0};
+  CICArg derefed = {0}, tmp = {0}, tmp2 = {0};
   if (next->type == IC_TYPECAST) {
     TYPECAST_ASSIGN_BEGIN(next, next);
     switch (next->raw_type) {
@@ -5840,7 +5840,7 @@ static int64_t SEG_FS(char *to, int64_t dummy) {
   return 1;
 }
 static int64_t MovRAXMoffs32(char *to, int64_t off) {
-  char    buf[16];
+  char buf[16];
   int64_t len = 0;
   if (!to)
     to = buf;
@@ -5885,11 +5885,11 @@ static int64_t IsCompoundCompare(CRPN *r) {
 int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                        int64_t code_off) {
   CCodeMisc *misc, *misc2;
-  CRPN      *next, *next2, **range, **range_args, *next3, *a, *b;
-  CICArg     tmp = {0}, orig_dst = {0}, tmp2 = {0}, derefed = {0};
+  CRPN *next, *next2, **range, **range_args, *next3, *a, *b;
+  CICArg tmp = {0}, orig_dst = {0}, tmp2 = {0}, derefed = {0};
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse,
-          is_typecast, use_lock_prefix  = 0;
-  int64_t   *range_cmp_types, use_flags = rpn->res.set_flags;
+          is_typecast, use_lock_prefix = 0;
+  int64_t *range_cmp_types, use_flags  = rpn->res.set_flags;
   CCodeMisc *old_fail_misc  = (CCodeMisc *)cctrl->backend_user_data5,
             *old_pass_misc  = (CCodeMisc *)cctrl->backend_user_data6;
   cctrl->backend_user_data5 = 0;
@@ -5919,7 +5919,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_LOCK]              = &&ic_lock,
       [IC_GOTO]              = &&ic_goto,
       [IC_GOTO_IF]           = &&ic_goto_if,
-      [IC_TO_BOOL]            = &&ic_to_bool,
+      [IC_TO_BOOL]           = &&ic_to_bool,
       [IC_TO_I64]            = &&ic_to_i64,
       [IC_TO_F64]            = &&ic_to_f64,
       [IC_LABEL]             = &&ic_label,
@@ -6354,44 +6354,45 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       }
     }
     break;
-    ic_to_bool:
-    into_reg=0;
-    tmp.mode=MD_REG;
-    tmp.raw_type=RT_I64i;
-    if(rpn->res.mode==MD_REG)
-		into_reg=rpn->res.reg;
-     tmp.reg=into_reg;
-    next     = rpn->base.next;
-    if(ModeIsDerefToSIB(next)&&next->raw_type!=RT_F64) {
-		code_off=DerefToICArg(cctrl,&tmp,next,AIWNIOS_TMP_IREG_POOP,bin,code_off);
-		switch(tmp.raw_type) {
-			case RT_I8i:
-			case RT_U8i:
-			AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, tmp.__SIB_scale,    
-                           tmp.reg2, tmp.reg, tmp.off);
-			break;
-			case RT_I16i:
-			case RT_U16i:
-			AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, tmp.__SIB_scale,    
-                           tmp.reg2, tmp.reg, tmp.off);
-			break;
-			case RT_I32i:
-			case RT_U32i:
-			AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, tmp.__SIB_scale,    
-                           tmp.reg2, tmp.reg, tmp.off);
-			break;
-			default:
-			          AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, tmp.__SIB_scale,    
-                           tmp.reg2, tmp.reg, tmp.off);
-			break;
-		}
-		AIWNIOS_ADD_CODE(X86Setcc,X86_COND_E|1,into_reg);
-	} else {
-		code_off = __OptPassFinal(cctrl, next, bin, code_off);
-		code_off=PutICArgIntoReg(cctrl,&next->res,RT_I64i,0,bin,code_off);
-		AIWNIOS_ADD_CODE(X86CmpRegImm,next->res.reg,0);
-		AIWNIOS_ADD_CODE(X86Setcc,X86_COND_E|1,into_reg);
-	}
+  ic_to_bool:
+    into_reg     = 0;
+    tmp.mode     = MD_REG;
+    tmp.raw_type = RT_I64i;
+    if (rpn->res.mode == MD_REG)
+      into_reg = rpn->res.reg;
+    tmp.reg = into_reg;
+    next    = rpn->base.next;
+    if (ModeIsDerefToSIB(next) && next->raw_type != RT_F64) {
+      code_off =
+          DerefToICArg(cctrl, &tmp, next, AIWNIOS_TMP_IREG_POOP, bin, code_off);
+      switch (tmp.raw_type) {
+      case RT_I8i:
+      case RT_U8i:
+        AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
+                         tmp.off);
+        break;
+      case RT_I16i:
+      case RT_U16i:
+        AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
+                         tmp.off);
+        break;
+      case RT_I32i:
+      case RT_U32i:
+        AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
+                         tmp.off);
+        break;
+      default:
+        AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
+                         tmp.off);
+        break;
+      }
+      AIWNIOS_ADD_CODE(X86Setcc, X86_COND_E | 1, into_reg);
+    } else {
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
+      AIWNIOS_ADD_CODE(X86CmpRegImm, next->res.reg, 0);
+      AIWNIOS_ADD_CODE(X86Setcc, X86_COND_E | 1, into_reg);
+    }
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     break;
     // These both do the same thing,only thier type detirmines what happens
@@ -8088,14 +8089,14 @@ ret:
 // 3. Fill in the poo poo's
 //
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
-  int64_t       code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
-  int64_t       min_ln = 0, max_ln = 0, statics_sz = 0;
-  char         *bin = NULL;
-  char         *ptr;
-  CCodeMisc    *misc;
+  int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
+  int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
+  char *bin = NULL;
+  char *ptr;
+  CCodeMisc *misc;
   CCodeMiscRef *cm_ref, *cm_ref_tmp;
-  CHashImport  *import;
-  CRPN         *r;
+  CHashImport *import;
+  CRPN *r;
   cctrl->fregs_restore_label = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->fregs_save_label    = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->epilog_label        = CodeMiscNew(cctrl, CMT_LABEL);

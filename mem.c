@@ -23,7 +23,7 @@ struct CMemUnused;
 // bytes wide) Beacuse the address space will be 2 GB,we can have a fixed length
 // bitmap of 2GB/8/64 int64_t's and i can Misc_Bt it to check if it is valid
 //
-int64_t      bc_enable = 0;
+int64_t bc_enable = 0;
 static char *bc_good_bitmap;
 
 void InitBoundsChecker() {
@@ -38,7 +38,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   VirtualFree(blk, 0, MEM_RELEASE);
 #else
   static int64_t ps;
-  int64_t        b;
+  int64_t b;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (blk->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
@@ -53,7 +53,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     hc = Fs->heap;
   void *at = NULL;
 #if defined(_WIN32) || defined(WIN32)
-  CMemBlk       *ret = NULL;
+  CMemBlk *ret = NULL;
   static int64_t dwAllocationGranularity;
   if (!dwAllocationGranularity) {
     SYSTEM_INFO si;
@@ -77,12 +77,12 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     return NULL;
 #else
   #if defined(__x86_64__)
-  int64_t        add_flags = bc_enable || hc->is_code_heap ? MAP_32BIT : 0;
+  int64_t add_flags = bc_enable || hc->is_code_heap ? MAP_32BIT : 0;
   #else
   int64_t add_flags = 0;
   #endif
   static int64_t ps;
-  int64_t        b;
+  int64_t b;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
@@ -100,7 +100,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (ret == MAP_FAILED)
     return NULL;
 #endif
-  int64_t      threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
+  int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
   CMemUnused **unm, *tmp, *tmp2;
   QueIns(&ret->base, hc->mem_blks.last);
   ret->pags = pags;
@@ -134,8 +134,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     t = Fs->heap;
   int64_t orig = cnt;
   cnt += 16;
-  CHeapCtrl  *hc = t;
-  int64_t     pags;
+  CHeapCtrl *hc = t;
+  int64_t pags;
   CMemUnused *ret;
   if (hc->hc_signature != 'H')
     hc = ((CTask *)hc)->heap;
@@ -200,8 +200,8 @@ almost_done:
 
 void __AIWNIOS_Free(void *ptr) {
   CMemUnused *un = ptr, *hash;
-  CHeapCtrl  *hc;
-  int64_t     cnt;
+  CHeapCtrl *hc;
+  int64_t cnt;
   if (!ptr)
     return;
   un--; // Area before ptr is CMemUnused*
@@ -237,7 +237,7 @@ fin:
 
 int64_t MSize(void *ptr) {
   CMemUnused *un = ptr;
-  int64_t     cnt;
+  int64_t cnt;
   if (!ptr)
     return 0;
   un--;
@@ -275,7 +275,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     VirtualFree(m, 0, MEM_RELEASE);
 #else
     static int64_t ps;
-    int64_t        b;
+    int64_t b;
     if (!ps)
       ps = sysconf(_SC_PAGESIZE);
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
@@ -289,7 +289,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   if (!str)
     return NULL;
   int64_t cnt = strlen(str);
-  char   *ret = A_MALLOC(cnt + 1, t);
+  char *ret   = A_MALLOC(cnt + 1, t);
   memcpy(ret, str, cnt + 1);
   return ret;
 }
@@ -310,9 +310,9 @@ int64_t IsValidPtr(char *chk) {
 
 static void *GetAvailRegion32(int64_t len) {
   static int64_t dwAllocationGranularity;
-  static void   *try_page       = 0x100000;
-  void          *start_page     = try_page;
-  int64_t        wrapped_around = 0, sz;
+  static void *try_page  = 0x100000;
+  void *start_page       = try_page;
+  int64_t wrapped_around = 0, sz;
   if (!dwAllocationGranularity) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
@@ -336,7 +336,7 @@ static void *GetAvailRegion32(int64_t len) {
         wrapped_around = 1;
       }
     } else
-        return NULL;
+      return NULL;
   }
   return NULL;
 }
@@ -368,7 +368,7 @@ static void *GetAvailRegion32(int64_t len) {
   void *last_gap_end = 0x10000;
   void *start;
   void *retv = NULL, *ptr;
-  int fd = open("/proc/self/maps", O_RDONLY);
+  int fd     = open("/proc/self/maps", O_RDONLY);
   if (fd == -1)
     return NULL;
   char buf[BUFSIZ];
@@ -377,7 +377,7 @@ static void *GetAvailRegion32(int64_t len) {
     ssize_t pos = 0;
     while (pos < n) {
       char *ptr = buf + pos;
-      start = Str2Ptr(ptr, &ptr);
+      start     = Str2Ptr(ptr, &ptr);
       if (last_gap_end && start - last_gap_end >= len) {
         retv = last_gap_end;
         goto ret;

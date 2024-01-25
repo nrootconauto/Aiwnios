@@ -5,16 +5,16 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_video.h>
-static SDL_Palette  *sdl_p;
-static SDL_Surface  *screen;
-static SDL_Surface  *window_icon;
-static SDL_Window   *window;
-static SDL_Rect      view_port;
+static SDL_Palette *sdl_p;
+static SDL_Surface *screen;
+static SDL_Surface *window_icon;
+static SDL_Window *window;
+static SDL_Rect view_port;
 static SDL_Renderer *renderer;
-static SDL_Thread   *sdl_main_thread;
-int64_t              user_ev_num;
-static SDL_mutex    *screen_mutex, *screen_mutex2;
-static int64_t       screen_ready = 0;
+static SDL_Thread *sdl_main_thread;
+int64_t user_ev_num;
+static SDL_mutex *screen_mutex, *screen_mutex2;
+static int64_t screen_ready = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 
@@ -98,7 +98,7 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   return;
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
-  int64_t      idx;
+  int64_t idx;
   SDL_Texture *text;
   SDL_LockMutex(screen_mutex);
   SDL_LockSurface(screen);
@@ -260,8 +260,8 @@ static int64_t K2SC(char ch) {
   }
 }
 static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
-  SDL_Event e   = *_e;
-  int64_t   mod = 0, cond, dummy;
+  SDL_Event e = *_e;
+  int64_t mod = 0, cond, dummy;
   if (!ch)
     ch = &dummy;
   if (!sc)
@@ -488,7 +488,7 @@ static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
   return -1;
 }
 static void (*kb_cb)(int64_t, int64_t);
-static void       *kb_cb_data;
+static void *kb_cb_data;
 static int SDLCALL KBCallback(void *d, SDL_Event *e) {
   int64_t c, s;
   if (kb_cb && (-1 != __ScanKey(&c, &s, e)))
@@ -507,9 +507,9 @@ void SetKBCallback(void *fptr) {
 static void (*ms_cb)(int64_t, int64_t, int64_t, int64_t);
 static int SDLCALL MSCallback(void *d, SDL_Event *e) {
   static int64_t x, y;
-  static int     state = 0;
-  static int     z;
-  int            x2, y2;
+  static int state = 0;
+  static int z;
+  int x2, y2;
   if (ms_cb)
     switch (e->type) {
     case SDL_MOUSEBUTTONDOWN:

@@ -61,8 +61,8 @@ void FileWrite(char *fn, char *data, int64_t sz) {
 }
 char *FileRead(char *fn, int64_t *sz) {
   int64_t s, e;
-  FILE   *f = fopen(fn, "rb");
-  char   *ret;
+  FILE *f = fopen(fn, "rb");
+  char *ret;
   if (!f) {
     if (sz)
       *sz = 0;
@@ -110,9 +110,9 @@ int VFsCd(char *to, int make) {
   return 0;
 }
 static void DelDir(char *p) {
-  DIR           *d = opendir(p);
+  DIR *d = opendir(p);
   struct dirent *d2;
-  char           od[2048];
+  char od[2048];
   while (d2 = readdir(d)) {
     if (!strcmp(".", d2->d_name) || !strcmp("..", d2->d_name))
       continue;
@@ -147,16 +147,21 @@ int64_t VFsDel(char *p) {
 
 static char *mount_points['z' - 'a' + 1];
 
+static char *stpcpy2(char *dst, char const *src) { // mingw doesnt have stpcpy
+  size_t sz = strlen(src);
+  return memcpy(dst, src, sz + 1) + sz;
+}
+
 char *__VFsFileNameAbs(char *name) {
-  char ret[0x100];
-  strcat(stpcpy(ret, mount_points[toupper(thrd_drv) - 'A']), thrd_pwd);
+  char ret[0x400], *cur;
+  cur = stpcpy2(stpcpy2(ret, mount_points[toupper(thrd_drv) - 'A']), thrd_pwd);
   if (strlen(name ?: ""))
-    strcat(strcat(ret, "/"), name);
+    stpcpy2(stpcpy2(cur, "/"), name);
   return A_STRDUP(ret, NULL);
 }
 
 int64_t VFsUnixTime(char *name) {
-  char       *fn = __VFsFileNameAbs(name);
+  char *fn = __VFsFileNameAbs(name);
   struct stat s;
   stat(fn, &s);
   A_FREE(fn);
@@ -165,7 +170,7 @@ int64_t VFsUnixTime(char *name) {
 #if defined(_WIN32) || defined(WIN32)
 
 int64_t VFsFSize(char *name) {
-  char   *fn = __VFsFileNameAbs(name), *delim;
+  char *fn = __VFsFileNameAbs(name), *delim;
   int64_t s64;
   int32_t h32;
   if (!fn)
@@ -176,8 +181,8 @@ int64_t VFsFSize(char *name) {
   }
   if (__FIsDir(fn)) {
     WIN32_FIND_DATAA data;
-    HANDLE           dh;
-    char             buffer[strlen(fn) + 4];
+    HANDLE dh;
+    char buffer[strlen(fn) + 4];
     strcpy(buffer, fn);
     strcat(buffer, "/*");
     MakePathSane(buffer);
@@ -214,8 +219,8 @@ char **VFsDir(char *name) {
   if (sz) {
     ret = A_CALLOC((sz + 1) * 8, NULL);
     WIN32_FIND_DATAA data;
-    HANDLE           dh;
-    char             buffer[strlen(fn) + 4];
+    HANDLE dh;
+    char buffer[strlen(fn) + 4];
     strcpy(buffer, fn);
     strcat(buffer, "/*");
     MakePathSane(buffer);
@@ -240,7 +245,7 @@ char **VFsDir(char *name) {
 
 char **VFsDir(char *fn) {
   int64_t sz;
-  char  **ret;
+  char **ret;
   fn = __VFsFileNameAbs("");
   while (strlen(fn) && fn[strlen(fn) - 1] == '/')
     fn[strlen(fn) - 1] = 0;
@@ -269,9 +274,9 @@ char **VFsDir(char *fn) {
 
 int64_t VFsFSize(char *name) {
   struct stat s;
-  long        cnt;
-  DIR        *d;
-  char       *fn = __VFsFileNameAbs(name);
+  long cnt;
+  DIR *d;
+  char *fn = __VFsFileNameAbs(name);
   if (!__FExists(fn)) {
     A_FREE(fn);
     return -1;
@@ -314,10 +319,10 @@ int64_t VFsIsDir(char *name) {
 int64_t VFsFileRead(char *name, int64_t *len) {
   if (len)
     *len = 0;
-  FILE   *f;
+  FILE *f;
   int64_t s, e;
-  void   *data = NULL;
-  name         = __VFsFileNameAbs(name);
+  void *data = NULL;
+  name       = __VFsFileNameAbs(name);
   if (!name)
     goto end;
   if (__FExists(name))
@@ -432,7 +437,7 @@ static void CopyDir(char *dst, char *src) {
     mkdir(dst, 0700);
 #endif
   }
-  char    buf[1024], sbuf[1024], *s, buffer[0x10000];
+  char buf[1024], sbuf[1024], *s, buffer[0x10000];
   int64_t root, sz, sroot, r;
   strcpy(buf, dst);
   buf[root = strlen(buf)] = delim;
@@ -442,7 +447,7 @@ static void CopyDir(char *dst, char *src) {
   sbuf[sroot = strlen(sbuf)] = delim;
   sbuf[++sroot]              = 0;
 
-  DIR           *d = opendir(src);
+  DIR *d = opendir(src);
   struct dirent *ent;
   while (ent = readdir(d)) {
     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
@@ -484,13 +489,13 @@ static int __FIsNewer(char *fn, char *fn2) {
   else
     return 0;
 #else
-  int32_t  h32;
-  int64_t  s64, s64_2;
+  int32_t h32;
+  int64_t s64, s64_2;
   FILETIME t;
-  HANDLE   fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
-         fh2  = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
-                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+  HANDLE fh  = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
+         fh2 = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
   GetFileTime(fh, NULL, NULL, &t);
   s64 = t.dwLowDateTime | ((int64_t)t.dwHighDateTime << 32);
   GetFileTime(fh2, NULL, NULL, &t);
@@ -562,7 +567,7 @@ const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
 #if !defined(_WIN32) && !defined(WIN32)
   if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR, overwrite)) {
 #else
-  char    exe_name[0x10000];
+  char exe_name[0x10000];
   int64_t len;
   GetModuleFileNameA(NULL, exe_name, sizeof(exe_name));
   PathRemoveFileSpecA(exe_name); // Remove aiwnios.exe

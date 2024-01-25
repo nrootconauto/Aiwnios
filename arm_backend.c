@@ -276,9 +276,9 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
 static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
                            int64_t code_off) {
   //(For now),I ain't messing around with binary literals in ARM
-  CCodeMisc    *misc = cctrl->code_ctrl->code_misc->next;
+  CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
   CCodeMiscRef *ref;
-  char         *dptr;
+  char *dptr;
   for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
     if (misc->type == CMT_FLOAT_CONST)
       if (misc->integer == *(int64_t *)&imm) {
@@ -645,10 +645,10 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
 static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
   int64_t i, first_is_vargs = 0, base; // This is reverse polish notation
-  CICArg  tmp = {0}, tmp2 = {0};
-  CRPN   *rpn2, *varg;
+  CICArg tmp = {0}, tmp2 = {0};
+  CRPN *rpn2, *varg;
   int64_t to_pop = rpn->length * 8, vargs_len = 0;
-  void   *fptr;
+  void *fptr;
   for (i = 0; i < rpn->length; i++) {
     rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {
@@ -758,7 +758,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
   int64_t use_reg, use_reg2, restore_from_tmp = 0, indir_off = 0,
                              indir_off2 = 0, opc;
   assert(src->mode != -1 && src->mode);
-  CICArg        tmp = {0};
+  CICArg tmp = {0};
   CCodeMiscRef *ref;
   if (dst->mode == MD_NULL)
     return code_off;
@@ -1485,10 +1485,10 @@ t:
 //
 static int64_t __SexyWriteIntoDst(CCmpCtrl *cctrl, CRPN *deref, CICArg *arg,
                                   char *bin, int64_t code_off) {
-  CICArg  derefed = {0}, tmp = {0};
-  int64_t tc       = 0;
-  CRPN   *orig_rpn = deref;
-  code_off         = DerefToICArg(cctrl, &derefed, deref, 2, bin, code_off);
+  CICArg derefed = {0}, tmp = {0};
+  int64_t tc     = 0;
+  CRPN *orig_rpn = deref;
+  code_off       = DerefToICArg(cctrl, &derefed, deref, 2, bin, code_off);
   if (!tc) {
   dft:
     code_off = ICMov(cctrl, &derefed, arg, bin, code_off);
@@ -1628,16 +1628,16 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
                            int32_t (*f_op)(int64_t, int64_t, int64_t),
                            char *bin, int64_t code_off) {
   int64_t code;
-  CRPN   *next    = rpn->base.next, *tc;
-  CICArg  derefed = {0}, tmp = {0}, tmp2 = {0};
+  CRPN *next     = rpn->base.next, *tc;
+  CICArg derefed = {0}, tmp = {0}, tmp2 = {0};
   if (next->type == IC_TYPECAST) {
 #define TYPECAST_ASSIGN_BEGIN(DST, SRC)                                        \
   {                                                                            \
     int64_t pop = 0, pop2 = 0;                                                 \
-    CICArg  _orig = {0};                                                       \
-    CRPN   *_tc   = DST;                                                       \
-    CRPN   *SRC2  = SRC;                                                       \
-    DST           = DST->base.next;                                            \
+    CICArg _orig = {0};                                                        \
+    CRPN *_tc    = DST;                                                        \
+    CRPN *SRC2   = SRC;                                                        \
+    DST          = DST->base.next;                                             \
     if (DST->type == IC_DEREF) {                                               \
       code_off      = DerefToICArg(cctrl, &_orig, DST, 1, bin, code_off);      \
       DST->res      = _orig;                                                   \
@@ -1738,9 +1738,9 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
                             int64_t (*i_reg_op)(int64_t, int64_t, int64_t),
                             int64_t (*f_op)(int64_t, int64_t, int64_t),
                             char *bin, int64_t code_off) {
-  CRPN   *next = rpn->base.next, *tc;
+  CRPN *next = rpn->base.next, *tc;
   int64_t code;
-  CICArg  derefed = {0}, tmp = {0}, tmp2 = {0};
+  CICArg derefed = {0}, tmp = {0}, tmp2 = {0};
   if (next->type == IC_TYPECAST) {
     TYPECAST_ASSIGN_BEGIN(next, next);
     if (next->raw_type == RT_F64) {
@@ -1854,8 +1854,8 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
                               int32_t (*i_imm_op)(int64_t, int64_t, int64_t),
                               int32_t (*f_op)(int64_t, int64_t, int64_t),
                               char *bin, int64_t code_off) {
-  CRPN   *next = ICArgN(rpn, 1), *next2, *next3, *b;
-  CICArg  tmp = {0}, tmp2 = {0}, derefed = {0};
+  CRPN *next = ICArgN(rpn, 1), *next2, *next3, *b;
+  CICArg tmp = {0}, tmp2 = {0}, derefed = {0};
   int64_t i = 0, const_can = 0, retry;
   next2 = b = ICArgN(rpn, 0);
   if (SpillsTmpRegs(next))
@@ -1995,8 +1995,8 @@ static int64_t __FMod(int64_t dst, int64_t a, int64_t b, char *bin,
 // Also handles IC_MOD_EQ
 static int64_t __CompileMod(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
-  CRPN   *next, *next2, *tc;
-  CICArg  tmp = {0}, orig_dst = {0}, derefed = {0}, tmp2 = {0};
+  CRPN *next, *next2, *tc;
+  CICArg tmp = {0}, orig_dst = {0}, derefed = {0}, tmp2 = {0};
   int64_t into_reg;
   next  = ICArgN(rpn, 1);
   next2 = ICArgN(rpn, 0);
@@ -2129,8 +2129,8 @@ static int64_t __CompileMod(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 //
 static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
   CMemberLst *lst;
-  CRPN       *r;
-  int64_t     cnt = 0;
+  CRPN *r;
+  int64_t cnt = 0;
   memset(to_push, 0, 32);
   if (!cctrl->cur_fun) {
     // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
@@ -2159,7 +2159,7 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
 
 static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
   CMemberLst *lst;
-  int64_t     cnt = 0;
+  int64_t cnt = 0;
   memset(to_push, 0, 32);
   CRPN *r;
   if (!cctrl->cur_fun) {
@@ -2188,15 +2188,15 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
 }
 
 static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
-  char    push_ireg[32];
-  char    push_freg[32];
-  char    ilist[32];
-  char    flist[32];
+  char push_ireg[32];
+  char push_freg[32];
+  char ilist[32];
+  char flist[32];
   int64_t i, i2, i3, r, r2, ireg_arg_cnt, freg_arg_cnt, stk_arg_cnt, fsz, code,
       off;
   CMemberLst *lst;
-  CICArg      fun_arg = {0}, write_to = {0};
-  CRPN       *rpn, *arg;
+  CICArg fun_arg = {0}, write_to = {0};
+  CRPN *rpn, *arg;
   /* Old SP
    * saved regs
    * wiggle room
@@ -2350,12 +2350,12 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
 // DO NOT CHANGE WITHOUT LOOKING CLOSEY AT FuncProlog
 //
 static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
-  char          push_ireg[32], ilist[32];
-  char          push_freg[32], flist[32];
-  int64_t       i, r, r2, fsz, i2, i3, off;
-  CICArg        spill_loc = {0}, write_to = {0};
+  char push_ireg[32], ilist[32];
+  char push_freg[32], flist[32];
+  int64_t i, r, r2, fsz, i2, i3, off;
+  CICArg spill_loc = {0}, write_to = {0};
   CCodeMiscRef *ref;
-  CRPN         *rpn;
+  CRPN *rpn;
   /* <== OLD SP
    * saved regs
    * wiggle room
@@ -2465,10 +2465,10 @@ static int64_t ARM_msrX1_tpidr_el0(int64_t ul) {
 //
 static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off) {
-  CCodeMisc    *misc;
+  CCodeMisc *misc;
   CCodeMiscRef *ref;
-  CRPN         *next, *next2, **range, **range_args, *next3, *next4, *a, *b;
-  CICArg        tmp = {0}, orig_dst = {0}, tmp2 = {0};
+  CRPN *next, *next2, **range, **range_args, *next3, *next4, *a, *b;
+  CICArg tmp = {0}, orig_dst = {0}, tmp2 = {0};
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse;
   int64_t old_lock_start = cctrl->aarch64_atomic_loop_start;
   int64_t *range_cmp_types, use_flags = rpn->res.set_flags, old_fail_addr = 0,
@@ -2738,20 +2738,20 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   case IC_TO_BOOL:
     PushTmp(cctrl, next = rpn->base.next, &rpn->res);
-    code_off=__OptPassFinal(cctrl,next,bin,code_off);
-    code_off=PutICArgIntoReg(cctrl,&next->res,RT_I64i,0,bin,code_off);
-    AIWNIOS_ADD_CODE(ARM_cmpImmX(next->res.reg,0));
-    if(rpn->res.mode==MD_REG&&rpn->res.raw_type!=RT_F64) {
-		AIWNIOS_ADD_CODE(ARM_csetX(rpn->res.reg,ARM_NE));
-	} else {
-		AIWNIOS_ADD_CODE(ARM_csetX(0,ARM_NE));
-		tmp.mode=MD_REG;
-		tmp.raw_type=RT_I64i;
-		tmp.reg=0;
-		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
-	}
-	PopTmp(cctrl,next);
-	break;
+    code_off = __OptPassFinal(cctrl, next, bin, code_off);
+    code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
+    AIWNIOS_ADD_CODE(ARM_cmpImmX(next->res.reg, 0));
+    if (rpn->res.mode == MD_REG && rpn->res.raw_type != RT_F64) {
+      AIWNIOS_ADD_CODE(ARM_csetX(rpn->res.reg, ARM_NE));
+    } else {
+      AIWNIOS_ADD_CODE(ARM_csetX(0, ARM_NE));
+      tmp.mode     = MD_REG;
+      tmp.raw_type = RT_I64i;
+      tmp.reg      = 0;
+      code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+    }
+    PopTmp(cctrl, next);
+    break;
   case IC_PAREN:
     abort();
     break;
@@ -4220,14 +4220,14 @@ static void DoNothing() {
 // 2. Fill in function body
 //
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
-  int64_t       code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
-  int64_t       min_ln = 0, max_ln = 0, statics_sz = 0;
-  char         *bin = NULL;
-  char         *ptr;
-  CCodeMisc    *misc;
-  CHashImport  *import;
+  int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
+  int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
+  char *bin = NULL;
+  char *ptr;
+  CCodeMisc *misc;
+  CHashImport *import;
   CCodeMiscRef *cm_ref, *cm_ref_tmp;
-  CRPN         *r;
+  CRPN *r;
   cctrl->epilog_label  = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->statics_label = CodeMiscNew(cctrl, CMT_LABEL);
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;

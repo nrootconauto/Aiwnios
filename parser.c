@@ -111,38 +111,38 @@ void CodeCtrlPop(CCmpCtrl *ccmp) {
   ccmp->code_ctrl = next;
 }
 
-int64_t     PrsKw(CCmpCtrl *ccmp, int64_t);
-int64_t     PrsStmt(CCmpCtrl *ccmp);
-int64_t     PrsIf(CCmpCtrl *ccmp);     // YES
-int64_t     PrsDo(CCmpCtrl *ccmp);     // YES
-int64_t     PrsWhile(CCmpCtrl *ccmp);  // YES
-int64_t     PrsFor(CCmpCtrl *ccmp);    // YES
-int64_t     PrsSwitch(CCmpCtrl *ccmp); // YES
-int64_t     PrsScope(CCmpCtrl *ccmp);
-int64_t     PrsLabel(CCmpCtrl *ccmp);
-int64_t     PrsGoto(CCmpCtrl *ccmp);
-int64_t     PrsReturn(CCmpCtrl *ccmp);
-int64_t     ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
-int64_t     PrsTry(CCmpCtrl *cctrl); // YES
-int64_t     PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
-                    int64_t *is_func_decl, int64_t flags, char *import_name);
-int64_t     PrsSwitch(CCmpCtrl *cctrl);
+int64_t PrsKw(CCmpCtrl *ccmp, int64_t);
+int64_t PrsStmt(CCmpCtrl *ccmp);
+int64_t PrsIf(CCmpCtrl *ccmp);     // YES
+int64_t PrsDo(CCmpCtrl *ccmp);     // YES
+int64_t PrsWhile(CCmpCtrl *ccmp);  // YES
+int64_t PrsFor(CCmpCtrl *ccmp);    // YES
+int64_t PrsSwitch(CCmpCtrl *ccmp); // YES
+int64_t PrsScope(CCmpCtrl *ccmp);
+int64_t PrsLabel(CCmpCtrl *ccmp);
+int64_t PrsGoto(CCmpCtrl *ccmp);
+int64_t PrsReturn(CCmpCtrl *ccmp);
+int64_t ParseErr(CCmpCtrl *ctrl, char *fmt, ...);
+int64_t PrsTry(CCmpCtrl *cctrl); // YES
+int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
+                int64_t *is_func_decl, int64_t flags, char *import_name);
+int64_t PrsSwitch(CCmpCtrl *cctrl);
 CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t flags);
 CMemberLst *MemberFind(char *needle, CHashClass *cls);
-CCmpCtrl   *CmpCtrlDel(CCmpCtrl *d) {
+CCmpCtrl *CmpCtrlDel(CCmpCtrl *d) {
   HeapCtrlDel(d->hc);
   A_FREE(d);
 }
 CCmpCtrl *CmpCtrlNew(CLexer *lex) {
-  int64_t     idx, idx2;
+  int64_t idx, idx2;
   CHashClass *cls;
-  CCmpCtrl   *ccmp;
+  CCmpCtrl *ccmp;
   *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) = (CCmpCtrl){
       .lex = lex,
       .hc  = HeapCtrlInit(NULL, Fs, 1),
   };
   struct {
-    char   *name;
+    char *name;
     int64_t rt;
     int64_t sz;
   } raw_types[] = {
@@ -198,7 +198,7 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   return ccmp;
 }
 CRPN *ICFwd(CRPN *rpn) {
-  CRPN   *orig_rpn = rpn;
+  CRPN *orig_rpn = rpn;
   int64_t idx;
   if (rpn->ic_fwd)
     return rpn->ic_fwd;
@@ -472,7 +472,7 @@ CRPN *ICFwd(CRPN *rpn) {
 }
 
 static char *PrsString(CCmpCtrl *ccmp, int64_t *sz) {
-  char   *ret = NULL, *tmp;
+  char *ret   = NULL, *tmp;
   int64_t len = 0;
   while (ccmp->lex->cur_tok == TK_STR) {
     len += ccmp->lex->str_len;
@@ -561,7 +561,7 @@ static void DumpRPNType(CRPN *rpn) {
 
 CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
   int64_t idx;
-  CRPN   *orig_rpn = rpn;
+  CRPN *orig_rpn = rpn;
 #define INDENT                                                                 \
   for (idx = 0; idx != indent; idx++)                                          \
     printf("  ");
@@ -614,7 +614,7 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     return ICFwd(rpn);
   case IC_TO_BOOL:
     printf("TO_BOOL\n");
-	goto unop;
+    goto unop;
   case IC_GET_VARGS_PTR:
     printf("GET_VARGS_PTR:\n");
     return ParserDumpIR(rpn->base.next, indent + 1);
@@ -1038,8 +1038,8 @@ CMemberLst *MemberFind(char *needle, CHashClass *cls) {
 //
 void SysSymImportsResolve(char *sym, int64_t flags) {
   CHashImport *imp;
-  CHash       *thing = HashFind(sym, Fs->hash_table, HTT_FUN | HTT_GLBL_VAR, 1);
-  void        *with;
+  CHash *thing = HashFind(sym, Fs->hash_table, HTT_FUN | HTT_GLBL_VAR, 1);
+  void *with;
   if (thing->type & HTT_FUN) {
     with = ((CHashFun *)thing)->fun_ptr;
   } else if (thing->type & HTT_GLBL_VAR) {
@@ -1055,7 +1055,7 @@ void SysSymImportsResolve(char *sym, int64_t flags) {
   }
 }
 static int64_t SetIncAmt(CCmpCtrl *ccmp, CRPN *target) {
-  CRPN   *next;
+  CRPN *next;
   int64_t a = 1;
   AssignRawTypeToNode(ccmp, next = target->base.next);
   if (next->ic_dim || next->ic_class->ptr_star_cnt) {
@@ -1090,18 +1090,18 @@ int64_t ParseExpr(CCmpCtrl *ccmp, int64_t flags) {
       }                                                                        \
     }                                                                          \
   }
-  int64_t       tok, prec, type, binop_before = 1, arg, str_len;
-  int64_t       ic_stk[0x100];
-  int64_t       prec_stk[0x100];
-  int64_t       stk_ptr = 0, idx;
-  CRPN         *ic, *ic2, *orig = ccmp->code_ctrl->ir_code->next;
-  char         *string;
-  CMemberLst   *local;
+  int64_t tok, prec, type, binop_before = 1, arg, str_len;
+  int64_t ic_stk[0x100];
+  int64_t prec_stk[0x100];
+  int64_t stk_ptr = 0, idx;
+  CRPN *ic, *ic2, *orig = ccmp->code_ctrl->ir_code->next;
+  char *string;
+  CMemberLst *local;
   CHashGlblVar *global_var;
-  CCodeMisc    *misc;
-  CHashClass   *tc_class;
-  CHashFun     *tc_fun;
-  CArrayDim     dummy_dim;
+  CCodeMisc *misc;
+  CHashClass *tc_class;
+  CHashFun *tc_fun;
+  CArrayDim dummy_dim;
 next:
   while (tok = ccmp->lex->cur_tok) {
     switch (tok) {
@@ -1810,7 +1810,7 @@ static int64_t PeekKw(CCmpCtrl *ccmp, int64_t kwt) {
 }
 
 int64_t PrsGoto(CCmpCtrl *ccmp) {
-  CRPN      *rpn;
+  CRPN *rpn;
   CCodeMisc *misc;
   if (PrsKw(ccmp, TK_KW_GOTO)) {
     if (ccmp->lex->cur_tok != TK_NAME) {
@@ -1845,12 +1845,12 @@ int64_t PrsGoto(CCmpCtrl *ccmp) {
 }
 int64_t _PrsStmt(CCmpCtrl *ccmp) {
   CHashClass *cls, *cls2;
-  CRPN       *rpn;
-  CCodeMisc  *misc;
-  int64_t     is_func = 0, flags = 0;
-  int64_t     found_label = 0, assign_cnt = 0;
-  char       *import_name = NULL, *string;
-  int64_t     str_len, argc;
+  CRPN *rpn;
+  CCodeMisc *misc;
+  int64_t is_func = 0, flags = 0;
+  int64_t found_label = 0, assign_cnt = 0;
+  char *import_name = NULL, *string;
+  int64_t str_len, argc;
 label_loop:
   // Check for label if not a function,global or local
   if (ccmp->lex->cur_tok == TK_NAME) {
@@ -2091,7 +2091,7 @@ not_label:
 
 int64_t PrsStmt(CCmpCtrl *ccmp) {
   CRPN *old = ccmp->code_ctrl->ir_code->next, *cur, *new;
-  char  ret = _PrsStmt(ccmp);
+  char ret  = _PrsStmt(ccmp);
   if (old == ccmp->code_ctrl->ir_code->next) {
     (old = A_CALLOC(sizeof(CRPN), 0))->type = IC_NOP;
     QueIns(old, ccmp->code_ctrl->ir_code);
@@ -2100,7 +2100,7 @@ int64_t PrsStmt(CCmpCtrl *ccmp) {
   return ret;
 }
 int64_t PrsScope(CCmpCtrl *ccmp) { // YES
-  CRPN   *ic, *old, *cur;
+  CRPN *ic, *old, *cur;
   int64_t old_cnt;
   if (ccmp->lex->cur_tok == '{') {
     old = ccmp->code_ctrl->ir_code->next;
@@ -2121,7 +2121,7 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   int64_t res;
   int64_t (*bin)();
   double (*binf)();
-  CRPN     *ir_code;
+  CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
   ccmp->cur_fun = NULL;
   CodeCtrlPush(ccmp);
@@ -2144,7 +2144,7 @@ double PrsF64(CCmpCtrl *ccmp) {
   double res;
   int64_t (*bin)();
   double (*binf)();
-  CRPN     *ir_code;
+  CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
   ccmp->cur_fun = NULL;
   CodeCtrlPush(ccmp);
@@ -2189,8 +2189,8 @@ int64_t PrsArrayDim(CCmpCtrl *ccmp, CArrayDim *to) {
 
 // Be sure to assign members
 static void MemberAdd(CCmpCtrl *ccmp, CMemberLst *lst, CHashClass *cls) {
-  CMemberLst **ptr  = &cls->members_lst;
-  CMemberLst  *last = cls->members_lst;
+  CMemberLst **ptr = &cls->members_lst;
+  CMemberLst *last = cls->members_lst;
   while (*ptr) {
     last = *ptr;
     ptr  = &ptr[0]->next;
@@ -2202,7 +2202,7 @@ static void MemberAdd(CCmpCtrl *ccmp, CMemberLst *lst, CHashClass *cls) {
 int64_t PrsFunArgs(CCmpCtrl *ccmp, CHashFun *fun) {
   CMemberLst *bungis;
   CHashClass *cls;
-  int64_t     idx = 0;
+  int64_t idx = 0;
   if (ccmp->lex->cur_tok != '(') {
     ParseErr(ccmp, "Expected a '('.");
     return 0;
@@ -2315,8 +2315,8 @@ CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
 char *PrsArray(CCmpCtrl *ccmp, CHashClass *base, CArrayDim *dim,
                char *write_to) {
   CMemberLst *cur_mem;
-  int64_t     i, cap, ptr_width = base->sz;
-  char       *string;
+  int64_t i, cap, ptr_width = base->sz;
+  char *string;
   if (dim)
     if (dim->next)
       ptr_width *= dim->next->total_cnt;
@@ -2396,15 +2396,15 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
                 int64_t *is_func_decl, int64_t flags, char *import_name) {
   if (is_func_decl)
     *is_func_decl = 0;
-  int64_t       reg = REG_MAYBE, is_fun = 0, used = 0, tmpi;
-  CArrayDim     dim;
-  CHashClass   *cls;
-  CMemberLst   *lst, *bungis;
-  CHashFun     *fun;
+  int64_t reg = REG_MAYBE, is_fun = 0, used = 0, tmpi;
+  CArrayDim dim;
+  CHashClass *cls;
+  CMemberLst *lst, *bungis;
+  CHashFun *fun;
   CHashGlblVar *glbl_var, *import_var;
-  CRPN         *rpn;
-  char         *name;
-  double        tmpf;
+  CRPN *rpn;
+  char *name;
+  double tmpf;
   if (!(flags & PRSF_CLASS)) {
     if (PrsKw(ccmp, TK_KW_NOREG))
       reg = REG_NONE;
@@ -2622,7 +2622,7 @@ ret:
 }
 
 int64_t PrsWhile(CCmpCtrl *ccmp) { // YES
-  CRPN      *ic;
+  CRPN *ic;
   CCodeMisc *old_break_to, *break_to, *enter_label;
   if (PrsKw(ccmp, TK_KW_WHILE)) {
     old_break_to = ccmp->code_ctrl->break_to; // Restored
@@ -2668,7 +2668,7 @@ int64_t PrsWhile(CCmpCtrl *ccmp) { // YES
 }
 
 int64_t PrsDo(CCmpCtrl *ccmp) {
-  CRPN      *ic;
+  CRPN *ic;
   CCodeMisc *old_break_to, *enter_label;
   if (PrsKw(ccmp, TK_KW_DO)) {
     enter_label  = CodeMiscNew(ccmp, CMT_LABEL);
@@ -2710,10 +2710,10 @@ int64_t PrsDo(CCmpCtrl *ccmp) {
 }
 
 int64_t PrsFor(CCmpCtrl *ccmp) { // YES
-  CRPN      *ic, *nop;
+  CRPN *ic, *nop;
   CCodeMisc *break_to, *old_break_to, *enter_label, *exit_label;
   CCodeCtrl *cctrl = NULL;
-  int64_t    idx;
+  int64_t idx;
   if (PrsKw(ccmp, TK_KW_FOR)) {
     old_break_to              = ccmp->code_ctrl->break_to; //.Restored
     break_to                  = CodeMiscNew(ccmp, CMT_LABEL);
@@ -2776,7 +2776,7 @@ int64_t PrsFor(CCmpCtrl *ccmp) { // YES
 }
 
 int64_t PrsIf(CCmpCtrl *ccmp) {
-  CRPN      *ic;
+  CRPN *ic;
   CCodeMisc *misc, *misc2;
   if (PrsKw(ccmp, TK_KW_IF)) {
     if (ccmp->lex->cur_tok != '(')
@@ -2825,11 +2825,11 @@ int64_t PrsIf(CCmpCtrl *ccmp) {
 
 #define BETWEEN(a, min, max) ((a) >= min) && ((a) <= max)
 int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
-  int64_t     a, b, arg;
+  int64_t a, b, arg;
   CMemberLst *mlst;
-  CHashFun   *fun;
-  char       *name;
-  CRPN       *orig_rpn = rpn;
+  CHashFun *fun;
+  char *name;
+  CRPN *orig_rpn = rpn;
   if (rpn->raw_type)
     return rpn->raw_type;
   switch (rpn->type) {
@@ -3303,8 +3303,8 @@ ret:
 }
 
 CHashClass *PrsClassNew() {
-  int64_t     idx2 = 0;
-  CHashClass *cls  = A_CALLOC((STAR_CNT + 1) * sizeof(CHashClass), NULL);
+  int64_t idx2    = 0;
+  CHashClass *cls = A_CALLOC((STAR_CNT + 1) * sizeof(CHashClass), NULL);
   for (idx2 = 0; idx2 != STAR_CNT; idx2++) {
     cls[idx2].base.str     = NULL;
     cls[idx2].raw_type     = RT_PTR;
@@ -3318,7 +3318,7 @@ CHashClass *PrsClassNew() {
 
 static void PrsMembers(CCmpCtrl *cctrl, CHashClass *bungis, int64_t flags,
                        int64_t *off) {
-  int64_t     is_func, union_end;
+  int64_t is_func, union_end;
   CMemberLst *last_m, *base_class;
   union_end = *off;
   if (cctrl->lex->cur_tok == '{') {
@@ -3402,8 +3402,8 @@ static void PrsMembers(CCmpCtrl *cctrl, CHashClass *bungis, int64_t flags,
 CHashClass *PrsClass(CCmpCtrl *cctrl, int64_t _flags) {
   CHashClass *bungis, *base_class;
   CMemberLst *last_m;
-  int64_t     flags = PRSF_CLASS;
-  int64_t     is_func, off = 0, sz, add = 0;
+  int64_t flags = PRSF_CLASS;
+  int64_t is_func, off = 0, sz, add = 0;
   if (!PrsKw(cctrl, TK_KW_CLASS)) {
     if (PrsKw(cctrl, TK_KW_UNION))
       flags |= PRSF_UNION;
@@ -3502,24 +3502,24 @@ int64_t PrsReturn(CCmpCtrl *ccmp) { // YES
   return 1;
 }
 typedef struct CSubSwitch {
-  CQue       base;
+  CQue base;
   CCodeMisc *lb_start, *lb_exit;
   CCodeMisc *prev_break_to;
 } CSubSwitch;
 typedef struct CSwitchCase {
   struct CSwitchCase *next;
-  int64_t             val;
-  CCodeMisc          *label;
+  int64_t val;
+  CCodeMisc *label;
 } CSwitchCase;
 int64_t PrsSwitch(CCmpCtrl *cctrl) {
   if (!PrsKw(cctrl, TK_KW_SWITCH))
     return 0;
-  int64_t      old_flags = cctrl->flags;
-  CRPN        *tmpir, *label, *switch_ir;
+  int64_t old_flags = cctrl->flags;
+  CRPN *tmpir, *label, *switch_ir;
   CSwitchCase *header = NULL, *tmps;
-  CSubSwitch   subs, *tmpss;
-  CCodeMisc   *lb_dft = CodeMiscNew(cctrl, CMT_LABEL),
-            *lb_exit  = CodeMiscNew(cctrl, CMT_LABEL), *old_break_to, *jmp_tab;
+  CSubSwitch subs, *tmpss;
+  CCodeMisc *lb_dft  = CodeMiscNew(cctrl, CMT_LABEL),
+            *lb_exit = CodeMiscNew(cctrl, CMT_LABEL), *old_break_to, *jmp_tab;
   int64_t k_low = INT_MAX, k_hi = INT_MIN, last, lo, hi, idx;
   old_break_to               = cctrl->code_ctrl->break_to;
   cctrl->code_ctrl->break_to = lb_exit;
@@ -3776,9 +3776,9 @@ ret:
 }
 static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
                              int64_t arity) {
-  CHashFun     *fun;
+  CHashFun *fun;
   CHashGlblVar *glbl;
-  CHashExport  *exp;
+  CHashExport *exp;
   if (fun = glbl = HashFind(name, Fs->hash_table, HTT_FUN | HTT_GLBL_VAR, 1)) {
     if (glbl->base.type & HTT_GLBL_VAR) {
       glbl->base.type &= ~HTF_EXTERN;
@@ -3822,7 +3822,7 @@ void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity) {
 }
 
 int64_t PrsTry(CCmpCtrl *cctrl) {
-  CRPN      *rpn;
+  CRPN *rpn;
   CCodeMisc *catch_misc = CodeMiscNew(cctrl, CMT_LABEL),
             *exit_misc  = CodeMiscNew(cctrl, CMT_LABEL);
   if (!PrsKw(cctrl, TK_KW_TRY))
@@ -3895,7 +3895,7 @@ int64_t PrsTry(CCmpCtrl *cctrl) {
 #ifdef AIWNIOS_TESTS
 void PrsTests() {
   // TODO write test to validate
-  CLexer   *lex  = LexerNew("None", "I64i Foo(I64i a) {return a+10;}\n"
+  CLexer *lex    = LexerNew("None", "I64i Foo(I64i a) {return a+10;}\n"
                                        "{\n"
                                        "  I64i a;\n"
                                        "  do {\n"

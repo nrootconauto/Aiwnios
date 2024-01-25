@@ -32,10 +32,10 @@ typedef struct _CHashImport {
 #define IET_MAIN             25
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
-  char        *src = *_src, *ptr2, *st_ptr;
-  int64_t      i, etype;
+  char *src = *_src, *ptr2, *st_ptr;
+  int64_t i, etype;
   CHashExport *tmpex = NULL;
-  int64_t      first = 1;
+  int64_t first      = 1;
   // GNU extension, copied from TINE(https://github.com/eb-lan/TINE)
   // it compiles down to a mov call anyway so it doesn't hurt speed
 #define READ_NUM(x, T)                                                         \
@@ -126,7 +126,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 
 static void SysSymImportsResolve2(char *st_ptr, int64_t ld_flags) {
   _CHashImport *tmpiss;
-  char         *ptr;
+  char *ptr;
   while (tmpiss = HashSingleTableFind(st_ptr, Fs->hash_table,
                                       HTT_IMPORT_SYS_SYM2, 1)) {
     ptr = tmpiss->module_header_entry;
@@ -136,8 +136,8 @@ static void SysSymImportsResolve2(char *st_ptr, int64_t ld_flags) {
 }
 
 static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
-  char        *ptr2, *ptr3, *st_ptr;
-  int64_t      i, j, cnt, etype;
+  char *ptr2, *ptr3, *st_ptr;
+  int64_t i, j, cnt, etype;
   CHashExport *tmpex = NULL;
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
@@ -214,7 +214,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
 }
 
 static void LoadPass2(char *src, char *module_base) {
-  char   *st_ptr;
+  char *st_ptr;
   int64_t i, etype;
   void (*fptr)();
   while (etype = *src++) {
@@ -252,16 +252,16 @@ Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$ file_size;
  */
 typedef struct __attribute__((packed)) CBinFile {
   uint16_t jmp;
-  int8_t   module_align_bits, reserved;
-  char     bin_signature[4];
-  int64_t  org, patch_table_offset, file_size;
-  char     data[];
+  int8_t module_align_bits, reserved;
+  char bin_signature[4];
+  int64_t org, patch_table_offset, file_size;
+  char data[];
 } CBinFile;
 
 char *Load(char *filename) { // Load a .BIN file module into memory.
   // bfh_addr==INVALID_PTR means don't care what load addr.
-  char     *fbuf = filename, *module_base, *absname;
-  int64_t   size, module_align, misalignment;
+  char *fbuf = filename, *module_base, *absname;
+  int64_t size, module_align, misalignment;
   CBinFile *bfh;
   CBinFile *bfh_addr;
 
@@ -285,7 +285,7 @@ lo_skip:
 #undef READ_NUM
 
 void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
-  int64_t      idx = 0;
+  int64_t idx = 0;
   CHashExport *h;
   for (idx = 0; idx <= Fs->hash_table->mask; idx++) {
     for (h = Fs->hash_table->body[idx]; h; h = h->base.next) {

@@ -1,10 +1,10 @@
 #include <SDL2/SDL.h>
 
 static SDL_AudioDeviceID output;
-static int64_t           sample, freq;
-static SDL_AudioSpec     have;
-static double            vol = .1;
-void                     AiwniosSetVolume(double v) {
+static int64_t sample, freq;
+static SDL_AudioSpec have;
+static double vol = .1;
+void AiwniosSetVolume(double v) {
   if (v > 100.)
     v = 100;
   vol = v / 100;
@@ -14,10 +14,10 @@ double AiwniosGetVolume() {
 }
 static void AudioCB(void *ul, int8_t *out, int64_t len) {
   unsigned int i, i2;
-  int64_t      fpb = len / have.channels;
+  int64_t fpb = len / have.channels;
   for (i = 0; i < fpb; i++) {
-    double  t     = (double)++sample / have.freq;
-    double  amp   = -1.0 + 2.0 * round(fmod(2.0 * t * freq, 1.0));
+    double t      = (double)++sample / have.freq;
+    double amp    = -1.0 + 2.0 * round(fmod(2.0 * t * freq, 1.0));
     int64_t maxed = (amp > 0) ? 127 : -127;
     maxed *= vol;
     if (!freq)
