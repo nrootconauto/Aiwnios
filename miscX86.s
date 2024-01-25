@@ -7,6 +7,7 @@
 .global Misc_Btr
 .global Misc_LBtr
 .global Misc_LBts
+.global Misc_BP
 
 Misc_Btc:
   btc qword ptr [rdi],rsi
@@ -72,4 +73,7 @@ Misc_Caller:
 .L_fail:
   mov rax,0
   leave
+  ret
+Misc_BP:
+  mov rax,rbp
   ret

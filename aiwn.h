@@ -775,6 +775,7 @@ extern int64_t Misc_LBt(void *ptr, int64_t);
 extern int64_t Misc_LBtc(void *ptr, int64_t);
 extern int64_t Misc_LBtr(void *ptr, int64_t);
 extern int64_t Misc_LBts(void *ptr, int64_t);
+extern void *Misc_BP();
 extern int64_t Bsr(int64_t v);
 extern int64_t Bsf(int64_t v);
 extern void *Misc_TLS_Base();

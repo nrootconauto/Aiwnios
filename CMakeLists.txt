@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR) #For sauce I have come,and to sauce I shall return
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS
-  LANGUAGES C ASM
+  LANGUAGES C CXX ASM
 )
 option(BUILD_HCRT "Build HCRT" YES)
 set(default_build_type "Release")
@@ -18,8 +18,8 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif ()
 
 target_architecture(ARCH)
-message("A IS ${ARCH}")
-if ("${ARCH}" STREQUAL "riscv64")
+message("PROCESSOR ARCHITECTURE IS ${ARCH}")
+if (ARCH STREQUAL "riscv64")
   set(
     C_SOURCES
     riscv_backend.c 
@@ -62,6 +62,7 @@ elseif ("${ARCH}" STREQUAL "x86_64")
       miscX86.s
       swapctxX86.s
       ffi_call_tos.s
+      miscTOSX86.s
     )
   endif ()
   set(
@@ -159,7 +160,10 @@ target_link_libraries(aiwnios PRIVATE FFI m)
 if (WIN32)
   target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 -static)
 else()
-  target_link_libraries(aiwnios PRIVATE SDL2 pthread)
+  target_link_libraries(aiwnios PRIVATE pthread)
+  if (ARCH STREQUAL "riscv64")
+    target_link_libraries(aiwnios PRIVATE SDL2)
+  endif ()
 endif()
 
 
