@@ -6801,6 +6801,12 @@ _intern IC_MIN_I64 I64 MinI64(I64,I64);
 _intern IC_MAX_U64 U64 MaxU64(U64,U64);
 _intern IC_MIN_U64 U64 MinU64(U64,U64);
 #endif
+#ifdef TARGET_RISCV
+_intern IC_MAX_I64 I64 MaxI64(I64,I64);
+_intern IC_MIN_I64 I64 MinI64(I64,I64);
+_intern IC_MAX_U64 U64 MaxU64(U64,U64);
+_intern IC_MIN_U64 U64 MinU64(U64,U64);
+#endif
 #endif
 extern CCmpGlbls cmp;
 //Added by Mr nrootconauto
