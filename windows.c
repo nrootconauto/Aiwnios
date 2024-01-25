@@ -14,7 +14,7 @@ static SDL_Renderer *renderer;
 static SDL_Thread *sdl_main_thread;
 int64_t user_ev_num;
 static SDL_mutex *screen_mutex, *screen_mutex2;
-static int64_t screen_ready = 0;
+static int64_t screen_ready = 0,screen_update_in_progress=0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 
