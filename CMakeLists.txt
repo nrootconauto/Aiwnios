@@ -63,7 +63,7 @@ elseif ("${ARCH}" STREQUAL "x86_64")
       swapctxX86.s
       ffi_call_tos.s
     )
-endif ()
+  endif ()
   set(
     C_SOURCES
     x86_64_backend.c 
@@ -121,12 +121,17 @@ elseif ("${ARCH}" STREQUAL "arm64")
     socket.c
   )
 endif()
-if(NOT WIN32)
-list(APPEND C_SOURCES linenoise/linenoise.c)
-endif()
+if (NOT WIN32)
+  list(APPEND C_SOURCES cli_vendor/bestline.c)
+else ()
+  set(CXX_SOURCES cli_vendor/linenoise.cpp
+                  cli_vendor/wcwidth.cpp
+                  cli_vendor/ConvertUTF.cpp)
+endif ()
 add_executable(
   aiwnios
   ${C_SOURCES}
+  ${CXX_SOURCES}
 )
 find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
@@ -157,14 +162,45 @@ else()
   target_link_libraries(aiwnios PRIVATE SDL2 pthread)
 endif()
 
+
+set(COMP_OPTS
+  -Wno-all
+  -Wno-incompatible-function-pointer-types
+  -fno-math-errno
+  -fno-trapping-math
+  -fno-exceptions
+  -fno-omit-frame-pointer
+  -fno-signaling-nans
+  -fno-stack-protector
+  -fno-unwind-tables
+  -fno-asynchronous-unwind-tables
+  -fcf-protection=none
+)
+if (ARCH STREQUAL "x86_64")
+  list(APPEND COMP_OPTS -mno-shstk)
+endif ()
+set_source_files_properties(${C_SOURCES}
+  PROPERTIES
+    LANGUAGE C
+    COMPILE_FLAGS "-Wno-int-conversion"
+)
+target_compile_options(aiwnios
+  PRIVATE
+    ${COMP_OPTS}
+)
+
 set_target_properties(aiwnios
-    PROPERTIES
+  PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     # INTERPROCEDURAL_OPTIMIZATION ON
+    CXX_VISIBILITY_PRESET hidden
     C_VISIBILITY_PRESET hidden
     C_STANDARD 11
     C_STANDARD_REQUIRED YES
     C_EXTENSIONS YES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS YES
 )
 
 if (BUILD_HCRT)
@@ -185,28 +221,13 @@ if (BUILD_HCRT)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  add_custom_command(
+    TARGET HCRT2.BIN
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!"
+  )
 endif ()
 
-set(COMP_OPTS
-  -Wno-all
-  -Wno-int-conversion
-  -fno-math-errno
-  -fno-trapping-math
-  -fno-exceptions
-  -fno-omit-frame-pointer
-  -fno-signaling-nans
-  -fno-stack-protector
-  -fno-unwind-tables
-  -fno-asynchronous-unwind-tables
-  -fcf-protection=none
-)
-if (ARCH STREQUAL "x86_64")
-  list(APPEND COMP_OPTS -mno-shstk)
-endif ()
-target_compile_options(aiwnios
-  PRIVATE
-    ${COMP_OPTS}
-)
 
 #
 # Install section

@@ -84,7 +84,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   a:  ff e0 					jmp rax
   */
   const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  char       *ret         = A_MALLOC(0xd, NULL);
+  char *ret               = A_MALLOC(0xd, NULL);
   memcpy(ret, ffi_binding, 0xd);
   memcpy(ret + 0x2, &fptr, 0x8);
   return ret;

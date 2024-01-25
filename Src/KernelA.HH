@@ -49,7 +49,7 @@ extern class CTask;
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
 #define inf	(0x7FF0000000000000(F64))
 #ifndef BOOTSTRAP
-#define �	(0x400921FB54442D18(F64))
+#define ã	(0x400921FB54442D18(F64))
 #endif
 #define pi	(0x400921FB54442D18(F64))
 #define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
@@ -1524,7 +1524,7 @@ public class CAutoCompleteDictGlbls
 #define OPTf_KEEP_PRIVATE	0x21
 #define OPTf_NO_REG_VAR		0x22  //Applied to funs, not stmts
 #define OPTf_GLBLS_ON_DATA_HEAP	0x23
-//Disable 10-byte float consts for ã,log2_10,log10_2,loge_2
+//Disable 10-byte float consts for Ã£,log2_10,log10_2,loge_2
 #define OPTf_NO_BUILTIN_CONST	0x24 //Applied to funs, not stmts
 #define OPTf_USE_IMM64		0x25 //Not completely implemented
 #define OPTf_KEEP_RELOCATIONS 0x26 //Added by nroot,will keep the CHashImport's
@@ -3861,7 +3861,7 @@ import F64 ACos(F64);
 import U0 UpdateScreen(U8*,I64,I64,I64);
 import U0 DrawWindowNew();
 import U0 __GrPaletteColorSet(I64,CBGR48);
-import U8 *HeapCtrlInit(U8 *DO_NOT_USE,CTask *,I64 is_code);
+import U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 import U0 HeapCtrlDel(U8 *);
 import U8 *__MAlloc(I64i sz,CTask *t=NULL);
 import U8 *__CAlloc(I64i sz,CTask *t=NULL);
@@ -3994,7 +3994,7 @@ extern F64 ACos(F64);
 //From AIWNIOS
 extern F64 Exp(F64);
 extern I64 MemCmp(U8*,U8*,I64);
-extern U8 *HeapCtrlInit(U8 *DO_NOT_USE,CTask *,I64 is_code);
+extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 HeapCtrlDel(U8 *);
 extern U8 *__MAlloc(I64i sz,CTask *t=NULL);
 extern U8 *__CAlloc(I64i sz,CTask *t=NULL);
@@ -5055,6 +5055,7 @@ class CFMUncollapsedLst
   U8 *name;
 };
 extern U0 (*fp_update_ctrls)(CTask *task);
+extern U8  *(*fp_getstr2)(I64 flags=0);
 extern class CTemplateCS;
 extern class CSoundEffectFrame;
 extern CGodGlbls god;
@@ -7093,3 +7094,4 @@ extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
 extern I64 GetRBP();
+

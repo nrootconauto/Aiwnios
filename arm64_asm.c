@@ -997,7 +997,7 @@ static int64_t GenNImmSImmR(int64_t imm) {
   // TODO write this stuff in assemblt
   if (imm == 0 || ~imm == 0)
     return ARM_ERR_INV_OFF;
-  int64_t  consec = 0, idx, zero_gap = 0, first_zeros, width, x;
+  int64_t consec = 0, idx, zero_gap = 0, first_zeros, width, x;
   uint64_t pattern;
 #define ROT(x, n) ((x) >> n) | ((x) << (64 - n))
   // Find first 1

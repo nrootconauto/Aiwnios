@@ -64,12 +64,17 @@ U0 LexPutPos(CCmpCtrl *cc)
 
 U0 LexWarn(CCmpCtrl *cc,U8 *str=NULL)
 {//Print warn msg, then, $LK,"LexPutPos",A="MN:LexPutPos"$().
+  U8 *s,*ptr;
   if (str) PrintWarn(str);
   if (cc->htc.fun) {
-    "in fun '%s'.\n",cc->htc.fun->str;
-    if (IsRaw)
+    "in fun '%s' at ",cc->htc.fun->str;
+    if (IsRaw) {
+      if (!MemCmp(s=cc->htc.fun->src_link,"FL:",3))
+        StrCpy(s,s+3);
+      if (ptr=StrLastOcc(s,","))
+        *ptr=0;
       "%s\n",cc->htc.fun->src_link;
-    else {
+    } else {
       "$$LK,\"%s\"$$\n",cc->htc.fun->src_link;
       //AdamErr("%s\n",cc->htc.fun->src_link); TODO RESTORE
     }
@@ -91,7 +96,7 @@ U0 LexExcept(CCmpCtrl *cc,U8 *str=NULL)
 
 U0 UndefinedExtern()
 {
-  PrintErr("Undefined Extern\nat %P\n",Caller);
+  PrintErr("Undefined Extern at %P\n",Caller);
   throw('UndefExt');
 }
 

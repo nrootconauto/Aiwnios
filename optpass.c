@@ -23,9 +23,9 @@ static int64_t PtrWidthOfRPN(CRPN *rpn) {
 }
 
 static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
-  int64_t     cnt, cnt2, vargc;
-  CRPN       *rpn2 = rpn->base.next, *ic, *last;
-  CHashFun   *ic_fun;
+  int64_t cnt, cnt2, vargc;
+  CRPN *rpn2 = rpn->base.next, *ic, *last;
+  CHashFun *ic_fun;
   CMemberLst *arg, *args_lst_rev;
   for (cnt = 0; cnt != rpn->length; cnt++)
     rpn2 = ICFwd(rpn2);
@@ -128,9 +128,9 @@ void OptPassFixFunArgs(CCmpCtrl *cctrl) {
 // THIS WILL ALSO REMOVE "derefencing function pointers"
 //
 void OptPassExpandPtrs(CCmpCtrl *cctrl) {
-  CRPN      *rpn, *new, *lit, *new2, *new3, *a, *b, **list;
+  CRPN *rpn, *new, *lit, *new2, *new3, *a, *b, **list;
   CArrayDim *dim;
-  int64_t    cnt = 0, cnt2, total_off, raw_type;
+  int64_t cnt = 0, cnt2, total_off, raw_type;
   for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code;
        rpn = rpn->base.next) {
     switch (rpn->type) {
@@ -493,8 +493,8 @@ void OptPassConstFold(CCmpCtrl *cctrl) {
     a2 = next->flt;                                                            \
   else                                                                         \
     a2 = next->integer;
-  CRPN   *rpn, *next, next2;
-  double  a, b;
+  CRPN *rpn, *next, next2;
+  double a, b;
   int64_t i, a2, b2, changed;
 loop:
   changed = 0;
@@ -1024,7 +1024,7 @@ loop:
 }
 
 typedef struct {
-  int64_t     score;
+  int64_t score;
   CMemberLst *m;
 } COptMemberVar;
 static int64_t OptMemberVarSort(COptMemberVar *a, COptMemberVar *b) {
@@ -1046,9 +1046,9 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
    * REG_NONE(can't get pointer of register)
    */
   COptMemberVar *mv;
-  CMemberLst    *tmpm;
-  CRPN          *rpn, *next;
-  int64_t        i, cnt, ireg, freg, off, align, sz;
+  CMemberLst *tmpm;
+  CRPN *rpn, *next;
+  int64_t i, cnt, ireg, freg, off, align, sz;
   if (!cctrl->cur_fun)
     return;
   mv = A_CALLOC(sizeof(COptMemberVar) * cctrl->cur_fun->base.member_cnt, NULL);
@@ -1473,7 +1473,7 @@ static int64_t AlwaysPasses(CRPN *rpn) {
   return 0;
 }
 void OptPassRemoveUselessArith(CCmpCtrl *cctrl) {
-  CRPN   *r, *next, *next2;
+  CRPN *r, *next, *next2;
   int64_t is_value;
 #define RPN_IS_VALUE(RPN, v)                                                   \
   is_value = 0;                                                                \
@@ -1563,7 +1563,7 @@ static void OptPassRemoveUselessTypecasts(CCmpCtrl *cctrl) {
   }
 }
 static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
-  CRPN   *r, *arg, *next, *base, *off;
+  CRPN *r, *arg, *next, *base, *off;
   int64_t run;
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
        r = next) {
@@ -1619,7 +1619,7 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
 }
 
 char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
-  CRPN   *r;
+  CRPN *r;
   int64_t old_flags = cctrl->flags;
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
        r = r->base.next) {

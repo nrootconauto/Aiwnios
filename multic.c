@@ -15,22 +15,23 @@
   #if defined(__FreeBSD__) || defined(__linux__)
 __thread void *ThreadFs;
 __thread void *ThreadGs;
-void          *GetHolyGsPtr() {
+void *GetHolyGsPtr() {
   __seg_fs char *fs = (__seg_fs char *)&ThreadGs; // thread tls register is FS
-  char          *base;
+  char *base;
   asm("mov %%fs:0,%0" : "=r"(base));
   return (char *)fs - (char *)base;
 }
 void *GetHolyFsPtr() {
   __seg_fs char *fs = (__seg_fs char *)&ThreadFs;
-  char          *base;
+  char *base;
   asm("mov %%fs:0,%0" : "=r"(base));
   return (char *)fs - (char *)base;
 }
   #else
 __thread void *ThreadGs;
 __thread void *ThreadFs;
-void          *GetHolyGsPtr() {
+
+void *GetHolyGsPtr() {
   return &ThreadGs;
 }
 void *GetHolyFsPtr() {
@@ -40,7 +41,7 @@ void *GetHolyFsPtr() {
 #elif (defined(_M_ARM64) || defined(__aarch64__))
 __thread void *ThreadGs;
 __thread void *ThreadFs;
-void          *GetHolyGsPtr() {
+void *GetHolyGsPtr() {
   return (char *)&ThreadGs - (char *)Misc_TLS_Base();
 }
 void *GetHolyFsPtr() {
@@ -49,7 +50,7 @@ void *GetHolyFsPtr() {
 #else
 __thread void *ThreadGs;
 __thread void *ThreadFs;
-void          *GetHolyGsPtr() {
+void *GetHolyGsPtr() {
   return &GetHolyGs;
 }
 void *GetHolyFsPtr() {
@@ -87,9 +88,9 @@ typedef struct {
   #include <unistd.h>
 typedef struct {
   pthread_t pt;
-  int       wake_futex;
+  int wake_futex;
   void (*profiler_int)(void *fs);
-  int64_t          profiler_freq;
+  int64_t profiler_freq;
   struct itimerval profile_timer;
 } CCPU;
 #elif defined(_WIN32) || defined(WIN32)
@@ -99,15 +100,15 @@ typedef struct {
   #include <sysinfoapi.h>
   #include <time.h>
 typedef struct {
-  HANDLE  thread;
-  HANDLE  event;
-  HANDLE  restore_ctx_event;
-  HANDLE  mtx;
+  HANDLE thread;
+  HANDLE event;
+  HANDLE restore_ctx_event;
+  HANDLE mtx;
   CONTEXT ctx;
   int64_t awake_at;
   void (*profiler_int)(void *fs);
   int64_t profiler_freq, profiler_last_tick;
-  char    profile_poop_stk[0x1000];
+  char profile_poop_stk[0x1000];
 } CCPU;
 #endif
 static _Thread_local core_num = 0;
@@ -148,7 +149,7 @@ static void ExitCoreRt(int s) {
 }
 
 static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
-  int64_t  c = core_num;
+  int64_t c = core_num;
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPROF);
@@ -190,8 +191,8 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   struct sigaction sa;
-  char             buf[144];
-  CorePair         pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
+  char buf[144];
+  CorePair pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
   pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
   char nambuf[16];
@@ -258,13 +259,13 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
   }
 }
 #else
-static CCPU    cores[128];
-CHashTable    *glbl_table;
+static CCPU cores[128];
+CHashTable *glbl_table;
 static int64_t ticks    = 0;
 static int64_t tick_inc = 1;
-static void    WindowsProfileCode(int c);
-static void    update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
-                            void *ul2) {
+static void WindowsProfileCode(int c);
+static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
+                         void *ul2) {
   int64_t period;
   ticks += tick_inc;
   for (int64_t idx = 0; idx < mp_cnt(NULL); ++idx) {
@@ -278,7 +279,7 @@ static void    update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
 }
 int64_t GetTicksHP() {
   static int64_t init;
-  TIMECAPS       tc;
+  TIMECAPS tc;
   if (!init) {
     init = 1;
     timeGetDevCaps(&tc, sizeof tc);
@@ -317,8 +318,7 @@ void InteruptCore(int64_t core) {
   ctx.ContextFlags = CONTEXT_FULL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
-  ctx.Rsp -= 8;
-  ((int64_t *)ctx.Rsp)[0] = ctx.Rip;
+  *(uint64_t *)(ctx.Rsp -= 8) = ctx.Rip;
   ctx.Rip = &Misc_ForceYield; // THIS ONE SAVES ALL THE REGISTERS
   SetThreadContext(cores[core].thread, &ctx);
   ResumeThread(cores[core].thread);

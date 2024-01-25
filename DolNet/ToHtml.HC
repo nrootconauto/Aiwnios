@@ -74,7 +74,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	if (CH_SPACE<=ch<0x7F || ch=='\n') {
 	  //Added by nroot,if non white background,be sure to fill it up
 	  //TextBase puts background color in bits 12-16
-          if((u32_attr.u8[1]>>4)!=0xf)
+          /*if((u32_attr.u8[1]>>4)!=0xf)
 	    if(ch=='\n'&&!(old_attr&DOCET_UNDEF_COLOR)) { 
 	      //Dont underline the whitesapce
 	      if(u32_attr&DOCET_UNDERLINE)
@@ -85,7 +85,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	      //restore
 	      if(u32_attr&DOCET_UNDERLINE)
 	        DocPrint(doc,"<u>");
-            }
+            }*/
 	  DocPutKey(doc,ch,0);
 	} else
 	  DocPrint(doc,".");
@@ -226,7 +226,7 @@ U0 SpriteExtentsTransform(I64 *mat,U8 *elems,I64 *min_x=NULL,I64 *max_x=NULL,
 }
 
 //Added by Nroot
-U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
+U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
   if(!filename) filename=SERVER_WWW"/TMP.DD";
   filename=FileNameAbs(filename);
   U8 *tmp2=FileNameAbs(SERVER_WWW);
@@ -256,26 +256,25 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc) {
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
-//https://stackoverflow.com/questions/6040005/relatively-position-an-element-without-it-taking-up-space-in-document-flow
-  DocPrint(html_doc,"<div style=\"position: relative; width: 0; height: 0\">");
-  DocPrint(html_doc,"<div style=\"position: absolute;\">");
-  DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
-        max_x-min_x+1,
-        max_y-min_y+1
+  DocPrint(html_doc,"<div style=\"position: absolute;left:%drem\">",digits);
+  DocPrint(html_doc,"<img src=\"%Q\" width=\"%.1f\" height=\"%.1f\">",fp,
+        1.3*(max_x-min_x)+1,
+        1.3*(max_y-min_y)+1
         );
-  DocPrint(html_doc,"</div></div>");
+  DocPrint(html_doc,"</div>");
   DCDel(res);
   Free(fp),Free(to),Free(filename),Free(tmp2);
 }
 
 public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	U8 *body_footer=NULL,U8 *html_footer=NULL,Bool line_anchors=TRUE,
-	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=FALSE)
+	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=TRUE)
 {//Cvt $LK,"DolDoc",A="FI:::/Doc/DolDocOverview.DD"$doc to HTML file.
   CDocEntry *doc_e,*style,*doc_e2;
   I64 i,y,old_y=I64_MIN,col,old_u32_attr=DOCET_UNDEF_COLOR,old_attr,digits;
   U32 *hl,*src;
-  U8 *st,st_2[2],*link_st,*style_bitmap=CAlloc(256/8);
+  U8 *st,st_2[2],*link_st,style_bitmap[256/8];
+  MemSet(style_bitmap,0,sizeof style_bitmap);
   CBGR48 p[COLORS_NUM];
   GrPaletteGet(p);
   CDoc *doc_out=DocNew;
@@ -309,14 +308,14 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
   if (!html_footer) html_footer=
 	  "</html>\n";
 
-  DocPrint(doc_out,"%s",html_header);
+  DocPutS(doc_out,html_header);
 
-  DocPrint(doc_out,"<style type=\"text/css\">\n");
+  DocPutS(doc_out,"<style type=\"text/css\">\n");
   style=doc_out->cur_entry->last;
-  DocPrint(doc_out,
-	"</style>\n"
-	"</head>\n");
-  DocPrint(doc_out,"%s",body_header);
+  DocPutS(doc_out,
+        "</style>\n"
+        "</head>\n");
+  DocPutS(doc_out,body_header);
 
   doc_e=doc_in->head.next;
   col=doc_e->x;
@@ -324,61 +323,63 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
   while (doc_e!=doc_in) {
     if (!(doc_e->de_flags&DOCEF_SKIP)) {
       if (y!=old_y) {
-	if (line_anchors)
+        if (line_anchors)
 	  DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
-	if (line_nums)
-	  DocPrint(doc_out,"%0*d",digits,y+1);
-	old_y=y;
+        if (line_nums)
+	  DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
+        old_y=y;
       }
       while (y<doc_e->y) {
-	HtmlPutS(doc_out,doc_e->settings.final_u32_attr,&old_u32_attr,FALSE,
-	      "\n",&col,style_bitmap);
-	if (++y!=old_y) {
-	  if (line_anchors)
-	    DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
-	  if (line_nums)
-	    DocPrint(doc_out,"%0*d",digits,y+1);
+        HtmlPutS(doc_out,0xF000//.u8[1]=F0(white),no other attribs needed so it's a constant
+	      ,&old_u32_attr,TRUE,"\n",&col,style_bitmap);
+        if (++y!=old_y) {
+	  if (old_u32_attr&DOCET_UNDERLINE) DocPutS(doc_out,"</u>");
+	  if (old_u32_attr&DOCET_BLINK) DocPutS(doc_out,"</blink>");
+	  if (line_anchors) DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
+	  if (line_nums) DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
+	  if (old_u32_attr&DOCET_UNDERLINE) DocPutS(doc_out,"<u>");
+	  if (old_u32_attr&DOCET_BLINK) DocPutS(doc_out,"<blink>");
 	  old_y=y;
-	}
-	col=0;
+        }
+        col=0;
       }
 
       no_bwd=TRUE;
       doc_e2=doc_e->next;
       while (doc_e2!=doc_in && doc_e2->y==doc_e->y) {
-	if (doc_e2->x<doc_e->x) {
+        if (doc_e2->x<doc_e->x) {
 	  no_bwd=FALSE;
 	  break;
-	}
-	doc_e2=doc_e2->next;
+        }
+        doc_e2=doc_e2->next;
       }
 
       if (no_bwd)
-	while (col<doc_e->x)
+        while (col<doc_e->x)
 	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr&~DOCET_UNDERLINE,
-		&old_u32_attr,TRUE,"",&col,style_bitmap);
+	        &old_u32_attr,TRUE,"",&col,style_bitmap);
 
       link_st=NULL;
       if (doc_e->de_flags&DOCEF_HTML_LINK)
-	link_st=StrNew(doc_e->html_link);
+        link_st=StrNew(doc_e->html_link);
       else if (st=DocEntryLink(doc_in,doc_e)) {
-	link_st=link_cvt(st);
-	Free(st);
+        link_st=link_cvt(st);
+        Free(st);
       }
 
       if (link_st) {
-	if (old_u32_attr&DOCET_UNDERLINE &&!(old_u32_attr&DOCET_LINK_UNDERLINE))
+        if (old_u32_attr&DOCET_UNDERLINE &&!(old_u32_attr&DOCET_LINK_UNDERLINE))
 	  DocPrint(doc_out,"</u>");
-	if (old_u32_attr&DOCET_BLINK)
+        if (old_u32_attr&DOCET_BLINK)
 	  DocPrint(doc_out,"</blink>");
-	if (!(old_u32_attr&DOCET_UNDEF_COLOR))
+        if (!(old_u32_attr&DOCET_UNDEF_COLOR))
 	  DocPrint(doc_out,"</span>");
-	old_u32_attr=DOCET_UNDEF_COLOR|DOCET_UNDERLINE|DOCET_LINK_UNDERLINE;
-	DocPrint(doc_out,"<a href=\"%s\">",link_st);
+        old_u32_attr=DOCET_UNDEF_COLOR|DOCET_UNDERLINE|DOCET_LINK_UNDERLINE;
+        DocPrint(doc_out,"<a href=\"%s\">",link_st);
       }
 
       switch (doc_e->type_u8) {
-	case DOCT_TEXT:
+        case DOCT_TEXT:
 	  if (doc_e->de_flags&DOCEF_HIGHLIGHT) {
 	    if (doc_e->last==doc_in)
 	      MemCpy(&doc_e->settings,&doc_in->settings_head,
@@ -398,13 +399,13 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	    HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
 		  &old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
 	  break;
-	case DOCT_TAB:
+        case DOCT_TAB:
 	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,&old_u32_attr,TRUE,
-		"\t",&col,style_bitmap);
+	        "\t",&col,style_bitmap);
 	  break;
-	case DOCT_HTML_CODE:
+        case DOCT_HTML_CODE:
 	  if (old_u32_attr&DOCET_UNDERLINE &&
-		!(old_u32_attr&DOCET_LINK_UNDERLINE))
+	        !(old_u32_attr&DOCET_LINK_UNDERLINE))
 	    DocPrint(doc_out,"</u>");
 	  if (old_u32_attr&DOCET_BLINK)
 	    DocPrint(doc_out,"</blink>");
@@ -413,29 +414,26 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	  old_u32_attr=DOCET_UNDEF_COLOR;
 	  DocPrint(doc_out,"%s",doc_e->tag);
 	  break;
-	case DOCT_SPRITE:
+        case DOCT_SPRITE:
 	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
-		&old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
-          ConvertSpriteToBmp(doc_out,filename,doc_e,);
-/*	  HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
-		&old_u32_attr,TRUE,"/* Graphics Not Rendered in HTML */",
-		&col,style_bitmap);*/
+	        &old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
+	  ConvertSpriteToBmp(doc_out,filename,doc_e,digits);
 	  break;
-	default:
+        default:
 	  if (doc_e->de_flags&DOCEF_TAG)
 	    HtmlPutS(doc_out,doc_e->settings.final_u32_attr,
 		  &old_u32_attr,TRUE,doc_e->tag,&col,style_bitmap);
       }
       if (link_st) {
-	if (old_u32_attr&DOCET_UNDERLINE &&!(old_u32_attr&DOCET_LINK_UNDERLINE))
+        if (old_u32_attr&DOCET_UNDERLINE &&!(old_u32_attr&DOCET_LINK_UNDERLINE))
 	  DocPrint(doc_out,"</u>");
-	if (old_u32_attr&DOCET_BLINK)
+        if (old_u32_attr&DOCET_BLINK)
 	  DocPrint(doc_out,"</blink>");
-	if (!(old_u32_attr&DOCET_UNDEF_COLOR))
+        if (!(old_u32_attr&DOCET_UNDEF_COLOR))
 	  DocPrint(doc_out,"</span>");
-	DocPrint(doc_out,"</a>");
-	old_u32_attr=DOCET_UNDEF_COLOR|DOCET_UNDERLINE|DOCET_LINK_UNDERLINE;
-	Free(link_st);
+        DocPrint(doc_out,"</a>");
+        old_u32_attr=DOCET_UNDEF_COLOR|DOCET_UNDERLINE|DOCET_LINK_UNDERLINE;
+        Free(link_st);
       }
     }
     doc_e=doc_e->next;
@@ -475,7 +473,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
 	U8 *body_header=NULL,U8 *body_footer=NULL,U8 *html_footer=NULL,
 	I64 width=80,Bool line_anchors=TRUE,
-	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=FALSE)
+	U8 (*link_cvt)(U8 *link_st)=&TOSLinkCvt1,Bool line_nums=TRUE)
 {//Convert $LK,"DolDoc",A="FI:::/Doc/DolDocOverview.DD"$file to HTML.
 //Supply your own link_cvt routine.
   U8 *in_name,*out_name;

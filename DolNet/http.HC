@@ -358,16 +358,13 @@ err:
   Exit;
 }
 
+extern Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut);
 U8 *LookForLine(U8 *ptr,I64 len) {
   U8 *cap=ptr+len;
-  while(ptr<cap) {
-    if(*ptr++ =='\n') {return ptr;}
-  }
+  while (ptr<cap)
+    if (*ptr++ =='\n')
+      return ptr;
   return NULL;
-}
-extern Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut);
-U0 DoNothing(I64) {
-  while(TRUE) {Sleep(1000000);};
 }
 U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   CConnection *con;
@@ -379,7 +376,7 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     goto found;
   }
   con=CAlloc(sizeof(CConnection));
-  con->hc=Spawn(&DoNothing,,,,Fs);
+  con->hc=HeapCtrlInit(,Fs,FALSE);
   con->buffer=MAlloc(0xB00,con->hc);
   con->buffer_ptr=con->buffer;
   con->buffer_len=0;
@@ -650,7 +647,7 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
 //All memory will be Free'd on killing con->hc
   Free(con->session_cookie);
   NetClose(con->stream);
-  Kill(con->hc);
+  HeapCtrlDel(con->hc);
   Free(con);
   return;
 }
@@ -658,7 +655,7 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
 CUniqueToken unique_tokens[BACKLOG];
 I64 fds[BACKLOG];
 U0 ServeExit() {
-  CServer *server=Fs->user_data(CServer *);
+  CServer *server=Fs->user_data;
   I64 idx;
   for(idx=0;idx!=BACKLOG;idx++) {
     if(fds[idx]!=-1)
@@ -722,11 +719,24 @@ nxt:;
   }
 }
 U0 Serve(CServer *srv) {
-  I64 core=-1;
   CTask *srv_task;
-  "Press a button to quit serving\n";
-  srv_task=Spawn(&ServeTask,srv,"Server",,Fs);
-  PressAKey;
+  I64 core;
+  if (mp_cnt==1) core=-1;
+  else core=RandU16%(mp_cnt-1)+1;
+  srv_task=Spawn(&ServeTask,srv,"Server",core,Fs);
+  if (!IsCmdLineMode) {
+    "Press a key to stop serving\n";
+    PressAKey;
+  } else {
+    if (core==-1) {
+      "Ctrl+C to quit serving\n"; /*I know this is stupid but
+       if there's only one there's no other way because
+       CmdLineGetStr() doesn't yield (of course not) and
+       Im not going to go through the effort of modifying linenoise to yield
+       force setting mp_cnt to 2 mininum didnt seem to work*/
+      while (TRUE) Sleep(10);
+    } else Free(CmdLineGetStr("Press enter to stop serving"));
+  }
   Kill(srv_task);
 }
 

@@ -5,25 +5,22 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_video.h>
-static SDL_Palette  *sdl_p;
-static SDL_Surface  *screen;
-static SDL_Surface  *window_icon;
-static SDL_Window   *window;
-static SDL_Rect      view_port;
+static SDL_Palette *sdl_p;
+static SDL_Surface *screen;
+static SDL_Surface *window_icon;
+static SDL_Window *window;
+static SDL_Rect view_port;
 static SDL_Renderer *renderer;
-static uint32_t      palette[0x100];
-static SDL_Thread   *sdl_main_thread;
-int64_t              user_ev_num;
-static SDL_mutex    *screen_mutex, *screen_mutex2;
-static int64_t       screen_ready = 0,screen_update_in_progress=0;
+static SDL_Thread *sdl_main_thread;
+int64_t user_ev_num;
+static SDL_mutex *screen_mutex, *screen_mutex2;
+static int64_t screen_ready = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 
 static void _DrawWindowNew() {
-  if (SDL_Init(SDL_INIT_VIDEO)) {
+  if (SDL_Init(SDL_INIT_VIDEO))
     return;
-  }
-  int          rends;
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
@@ -34,6 +31,8 @@ static void _DrawWindowNew() {
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
   SDL_FreeSurface(window_icon_proto);
+  SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
+                          SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
@@ -103,7 +102,7 @@ int64_t ScreenUpdateInProgress() {
   return Misc_Bt(&screen_update_in_progress,0);
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
-  int64_t      idx;
+  int64_t idx;
   SDL_Texture *text;
   SDL_LockMutex(screen_mutex);
   SDL_LockSurface(screen);
@@ -127,16 +126,18 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
 void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
   if (!screen)
     return;
-  int64_t repeat = 256 / 16;
-  int64_t i2;
-  int64_t b   = (bgr48 & 0xffff) / (double)0xffff * 0xff;
-  int64_t g   = ((bgr48 >> 16) & 0xffff) / (double)0xffff * 0xff;
-  int64_t r   = ((bgr48 >> 32) & 0xffff) / (double)0xffff * 0xff;
-  palette[i]  = r | (g << 8) | (b << 16);
-  SDL_Color c = {r, g, b, 0x0};
+  union {
+    uint64_t i;
+    struct {
+      uint16_t b, g, r, pad
+    };
+  } u       = {.i = bgr48};
+  uint8_t b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
+          r   = u.r / (double)0xffff * 0xff;
+  SDL_Color c = {r, g, b, 0};
   SDL_LockSurface(screen);
   // I will repeat the color to simulate ignoring the upper 4 bits
-  for (i2 = 0; i2 != repeat; i2++)
+  for (int i2 = 0; i2 < 16; i2++)
     SDL_SetPaletteColors(screen->format->palette, &c, i2 * 16 + i, 1);
   SDL_UnlockSurface(screen);
 }
@@ -264,8 +265,8 @@ static int64_t K2SC(char ch) {
   }
 }
 static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
-  SDL_Event e   = *_e;
-  int64_t   mod = 0, cond, dummy;
+  SDL_Event e = *_e;
+  int64_t mod = 0, cond, dummy;
   if (!ch)
     ch = &dummy;
   if (!sc)
@@ -492,7 +493,7 @@ static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
   return -1;
 }
 static void (*kb_cb)(int64_t, int64_t);
-static void       *kb_cb_data;
+static void *kb_cb_data;
 static int SDLCALL KBCallback(void *d, SDL_Event *e) {
   int64_t c, s;
   if (kb_cb && (-1 != __ScanKey(&c, &s, e)))
@@ -511,9 +512,9 @@ void SetKBCallback(void *fptr) {
 static void (*ms_cb)(int64_t, int64_t, int64_t, int64_t);
 static int SDLCALL MSCallback(void *d, SDL_Event *e) {
   static int64_t x, y;
-  static int     state = 0;
-  static int     z;
-  int            x2, y2;
+  static int state = 0;
+  static int z;
+  int x2, y2;
   if (ms_cb)
     switch (e->type) {
     case SDL_MOUSEBUTTONDOWN:
@@ -561,27 +562,24 @@ void SetMSCallback(void *fptr) {
     SDL_AddEventWatch(MSCallback, NULL);
   }
 }
-static void UserEvHandler(void *ul, SDL_Event *ev) {
-  if (ev->type == SDL_USEREVENT) {
-    switch (ev->user.code) {
-      break;
-    case USER_CODE_DRAW_WIN_NEW:
-      _DrawWindowNew();
-      break;
-    case USER_CODE_UPDATE:
-      _UpdateScreen(ev->user.data1, 640, 480, ev->user.data2);
-    }
-  }
-}
+
 void InputLoop(void *ul) {
   SDL_Event e;
-  for (; !*(int64_t *)ul;) {
+  while (!*(uint64_t *)ul) {
     if (!SDL_WaitEvent(&e))
       continue;
-    if (e.type == SDL_QUIT)
-      break;
-    if (e.type == SDL_USEREVENT)
-      UserEvHandler(NULL, &e);
+    switch (e.type) {
+    case SDL_QUIT:
+      return;
+    case SDL_USEREVENT:
+      switch (e.user.code) {
+      case USER_CODE_UPDATE:
+        _UpdateScreen(e.user.data1, 640, 480, e.user.data2);
+        break;
+      case USER_CODE_DRAW_WIN_NEW:
+        _DrawWindowNew();
+      }
+    }
   }
 }
 

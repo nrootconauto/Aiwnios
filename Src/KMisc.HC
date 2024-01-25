@@ -184,7 +184,7 @@ Bool Raw(Bool val)
 
 Bool IsRaw()
 {//Are we in BLACK & WHITE raw scrn mode?
-  return 0;//return !Bt(&(Fs->display_flags),DISPLAYf_NOT_RAW); TODO RESTORE
+  return IsCmdLineMode;//return !Bt(&(Fs->display_flags),DISPLAYf_NOT_RAW); TODO RESTORE
 }
 
 Bool SingleUser(Bool val)
