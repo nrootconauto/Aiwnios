@@ -171,9 +171,14 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
   DeathWait(&task);
-  if(sig!=5)
+  #ifdef TARGET_RISCV
+  I64 trap=4;
+  #else
+  I64 trap=5;
+  #endif
+  if(sig!=trap)
     Exit;
-  if(sig==5) { //SIGTRAP
+  if(sig==trap) { //SIGTRAP
     //Allow us to move past the breakpoint
     bp=BptFind(oip,Fs);
     if(bp)
@@ -241,7 +246,7 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
       *addr=0xd4200000;
 #endif
 #ifdef TARGET_RISCV
-;//TODO TODO TODO RISCV
+	  ;//*addr=0x00100073; TODO TODO
 #endif
   }
   if(bl)
@@ -249,7 +254,7 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
   return res;
 }
 
-Bool BptR(U8 *addr,CTask *task=NULL,Bool live=TRUE,Bool rem=TRUE)
+Bool BptR(U8 *addr,CTask *task=NULL,Bool live=TRUE,Bool rem=TRUE)
 {//Rem breakpoint.
   CBpt *tmpb;
   Bool res=FALSE,bl;
