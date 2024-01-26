@@ -5,64 +5,64 @@ class CUniqueToken {
 };
 #define CON_TIMEOUT 2.
 class CConnection {
-	U8 *buffer;
-	U8 *buffer_ptr;
-	I64 buffer_len;
-	//These occupy .u8[0]
-	#define CON_S_METHOD 1
-	#define CON_S_FIELDS 2
-	#define CON_S_BLANK_LINE 3
-	#define CON_S_RAW_DATA 4
-	//These are flags
-	#define CONf_AWAIT_BOUNDARY 8
-	#define CONf_URL_ENCODED 9
-	#define CONf_DATA 10
-	#define CONf_KEEP_ALIVE 11
-	I64 state,method;
-	I64 b_ptr;
-	CServer *server;
-	I64 stream;
-	CHashTable *post_data;
-	I64 field_ptr,field_length;
-	U8 *fbuffer;
-	I64 content_len;
-	CURL *url;
-	U8 *name;
-	CHeapCtrl *hc;
-	CTask *task;
-	CUniqueToken *unique_token;
-	I64 is_dead,response_length;
-	U8 *session_cookie,*response_text;
-	I64 response_code,cache_age;
-	Bool provided_etag_by_server;
-	U8 response_mime[STR_LEN];
-	U8 boundary[STR_LEN];
-	U8 field[STR_LEN];
-        U8 *etag_text;
-	F64 last_ts;
+  U8 *buffer;
+  U8 *buffer_ptr;
+  I64 buffer_len;
+//These occupy .u8[0]
+  #define CON_S_METHOD 1
+  #define CON_S_FIELDS 2
+  #define CON_S_BLANK_LINE 3
+  #define CON_S_RAW_DATA 4
+  //These are flags
+  #define CONf_AWAIT_BOUNDARY 8
+  #define CONf_URL_ENCODED 9
+  #define CONf_DATA 10
+  #define CONf_KEEP_ALIVE 11
+  I64 state,method;
+  I64 b_ptr;
+  CServer *server;
+  I64 stream;
+  CHashTable *post_data;
+  I64 field_ptr,field_length;
+  U8 *fbuffer;
+  I64 content_len;
+  CURL *url;
+  U8 *name;
+  CHeapCtrl *hc;
+  CTask *task;
+  CUniqueToken *unique_token;
+  I64 is_dead,response_length;
+  U8 *session_cookie,*response_text;
+  I64 response_code,cache_age;
+  Bool provided_etag_by_server;
+  U8 response_mime[STR_LEN];
+  U8 boundary[STR_LEN];
+  U8 field[STR_LEN];
+  U8 *etag_text;
+  F64 last_ts;
 };
 I64 __EncodeQueryValue(U8 *s,U8 *to) {
   I64 i,l=StrLen(s),len2=0;
   U8 *xdigits="0123456789abcdef";
   for(i=0;i!=l;i++) {
-     switch(s[i]) {
-       case 'a'...'z':
-       case 'A'...'Z':
-       case '_':
-       case '0'...'9':
-       if(to) *to++=s[i];
-       len2++;
-       break;
-       case ' ':
-       if(to) *to++='+';
-       len2++;
-       break;
-       default:
-       if(to) *to++='%';
-       if(to) *to++=xdigits[(s[i]>>4)&0xf];
-       if(to) *to++=xdigits[s[i]&0xf];
-       len2+=3;
-     }
+    switch(s[i]) {
+      case 'a'...'z':
+      case 'A'...'Z':
+      case '_':
+      case '0'...'9':
+        if(to) *to++=s[i];
+        len2++;
+        break;
+      case ' ':
+        if(to) *to++='+';
+        len2++;
+        break;
+      default:
+        if(to) *to++='%';
+        if(to) *to++=xdigits[(s[i]>>4)&0xf];
+        if(to) *to++=xdigits[s[i]&0xf];
+        len2+=3;
+    }
   }
   if(to) *to++=0;
   len2++;//NULL terminaoter
@@ -76,88 +76,88 @@ U8 *EncodeQueryValue(U8 *s) {
 
 }
 U8 *GetQueryValue(U8 *q,U8 *f) {
-	I64 len=StrLen(q),bptr=0;
-	U8 *buf,three[3],*name=MAlloc(StrLen(q)+1);
-	U8 *ptr=q,*en;
-	loop:
-	buf=name;
-	while(*ptr&&!StrOcc("&=",*ptr)) {
-		buf[bptr++]=*ptr++;
-	}
-	buf[bptr]=0;
-	bptr=0;
-	if(!StrCmp(f,buf)) {
-		if(*ptr=='=') {
-			en=StrFirstOcc(ptr,"&");
-			if(!en) en=ptr+StrLen(ptr);
-			buf=CAlloc(en-ptr+1);
-			ptr++;
-			while(*ptr&&*ptr!='&') {
-				if(*ptr=='%') {
-					MemCpy(three,++ptr,2);
-					three[2]=0;
-					buf[bptr++]=Str2I64(three,16);
-					ptr+=StrLen(three);
-				} else if(*ptr=='+') {
-					buf[bptr++]=' ';
-					ptr++;
-				} else
-					buf[bptr++]=*ptr++;
-			}
-			buf[bptr++]=0;
-			Free(name);
-			return buf;
-		} else 
-			return StrNew("");
-	} else if(*ptr) {
-		if(StrFirstOcc(ptr,"&")) {
-			ptr=1+StrFirstOcc(ptr,"&");
-			goto loop;
-		}
-	}
-	Free(name);
-	return NULL;
+  I64 len=StrLen(q),bptr=0;
+  U8 *buf,three[3],*name=MAlloc(StrLen(q)+1);
+  U8 *ptr=q,*en;
+loop:
+  buf=name;
+  while(*ptr&&!StrOcc("&=",*ptr)) {
+    buf[bptr++]=*ptr++;
+  }
+  buf[bptr]=0;
+  bptr=0;
+  if(!StrCmp(f,buf)) {
+    if(*ptr=='=') {
+      en=StrFirstOcc(ptr,"&");
+      if(!en) en=ptr+StrLen(ptr);
+      buf=CAlloc(en-ptr+1);
+      ptr++;
+      while(*ptr&&*ptr!='&') {
+        if(*ptr=='%') {
+	  MemCpy(three,++ptr,2);
+	  three[2]=0;
+	  buf[bptr++]=Str2I64(three,16);
+	  ptr+=StrLen(three);
+        } else if(*ptr=='+') {
+	  buf[bptr++]=' ';
+	  ptr++;
+        } else
+	  buf[bptr++]=*ptr++;
+      }
+      buf[bptr++]=0;
+      Free(name);
+      return buf;
+    } else 
+      return StrNew("");
+  } else if(*ptr) {
+    if(StrFirstOcc(ptr,"&")) {
+      ptr=1+StrFirstOcc(ptr,"&");
+      goto loop;
+    }
+  }
+  Free(name);
+  return NULL;
 }
 CURL *ParseURL(U8 *url,CTask *mem_task) {
-	CURL *ret=CAlloc(sizeof(CURL),mem_task);
-	U8 *r,*q,*p,chr;
-	I64 i,l;
-	if(!(url=StrFind("//",url)))
-		goto fail;
-	url+=2;
-	r=StrFirstOcc(url,"/");
-	q=StrFirstOcc(url,"?");
-	p=StrFirstOcc(url,":");
-	if(!p) p=StrLen(url)+url;
-	if(!r) r=StrLen(url)+url;
-	if(!q) q=StrLen(url)+url;
-	if(p<r||p<q) {
-		ret->hostname=MAlloc(l=p-url+1,mem_task);
-		ret->hostname[l-1]=0;
-		MemCpy(ret->hostname,url,l-1);
-		url=p+1;
-		ret->port=Str2I64(url,10,&url);
-	} else {
-		ret->hostname=MAlloc(l=MinI64(p,r)-url+1,mem_task);
-		ret->hostname[l-1]=0;
-		MemCpy(ret->hostname,url,l-1);
-		url=MinI64(p,r)+1;
-	}
-	if(!*url) goto retn;
-	if(r<q) {
-		ret->abs_path=MAlloc(l=q-r-1+1,mem_task);
-		ret->abs_path[l-1]=0;
-		MemCpy(ret->abs_path,r+1,l-1);
-	}
-	if(*q) {
-		ret->query=StrNew(q+1);
-	} else
-		ret->query=StrNew("");
-	retn:
-	return ret;
-	fail:
-	Free(ret);
-	return NULL;
+  CURL *ret=CAlloc(sizeof(CURL),mem_task);
+  U8 *r,*q,*p,chr;
+  I64 i,l;
+  if(!(url=StrFind("//",url)))
+    goto fail;
+  url+=2;
+  r=StrFirstOcc(url,"/");
+  q=StrFirstOcc(url,"?");
+  p=StrFirstOcc(url,":");
+  if(!p) p=StrLen(url)+url;
+  if(!r) r=StrLen(url)+url;
+  if(!q) q=StrLen(url)+url;
+  if(p<r||p<q) {
+    ret->hostname=MAlloc(l=p-url+1,mem_task);
+    ret->hostname[l-1]=0;
+    MemCpy(ret->hostname,url,l-1);
+    url=p+1;
+    ret->port=Str2I64(url,10,&url);
+  } else {
+    ret->hostname=MAlloc(l=MinI64(p,r)-url+1,mem_task);
+    ret->hostname[l-1]=0;
+    MemCpy(ret->hostname,url,l-1);
+    url=MinI64(p,r)+1;
+  }
+  if(!*url) goto retn;
+  if(r<q) {
+    ret->abs_path=MAlloc(l=q-r-1+1,mem_task);
+    ret->abs_path[l-1]=0;
+    MemCpy(ret->abs_path,r+1,l-1);
+  }
+  if(*q) {
+    ret->query=StrNew(q+1);
+  } else
+    ret->query=StrNew("");
+retn:
+  return ret;
+fail:
+  Free(ret);
+  return NULL;
 }
 
 U8 *SkipWhitespace(U8 *s) {
@@ -197,65 +197,65 @@ U0 WriteNBytes(I64 s,I64 *len=NULL,U8 *bytes,I64 n) {
 fin:;
 }
 U0 Write(I64 s,I64 *len=NULL,U8 *fmt,...) {
-	U8 *str=StrPrintJoin(NULL,fmt,argc,argv),**blob;
-	WriteNBytes(s,len,str,StrLen(str));
-	Free(str);
+  U8 *str=StrPrintJoin(NULL,fmt,argc,argv),**blob;
+  WriteNBytes(s,len,str,StrLen(str));
+  Free(str);
 }
 U0 WriteLn(I64 s,I64 *len=NULL,U8 *fmt,...) {
-	U8 *str=StrPrintJoin(NULL,fmt,argc,argv),**blob;
-	WriteNBytes(s,len,str,StrLen(str));
-	WriteNBytes(s,len,"\x0d\n",2);
-	Free(str);
+  U8 *str=StrPrintJoin(NULL,fmt,argc,argv),**blob;
+  WriteNBytes(s,len,str,StrLen(str));
+  WriteNBytes(s,len,"\x0d\n",2);
+  Free(str);
 
 }
 U0 R200(I64 s,I64 *ptr,U8 *msg) {
-	U8 *ftxt=FileRead(msg),*ptr2,*next;
-	WriteLn(s,ptr,"<html>");
-	WriteLn(s,ptr,"	<body>");
-	WriteLn(s,ptr,"		<H1>File %s found!!!</H1>",msg);
-	WriteLn(s,ptr,"			<PRE>");
-	for(ptr2=ftxt;*ptr2;) {
-		if(StrFirstOcc(ptr2,"\n"))
-			*StrFirstOcc(ptr2,"\n")=0,next=1+ptr2+StrLen(ptr2);
-		else
-			next=ptr2+StrLen(ptr2);
-		WriteLn(s,ptr,"%s",ptr2);
-		ptr2=next;
-	}
-	WriteLn(s,ptr,"			</PRE>");
-	WriteLn(s,ptr,"	</body>");
-	WriteLn(s,ptr,"</html>");
-	Free(ftxt);
+  U8 *ftxt=FileRead(msg),*ptr2,*next;
+  WriteLn(s,ptr,"<html>");
+  WriteLn(s,ptr,"	<body>");
+  WriteLn(s,ptr,"		<H1>File %s found!!!</H1>",msg);
+  WriteLn(s,ptr,"			<PRE>");
+  for(ptr2=ftxt;*ptr2;) {
+    if(StrFirstOcc(ptr2,"\n"))
+      *StrFirstOcc(ptr2,"\n")=0,next=1+ptr2+StrLen(ptr2);
+    else
+      next=ptr2+StrLen(ptr2);
+    WriteLn(s,ptr,"%s",ptr2);
+    ptr2=next;
+  }
+  WriteLn(s,ptr,"			</PRE>");
+  WriteLn(s,ptr,"	</body>");
+  WriteLn(s,ptr,"</html>");
+  Free(ftxt);
 }
 U0 R404(I64 s,I64 *ptr,U8 *msg) {
-	WriteLn(s,ptr,"<html>");
-	WriteLn(s,ptr,"	<body>");
-	WriteLn(s,ptr,"		<H1>File %s not found</H1>",msg);
-	WriteLn(s,ptr,"	</body>");
-	WriteLn(s,ptr,"</html>");
+  WriteLn(s,ptr,"<html>");
+  WriteLn(s,ptr,"	<body>");
+  WriteLn(s,ptr,"		<H1>File %s not found</H1>",msg);
+  WriteLn(s,ptr,"	</body>");
+  WriteLn(s,ptr,"</html>");
 }
 U0 GenericGet(CServer *serv,I64 s,CURL *url,CHTTPRequest *req) {
-        if(!url) return;
-	CDirEntry ent;
-	I64 len=0;
-	CConnection *con=Fs->user_data;
-	StrCpy(con->response_mime,"text/html");
-	if(FileFind(url->abs_path,&ent,FUF_JUST_FILES)) {
-		con->response_code=200;
-		R200(s,&len,url->abs_path);
-		WriteLn(s,,"Content-Length: %d",len);
-		R200(s,NULL,url->abs_path);
-	} else {
-		con->response_code=404;
-		R404(s,NULL,url->abs_path);
-	}
+  if(!url) return;
+  CDirEntry ent;
+  I64 len=0;
+  CConnection *con=Fs->user_data;
+  StrCpy(con->response_mime,"text/html");
+  if(FileFind(url->abs_path,&ent,FUF_JUST_FILES)) {
+    con->response_code=200;
+    R200(s,&len,url->abs_path);
+    WriteLn(s,,"Content-Length: %d",len);
+    R200(s,NULL,url->abs_path);
+  } else {
+    con->response_code=404;
+    R404(s,NULL,url->abs_path);
+  }
 }
 
 CServer *CreateServer(I64 port) {
-	CServer *srv=CAlloc(sizeof(CServer));
-	srv->port=port;
-	QueInit(&srv->connects);
-	return srv;
+  CServer *srv=CAlloc(sizeof(CServer));
+  srv->port=port;
+  QueInit(&srv->connects);
+  return srv;
 }
 
 U8 *HashFileToETag(U8 *name) {
@@ -287,7 +287,7 @@ U0 SendRequest(I64 s) {
       break;case 404: msg="404 Not Found";
       break;case 304: msg="304 Not Modified";
 //If we have a 304(not-modefied)
-//We will ommit the body
+      //We will ommit the body
       con->response_length=0;
   }
   tmp=MStrPrint(
@@ -708,7 +708,7 @@ nxt:;
       for(idx=0;idx!=BACKLOG;idx++) {
         if(fds[idx]==-1) {
 	  unique_tokens[idx].srv=srv;
-	  unique_tokens[idx].con=NULL;
+	  unique_tokens[idx].con=NULL;
 	  fds[idx]=NetAccept(srv->s_sock,NULL);
 	  found=TRUE;
 	  break;

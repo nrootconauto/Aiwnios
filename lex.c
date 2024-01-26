@@ -831,74 +831,83 @@ re_enter:;
 }
 
 CLexer *LexerNew(char *filename, char *text) {
-  CLexFile *file = A_CALLOC(sizeof(CLexFile), NULL);
-  file->filename = A_STRDUP(filename, NULL);
-  file->text     = A_STRDUP(text, NULL);
-  CLexer *new    = A_CALLOC(sizeof(CLexer), NULL);
-  new->file      = file;
-  struct {
-    char *name;
-    int64_t tok;
-  } kws[] = {
-      //{"include",TK_KW_INCLUDE},
-      //{"define",TK_KW_DEFINE},
-      {"union", TK_KW_UNION},
-      {"catch", TK_KW_CATCH},
-      {"class", TK_KW_CLASS},
-      {"try", TK_KW_TRY},
-      {"if", TK_KW_IF},
-      {"else", TK_KW_ELSE},
-      {"for", TK_KW_FOR},
-      {"while", TK_KW_WHILE},
-      {"extern", TK_KW_EXTERN},
-      {"_extern", TK_KW__EXTERN},
-      {"return", TK_KW_RETURN},
-      {"sizeof", TK_KW_SIZEOF},
-      {"_intern", TK_KW__INTERN},
-      {"do", TK_KW_DO},
-      {"asm", TK_KW_ASM},
-      {"goto", TK_KW_GOTO},
-      //{"exe",TK_KW_EXE},
-      {"break", TK_KW_BREAK},
-      {"switch", TK_KW_SWITCH},
-      {"start", TK_KW_START},
-      {"end", TK_KW_END},
-      {"case", TK_KW_CASE},
-      {"default", TK_KW_DEFUALT},
-      {"public", TK_KW_PUBLIC},
-      {"offset", TK_KW_OFFSET},
-      {"import", TK_KW_IMPORT},
-      {"_import", TK_KW__IMPORT},
-      //{"ifdef",TK_KW_IFDEF},
-      //{"ifndef",TK_KW_IFNDEF},
-      //{"ifaot",TK_KW_IFAOT},
-      //{"ifjit",TK_KW_IFJIT},
-      //{"endif",TK_KW_ENDIF},
-      //{"assert",TK_KW_ASSERT},
-      {"reg", TK_KW_REG},
-      {"noreg", TK_KW_NOREG},
-      {"lastclass", TK_KW_LASTCLASS},
-      {"no_warn", TK_KW_NOWARN},
-      //{"help_index",TK_KW_HELP_INDEX},
-      //{"help_file",TK_KW_HELP_FILE},
-      {"static", TK_KW_STATIC},
-      {"lock", TK_KW_LOCK},
-      {"defined", TK_KW_DEFINED},
-      {"interrupt", TK_KW_INTERRUPT},
-      {"haserrcode", TK_KW_HASERRCODE},
-      {"argpop", TK_KW_ARGPOP},
-      {"noargpop", TK_KW_NOARGPOP},
-  };
-  int64_t i;
-  CHashKeyword *kw;
-  for (i = 0; i != sizeof(kws) / sizeof(*kws); i++) {
-    kw            = A_CALLOC(sizeof(CHashKeyword), NULL);
-    kw->base.type = HTT_KEYWORD;
-    kw->base.str  = A_STRDUP(kws[i].name, NULL);
-    kw->tk        = kws[i].tok;
-    HashAdd(kw, Fs->hash_table);
+  static int init;
+  if (!init) {
+    struct {
+      char *name;
+      int64_t tok;
+    } kws[] = {
+        //{"include",TK_KW_INCLUDE},
+        //{"define",TK_KW_DEFINE},
+        {"union", TK_KW_UNION},
+        {"catch", TK_KW_CATCH},
+        {"class", TK_KW_CLASS},
+        {"try", TK_KW_TRY},
+        {"if", TK_KW_IF},
+        {"else", TK_KW_ELSE},
+        {"for", TK_KW_FOR},
+        {"while", TK_KW_WHILE},
+        {"extern", TK_KW_EXTERN},
+        {"_extern", TK_KW__EXTERN},
+        {"return", TK_KW_RETURN},
+        {"sizeof", TK_KW_SIZEOF},
+        {"_intern", TK_KW__INTERN},
+        {"do", TK_KW_DO},
+        {"asm", TK_KW_ASM},
+        {"goto", TK_KW_GOTO},
+        //{"exe",TK_KW_EXE},
+        {"break", TK_KW_BREAK},
+        {"switch", TK_KW_SWITCH},
+        {"start", TK_KW_START},
+        {"end", TK_KW_END},
+        {"case", TK_KW_CASE},
+        {"default", TK_KW_DEFUALT},
+        {"public", TK_KW_PUBLIC},
+        {"offset", TK_KW_OFFSET},
+        {"import", TK_KW_IMPORT},
+        {"_import", TK_KW__IMPORT},
+        //{"ifdef",TK_KW_IFDEF},
+        //{"ifndef",TK_KW_IFNDEF},
+        //{"ifaot",TK_KW_IFAOT},
+        //{"ifjit",TK_KW_IFJIT},
+        //{"endif",TK_KW_ENDIF},
+        //{"assert",TK_KW_ASSERT},
+        {"reg", TK_KW_REG},
+        {"noreg", TK_KW_NOREG},
+        {"lastclass", TK_KW_LASTCLASS},
+        {"no_warn", TK_KW_NOWARN},
+        //{"help_index",TK_KW_HELP_INDEX},
+        //{"help_file",TK_KW_HELP_FILE},
+        {"static", TK_KW_STATIC},
+        {"lock", TK_KW_LOCK},
+        {"defined", TK_KW_DEFINED},
+        {"interrupt", TK_KW_INTERRUPT},
+        {"haserrcode", TK_KW_HASERRCODE},
+        {"argpop", TK_KW_ARGPOP},
+        {"noargpop", TK_KW_NOARGPOP},
+    };
+    int64_t i;
+    CHashKeyword *kw;
+    for (i = 0; i != sizeof(kws) / sizeof(*kws); i++) {
+      kw            = A_CALLOC(sizeof *kw, NULL);
+      kw->base.type = HTT_KEYWORD;
+      kw->base.str  = A_STRDUP(kws[i].name, NULL);
+      kw->tk        = kws[i].tok;
+      HashAdd(kw, Fs->hash_table);
+    }
+    init = 1;
   }
+  CLexer *new    = A_CALLOC(sizeof(CLexer), NULL);
+  new->hc        = HeapCtrlInit(NULL, Fs, 0);
+  CLexFile *file = new->file = A_CALLOC(sizeof(CLexFile), new->hc);
+  file->filename             = A_STRDUP(filename, new->hc);
+  file->text                 = A_STRDUP(text, new->hc);
   return new;
+}
+
+void LexerDel(CLexer *lex) {
+  HeapCtrlDel(lex->hc);
+  A_FREE(lex);
 }
 
 void LexerDump(CLexer *lex) {
