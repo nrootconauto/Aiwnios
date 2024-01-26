@@ -1180,17 +1180,48 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
+typedef struct linkedlist {
+  struct linkedlist *next;
+  void *fp
+} linkedlist;
+linkedlist *linkedlistnew() {
+  linkedlist *ret = malloc(sizeof *ret);
+  *ret            = (linkedlist){
+                 .next = NULL,
+                 .fp   = NULL,
+  };
+  return ret;
+}
+void linkedlistadd(linkedlist *ll, void *fp) {
+  while (ll && ll->next)
+    ll = ll->next;
+  *(ll->next = malloc(sizeof *ll)) = (linkedlist){
+      .next = NULL,
+      .fp   = fp,
+  };
+}
+void linkedlistdel(linkedlist *ll) {
+  linkedlist *l;
+  while (ll) {
+    l = ll->next;
+    A_FREE(ll->fp);
+    free(ll);
+    ll = l;
+  }
+}
+
 void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
+  linkedlist *ll = linkedlistnew();
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
     to_run = Compile(ccmp, NULL, NULL);
     FFI_CALL_TOS_0(to_run);
-    //A_FREE(to_run); DONT FREE THE STRINGS TODO FIX
+    linkedlistadd(ll, to_run);
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
@@ -1458,6 +1489,7 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
   }
+  linkedlistdel(ll);
 }
 static const char *t_drive;
 static void Boot() {
@@ -1469,9 +1501,9 @@ static void Boot() {
   InstallDbgSignalsForThread();
   TaskInit(Fs, NULL, 0);
   VFsMountDrive('T', t_drive);
-/*  FuzzTest1();
-  FuzzTest2();
-  FuzzTest3();*/
+  /*  FuzzTest1();
+    FuzzTest2();
+    FuzzTest3();*/
   if (arg_bootstrap_bin->count) {
 #define BOOTSTRAP_FMT                                                          \
   "#define TARGET_%s \n"                                                       \
@@ -1489,7 +1521,7 @@ static void Boot() {
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86");
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "X86");
-#elif defined (__riscv) || defined (__riscv__)
+#elif defined(__riscv) || defined(__riscv__)
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV");
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "RISCV");

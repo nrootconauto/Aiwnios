@@ -8,6 +8,7 @@
 .global Misc_LBts
 .global Misc_Caller
 .global Misc_ForceYield
+.global Misc_BP
 .extern ForceYield0
 Misc_Btc:
   btc qword ptr [rcx],rsi
@@ -120,3 +121,6 @@ Misc_ForceYield:
   POP RBX
   POP RAX
   ret 
+Misc_BP:
+  mov rax,rbp
+  ret
