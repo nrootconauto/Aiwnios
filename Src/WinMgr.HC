@@ -16,7 +16,7 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
   while (Bt(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0)) {
     if (force && sys_winmgr_task)
       sys_winmgr_task->wake_jiffy=__GetTicksHP;
-    Yield;
+    Sleep(1);
   }
   if (cnt>1 && old_doc)
     old_full_refresh=LBts(&old_doc->flags,DOCf_DO_FULL_REFRESH);
@@ -765,7 +765,7 @@ wmt_start:
 	  if (doc=WinCursorPosSet(task,ms.pos.x,ms.pos.y,FALSE)) {
 	    do msg_code=WinMgrSleep;
 	    while (TaskValidate(task) && (ms.rb || ms.right_dbl_time));
-	    if (TaskValidate(task)) {
+	    if (TaskValidate(task)) {
 	      if (msg_code==MSG_MS_R_UP) {
 		if (doc->doc_signature==DOC_SIGNATURE_VAL) {
 		  DocLock(doc);

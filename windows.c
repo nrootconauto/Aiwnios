@@ -104,7 +104,6 @@ int64_t ScreenUpdateInProgress() {
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   int64_t idx;
   SDL_Texture *text;
-  SDL_LockMutex(screen_mutex);
   SDL_LockSurface(screen);
   char *dst = screen->pixels;
   for (idx = 0; idx != h; idx++) {
@@ -119,7 +118,6 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_RenderCopy(renderer, text, NULL, &view_port);
   SDL_RenderPresent(renderer);
   SDL_DestroyTexture(text);
-  SDL_UnlockMutex(screen_mutex);
   Misc_LBtr(&screen_update_in_progress, 0);
 }
 
