@@ -1151,7 +1151,7 @@ break;case IC_ASM:
       MemCpy(info[0]->body+foff,aiwnios_dbg_info,8*ClampI64(reported_max_ln-reported_min_ln-foff+1,0,MaxI64(cc->max_line-cc->min_line-foff-1,0)));
     }
     info[0]->body[0]=machine_code;
-    info[0]->body[cc->max_line-cc->min_line+1]=idx;
+    info[0]->body[cc->max_line-cc->min_line+1]=idx+machine_code;
   }
   Free(aiwnios_dbg_info);
   
@@ -1173,7 +1173,7 @@ break;case IC_ASM:
       if(cc->flags&CCF_AOT_COMPILE) {
 		if(misc->addr!=INVALID_PTR) {
           //All non-imported functions are short calls
-          if(misc->flags&CMF_SHORT_ADDR) {
+          if(misc->flags&CMF_SHORT_ADDR) {
             fill_user_data.cc=cc;
 			fill_user_data.cm=misc;
 			fill_user_data.machine_code=machine_code;
