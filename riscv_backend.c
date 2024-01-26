@@ -18,6 +18,8 @@
 #define RISCV_FASSIGN_TMP 12
 #define RISCV_IASSIGN_TMP 12
 #define RISCV_ASSIGN_ADDR_TMP 13
+#define RISCV_PTR_TMP 14
+#define RISCV_IIMM_TMP 15
 
 static int64_t IsConst(CRPN *rpn);
 static int64_t ConstVal(CRPN *rpn);
@@ -377,8 +379,8 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
     misc->integer = imm;
     QueIns(misc, cctrl->code_ctrl->code_misc->last);
     found:
-    AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
-    AIWNIOS_ADD_CODE(RISCV_LD(reg, RISCV_IRET, 0));
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, 0));
+    AIWNIOS_ADD_CODE(RISCV_LD(reg, reg, 0));
     if(bin) CodeMiscAddRef(misc, bin + code_off - 8);
   }
   return code_off;
@@ -1156,29 +1158,29 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
   case MD_CODE_MISC_PTR:
     if (src->mode == MD_REG &&
         ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64))) {
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_PTR_TMP, 0));
       switch (dst->raw_type) {
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(RISCV_SB(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SB(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(RISCV_SH(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SH(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(RISCV_SW(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SW(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(RISCV_SD(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SD(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_F64:
-        AIWNIOS_ADD_CODE(RISCV_FSD(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_FSD(src->reg, RISCV_PTR_TMP, 0));
         break;
       default:
         abort();
@@ -1192,32 +1194,32 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
   case MD_STATIC:
     if ((src->raw_type == RT_F64) == (dst->raw_type == RT_F64) &&
         src->mode == MD_REG) {
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
-      AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_IRET,RISCV_IRET,0)); //Standard relocation opcods
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_PTR_TMP, 0));
+      AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_PTR_TMP,RISCV_PTR_TMP,0)); //Standard relocation opcods
       if (bin)
         CodeMiscAddRef(cctrl->statics_label, bin + code_off - 8)->offset=dst->off;
       switch (dst->raw_type) {
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(RISCV_SB(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SB(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_U16i:
       case RT_I16i:
-        AIWNIOS_ADD_CODE(RISCV_SH(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SH(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_U32i:
       case RT_I32i:
-        AIWNIOS_ADD_CODE(RISCV_SW(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SW(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        AIWNIOS_ADD_CODE(RISCV_SD(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_SD(src->reg, RISCV_PTR_TMP, 0));
         break;
       case RT_F64:
-        AIWNIOS_ADD_CODE(RISCV_FSD(src->reg, RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_FSD(src->reg, RISCV_PTR_TMP, 0));
         break;
       default:
         abort();
@@ -1286,9 +1288,9 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     goto store_r2;
   store_r2:
     if (!Is12Bit(indir_off)) {
-      code_off = __ICMoveI64(cctrl, RISCV_IRET, indir_off, bin, code_off);
-      AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_IPOOP2, RISCV_IRET, use_reg2));
-      use_reg2  = RISCV_IPOOP2;
+      code_off = __ICMoveI64(cctrl, RISCV_PTR_TMP, indir_off, bin, code_off);
+      AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_PTR_TMP, RISCV_PTR_TMP, use_reg2));
+      use_reg2  = RISCV_PTR_TMP;
       indir_off = 0;
     }
     switch (dst->raw_type) {
@@ -1340,11 +1342,11 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     } else if (src->mode == MD_CODE_MISC_PTR) {
       if ((src->raw_type == RT_F64) != (dst->raw_type == RT_F64))
         goto dft;
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
-      AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_ADDI, RISCV_IRET, 0));
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_PTR_TMP, 0));
+      AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_PTR_TMP, RISCV_PTR_TMP, 0));
       CodeMiscAddRef(src->code_misc, bin + code_off - 8);
       indir_off = 0;
-      use_reg2  = RISCV_IRET;
+      use_reg2  = RISCV_PTR_TMP;
       goto load_r2;
     } else if (src->mode == MD_REG) {
       if (src->raw_type == RT_F64 && src->raw_type == dst->raw_type) {
@@ -1358,7 +1360,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       }
     } else if (src->mode == MD_PTR) {
       if ((src->raw_type == RT_F64) == (RT_F64 == dst->raw_type)) {
-        use_reg2 = RISCV_IRET;
+        use_reg2 = RISCV_PTR_TMP;
         code_off = __ICMoveI64(cctrl, use_reg2, src->off, bin, code_off);
         goto load_r2;
       } else {
@@ -1366,8 +1368,9 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       }
     load_r2:
     if(!Is12Bit(indir_off)) {
-		code_off=__ICMoveI64(cctrl,RISCV_IRET,indir_off,bin,code_off);
-		AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_IRET,RISCV_IRET,use_reg2));
+		code_off=__ICMoveI64(cctrl,RISCV_PTR_TMP,indir_off,bin,code_off);
+		AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_PTR_TMP,RISCV_PTR_TMP,use_reg2));
+		use_reg2=RISCV_PTR_TMP;
 		indir_off=0;
 	}
       switch (src->raw_type) {
@@ -1423,29 +1426,33 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     } else if (src->mode == MD_STATIC) {
       if (dst->mode == MD_REG &&
           (dst->raw_type == RT_F64) == (src->raw_type == RT_F64)) {
-        AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
+        AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_PTR_TMP, 0));
         switch (dst->raw_type) {
           break;
         case RT_U8i:
         case RT_I8i:
-          AIWNIOS_ADD_CODE(RISCV_LB(dst->reg, RISCV_IRET, 0));
+          AIWNIOS_ADD_CODE(RISCV_LB(dst->reg, RISCV_PTR_TMP, 0));
           break;
         case RT_U16i:
+          AIWNIOS_ADD_CODE(RISCV_LHU(dst->reg, RISCV_PTR_TMP, 0));
+          break;
         case RT_I16i:
-          AIWNIOS_ADD_CODE(RISCV_LH(dst->reg, RISCV_IRET, 0));
+          AIWNIOS_ADD_CODE(RISCV_LH(dst->reg, RISCV_PTR_TMP, 0));
           break;
         case RT_U32i:
+          AIWNIOS_ADD_CODE(RISCV_LWU(dst->reg, RISCV_PTR_TMP, 0));
+        break;
         case RT_I32i:
-          AIWNIOS_ADD_CODE(RISCV_LW(dst->reg, RISCV_IRET, 0));
+          AIWNIOS_ADD_CODE(RISCV_LW(dst->reg, RISCV_PTR_TMP, 0));
           break;
         case RT_PTR:
         case RT_U64i:
         case RT_I64i:
         case RT_FUNC:
-          AIWNIOS_ADD_CODE(RISCV_LD(dst->reg, RISCV_IRET, 0));
+          AIWNIOS_ADD_CODE(RISCV_LD(dst->reg, RISCV_PTR_TMP, 0));
           break;
         case RT_F64:
-          AIWNIOS_ADD_CODE(RISCV_FLD(dst->reg, RISCV_IRET, 0));
+          AIWNIOS_ADD_CODE(RISCV_FLD(dst->reg, RISCV_PTR_TMP, 0));
           break;
         default:
           abort();
@@ -2492,10 +2499,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     b            = ICArgN(rpn, 0);                                             \
     code_off     = __OptPassFinal(cctrl, a, bin, code_off);                    \
     code_off     = __OptPassFinal(cctrl, b, bin, code_off);                    \
-    into_reg     = rpn->res.mode == MD_REG ? rpn->res.reg : RISCV_IRET;        \
     tmp.mode     = MD_REG;                                                     \
     tmp.raw_type = rpn->res.raw_type;                                          \
-    tmp.reg      = into_reg;                                                   \
+    into_reg=tmp.reg      = RISCV_IRET; /* avoid conflicting with a/b's reg*/                                                   \
     code_off     = PutICArgIntoReg(cctrl, &b->res, tmp.raw_type, RISCV_IPOOP1, \
                                    bin, code_off);                             \
     code_off     = ICMov(cctrl, &tmp, &a->res, bin, code_off);                 \
@@ -3564,13 +3570,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       a        = ICArgN(rpn, 1);
       b        = ICArgN(rpn, 0);
       code_off = __OptPassFinal(cctrl, a, bin, code_off);
-      code_off = PutICArgIntoReg(cctrl, &a->res, a->res.raw_type==RT_F64,
+      code_off = PutICArgIntoReg(cctrl, &a->res, a->res.raw_type==RT_F64?RT_F64:RT_I64i,
                                  a->res.raw_type==RT_F64 ? RISCV_FRET : RISCV_IRET, bin,
                                  code_off);
       F64_TO_BOOL_IF_NEEDED(&a->res, RISCV_IPOOP1);
       code_off=RISCV_JccToLabel(old_fail_misc,RISCV_COND_E,a->res.reg,0,bin,code_off);
       code_off = __OptPassFinal(cctrl, b, bin, code_off);
-      code_off = PutICArgIntoReg(cctrl, &b->res, b->res.raw_type==RT_F64,
+      code_off = PutICArgIntoReg(cctrl, &b->res, a->res.raw_type==RT_F64?RT_F64:RT_I64i,
                                  a->res.raw_type==RT_F64 == RT_F64 ? RISCV_FRET : RISCV_IRET, bin,
                                  code_off);
       F64_TO_BOOL_IF_NEEDED(&b->res, RISCV_IPOOP2);

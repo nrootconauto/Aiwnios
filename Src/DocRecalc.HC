@@ -14,6 +14,8 @@ I64 DocWordWrapDel(CDoc *doc,CDocEntry *doc_e,
   if (full_refresh)
     while (TRUE) {
       doc_e2=doc_e->next;
+      if(doc_e2==&doc->head)
+        break;
       if (doc_e2->type_u8==DOCT_SOFT_NEW_LINE && !same_win) {
 	if (doc->cur_entry==doc_e2) {
 	  doc->cur_entry=doc_e2->next;
@@ -993,7 +995,7 @@ rc_adjust_xy:
 	    yy=(y-y0)*FONT_HEIGHT;
 	    zz=0;
 	  } else {
-	    xx=(x-x0)*FONT_WIDTH;
+	    xx=(x-x0)*FONT_WIDTH;
 	    yy=(y-y0)*FONT_HEIGHT;
 	    zz=0;
 	  }

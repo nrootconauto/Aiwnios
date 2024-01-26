@@ -1145,14 +1145,12 @@ break;case IC_ASM:
 	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
   if(res_sz) *res_sz=idx;
-  if(info) {
+  if(info&&aiwnios_dbg_info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
-      idx=reported_min_ln-cc->min_line;
-      MemCpy(info[0]->body+idx+1,aiwnios_dbg_info,ClampI64(reported_max_ln-reported_min_ln-idx+1,0,reported_max_ln-reported_min_ln+1));
+      idx=reported_min_ln-cc->min_line+1;
+      MemCpy(info[0]->body+idx,aiwnios_dbg_info,8*ClampI64(reported_max_ln-reported_min_ln-idx+1,0,MaxI64(cc->max_line-cc->min_line-idx-1,0)));
     }
     info[0]->body[0]=machine_code;
-    info[0]->body[cc->max_line-cc->min_line+1]=machine_code+idx;
-    
   }
   Free(aiwnios_dbg_info);
   
