@@ -192,8 +192,8 @@ Bool DisasSType(U32 data,U8 *name,I64 f3,I64 opcode,I64 opt1='i',I64 opt2='i') {
     MaskN(data,7,5);
   if(imm&(1<<11)) imm|=~(1<<12-1);
   "%s %s,%s,%X",name,
-	RegType2Str(MaskN(data,15,5),opt1),
-	RegType2Str(MaskN(data,20,5),opt2),imm;
+	RegType2Str(MaskN(data,20,5),opt1),
+	RegType2Str(MaskN(data,15,5),opt2),imm;
   if(HasUpperBits&&FramePtr(FP_UPPER_BITS)) {
     " #%P\n",FramePtr(FP_UPPER_BITS)+imm;
   } else 
@@ -248,81 +248,83 @@ Bool DisasJType(U32 data,U8 *name,I64 opcode,I64 opt1='i') {
 }
 U32 *DisasOpc(CDoc *doc,U32 *data) {
   "%P\t",data;
-  if(DisasUType(*data,"LUI", 0b110111)) return data+1; 
-  if(DisasUType(*data,"AUIPC", 0b10111)) {
+  U32 d=*data;
+  if(DisasUType(d,"LUI", 0b110111)) return data+1; 
+  if(DisasUType(d,"AUIPC", 0b10111)) {
 //Add pc to upper bits
      FramePtrSet(FP_UPPER_BITS,FramePtr(FP_UPPER_BITS)+ToI64(data));
      return data+1;
   }
-  if(DisasJType(*data,"JAL", 0b1101111)) return data+1; 
-  if(DisasIType(*data,"JALR",0b000,0b1100111)) return data+1; 
-  if(DisasBType(*data,"BEQ",0b001,0b1100011)) return data+1; 
-  if(DisasBType(*data,"BLT",0b100,0b1100011)) return data+1; 
-  if(DisasBType(*data,"BGE",0b101,0b1100011)) return data+1; 
-  if(DisasBType(*data,"BLTU",0b110,0b1100011)) return data+1; 
-  if(DisasBType(*data,"BGEU",0b111,0b1100011)) return data+1; 
-  if(DisasIType(*data,"LB",0,0b11)) return data+1;
-  if(DisasIType(*data,"LH",0b1,0b11)) return data+1;
-  if(DisasIType(*data,"LW",0b10,0b11)) return data+1;
-  if(DisasIType(*data,"LBU",0b100,0b11)) return data+1;
-  if(DisasIType(*data,"LHU",0b101,0b11)) return data+1;
-  if(DisasIType(*data,"LWU",0b110,0b11)) return data+1;  
-  if(DisasIType(*data,"LB",0,0b100011)) return data+1;
-  if(DisasIType(*data,"LH",0b1,0b100011)) return data+1;
-  if(DisasIType(*data,"LW",0b10,0b100011)) return data+1;
-  if(DisasIType(*data,"LBU",0b100,0b100011)) return data+1;
-  if(DisasIType(*data,"LHU",0b101,0b100011)) return data+1;
-  if(DisasIType(*data,"LWU",0b110,0b100011)) return data+1;
-  if(DisasIType(*data,"ADDI",0b000,0b10011)) return data+1;
-  if(DisasIType(*data,"SLTI",0b010,0b10011)) return data+1;
-  if(DisasIType(*data,"SLTIU",0b011,0b10011)) return data+1;
-  if(DisasIType(*data,"XORI",0b0100,0b10011)) return data+1;
-  if(DisasIType(*data,"ORI",0b0110,0b10011)) return data+1;
-  if(DisasIType(*data,"ANDI",0b0111,0b10011)) return data+1;
-  if(DisasRType(*data,"ADD",0b0,0b000,0b110011)) return data+1;
-  if(DisasRType(*data,"SUB",0b0100000,0b000,0b110011)) return data+1;
-  if(DisasRType(*data,"SLL",0b0000000,0b001,0b110011)) return data+1;
-  if(DisasRType(*data,"SLT",0b0000000,0b010,0b10011)) return data+1;
-  if(DisasRType(*data,"SLTU",0b0000000,0b011,0b110011)) return data+1;
-  if(DisasRType(*data,"XOR",0b0000000,0b100,0b110011)) return data+1;
-  if(DisasRType(*data,"SRL",0b0000000,0b101,0b110011)) return data+1;
-  if(DisasRType(*data,"SRA",0b0100000,0b101,0b110011)) return data+1;
-  if(DisasRType(*data,"OR",0b0000000,0b110,0b110011)) return data+1;
-  if(DisasRType(*data,"AND",0b0000000,0b111,0b110011)) return data+1;
-  if(DisasIType(*data,"LD",0b11,0b11)) return data+1;
-  if(DisasSType(*data,"SD",0b11,0b100011)) return data+1;
-  if(DisasIType(*data,"SLLI",0b1,0b10011)) return data+1;
-  if(*data&(1<<30)){
-    if(DisasIType(*data,"SRAI",0b101,0b10011)) return data+1;
-  } else if(DisasIType(*data,"SRLI",0b101,0b10011)) return data+1;
-  if(DisasRType(*data,"MUL",0b1,0b000,0b110011)) return data+1;
-  if(DisasRType(*data,"MULH",0b1,0b001,0b110011)) return data+1;
-  if(DisasRType(*data,"MULHSU",0b1,0b010,0b110011)) return data+1;
-  if(DisasRType(*data,"MULHU",0b1,0b011,0b110011)) return data+1;
-  if(DisasRType(*data,"DIV",0b1,0b100,0b110011)) return data+1;
-  if(DisasRType(*data,"DIVU",0b1,0b101,0b110011)) return data+1;
-  if(DisasRType(*data,"REM",0b1,0b110,0b110011)) return data+1;
-  if(DisasRType(*data,"REMU",0b1,0b111,0b110011)) return data+1;
-  if(DisasIType(*data,"FLD",0b11,0b111)) return data+1;
-  if(DisasIType(*data,"FSD",0b11,0b100111)) return data+1;
+  if(DisasJType(d,"JAL", 0b1101111)) return data+1; 
+  if(DisasIType(d,"JALR",0b000,0b1100111)) return data+1; 
+  if(DisasBType(d,"BNE",0b001,0b1100011)) return data+1; 
+  if(DisasBType(d,"BEQ",0b000,0b1100011)) return data+1; 
+  if(DisasBType(d,"BLT",0b100,0b1100011)) return data+1; 
+  if(DisasBType(d,"BGE",0b101,0b1100011)) return data+1; 
+  if(DisasBType(d,"BLTU",0b110,0b1100011)) return data+1; 
+  if(DisasBType(d,"BGEU",0b111,0b1100011)) return data+1; 
+  if(DisasIType(d,"LB",0,0b11)) return data+1;
+  if(DisasIType(d,"LH",0b1,0b11)) return data+1;
+  if(DisasIType(d,"LW",0b10,0b11)) return data+1;
+  if(DisasIType(d,"LBU",0b100,0b11)) return data+1;
+  if(DisasIType(d,"LHU",0b101,0b11)) return data+1;
+  if(DisasIType(d,"LWU",0b110,0b11)) return data+1;  
+  if(DisasIType(d,"LB",0,0b100011)) return data+1;
+  if(DisasIType(d,"LH",0b1,0b100011)) return data+1;
+  if(DisasIType(d,"LW",0b10,0b100011)) return data+1;
+  if(DisasIType(d,"LBU",0b100,0b100011)) return data+1;
+  if(DisasIType(d,"LHU",0b101,0b100011)) return data+1;
+  if(DisasIType(d,"LWU",0b110,0b100011)) return data+1;
+  if(DisasIType(d,"ADDI",0b000,0b10011)) return data+1;
+  if(DisasIType(d,"SLTI",0b010,0b10011)) return data+1;
+  if(DisasIType(d,"SLTIU",0b011,0b10011)) return data+1;
+  if(DisasIType(d,"XORI",0b0100,0b10011)) return data+1;
+  if(DisasIType(d,"ORI",0b0110,0b10011)) return data+1;
+  if(DisasIType(d,"ANDI",0b0111,0b10011)) return data+1;
+  if(DisasRType(d,"ADD",0b0,0b000,0b110011)) return data+1;
+  if(DisasRType(d,"SUB",0b0100000,0b000,0b110011)) return data+1;
+  if(DisasRType(d,"SLL",0b0000000,0b001,0b110011)) return data+1;
+  if(DisasRType(d,"SLT",0b0000000,0b010,0b10011)) return data+1;
+  if(DisasRType(d,"SLTU",0b0000000,0b011,0b110011)) return data+1;
+  if(DisasRType(d,"XOR",0b0000000,0b100,0b110011)) return data+1;
+  if(DisasRType(d,"SRL",0b0000000,0b101,0b110011)) return data+1;
+  if(DisasRType(d,"SRA",0b0100000,0b101,0b110011)) return data+1;
+  if(DisasRType(d,"OR",0b0000000,0b110,0b110011)) return data+1;
+  if(DisasRType(d,"AND",0b0000000,0b111,0b110011)) return data+1;
+  if(DisasIType(d,"LD",0b11,0b11)) return data+1;
+  if(DisasSType(d,"SD",0b11,0b100011)) return data+1;
+  if(DisasIType(d,"SLLI",0b1,0b10011)) return data+1;
+  if(d&(1<<30)){
+    if(DisasIType(d,"SRAI",0b101,0b10011)) return data+1;
+  } else if(DisasIType(d,"SRLI",0b101,0b10011)) return data+1;
+  if(DisasRType(d,"MUL",0b1,0b000,0b110011)) return data+1;
+  if(DisasRType(d,"MULH",0b1,0b001,0b110011)) return data+1;
+  if(DisasRType(d,"MULHSU",0b1,0b010,0b110011)) return data+1;
+  if(DisasRType(d,"MULHU",0b1,0b011,0b110011)) return data+1;
+  if(DisasRType(d,"DIV",0b1,0b100,0b110011)) return data+1;
+  if(DisasRType(d,"DIVU",0b1,0b101,0b110011)) return data+1;
+  if(DisasRType(d,"REM",0b1,0b110,0b110011)) return data+1;
+  if(DisasRType(d,"REMU",0b1,0b111,0b110011)) return data+1;
+  if(DisasIType(d,"FLD",0b11,0b111)) return data+1;
+  if(DisasIType(d,"FSD",0b11,0b100111)) return data+1;
 #define ROUND_MODE 1
-  if(DisasRType(*data,"FADD",0b1,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasRType(*data,"FSUB",0b101,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasRType(*data,"FMUL",0b1001,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasRType(*data,"FDIV",0b1101,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasRType(*data,"FSQRT",0b101101,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasRType(*data,"FMIN",0b10101,0,0b1010011)) return data+1;
-  if(DisasRType(*data,"FMAX",0b10101,1,0b1010011)) return data+1;
-  if(DisasRType(*data,"FEQ",0b1010001,0b10,0b1010011)) return data+1;
-  if(DisasRType(*data,"FLT",0b1010001,0b1,0b1010011)) return data+1;
-  if(DisasRType(*data,"FLE",0b1010001,0b0,0b1010011)) return data+1;
-  if(DisasRType(*data,"SGNJ",0b10001,0b0,0b1010011)) return data+1;
-  if(DisasRType(*data,"SGNJN",0b10001,0b1,0b1010011)) return data+1;
-  if(DisasRType(*data,"SGNJX",0b10001,0b10,0b1010011)) return data+1;
-  if(DisasI2Type(*data,"FMV.D.X",0b111100100000,0,0b1010011)) return data+1;
-  if(DisasI2Type(*data,"FMV.X.D",0b111000100000,0,0b1010011)) return data+1;
-  if(DisasI2Type(*data,"FCVT.L.D",0b111100100000,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasI2Type(*data,"FCVT.D.L",0b111000100000,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FADD",0b1,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FSUB",0b101,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FMUL",0b1001,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FDIV",0b1101,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FSQRT",0b101101,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasRType(d,"FMIN",0b10101,0,0b1010011)) return data+1;
+  if(DisasRType(d,"FMAX",0b10101,1,0b1010011)) return data+1;
+  if(DisasRType(d,"FEQ",0b1010001,0b10,0b1010011)) return data+1;
+  if(DisasRType(d,"FLT",0b1010001,0b1,0b1010011)) return data+1;
+  if(DisasRType(d,"FLE",0b1010001,0b0,0b1010011)) return data+1;
+  if(DisasRType(d,"SGNJ",0b10001,0b0,0b1010011)) return data+1;
+  if(DisasRType(d,"SGNJN",0b10001,0b1,0b1010011)) return data+1;
+  if(DisasRType(d,"SGNJX",0b10001,0b10,0b1010011)) return data+1;
+  if(DisasI2Type(d,"FMV.D.X",0b111100100000,0,0b1010011)) return data+1;
+  if(DisasI2Type(d,"FMV.X.D",0b111000100000,0,0b1010011)) return data+1;
+  if(DisasI2Type(d,"FCVT.L.D",0b110000100010,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasI2Type(d,"FCVT.D.L",0b110100100010,ROUND_MODE,0b1010011)) return data+1;
   "BAD\n";
   return data+1;
 }
