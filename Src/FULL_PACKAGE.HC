@@ -220,6 +220,9 @@ U8 *body=
 #ifdef TARGET_AARCH64
 #include "UAsmARM64.HC"
 #endif
+#ifdef TARGET_RISCV
+#include "UAsmRiscV.HC"
+#endif
 #ifdef GEN_HEADERS
 CDoc *unfound=DocNew("unfound.DD");
 #endif

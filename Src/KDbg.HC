@@ -254,7 +254,7 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
   return res;
 }
 
-Bool BptR(U8 *addr,CTask *task=NULL,Bool live=TRUE,Bool rem=TRUE)
+Bool BptR(U8 *addr,CTask *task=NULL,Bool live=TRUE,Bool rem=TRUE)
 {//Rem breakpoint.
   CBpt *tmpb;
   Bool res=FALSE,bl;

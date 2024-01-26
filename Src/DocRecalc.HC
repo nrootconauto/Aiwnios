@@ -995,7 +995,7 @@ rc_adjust_xy:
 	    yy=(y-y0)*FONT_HEIGHT;
 	    zz=0;
 	  } else {
-	    xx=(x-x0)*FONT_WIDTH;
+	    xx=(x-x0)*FONT_WIDTH;
 	    yy=(y-y0)*FONT_HEIGHT;
 	    zz=0;
 	  }

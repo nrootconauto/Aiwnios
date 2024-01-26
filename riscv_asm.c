@@ -18,7 +18,7 @@ int64_t RISCV_S(int64_t imm115, int64_t s1, int64_t d, int64_t f3,
          MASKn(f3, 12, 3) | MASKn(imm115, 7, 5) | MASKn(opc, 0, 7);
 }
 int64_t RISCV_B(int64_t imm, int64_t s1, int64_t s2,int64_t f3, int64_t opc) {
-  return MASKn(imm >> 12, 30, 1) | MASKn(imm >> 5, 25, 6) |
+  return MASKn(imm >> 12, 31, 1) | MASKn(imm >> 5, 25, 6) |
          MASKn(s2, 20, 5)|MASKn(s1, 15, 5) | MASKn(f3, 12, 3) |
          MASKn(imm >> 1, 8, 4) | MASKn(imm >> 11, 7, 1) | MASKn(opc, 0, 7);
 }

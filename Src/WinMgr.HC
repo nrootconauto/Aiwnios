@@ -765,7 +765,7 @@ wmt_start:
 	  if (doc=WinCursorPosSet(task,ms.pos.x,ms.pos.y,FALSE)) {
 	    do msg_code=WinMgrSleep;
 	    while (TaskValidate(task) && (ms.rb || ms.right_dbl_time));
-	    if (TaskValidate(task)) {
+	    if (TaskValidate(task)) {
 	      if (msg_code==MSG_MS_R_UP) {
 		if (doc->doc_signature==DOC_SIGNATURE_VAL) {
 		  DocLock(doc);
