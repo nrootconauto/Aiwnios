@@ -49,7 +49,7 @@ extern class CTask;
 #define F64_MIN (0xFFEFFFFFFFFFFFFF(F64))
 #define inf	(0x7FF0000000000000(F64))
 #ifndef BOOTSTRAP
-#define Ã£	(0x400921FB54442D18(F64))
+#define ã	(0x400921FB54442D18(F64))
 #endif
 #define pi	(0x400921FB54442D18(F64))
 #define exp_1	(0x4005BF0A8B145769(F64)) //The number "e"
@@ -4464,6 +4464,7 @@ public extern I64 DocEntryRun(CDoc *doc,CDocEntry *doc_e,
 	Bool exited,I64 *_has_action=NULL);
 public extern CDoc *DocBorderNew(CDoc *pdoc);
 public extern U0 DocTermNew();
+#define	GR_SCALE	(1<<32)
 #define RIGHT_INCLUDE	0
 #define RIGHT_AINCLUDE	1
 #define RIGHT_COPY	2
@@ -6445,7 +6446,6 @@ class CSpritePtWH : CSpritePt
   I32 width;
   I32 height;
 };
-
 class CSpritePtWHU8s : CSpritePtWH
 {
   U8 u[0];
@@ -7100,4 +7100,5 @@ extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
 extern I64 GetRBP();
-
+public extern CBGR48 gr_palette_gray[COLORS_NUM];
+public extern CBGR48 gr_palette_std[COLORS_NUM];

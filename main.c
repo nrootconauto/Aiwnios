@@ -398,6 +398,10 @@ typedef union {
   static uint64_t STK_##x(double *stk) {                                       \
     return ((dbl2u64)x(stk[0])).i;                                             \
   }
+#define MATHFUNDEF2(x)                                                          \
+  static uint64_t STK_##x(double *stk) {                                       \
+    return ((dbl2u64)x(stk[0], stk[1])).i;                                             \
+  }
 
 MATHFUNDEF(cos);
 MATHFUNDEF(sin);
@@ -406,9 +410,8 @@ MATHFUNDEF(acos);
 MATHFUNDEF(atan);
 MATHFUNDEF(asin);
 
-static uint64_t STK_Arg(double *stk) {
-  return ((dbl2u64)Arg(stk[0], stk[1])).i;
-}
+MATHFUNDEF2(pow);
+MATHFUNDEF2(Arg);
 
 static int64_t STK_Misc_Btc(int64_t *stk) {
   return Misc_Btc((void *)stk[0], stk[1]);
@@ -504,31 +507,15 @@ static int64_t STK_toupper(int64_t *stk) {
   return toupper(stk[0]);
 }
 
-static int64_t STK_log10(double *stk) {
-  double r = log10(stk[0]);
-  return *(int64_t *)&r;
-}
-static int64_t STK_log2(double *stk) {
-  double r = log2(stk[0]);
-  return *(int64_t *)&r;
-}
-static int64_t STK_Pow10(double *stk) {
-  double r = Pow10(stk[0]);
-  return *(int64_t *)&r;
-}
-static int64_t STK_sqrt(double *stk) {
-  double r = sqrt(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_pow(double *stk) {
-  double r = pow(stk[0], stk[1]);
-  return *(int64_t *)&r;
-}
-static int64_t STK_exp(double *stk) {
-  double r = exp(stk[0]);
-  return *(int64_t *)&r;
-}
+MATHFUNDEF(log10);
+MATHFUNDEF(log2);
+MATHFUNDEF(Pow10);
+MATHFUNDEF(sqrt);
+MATHFUNDEF(exp);
+MATHFUNDEF(round);
+MATHFUNDEF(log);
+MATHFUNDEF(floor);
+MATHFUNDEF(ceil);
 
 static int64_t STK_PrintI(int64_t *stk) {
   PrintI((char *)stk[0], stk[1]);
@@ -536,26 +523,6 @@ static int64_t STK_PrintI(int64_t *stk) {
 
 static int64_t STK_PrintF(double *stk) {
   PrintF(((char **)stk)[0], stk[1]);
-}
-
-static int64_t STK_round(double *stk) {
-  double r = round(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_log(double *stk) {
-  double r = log(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_floor(double *stk) {
-  double r = floor(stk[0]);
-  return *(int64_t *)&r;
-}
-
-static int64_t STK_ceil(double *stk) {
-  double r = ceil(stk[0]);
-  return *(int64_t *)&r;
 }
 
 static int64_t STK_memcmp(int64_t *stk) {
@@ -1184,7 +1151,7 @@ typedef struct linkedlist {
   struct linkedlist *next;
   void *fp
 } linkedlist;
-linkedlist *linkedlistnew() {
+static linkedlist *linkedlistnew() {
   linkedlist *ret = malloc(sizeof *ret);
   *ret            = (linkedlist){
                  .next = NULL,
@@ -1192,7 +1159,7 @@ linkedlist *linkedlistnew() {
   };
   return ret;
 }
-void linkedlistadd(linkedlist *ll, void *fp) {
+static void linkedlistadd(linkedlist *ll, void *fp) {
   while (ll && ll->next)
     ll = ll->next;
   *(ll->next = malloc(sizeof *ll)) = (linkedlist){
@@ -1200,7 +1167,7 @@ void linkedlistadd(linkedlist *ll, void *fp) {
       .fp   = fp,
   };
 }
-void linkedlistdel(linkedlist *ll) {
+static void linkedlistdel(linkedlist *ll) {
   linkedlist *l;
   while (ll) {
     l = ll->next;
@@ -1210,7 +1177,7 @@ void linkedlistdel(linkedlist *ll) {
   }
 }
 
-void BootAiwnios(char *bootstrap_text) {
+static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
@@ -1490,6 +1457,8 @@ void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
   }
   linkedlistdel(ll);
+  CmpCtrlDel(ccmp);
+  LexerDel(lex);
 }
 static const char *t_drive;
 static void Boot() {

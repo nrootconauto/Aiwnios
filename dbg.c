@@ -170,10 +170,12 @@ found:;
 #else
 static int debugger_pipe[2];
 static void ReadMsg(char *buf) {
-  read(debugger_pipe[0], buf, 0x100);
+  if (debugger_pipe[0])
+    read(debugger_pipe[0], buf, 0x100);
 }
 static void WriteMsg(char *buf) {
-  write(debugger_pipe[1], buf, 0x100);
+  if (debugger_pipe[1])
+    write(debugger_pipe[1], buf, 0x100);
 }
 static int64_t MsgPoll() {
   struct pollfd poll_for;

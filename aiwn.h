@@ -208,6 +208,7 @@ typedef struct CLexer {
 #define LEXF_NO_EXPAND     4 // Don't expand macros
   int64_t flags, cur_char;
   int64_t cur_tok;
+  CHeapCtrl *hc;
 } CLexer;
 typedef enum {
   TK_I64 = 0x100,
@@ -755,6 +756,7 @@ jmp_buf *__enter_try();
 void LexTests();
 void LexerDump(CLexer *lex);
 CLexer *LexerNew(char *filename, char *text);
+void LexerDel(CLexer *lex);
 int64_t Lex(CLexer *lex);
 int64_t LexAdvChr(CLexer *lex);
 char *LexSrcLink(CLexer *lex, void *task);
