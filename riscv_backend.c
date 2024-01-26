@@ -361,12 +361,27 @@ static int64_t PopFromStack(CCmpCtrl *cctrl, CICArg *arg, char *bin,
   AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP,RISCV_REG_SP,8));
   return code_off;
 }
-
+static int64_t Is32Bit(int64_t num) {
+  if (num > -0x7fFFffFFll)
+    if (num < 0x7fFFffFFll)
+      return 1;
+  return 0;
+}
 static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
                            char *bin, int64_t code_off) {
   CCodeMisc *misc;
+	  				int64_t low12;
   if (Is12Bit(imm)) {
     AIWNIOS_ADD_CODE(RISCV_ADDI(reg, 0, imm));
+  } else if(Is32Bit(imm)) {
+				low12=imm-(imm&~((1<<12)-1));
+				if(Is12Bit(low12)) {/*Chekc for bit 12 being set*/ 
+					AIWNIOS_ADD_CODE(RISCV_LUI(reg,imm>>12));
+					AIWNIOS_ADD_CODE(RISCV_ADDI(reg,reg,low12));
+			    } else {
+					AIWNIOS_ADD_CODE(RISCV_LUI(reg,1+(imm>>12)));
+					AIWNIOS_ADD_CODE(RISCV_ADDI(reg,reg,low12));
+				}
   } else {
     for (misc=cctrl->code_ctrl->code_misc->next; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
       if (misc->type == CMT_INT_CONST)
@@ -2276,6 +2291,8 @@ static int64_t __SexyPostOp(
 
 static void DoNothing() {
 }
+static int64_t DoNothing3(int64_t,int64_t,int64_t) {
+}
 // Psudeo op
 static int64_t RISCV_FNEG(int64_t d, int64_t a) {
   return RISCV_SGNJN(d, a, a);
@@ -2994,7 +3011,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 // LEFT ==> may have a MD_INDIR_REG(where reg is a tmp reg)
 // *LEFT=RIHGT ==> Write into the left's address
 //
-#define BACKEND_BINOP(f_op, i_op)                                              \
+#define BACKEND_BINOP(f_op, i_op,i_imm_op)                                              \
   do {                                                                         \
     next     = ICArgN(rpn, 1);                                                 \
     next2    = ICArgN(rpn, 0);                                                 \
@@ -3012,7 +3029,17 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                                  bin, code_off);                               \
       code_off = PutICArgIntoReg(cctrl, &next2->res, rpn->raw_type,            \
                                  RISCV_FPOOP1, bin, code_off);                 \
-    } else {                                                                   \
+    } else if(i_imm_op!=DoNothing3&&IsConst(next2)&&Is12Bit(ConstVal(next2))) {             \
+      code_off = PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, RISCV_FPOOP2,     \
+                                 bin, code_off);                               \
+      AIWNIOS_ADD_CODE(i_imm_op(into_reg,next->res.reg,ConstVal(next2))); \
+                                     tmp.mode     = MD_REG;                                                     \
+    tmp.raw_type = rpn->raw_type;                                              \
+    tmp.reg      = into_reg;                                                   \
+    if (rpn->res.mode != MD_NULL)                                            \
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
+      break; \
+	} else { \
       code_off = PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, RISCV_IPOOP2,     \
                                  bin, code_off);                               \
       code_off = PutICArgIntoReg(cctrl, &next2->res, rpn->raw_type,            \
@@ -3032,7 +3059,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
     }                                                                          \
   } while (0);
-    BACKEND_BINOP(RISCV_FADD_D, RISCV_ADD);
+    BACKEND_BINOP(RISCV_FADD_D, RISCV_ADD,RISCV_ADDI);
     break;
   ic_comma:
     next     = ICArgN(rpn, 1);
@@ -3099,7 +3126,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off = ICMov(cctrl, &rpn->res, &next2->res, bin, code_off);
     break;
   ic_sub:
-    BACKEND_BINOP(RISCV_FSUB_D, RISCV_SUB);
+    BACKEND_BINOP(RISCV_FSUB_D, RISCV_SUB,RISCV_SUBI);
     break;
   ic_div:
     next  = rpn->base.next;
@@ -3136,9 +3163,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   div_normal:
     if (rpn->raw_type == RT_U64i) {
-      BACKEND_BINOP(RISCV_FDIV_D, RISCV_DIVU);
+      BACKEND_BINOP(RISCV_FDIV_D, RISCV_DIVU,DoNothing3);
     } else {
-      BACKEND_BINOP(RISCV_FDIV_D, RISCV_DIV);
+      BACKEND_BINOP(RISCV_FDIV_D, RISCV_DIV,DoNothing3);
     }
     break;
   ic_mul:
@@ -3168,9 +3195,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       }
     }
     if (rpn->raw_type == RT_U64i) {
-      BACKEND_BINOP(RISCV_FMUL_D, RISCV_MUL); // TODO unsigned multiply
+      BACKEND_BINOP(RISCV_FMUL_D, RISCV_MUL,DoNothing3); // TODO unsigned multiply
     } else {
-      BACKEND_BINOP(RISCV_FMUL_D, RISCV_MUL);
+      BACKEND_BINOP(RISCV_FMUL_D, RISCV_MUL,DoNothing3);
     }
     break;
   ic_deref:
@@ -3215,7 +3242,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (rpn->raw_type == RT_F64) {
       FBITWISE(RISCV_AND);
     } else
-      BACKEND_BINOP(RISCV_AND, RISCV_AND);
+      BACKEND_BINOP(RISCV_AND, RISCV_AND,RISCV_ANDI);
     break;
   ic_addr_of:
     next = rpn->base.next;
@@ -3297,7 +3324,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       FBITWISE(RISCV_XOR);
       break;
     }
-    BACKEND_BINOP(RISCV_XOR, RISCV_XOR);
+    BACKEND_BINOP(RISCV_XOR, RISCV_XOR,RISCV_XORI);
     break;
   ic_mod:
     next  = ICArgN(rpn, 1);
@@ -3320,9 +3347,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         }
       }
       if (rpn->raw_type == RT_U64i) {
-        BACKEND_BINOP(RISCV_REMU, RISCV_REMU);
+        BACKEND_BINOP(RISCV_REMU, RISCV_REMU,DoNothing3);
       } else {
-        BACKEND_BINOP(RISCV_REM, RISCV_REM);
+        BACKEND_BINOP(RISCV_REM, RISCV_REM,DoNothing3);
       }
     } else {
       code_off  = __OptPassFinal(cctrl, next, bin, code_off);
@@ -3349,7 +3376,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (rpn->raw_type == RT_F64) {
       FBITWISE(RISCV_OR);
     }
-    BACKEND_BINOP(RISCV_OR, RISCV_OR);
+    BACKEND_BINOP(RISCV_OR, RISCV_OR,RISCV_ORI);
     break;
   ic_lt:
   ic_gt:
