@@ -2970,10 +2970,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     //In case our switch statement is massive,we will use a big jump here
     if(bin&&fail1_addr) *(int32_t*)fail1_addr=RISCV_Jcc(RISCV_COND_G, tmp.reg, RISCV_IRET, (char*)(bin+code_off)-(char*)fail1_addr);
     if(bin&&fail2_addr) *(int32_t*)fail2_addr=RISCV_Jcc(RISCV_COND_L, tmp.reg, RISCV_IPOOP2, (char*)(bin+code_off)-(char*)fail2_addr);
-    AIWNIOS_ADD_CODE(RISCV_JAL(0,0));
-    if(bin) CodeMiscAddRef(rpn->code_misc->dft_lab, bin + code_off - 4)->is_jal =
+    if(rpn->type==IC_BOUNDED_SWITCH) {
+      AIWNIOS_ADD_CODE(RISCV_JAL(0,0));
+      if(bin) CodeMiscAddRef(rpn->code_misc->dft_lab, bin + code_off - 4)->is_jal =
         1; // 4 bytes wide;
-    
+    }
     break;
   ic_sub_ret:
     tmp.mode     = MD_REG;
