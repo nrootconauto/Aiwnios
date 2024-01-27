@@ -93,11 +93,16 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-  if (ret == MAP_FAILED && bc_enable)
+  if (ret == MAP_FAILED && (add_flags&MAP_32BIT))
     ret = mmap(GetAvailRegion32(b), b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-  if (ret == MAP_FAILED)
+  //Just give it a 64bit address and hope for the best
+  if (ret == MAP_FAILED&& (add_flags&MAP_32BIT))
+    ret = mmap(NULL, b,
+               (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
+               MAP_PRIVATE | MAP_ANONYMOUS | (add_flags&~MAP_32BIT), -1, 0);  
+  if(ret==MAP_FAILED)
     return NULL;
 #endif
   int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
@@ -144,7 +149,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // Rounnd up to 8
   cnt += 7 + sizeof(CMemUnused);
   cnt &= (int8_t)0xf8;
-  // HClF_LOCKED is 1
+  // HClF_LOCKED is 1  
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
   if (cnt > MEM_HEAP_HASH_SIZE)
@@ -374,7 +379,7 @@ static void *GetAvailRegion32(int64_t len) {
   char buf[BUFSIZ];
   ssize_t n;
   while ((n = read(fd, buf, BUFSIZ)) > 0) {
-    ssize_t pos = 0;
+      ssize_t pos = 0;
     while (pos < n) {
       char *ptr = buf + pos;
       start     = Str2Ptr(ptr, &ptr);
