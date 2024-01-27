@@ -86,6 +86,7 @@ typedef struct {
   void (*fp)(), *gs;
   int64_t num;
   void (*profiler_int)(void *fs);
+  CHashTable *parent_table;
 } CorePair;
 #if defined(__linux__)
   #include <linux/futex.h>
@@ -131,6 +132,7 @@ static void threadrt(CorePair *pair) {
   Fs = calloc(sizeof(CTask), 1);
   VFsThrdInit();
   TaskInit(Fs, NULL, 0);
+  Fs->hash_table->next=pair->parent_table;
   SetHolyGs(pair->gs);
   core_num = pair->num;
   void (*fp)();
@@ -205,7 +207,9 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   struct sigaction sa;
   char buf[144];
-  CorePair pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
+  CHashTable *parent_table=NULL;
+  if(Fs) parent_table=Fs->hash_table;
+  CorePair pair = {fp, gs, core,NULL,parent_table}, *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
   pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
   char nambuf[16];
@@ -302,7 +306,9 @@ int64_t GetTicksHP() {
   return ticks * 1000;
 }
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
-  CorePair pair = {fp, gs, core}, *ptr = malloc(sizeof(CorePair));
+  CHashTable *parent_table=NULL;
+  if(Fs) parent_table=Fs->hash_table;
+  CorePair pair = {fp, gs, core,NULL,parent_table}, *ptr = malloc(sizeof(CorePair));
   *ptr                          = pair;
   cores[core].mtx               = CreateMutex(NULL, FALSE, NULL);
   cores[core].event             = CreateEvent(NULL, 0, 0, NULL);
