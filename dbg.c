@@ -237,15 +237,17 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
   if (pid <= 0)
     return 0;
   if (WIFEXITED(code)) {
+die:
     close(debugger_pipe[0]);
     close(debugger_pipe[1]);
     ptrace(PT_DETACH, pid, 0, 0);
     exit(WEXITSTATUS(code));
     return 0;
   } else if (WIFSIGNALED(code) || WIFSTOPPED(code) || WIFCONTINUED(code)) {
-    if (WIFSIGNALED(code))
+    if (WIFSIGNALED(code)) {
       sig = WTERMSIG(code);
-    else if (WIFSTOPPED(code))
+      goto die;
+    } else if (WIFSTOPPED(code))
       sig = WSTOPSIG(code);
     else if (WIFCONTINUED(code))
       sig = SIGCONT;
