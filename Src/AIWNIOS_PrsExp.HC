@@ -770,6 +770,18 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
     }
   }
   #endif
+  #ifdef TARGET_RISCV
+  //In RISCV do the same
+  if(cc->flags&CCF_AOT_COMPILE) {
+    if(!(h->type&HTF_IMPORT)) {
+      cur=COCMiscNew(cc,CMT_HASH_ENTRY);
+      cur->flags|=CMF_SHORT_ADDR;
+      cur->h=h;
+      return cur;
+    }
+  }
+  #endif
+
   for(cur=head->next;cur!=head;cur=cur->next) {
     if(cur->h==h)
       return cur;

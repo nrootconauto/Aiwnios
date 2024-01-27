@@ -1379,7 +1379,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         goto dft;
       AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_PTR_TMP, 0));
       AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_PTR_TMP, RISCV_PTR_TMP, 0));
-      CodeMiscAddRef(src->code_misc, bin + code_off - 8);
+      if(bin) CodeMiscAddRef(src->code_misc, bin + code_off - 8);
       indir_off = 0;
       use_reg2  = RISCV_PTR_TMP;
       goto load_r2;

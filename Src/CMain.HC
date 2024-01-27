@@ -518,6 +518,9 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
   CAOTImportExport *tmpaotie,*tmpaotie1;
   CHashFun *fun;
   I64 i;
+  #ifdef TARGET_RISCV
+  return; //Let the loader.c do it,I give up
+  #endif
   for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
     tmpaotie1=tmpaotie->next;
     if(tmpaotie->short_jmp) {		  
@@ -525,7 +528,6 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
       if(fun&&fun->type&HTT_FUN) {
 		if(fun->type&HTF_RESOLVE) {
 		  #ifdef TARGET_RISCV
-		  return; //Let the loader.c do it,I give up
 		  if(-(1<<12)<=fun->exe_addr-tmpaotie->rip<=1<<12-1) {/*Chekc for bit 12 being set*/
 		    //AUIPC imm20
 		    i=((fun->exe_addr-tmpaotie->rip)>>12)<<12;
