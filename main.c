@@ -1147,48 +1147,18 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
-typedef struct linkedlist {
-  struct linkedlist *next;
-  void *fp
-} linkedlist;
-static linkedlist *linkedlistnew() {
-  linkedlist *ret = malloc(sizeof *ret);
-  *ret            = (linkedlist){
-                 .next = NULL,
-                 .fp   = NULL,
-  };
-  return ret;
-}
-static void linkedlistadd(linkedlist *ll, void *fp) {
-  while (ll && ll->next)
-    ll = ll->next;
-  *(ll->next = malloc(sizeof *ll)) = (linkedlist){
-      .next = NULL,
-      .fp   = fp,
-  };
-}
-static void linkedlistdel(linkedlist *ll) {
-  linkedlist *l;
-  while (ll) {
-    l = ll->next;
-    A_FREE(ll->fp);
-    free(ll);
-    ll = l;
-  }
-}
-
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
-  linkedlist *ll = linkedlistnew();
+  ccmp->flags|=CCF_STRINGS_ON_HEAP; //We free the code data,so dont put code data with string data
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
     to_run = Compile(ccmp, NULL, NULL);
     FFI_CALL_TOS_0(to_run);
-    linkedlistadd(ll, to_run);
+    A_FREE(to_run);
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
@@ -1456,7 +1426,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
   }
-  linkedlistdel(ll);
   CmpCtrlDel(ccmp);
   LexerDel(lex);
 }

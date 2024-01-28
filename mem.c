@@ -93,15 +93,18 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+#if defined (__x86_64__)
   if (ret == MAP_FAILED && (add_flags&MAP_32BIT))
     ret = mmap(GetAvailRegion32(b), b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+    
   //Just give it a 64bit address and hope for the best
   if (ret == MAP_FAILED&& (add_flags&MAP_32BIT))
     ret = mmap(NULL, b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | (add_flags&~MAP_32BIT), -1, 0);  
+#endif
   if(ret==MAP_FAILED)
     return NULL;
 #endif
@@ -365,6 +368,57 @@ static void *Str2Ptr(char *ptr, char **end) {
     *end = ptr;
   return (void *)v;
 }
+#if defined(__FreeBSD__)
+#include <kvm.h>
+       #include	<sys/param.h>
+       #include	<sys/sysctl.h>
+       #include	<sys/user.h>
+#include	<sys/param.h>
+#include	<sys/queue.h>
+#include	<sys/socket.h>
+#include	<libprocstat.h>
+#include <sys/user.h>
+typedef struct CRange {
+	uint64_t s;
+	uint64_t e;
+} CRange; 
+static int64_t RangeSort(CRange *a,CRange *b) {
+	return a->s-b->s;
+}
+static void *GetAvailRegion32(int64_t len) {
+  int64_t poop_ant;
+  //https://forums.freebsd.org/threads/how-to-get-virtual-memory-size-of-current-process-in-c-c.87022/
+  //Thank God
+ struct procstat *ps=procstat_open_sysctl();
+ void *ret;
+ unsigned int proc_cnt,vm_cnt,i;
+ //man kvm_getprocs
+ struct kinfo_proc* kproc=procstat_getprocs(ps,KERN_PROC_PID,getpid(),&proc_cnt);
+ struct kinfo_vmentry *vments=procstat_getvmmap(ps,kproc,&vm_cnt);
+  CRange ranges[vm_cnt+2];
+ for(i=0;i!=vm_cnt;i++) {
+	 ranges[i].s=vments[i].kve_start;
+	 ranges[i].e=vments[i].kve_end;
+ }
+ //Start range
+   ranges[vm_cnt].s=0x10000;
+   ranges[vm_cnt].e=0x10000;
+   ranges[vm_cnt+1].s=0x100000000ull/2; //32bits(31 forward,31 backwards)
+   ranges[vm_cnt+1].e=0x100000000ull/2;
+ qsort(ranges,vm_cnt,sizeof(CRange),&RangeSort);
+ for(poop_ant=0;poop_ant!=vm_cnt+1;poop_ant++) {
+	 if(ranges[poop_ant+1].s-ranges[poop_ant].e>=len) {
+		 ret=ranges[poop_ant].e;
+		 break;
+	 }
+ }
+ procstat_freeprocs(ps,kproc);
+ procstat_freevmmap(ps,vments); 
+ procstat_close(ps);
+ return ret;
+}
+#endif
+#if defined (__linux__)
 static void *GetAvailRegion32(int64_t len) {
   static int64_t ps;
   if (!ps) {
@@ -398,6 +452,7 @@ ret:
   close(fd);
   return ((int64_t)retv + ps - 1) & ~(ps - 1);
 }
+#endif
 
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;

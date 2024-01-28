@@ -150,6 +150,19 @@ elseif (ARCH STREQUAL x86_64)
   endif()
 endif ()
 
+#
+# Nroot here,FreeBSD depreaceated procfs so I need to use libprocstat
+#  Im looking at here,feel free to rewrite
+#
+#https://cmake.org/pipermail/cmake/2008-April/021282.html
+#
+if(UNIX)
+    EXEC_PROGRAM(uname OUTPUT_VARIABLE SYSTEM_NAME)
+    SET(SYSTEM_NAME "${SYSTEM_NAME}" CACHE INTERNAL "")
+    if(SYSTEM_NAME STREQUAL "FreeBSD")
+      target_link_libraries(aiwnios PRIVATE procstat)
+    endif()
+endif()
 target_compile_options(aiwnios PRIVATE -w)
 
 add_library(FFI STATIC ${ASM_SOURCES})
