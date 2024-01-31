@@ -382,6 +382,16 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
       AIWNIOS_ADD_CODE(RISCV_LUI(reg, 1 + (imm >> 12)));
       AIWNIOS_ADD_CODE(RISCV_ADDI(reg, reg, low12));
     }
+  } else if(!(cctrl->flags&CCF_AOT_COMPILE)&&bin&&Is32Bit((int64_t)imm-(int64_t)(bin+code_off))) {
+	  imm-=(int64_t)(bin+code_off);
+	  low12 = imm - (imm & ~((1 << 12) - 1));
+	  if(Is12Bit(low12)) {
+		AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, (imm >> 12)));
+		AIWNIOS_ADD_CODE(RISCV_ADDI(reg, reg, low12));
+	  } else { 
+		AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, 1 + (imm >> 12)));
+		AIWNIOS_ADD_CODE(RISCV_ADDI(reg, reg, low12));
+	  }
   } else {
     for (misc = cctrl->code_ctrl->code_misc->next;
          misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
