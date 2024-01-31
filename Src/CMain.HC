@@ -517,10 +517,7 @@ I64 StreamExePrint(U8 *fmt,...)
 U0 FillInShortCalls(CCmpCtrl *cc) {
   CAOTImportExport *tmpaotie,*tmpaotie1;
   CHashFun *fun;
-  I64 i;
-  #ifdef TARGET_RISCV
-  return; //Let the loader.c do it,I give up
-  #endif
+  I64 i,ptr,low12;
   for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
     tmpaotie1=tmpaotie->next;
     if(tmpaotie->short_jmp) {		  
@@ -528,19 +525,23 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
       if(fun&&fun->type&HTT_FUN) {
 		if(fun->type&HTF_RESOLVE) {
 		  #ifdef TARGET_RISCV
-		  if(-(1<<12)<=fun->exe_addr-tmpaotie->rip<=1<<12-1) {/*Chekc for bit 12 being set*/
+		  ptr=fun->exe_addr+tmpaotie->offset;
+riscv_patch:
+		  i=ptr-tmpaotie->rip;
+	      low12=i-(i&~(1<<12-1));
+		  if(-(1<<11)<=low12<(1<<11-1)) {/*Chekc for bit 12 being set*/
 		    //AUIPC imm20
-		    i=((fun->exe_addr-tmpaotie->rip)>>12)<<12;
+		    i=((ptr-tmpaotie->rip)>>12)<<12;
             AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
             //JALR imm12
-		    i=((fun->exe_addr-tmpaotie->rip)&(1<<12-1))<<20;
+		    i=low12<<20;
 			AOTOrBytesU8At(cc,tmpaotie->rip(I64)+4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
           } else {
-			i=fun->exe_addr-tmpaotie->rip;
+			i=ptr-tmpaotie->rip;
 			i=(i>>12+1)<<12;
-		    AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
-		    i=(1<<12-(fun->exe_addr-tmpaotie->rip&(1<<12-1)))<<20;
-			AOTOrBytesU8At(cc,tmpaotie->rip(I64)+4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+            AOTOrBytesU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+		    i=low12<<20;
+            AOTOrBytesU8At(cc,tmpaotie->rip(I64)+4,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
 	      }
 		  #endif
 		  #ifdef TARGET_AARCH64
@@ -560,6 +561,10 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
 			#ifdef TARGET_X86
 			i=fun(CHashGlblVar*)->data_addr_rip-(tmpaotie->rip+4)+tmpaotie->offset;
 			AOTStoreCodeU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+			#endif
+			#ifdef TARGET_RISCV
+			ptr=fun(CHashGlblVar*)->data_addr_rip+tmpaotie->offset;
+			goto riscv_patch;
 			#endif
 			QueRem(tmpaotie);
 			Free(tmpaotie->str);

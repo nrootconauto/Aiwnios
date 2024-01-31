@@ -33,7 +33,7 @@ typedef struct _CHashImport {
 #define IET_MAIN             25
 
 static int64_t Is12Bit(int64_t i) {
-  return i >= -(1 << 11) && i < (1 << 11) - 1;
+  return i >= -(1 << 11) && i <= (1 << 11) - 1;
 }
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {

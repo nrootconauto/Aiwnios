@@ -63,7 +63,7 @@ static int64_t IsCompoundCompare(CRPN *r) {
   return 0;
 }
 static int64_t Is12Bit(int64_t i) {
-  return i >= -(1 << 11) && i < (1 << 11) - 1;
+  return i >= -(1 << 11) && i <= (1 << 11) - 1;
 }
 static int64_t IsSavedIReg(int64_t r);
 static int64_t ModeIsDerefToROff(CRPN *m) {
@@ -1729,8 +1729,8 @@ enter:;
     rpn->res      = old;                                                       \
     break;                                                                     \
   case IC_DEREF:                                                               \
-    code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
     code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);          \
+    code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
     dummy    = ((CRPN *)next->base.next)->res;                                 \
     code_off = PutICArgIntoReg(                                                \
         cctrl, &next2->res, use_f64 ? RT_F64 : next2->res.raw_type,            \
@@ -2608,7 +2608,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (rpn->res.mode != MD_REG) {
       tmp.mode     = MD_REG;
       tmp.raw_type = RT_I64i;
-      tmp.reg      = RISCV_IRET;
+      tmp.reg      = into_reg;
       code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
