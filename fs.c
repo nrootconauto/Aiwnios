@@ -217,7 +217,12 @@ char **VFsDir(char *name) {
   }
   int64_t sz = VFsFSize("");
   if (sz) {
+	#if defined(WIN32) || defined(_WIN32)
+	//+1 for "."
+    ret = A_CALLOC((sz + 1 +1 ) * 8, NULL);
+    #else
     ret = A_CALLOC((sz + 1) * 8, NULL);
+    #endif
     WIN32_FIND_DATAA data;
     HANDLE dh;
     char buffer[strlen(fn) + 4];
@@ -233,6 +238,9 @@ char **VFsDir(char *name) {
       if (strlen(data.cFileName) <= 37)
         ret[s64++] = A_STRDUP(data.cFileName, NULL);
     }
+    #if defined(WIN32) || defined(_WIN32)
+    ret[s64++]=A_STRDUP(".",NULL);
+    #endif
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
