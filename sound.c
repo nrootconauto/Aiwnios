@@ -30,6 +30,11 @@ void SndFreq(int64_t f) {
   freq = f;
 }
 void InitSound() {
+#ifdef __linux__
+  SDL_SetHint(SDL_HINT_AUDIODRIVER, "pipewire");
+  if (SDL_Init(SDL_INIT_AUDIO))
+    SDL_SetHintWithPriority(SDL_HINT_AUDIODRIVER, NULL, SDL_HINT_OVERRIDE);
+#endif
   SDL_AudioSpec want;
   if (SDL_Init(SDL_INIT_AUDIO)) {
     // Audio failed to initailize
