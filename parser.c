@@ -2129,7 +2129,7 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin  = Compile(ccmp, NULL, NULL);
+  bin  = Compile(ccmp, NULL, NULL,NULL);
   binf = (void *)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
@@ -2152,7 +2152,7 @@ double PrsF64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin  = Compile(ccmp, NULL, NULL);
+  bin  = Compile(ccmp, NULL, NULL,NULL);
   binf = (void *)bin;
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
@@ -2481,7 +2481,7 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
     // filled in later
     //
     ccmp->cur_fun->base.base.type |= HTF_EXTERN;
-    ccmp->cur_fun->fun_ptr = Compile(ccmp, NULL, NULL);
+    ccmp->cur_fun->fun_ptr = Compile(ccmp, NULL, NULL,NULL);
     ccmp->cur_fun->base.base.type &= ~HTF_EXTERN;
     if (ccmp->cur_fun->base.base.str)
       SysSymImportsResolve(ccmp->cur_fun->base.base.str, 0);
@@ -4291,8 +4291,8 @@ CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp) {
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp) {
   CodeCtrlPop(ccmp);
 }
-char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info) {
-  return Compile(ccmp, sz, dbg_info);
+char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info,CHeapCtrl *h) {
+  return Compile(ccmp, sz, dbg_info,h);
 }
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp, void **patch_addr) {
   CCodeMisc *misc;
