@@ -6364,26 +6364,26 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next    = rpn->base.next;
     if (ModeIsDerefToSIB(next) && next->raw_type != RT_F64) {
       code_off =
-          DerefToICArg(cctrl, &tmp, next, AIWNIOS_TMP_IREG_POOP, bin, code_off);
+          DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP, bin, code_off);
       switch (tmp.raw_type) {
       case RT_I8i:
       case RT_U8i:
-        AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
-                         tmp.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+                         derefed.off);
         break;
       case RT_I16i:
       case RT_U16i:
-        AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
-                         tmp.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+                         derefed.off);
         break;
       case RT_I32i:
       case RT_U32i:
-        AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
-                         tmp.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+                         derefed.off);
         break;
       default:
-        AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, tmp.__SIB_scale, tmp.reg2, tmp.reg,
-                         tmp.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+                         derefed.off);
         break;
       }
       AIWNIOS_ADD_CODE(X86Setcc, X86_COND_E | 1, into_reg);
