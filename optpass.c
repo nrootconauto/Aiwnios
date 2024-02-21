@@ -1618,7 +1618,7 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
   }
 }
 
-char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
+char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,CHeapCtrl *heap) {
   CRPN *r;
   int64_t old_flags = cctrl->flags;
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
@@ -1635,5 +1635,5 @@ char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
   OptPassRemoveUselessTypecasts(cctrl);
   OptPassMergeAddressOffsets(cctrl);
   cctrl->flags = old_flags;
-  return OptPassFinal(cctrl, res_sz, dbg_info);
+  return OptPassFinal(cctrl, res_sz, dbg_info,heap);
 }

@@ -658,7 +658,7 @@ struct CRPN {
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
-extern char *Compile(struct CCmpCtrl *cctrl, int64_t *sz, char **dbg_info);
+extern char *Compile(struct CCmpCtrl *cctrl, int64_t *sz, char **dbg_info,CHeapCtrl*);
 extern _Thread_local struct CTask *Fs;
 void AIWNIOS_throw(uint64_t code);
 #define throw AIWNIOS_throw
@@ -745,7 +745,7 @@ void TaskExit();
 extern _Thread_local struct CTask *HolyFs;
 extern _Thread_local struct CTask *Fs;
 
-char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info);
+char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,CHeapCtrl *heap);
 
 void AIWNIOS_ExitCatch();
 jmp_buf *__throw(uint64_t code);
@@ -1106,7 +1106,7 @@ CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp, void **);
 CCmpCtrl *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
-char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info);
+char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info,CHeapCtrl *heap);
 CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm);

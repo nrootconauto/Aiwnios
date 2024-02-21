@@ -79,7 +79,7 @@ import U8 *__HC_CodeMiscLabelNew(U8*,U8**patch_addr=NULL);
 import U8 *__HC_CmpCtrlNew();
 import U8 *__HC_CodeCtrlPush(U8*);
 import U0 __HC_CodeCtrlPop(U8*);
-import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
+import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL,CHeapCtrl *);
 import U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 import U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 import U8 *__HC_ICAdd_Label(U8*,U8*);
@@ -179,7 +179,7 @@ extern U8 *__HC_CodeMiscLabelNew(U8*,U8**);
 extern U8 *__HC_CmpCtrlNew();
 extern U8 *__HC_CodeCtrlPush(U8*);
 extern U0 __HC_CodeCtrlPop(U8*);
-extern U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL);
+extern U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL,CHeapCtrl *c);
 extern U8 *__HC_CodeMiscLabelNew(U8 *,U8 **patch_addr=NULL);
 extern U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 extern U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
@@ -1143,7 +1143,7 @@ break;case IC_ASM:
     aiwnios_dbg_info=CAlloc(8*(reported_max_ln-reported_min_ln+2));
   } else 
 	aiwnios_dbg_info=NULL;
-  machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info);
+  machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
   if(res_sz) *res_sz=idx;
   if(info&&aiwnios_dbg_info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {

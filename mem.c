@@ -371,8 +371,8 @@ static void *Str2Ptr(char *ptr, char **end) {
 #if defined(__FreeBSD__)
 #include <kvm.h>
        #include	<sys/param.h>
-       #include	<sys/sysctl.h>
-       #include	<sys/user.h>
+ #include	<sys/sysctl.h>
+#include	<sys/user.h>
 #include	<sys/param.h>
 #include	<sys/queue.h>
 #include	<sys/socket.h>

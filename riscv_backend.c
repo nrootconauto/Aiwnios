@@ -4177,7 +4177,7 @@ ret:
 // 2. Fill in function body,accounting for not worst case jumps
 // 3. Fill in the poo poo's
 //
-char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
+char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,CHeapCtrl *heap) {
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
   char *bin = NULL;
@@ -4233,7 +4233,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info) {
       bin      = NULL;
     } else if (run == 1) {
       // Dont allocate on cctrl->hc heap ctrl as we want to share our data
-      bin      = A_MALLOC(64 + code_off, NULL);
+      bin      = A_MALLOC(1024 + code_off, heap);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);

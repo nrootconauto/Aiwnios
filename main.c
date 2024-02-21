@@ -865,7 +865,7 @@ static int64_t STK___HC_CodeCtrlPop(int64_t *stk) {
 }
 static int64_t STK___HC_Compile(int64_t *stk) {
   return (int64_t)__HC_Compile((CCmpCtrl *)stk[0], (int64_t *)stk[1],
-                               (char **)stk[2]);
+                               (char **)stk[2],(char**)stk[3]);
 }
 static int64_t STK___HC_ICAdd_Label(int64_t *stk) {
   return __HC_ICAdd_Label(stk[0], stk[1]);
@@ -1156,7 +1156,7 @@ static void BootAiwnios(char *bootstrap_text) {
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
-    to_run = Compile(ccmp, NULL, NULL);
+    to_run = Compile(ccmp, NULL, NULL,NULL);
     FFI_CALL_TOS_0(to_run);
     A_FREE(to_run);
     CodeCtrlPop(ccmp);
@@ -1342,7 +1342,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_CmpCtrlNew", STK___HC_CmpCtrlNew, 0);
     PrsAddSymbol("__HC_CodeCtrlPush", STK___HC_CodeCtrlPush, 1);
     PrsAddSymbol("__HC_CodeCtrlPop", STK___HC_CodeCtrlPop, 1);
-    PrsAddSymbol("__HC_Compile", STK___HC_Compile, 3);
+    PrsAddSymbol("__HC_Compile", STK___HC_Compile, 4);
     PrsAddSymbol("__HC_CodeMiscStrNew", STK___HC_CodeMiscStrNew, 3);
     PrsAddSymbol("__HC_CodeMiscJmpTableNew", STK___HC_CodeMiscJmpTableNew, 4);
     PrsAddSymbol("__HC_ICAdd_Label", STK___HC_ICAdd_Label, 2);
