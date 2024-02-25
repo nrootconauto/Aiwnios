@@ -687,8 +687,8 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
   }
   do {
     changed=FALSE;
-    for(idx=cnt-1;idx>=0;idx--) {
-      start_rpn=flat[idx];
+    for(idx=0;idx!=changed1->cnt;idx++) {
+      start_rpn=changed1->body[idx];
       end_rpn=ICNext(start_rpn);
 
       old_in=start_rpn->live_in;
@@ -721,13 +721,13 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     		    rpn->type==IC_MUL_EQU||
     		    rpn->type==IC_SHR_EQU||
     		    rpn->type==IC_DIV_EQU||
-    		    rpn->type==IC_MOD_EQU||
+    		    rpn->type==IC_MOD_EQU||
     		    rpn->type==IC_AND_EQU||
     		    rpn->type==IC_OR_EQU||
     		    rpn->type==IC_XOR_EQU||
     		    rpn->type==IC_SUB_EQU||
     		    rpn->type==IC_ADD_EQU)
-	        Bts(&start_rpn->use_regs,which);
+	        Bts(&start_rpn->use_regs,which);
 	      Bts(&start_rpn->kill_regs,which);
 	    }
 	  }
@@ -795,7 +795,8 @@ next_ic:
 
       if(old_in!=rpn->live_in||rpn->live_out!=old_out) {
         changed|=TRUE;
-        I64SetAdd(changed2,rpn);
+	for(idx2=0;idx2!=rpn->user_data(CI64Set*)->cnt;idx2++)
+        I64SetAdd(changed2,rpn->user_data(CI64Set*)->body[idx2]);
       }
     }
     SwapI64(&changed1,&changed2);
