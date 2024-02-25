@@ -215,6 +215,8 @@ extern U8 * __HC_ICAdd_Gs(U8*)
 #define AIWNIOS_IREG_CNT (28 - 19 + 1)
 #define AIWNIOS_FREG_START 8
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
+I64 VarIRegToReg(I64 r) {return r+AIWNIOS_IREG_START;}
+I64 VarFRegToReg(I64 r) {return r+AIWNIOS_FREG_START;}
 #endif
 
 #ifdef TARGET_RISCV
@@ -725,7 +727,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     		    rpn->type==IC_XOR_EQU||
     		    rpn->type==IC_SUB_EQU||
     		    rpn->type==IC_ADD_EQU)
-	        Bts(&start_rpn->use_regs,which);
+	        Bts(&start_rpn->use_regs,which);
 	      Bts(&start_rpn->kill_regs,which);
 	    }
 	  }
@@ -810,7 +812,7 @@ next_ic:
     DbgPrint(")OUT:");
     idx2=rpn->live_out;
     DumpLiveSet(cc,idx2);
-    DbgPrint("\n");
+    DbgPrint("\n");
   }*/
 
   for(idx=0;idx!=cnt;idx++) {
