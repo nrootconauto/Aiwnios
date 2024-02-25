@@ -7531,8 +7531,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define BACKEND_LOGICAL_BINOP(op)                                              \
   next     = ICArgN(rpn, 1);                                                   \
   next2    = ICArgN(rpn, 0);                                                   \
-  code_off = __OptPassFinal(cctrl, next2, bin, code_off);                      \
-  code_off = __OptPassFinal(cctrl, next, bin, code_off);                       \
+  code_off = __OptPassFinal(cctrl, next, bin, code_off);                      \
+  code_off = __OptPassFinal(cctrl, next2, bin, code_off);                       \
   if (rpn->res.mode == MD_REG) {                                               \
     into_reg = rpn->res.reg;                                                   \
   } else                                                                       \

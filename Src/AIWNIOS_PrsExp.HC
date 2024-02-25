@@ -16,6 +16,12 @@ class CRPN:CQue {
   union {
     CCodeMisc *misc;
   };
+//For register allocater
+  I64 live_out;
+  I64 live_in;
+  I64 use_regs;
+  I64 kill_regs;
+  U8 *user_data;
 };
 
 Bool IsPtrNode(CRPN *rpn) {
