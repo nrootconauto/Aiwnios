@@ -515,7 +515,7 @@ I64 FoffToMemberIdx(CCmpCtrl *cc,I64 foff) {
   CMemberLst *mlst=cc->htc.fun->member_lst_and_root;
   I64 idx=0;
   while(mlst) {
-    if(mlst->reg!=REG_NONE&&mlst->offset==foff)
+    if(mlst->offset==foff)
       return idx;
     mlst=mlst->next;
     idx++;
@@ -738,13 +738,14 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
   for(tmp=0;tmp!=mcnt;tmp++) {
     lst=mv[tmp].m;
     if(!IsFunArg(cc->htc.fun,lst))
-      if(!mv[tmp].addrof_cnt)
+      if(!mv[tmp].addrof_cnt&&lst->reg!=REG_NONE) {
         if(lst->member_class->raw_type==RT_F64&&!ireg) {
 re_number:;
 	  I64SetAdd(renumbers,GenerateRenumbersForVar(cc,tmp,&foff));
         } else if(lst->member_class->raw_type!=RT_F64&&ireg) {
 	  goto re_number;
         }
+      }
   }
   Free(mv);
 
@@ -775,7 +776,7 @@ re_number:;
         bit=rpn->live_in->body[tmp];
         if(!(flat[bit]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit]->reg!=REG_NONE) {
 	  for(tmp2=0;tmp2!=rpn->live_in->cnt;tmp2++) {
-	    bit2=rpn->live_in->body[tmp2];
+ 	    bit2=rpn->live_in->body[tmp2];
 	    if(!(flat[bit2]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit2]->reg!=REG_NONE) {
 	      I64SetAdd(graph->connects[bit],bit2);
 	      I64SetAdd(graph->connects[bit2],bit);
