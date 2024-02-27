@@ -896,7 +896,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     rpn->live_in=I64SetNew;
     rpn->live_out=I64SetNew;
     rpn->kill_regs=I64SetNew;
-    rpn->use_regs=I64SetNew;
+    rpn->use_regs=I64SetNew;
     I64SetAdd(changed1,rpn);
     rpn=ICNext(rpn);
   }
@@ -965,8 +965,8 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
 	    goto next_ic;
 	  } else {
 use_outgoing:
-	    for(idx2=0;idx2!=rpn->user_data(CI64Set*)->cnt;idx2++) {
-	      jump_to=rpn->user_data(CI64Set*)->body[idx2];
+	    for(idx2=0;idx2!=rpn->user_data2(CI64Set*)->cnt;idx2++) {
+	      jump_to=rpn->user_data2(CI64Set*)->body[idx2];
 	      I64SetAddAll(rpn->live_out,jump_to->live_in);
 	    }
 	    break;
@@ -1001,21 +1001,20 @@ use_outgoing:
 	    goto use_outgoing;
 	  break;
         case IC_SUB_CALL:
-	  if(first_run) {
-	    jump_to=LabelToRPN(cc,rpn->ic_data);
-	    I64SetAddAll(rpn->live_out,jump_to->live_in);
-	    _RPNConnect(jump_to,rpn);
+//Special behavior,we are kind of linking the ends(IC_SUB_CALL/IC_SUB_RET) in a weird way
+//DO NOT first_run CHECK THIS
+	  jump_to=LabelToRPN(cc,rpn->ic_data);
+	  I64SetAddAll(rpn->live_out,jump_to->live_in);
+	  _RPNConnect(jump_to,rpn);
 //Also connect to end of SUB_CALL
-	    for(idx2=0;idx2!=cnt;idx2++) {
-	      if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
-	        jump_to=flat[idx2];
-	        _RPNConnect(rpn,jump_to);
-	        I64SetAddAll(jump_to->live_out,rpn->live_in);
-	      }
+	  for(idx2=0;idx2!=cnt;idx2++) {
+	    if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
+	      jump_to=flat[idx2];
+	      _RPNConnect(rpn,jump_to);
+	      I64SetAddAll(jump_to->live_out,rpn->live_in);
 	    }
-	    goto next_ic;
-	  } else
-	    goto use_outgoing;
+	  }
+	  goto next_ic;
 	  break;
         case IC_SUB_RET:
 	  break;
@@ -1039,6 +1038,7 @@ next_ic:
 
       if(old_in!=rpn->live_in->cnt||rpn->live_out->cnt!=old_out) {
         changed|=TRUE;
+        I64SetAdd(changed2,rpn);
         for(idx2=0;idx2!=rpn->user_data(CI64Set*)->cnt;idx2++)
 	  I64SetAdd(changed2,rpn->user_data(CI64Set*)->body[idx2]);
       }
@@ -1047,7 +1047,6 @@ next_ic:
     SwapI64(&changed1,&changed2);
     changed2->cnt=0;
   } while(changed);
-
 
   Free(flat);
   I64SetDel(changed1);

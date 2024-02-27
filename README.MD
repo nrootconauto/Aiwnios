@@ -1016,7 +1016,7 @@ If you read the example(for parsing a string),you will see that we create the `C
  
   How I do this is I is I first mark which registers we use or kill(kill the old value by assigning into it),see `CRPN->use_regs` and `CRPN->kil_regs`.
 
-  Then I construct a control flow graph with the `CRPN->user_data` and `CRPN->user_data2` being the outgoing and incoming `CRPN`s. Each node inherits its successors' live registers.
+  Then I construct a control flow graph with the `CRPN->user_data` and `CRPN->user_data2` being the outgoing and incoming `CRPN`s. Each node inherits its successors' live registers.
 ### Graph Coloring
   I use a graph alogirthm called graph coloring. This means I create an "interference graph" then make sure each register in the graph is not a adjacent to another register that is alive at the same time(so no register conflicts).
 
