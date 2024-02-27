@@ -43,7 +43,7 @@ static void _DrawWindowNew() {
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   SDL_SetWindowIcon(window, window_icon);
-  //SDL_SetWindowKeyboardGrab(window, SDL_TRUE);
+  SDL_SetWindowKeyboardGrab(window, SDL_TRUE);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
