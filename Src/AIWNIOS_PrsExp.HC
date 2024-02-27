@@ -22,7 +22,8 @@ class CRPN:CQue {
   CI64Set *live_in;
   CI64Set *use_regs;
   CI64Set *kill_regs;
-  U8 *user_data;
+  U8 *user_data;
+  U8 *user_data2;
 };
 
 Bool IsPtrNode(CRPN *rpn) {

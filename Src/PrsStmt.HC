@@ -671,7 +671,8 @@ sw_cont:
 		  RPNDel(tmpi_jmp);
 		  tmpss->lb_start=NULL;
 		} else {
-		  RPNAddNew(cc,IC_SUB_RET,,,FALSE);
+//Whose start am I returning too(Nroot was here)Used for live vairable anaylsis
+		  RPNAddNew(cc,IC_SUB_RET,tmpss->lb_start,,FALSE);
 		  RPNAddNew(cc,IC_LABEL,lb_fwd_case,0,FALSE);
 		  RPNAddNew(cc,IC_SUB_CALL,tmpss->lb_start,0,FALSE);//In case fall-thru
 		}
