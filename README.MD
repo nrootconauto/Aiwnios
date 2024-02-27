@@ -1006,3 +1006,33 @@ If you read the example(for parsing a string),you will see that we create the `C
 |IC_SHORT_ADDR|()|Like an IC_RELOC,but the address is short|
 |IC_RAW_BYTES|()|This stores raw bytes into the code(`->len` and `->raw_types` will tell you what the raw bytes are)|
 |IC_GET_VARGS_PTR|(dst)|This gets the vargs poinnter and stored it in dst|
+
+## Sexy Register Allocator
+
+### Live Variable Analysis
+  The register allocator works by first doing [live variable analysis](https://en.wikipedia.org/wiki/Live-variable_analysis). This means it detirmines where the varaibles are being used or not being used:
+
+![live](live_var.bmp)
+ 
+  How I do this is I is I first mark which registers we use or kill(kill the old value by assigning into it),see `CRPN->use_regs` and `CRPN->kil_regs`.
+
+  Then I construct a control flow graph with the `CRPN->user_data` and `CRPN->user_data2` being the outgoing and incoming `CRPN`s. Each node inherits its successors' live registers.
+### Graph Coloring
+  I use a graph alogirthm called graph coloring. This means I create an "interference graph" then make sure each register in the graph is not a adjacent to another register that is alive at the same time(so no register conflicts).
+
+  This allows registers to be re-used for other varaibles to make the code sexier.
+
+![graph coloring](graph_color.bmp)
+ 
+ ### Sexy Number Renumbering
+   Using the variables in a graph may get very crowded. To do this,I seperate the variables into "sub-variables" in GenerateRenumbersForVar. I call these sub-variables "numbers" as I name the "var.1" or "var.2" etc.
+
+  To do this I first find the groups of nodes connected by a variable's being alive(InfectAdjacent). Once I find the groups I create psuedo-members.
+
+  Consider this graph,say we only have 3 registers to use,E cannot be stuffed in a register as we dont have enough registers for it.
+
+![Value numbering](numbering.bmp)
+ 
+  We can make more room by dividing our register usage into numbered sections
+  
+![Value numbering2](numbering2.bmp)

@@ -873,7 +873,8 @@ U0 _RPNConnect(CRPN *to,CRPN *from) {
 U0 LiveVariableAnalysis(CCmpCtrl *cc) {
   CRPN *rpn,*head=&cc->coc.coc_head,**flat,*end_rpn,*start_rpn,*arg,*jump_to;
   CCodeMisc *tab;
-  Bool changed=0;
+//On first_run I generate the graph connections,no need to recompute each time
+  Bool changed=FALSE,first_run=TRUE;
   I64 cnt=0,idx,idx2;
   I64 which;
   I64 *old_live,old_in,old_out;
@@ -895,7 +896,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     rpn->live_in=I64SetNew;
     rpn->live_out=I64SetNew;
     rpn->kill_regs=I64SetNew;
-    rpn->use_regs=I64SetNew;
+    rpn->use_regs=I64SetNew;
     I64SetAdd(changed1,rpn);
     rpn=ICNext(rpn);
   }
@@ -908,106 +909,128 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
       old_in=start_rpn->live_in->cnt;
       old_out=start_rpn->live_out->cnt;
 
-      for(rpn=start_rpn;rpn!=end_rpn;rpn=rpn->next) {
-        idx2=intermediate_code_table[rpn->type].arg_cnt;
-        switch(idx2) {
-	  case IS_V_ARG:
-	    idx2=rpn->length;
-	    break;
-	  case IS_2_ARG:
-	    idx2=2;
-	    break;
-	  case IS_1_ARG:
-	    idx2=1;
-	    break;
-	  case IS_0_ARG:
-	    idx2=0;
-	    break;
-        }
-        if(IsKill(rpn->type)) {
-	  arg=NthArgument(rpn,--idx2);
-	  if(arg->type==IC_FRAME) {
-	    which=FoffToMemberIdx(cc,arg->ic_data);
-	    if(rpn->type==IC__MM||rpn->type==IC__PP||
-		  rpn->type==IC_MM_||rpn->type==IC_PP_||
-		  rpn->type==IC_SHL_EQU||
-		  rpn->type==IC_MUL_EQU||
-		  rpn->type==IC_SHR_EQU||
-		  rpn->type==IC_DIV_EQU||
-		  rpn->type==IC_MOD_EQU||
-		  rpn->type==IC_AND_EQU||
-		  rpn->type==IC_OR_EQU||
-		  rpn->type==IC_XOR_EQU||
-		  rpn->type==IC_SUB_EQU||
-		  rpn->type==IC_ADD_EQU)
+      if(first_run)
+        for(rpn=start_rpn;rpn!=end_rpn;rpn=rpn->next) {
+	  idx2=intermediate_code_table[rpn->type].arg_cnt;
+	  switch(idx2) {
+	    case IS_V_ARG:
+	      idx2=rpn->length;
+	      break;
+	    case IS_2_ARG:
+	      idx2=2;
+	      break;
+	    case IS_1_ARG:
+	      idx2=1;
+	      break;
+	    case IS_0_ARG:
+	      idx2=0;
+	      break;
+	  }
+	  if(IsKill(rpn->type)) {
+	    arg=NthArgument(rpn,--idx2);
+	    if(arg->type==IC_FRAME) {
+	      which=FoffToMemberIdx(cc,arg->ic_data);
+	      if(rpn->type==IC__MM||rpn->type==IC__PP||
+		    rpn->type==IC_MM_||rpn->type==IC_PP_||
+		    rpn->type==IC_SHL_EQU||
+		    rpn->type==IC_MUL_EQU||
+		    rpn->type==IC_SHR_EQU||
+		    rpn->type==IC_DIV_EQU||
+		    rpn->type==IC_MOD_EQU||
+		    rpn->type==IC_AND_EQU||
+		    rpn->type==IC_OR_EQU||
+		    rpn->type==IC_XOR_EQU||
+		    rpn->type==IC_SUB_EQU||
+		    rpn->type==IC_ADD_EQU)
+	        I64SetAdd(start_rpn->use_regs,which);
+	      I64SetAdd(start_rpn->kill_regs,which);
+	    }
+	  }
+	  while(--idx2>=0) {
+	    arg=NthArgument(rpn,idx2);
+	    if(arg->type==IC_FRAME) {
+	      which=FoffToMemberIdx(cc,arg->ic_data);
 	      I64SetAdd(start_rpn->use_regs,which);
-	    I64SetAdd(start_rpn->kill_regs,which);
+	    }  
 	  }
         }
-        while(--idx2>=0) {
-	  arg=NthArgument(rpn,idx2);
-	  if(arg->type==IC_FRAME) {
-	    which=FoffToMemberIdx(cc,arg->ic_data);
-	    I64SetAdd(start_rpn->use_regs,which);
-	  }  
-        }
-      }
 
       rpn=start_rpn;
       switch(rpn->type) {
         case IC_BR_ZERO ... IC_BR_NOT_BTC:
-	  jump_to=LabelToRPN(cc,rpn->ic_data);
-	  I64SetAddAll(rpn->live_out,jump_to->live_in);
-	  _RPNConnect(jump_to,rpn);
-	  goto next_ic;
+	  if(first_run) {
+	    jump_to=LabelToRPN(cc,rpn->ic_data);
+	    _RPNConnect(jump_to,rpn);
+	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    goto next_ic;
+	  } else {
+use_outgoing:
+	    for(idx2=0;idx2!=rpn->user_data(CI64Set*)->cnt;idx2++) {
+	      jump_to=rpn->user_data(CI64Set*)->body[idx2];
+	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    }
+	    break;
+	  }
         case IC_NOBOUND_SWITCH:
         case IC_SWITCH:
-	  tab=rpn->ic_data;
-	  for(idx2=0;idx2!=tab->range;idx2++) {
-	    if(tab->jmp_table[idx2]) {
-	      jump_to=LabelToRPN(cc,tab->jmp_table[idx2]);
- 	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	  if(first_run) {
+	    tab=rpn->ic_data;
+	    for(idx2=0;idx2!=tab->range;idx2++) {
+	      if(tab->jmp_table[idx2]) {
+	        jump_to=LabelToRPN(cc,tab->jmp_table[idx2]);
+	        I64SetAddAll(rpn->live_out,jump_to->live_in);
+	        _RPNConnect(jump_to,rpn);
+	      }
+	    }
+	    if(tab->dft) {
+	      jump_to=LabelToRPN(cc,tab->dft);
+	      I64SetAddAll(rpn->live_out,jump_to->live_in);
 	      _RPNConnect(jump_to,rpn);
 	    }
-	  }
-	  if(tab->dft) {
-	    jump_to=LabelToRPN(cc,tab->dft);
- 	    I64SetAddAll(rpn->live_out,jump_to->live_in);
-	    _RPNConnect(jump_to,rpn);
-	  }
+	  } else
+	    goto use_outgoing;
 	  break;
         case IC_RET:
 	  break;
         case IC_JMP:
-	  jump_to=LabelToRPN(cc,rpn->ic_data);
- 	  I64SetAddAll(rpn->live_out,jump_to->live_in);
-	  _RPNConnect(jump_to,rpn);
+	  if(first_run) {
+	    jump_to=LabelToRPN(cc,rpn->ic_data);
+	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    _RPNConnect(jump_to,rpn);
+	  } else
+	    goto use_outgoing;
 	  break;
         case IC_SUB_CALL:
-	  jump_to=LabelToRPN(cc,rpn->ic_data);
-	  I64SetAddAll(rpn->live_out,jump_to->live_in);
-	  _RPNConnect(jump_to,rpn);
+	  if(first_run) {
+	    jump_to=LabelToRPN(cc,rpn->ic_data);
+	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    _RPNConnect(jump_to,rpn);
 //Also connect to end of SUB_CALL
-	  for(idx2=0;idx2!=cnt;idx2++) {
-	    if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
-	      jump_to=flat[idx2];
-	      _RPNConnect(rpn,jump_to);
-	      I64SetAddAll(jump_to->live_out,rpn->live_in);
+	    for(idx2=0;idx2!=cnt;idx2++) {
+	      if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
+	        jump_to=flat[idx2];
+	        _RPNConnect(rpn,jump_to);
+	        I64SetAddAll(jump_to->live_out,rpn->live_in);
+	      }
 	    }
-          }
-	  goto next_ic;
+	    goto next_ic;
+	  } else
+	    goto use_outgoing;
 	  break;
         case IC_SUB_RET:
 	  break;
         default:
 next_ic:
-	  for(idx2=0;idx2!=cnt;idx2++) {
-	    if(flat[idx2]==rpn&&idx2+1<cnt) {
-	      I64SetAddAll(rpn->live_out,flat[idx2+1]->live_in);
-	      _RPNConnect(flat[idx2+1],rpn);
-	      break;
+	  if(first_run) {
+	    for(idx2=0;idx2!=cnt;idx2++) {
+	      if(flat[idx2]==rpn&&idx2+1<cnt) {
+	        I64SetAddAll(rpn->live_out,flat[idx2+1]->live_in);
+	        _RPNConnect(flat[idx2+1],rpn);
+	        break;
+	      }
 	    }
-	  }
+	  } else
+	    goto use_outgoing;
       }
       rpn->live_in->cnt=0;
       I64SetAddAll(rpn->live_in,rpn->live_out);
@@ -1020,6 +1043,7 @@ next_ic:
 	  I64SetAdd(changed2,rpn->user_data(CI64Set*)->body[idx2]);
       }
     }
+    first_run=FALSE;
     SwapI64(&changed1,&changed2);
     changed2->cnt=0;
   } while(changed);
