@@ -431,7 +431,10 @@ I64 VarIRegToReg(I64 r)  {
       break;case 3: return REG_R14;
       break;case 4: return REG_R15;
       break;case 5: return REG_RDI;
+//AIWNIOS_IREG_CNT ends at 6,NOT 7,$BK,1$SEE BELOW NOTE$BK,0$
       break;case 6: return REG_RSI;
+//DO NOT USE THISWITHANYTHING RELATED TO IC_DEREF
+      break;case 7: return REG_R13;
   }
   throw('Compile');
 }
@@ -697,6 +700,22 @@ U0 GraphColoringDel(CGraphColoring *c) {
   Free(c->colors);
   Free(c);
 }
+Bool IsPtrVar(CCmpCtrl *cc,I64 foff) {
+  CRPN *rpn,*head=&cc->coc.coc_head,*rpn2;
+  for(rpn=head->next;rpn!=head;) { 
+    if(rpn->type==IC_DEREF) {
+      rpn2=ICNext(rpn);
+      while(rpn!=rpn2) {
+	if(rpn->type==IC_FRAME&&rpn->ic_data==foff) {
+	  return TRUE;
+	}
+	rpn=rpn->next;
+      }
+    } else
+      rpn=rpn->next;
+  }
+  return FALSE;
+}
 CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
   CGraph *graph=CAlloc(sizeof CGraph);
   CGraphColoring *coloring=CAlloc(sizeof CGraphColoring);
@@ -827,6 +846,17 @@ re_number:;
 	    break;
 	  }
         }
+#ifdef TARGET_X86
+//Right here our color points to R13(VarIRegToReg(color)==R13)
+	if(ireg&&canidates[color]) { 
+//Try register R13(has quircks with being used with SIBs)
+//https://wiki.osdev.org/X86-64_Instruction_Encoding
+          if(!IsPtrVar(cc,flat[tmp]->offset)) {
+	    coloring->colors[tmp]=color;
+	    break;
+	  }
+	}
+#endif
       }
     }
   }
@@ -889,7 +919,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
   rpn=head->next;
   while(rpn!=head) {
     rpn=ICNext(rpn);
-    cnt++;
+    cnt++;
   }
   flat=CAlloc(cnt*8);
   idx=0;

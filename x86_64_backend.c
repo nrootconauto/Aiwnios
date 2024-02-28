@@ -2356,13 +2356,6 @@ static int64_t PopFromStack(CCmpCtrl *cctrl, CICArg *arg, char *bin,
 static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
                            char *bin, int64_t code_off) {
   int64_t code;
-  if (bin && !(cctrl->flags & CCF_AOT_COMPILE)) {
-    if (Is32Bit(imm - (int64_t)(bin + code_off))) {
-      AIWNIOS_ADD_CODE(X86LeaSIB, reg, -1, -1, RIP,
-                       imm - (int64_t)(bin + code_off));
-      return code_off;
-    }
-  }
   AIWNIOS_ADD_CODE(X86MovImm, reg, imm);
   return code_off;
 }
@@ -2933,6 +2926,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (b) {
         if (b->type != IC_IREG)
           tmp++;
+        else if(b->integer==13) //R13 has quirks when used with SIBs
+		  goto binop;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
           goto binop;
         PushTmpDepthFirst(cctrl, b, 0);
@@ -2941,6 +2936,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (idx && 0) {
         if (idx->type != IC_IREG)
           tmp++;
+        else if(idx->integer==13) //R13 has quirks when used with SIBs
+		  goto binop;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
           goto binop;
         PushTmpDepthFirst(cctrl, idx, 0);
@@ -3053,6 +3050,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (b) {
         if (b->type != IC_IREG)
           tmp++;
+        else if(b->integer==13) //R13 has quirks when used with SIBs
+		  goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
@@ -3064,6 +3063,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (idx) {
         if (idx->type != IC_IREG)
           tmp++;
+        else if(idx->integer==13) //R13 has quirks when used with SIBs
+		  goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||

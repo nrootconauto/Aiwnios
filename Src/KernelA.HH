@@ -1791,7 +1791,7 @@ POP R8 POP RDI POP RSI POP RBP POP RBX POP RDX POP RCX POP RAX
 #define REG_RIP		16	//Used by compiler, not really it's num
 //Be careful: RBPu8, RSPu8, RSIu8, RDIu8 are 20-24
 #define REG_NONE	32	//noreg flag sets it to this
-#define REG_ALLOC	33	//reg flag sets it to this
+#define REG_ALLOC	33	//reg flag sets it to this
 #define REG_UNDEF	I8_MIN
 
 #define REGG_CLOBBERED		0x013F //RAX,RCX,RDX,RBX,R8
