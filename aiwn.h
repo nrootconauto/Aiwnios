@@ -634,6 +634,7 @@ enum {
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
   ICF_LOCK_EXPR = 128,   // Used with lock {}
+  ICF_IS_BOOL =256
 };
 struct CRPN {
   CQue base;
