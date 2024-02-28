@@ -738,7 +738,7 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
   for(tmp=0;tmp!=mcnt;tmp++) {
     lst=mv[tmp].m;
     if(!IsFunArg(cc->htc.fun,lst))
-      if(!mv[tmp].addrof_cnt&&lst->reg!=REG_NONE) {
+      if(!mv[tmp].addrof_cnt&&lst->reg==REG_ALLOC||lst->reg==REG_UNDEF) {
         if(lst->member_class->raw_type==RT_F64&&!ireg) {
 re_number:;
 	  I64SetAdd(renumbers,GenerateRenumbersForVar(cc,tmp,&foff));
@@ -798,6 +798,12 @@ re_number:;
     reg_cnt=AIWNIOS_IREG_CNT;
   else
     reg_cnt=AIWNIOS_FREG_CNT;
+//Pre-color varaibles that are defined via "reg" keyword
+  for(tmp=0;tmp!=mcnt;tmp++) {
+    if(0<=mv[tmp].m->reg<REG_REGS_NUM) {
+      coloring->colors[tmp]=mv[tmp].m->reg;
+    }
+  }
   for(nth_best=mcnt-1;nth_best>=0;nth_best--) {
     for(tmp=0;tmp!=mcnt;tmp++) {
       if(mv[nth_best].m==flat[tmp]) {//Unused var?
@@ -827,7 +833,7 @@ re_number:;
 
   for(tmp=0;tmp!=mcnt;tmp++) {
     if(!(flat[tmp]->member_class->raw_type==RT_F64^^!ireg))
-      if(flat[tmp]->reg!=REG_NONE) {
+      if(flat[tmp]->reg==REG_ALLOC||flat[tmp]->reg==REG_UNDEF) {
         if(coloring->colors[tmp]==-1)
 	  flat[tmp]->reg=REG_NONE;
         else if(ireg)
@@ -883,7 +889,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
   rpn=head->next;
   while(rpn!=head) {
     rpn=ICNext(rpn);
-    cnt++;
+    cnt++;
   }
   flat=CAlloc(cnt*8);
   idx=0;
