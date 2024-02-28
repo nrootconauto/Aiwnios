@@ -2726,6 +2726,17 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
     else if (idx = __AddScale(ICArgN(arg, 1), &i2))
       is_sib = 1;
   }
+  //Adjust for offesets in base/index
+  if(b)
+  while (__AddOffset(b, &tmp)) {
+	  b=__AddOffset(b, &tmp);
+	  i+=tmp;
+  }
+  if(idx)
+  while (__AddOffset(idx, &tmp)) {
+	  idx=__AddOffset(idx, &tmp);
+	  i+=tmp*i2;
+  }
   if (_b)
     *_b = b;
   if (_idx)
