@@ -1135,7 +1135,9 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       //Avoid infitite loop as above we go to defacto if not 32bit 
       if (Is32Bit((char *)fptr - (char *)(bin + code_off)))
         goto use_fptr;
+      goto dft;
     } else {
+dft:
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, RISCV_IPOOP1, bin,
                                  code_off);
