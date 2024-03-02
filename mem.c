@@ -74,7 +74,7 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   static int64_t ps;
   int64_t b;
   if (!ps)
-    ps = sysconf(_SC_PAGESIZE);
+    ps = sysconf(_SC_PAGE_SIZE);
   b = (blk->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   munmap(blk, b);
 #endif
@@ -147,11 +147,6 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | (add_flags & ~MAP_32BIT), -1, 0);
   #endif
-#if defined (__riscv__) || defined(__riscv)
-    ret = mmap(NULL, b,
-               (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
-               MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-#endif
   if (ret == MAP_FAILED)
     return NULL;
 #endif
@@ -359,7 +354,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     static int64_t ps;
     int64_t b;
     if (!ps)
-      ps = sysconf(_SC_PAGESIZE);
+      ps = sysconf(_SC_PAGE_SIZE);
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
     if (m->base2.next)
       QueRem(&m->base2);
