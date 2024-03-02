@@ -41,11 +41,11 @@ void *Misc_ThreadReg();
 void *GetHolyGsPtr() {
   char *fs = (char *)&ThreadGs; // thread tls register is FS
   char *base;
-  return (char *)fs - (char *)Misc_ThreadReg;
+  return (char *)fs - (char *)Misc_ThreadReg();
 }
 void *GetHolyFsPtr() {
   char *fs = (char *)&ThreadFs;
-  return (char *)fs - (char *)Misc_ThreadReg;
+  return (char *)fs - (char *)Misc_ThreadReg();
 }
 #elif defined(__x86_64__) && defined(__SEG_FS)
   #if defined(__FreeBSD__) || defined(__linux__)

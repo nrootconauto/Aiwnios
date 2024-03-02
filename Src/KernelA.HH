@@ -3905,6 +3905,10 @@ import U8 *__Gs();
 import U8 *__Fs();
 import U8 *__Gs();
 #endif
+#ifdef TARGET_RISCV
+import U8 *__Fs();
+import U8 *__Gs();
+#endif
 
 import CCPU *Gs();
 import CTask *Fs();
@@ -6813,6 +6817,8 @@ _intern IC_MAX_U64 U64 MaxU64(U64,U64);
 _intern IC_MIN_U64 U64 MinU64(U64,U64);
 #endif
 #ifdef TARGET_RISCV
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
 _intern IC_MAX_I64 I64 MaxI64(I64,I64);
 _intern IC_MIN_I64 I64 MinI64(I64,I64);
 _intern IC_MAX_U64 U64 MaxU64(U64,U64);

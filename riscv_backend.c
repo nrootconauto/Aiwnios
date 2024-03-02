@@ -153,7 +153,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
     break;
   case IC_FS:
   case IC_GS:
-    return 1;
+    return 0;
   case __IC_CALL:
   case IC_CALL:
     return 1;
@@ -718,7 +718,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       PushTmp(cctrl, r, NULL);
     else
       PushSpilledTmp(cctrl, r);
-    return 1;
+    return 0;
   }
   int64_t a, argc, old_icnt = cctrl->backend_user_data2,
                    old_fcnt = cctrl->backend_user_data3, i, i2, tmp,
@@ -2601,7 +2601,32 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       abort();
     }
   segment:
-    abort();
+    into_reg=RISCV_IPOOP1;
+    if(rpn->res.mode==MD_REG) {
+		into_reg=rpn->res.reg;
+	}
+    if(next->type==IC_RELOC) {
+	  AIWNIOS_ADD_CODE(RISCV_AUIPC(into_reg, 0));
+      AIWNIOS_ADD_CODE(RISCV_LD(into_reg, into_reg, 0));
+      if (bin)
+        CodeMiscAddRef(next->code_misc, bin + code_off - 8);
+	  AIWNIOS_ADD_CODE(RISCV_ADD(into_reg,4,into_reg));
+	  AIWNIOS_ADD_CODE(RISCV_LD(into_reg,into_reg,0));
+	} else if(next->type==IC_I64) {
+		if(-1!=RISCV_LD(into_reg,4,next->integer)) {
+			AIWNIOS_ADD_CODE(RISCV_LD(into_reg,4,next->integer));
+		} else {
+			code_off=__ICMoveI64(cctrl,into_reg,next->integer,bin,code_off);
+			AIWNIOS_ADD_CODE(RISCV_ADD(into_reg,4,into_reg));
+			AIWNIOS_ADD_CODE(RISCV_LD(into_reg,into_reg,0));
+		}
+	}
+	if(rpn->res.mode!=MD_REG) {
+		tmp.mode=MD_REG;
+		tmp.raw_type=RT_I64i;
+		tmp.reg=into_reg;
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
+	}
     break;
   ic_lock:
     cctrl->is_lock_expr = 1;

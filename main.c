@@ -1286,6 +1286,16 @@ static void BootAiwnios(char *bootstrap_text) {
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
 #endif
+#if defined(__riscv__) || defined(__riscv)
+    //__Fs is special
+    //__Gs is special then so add the RESULT OF THE function
+    PrsAddSymbolNaked("__Fs", NULL, 0);
+    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyFsPtr();
+    PrsAddSymbolNaked("__Gs", NULL, 0);
+    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
+        ->val = GetHolyGsPtr();
+#endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
