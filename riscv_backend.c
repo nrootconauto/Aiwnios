@@ -1107,7 +1107,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   if (rpn2->type == IC_GLOBAL) {
     if (rpn2->global_var->base.type & HTT_FUN) {
       fptr = ((CHashFun *)rpn2->global_var)->fun_ptr;
-      if (!fptr)
+      if (!fptr||fptr==&DoNothing)
         goto defacto;
     use_fptr:;
       int64_t idx   = (int64_t)fptr - (int64_t)(bin + code_off);
@@ -2328,8 +2328,6 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
   return code_off;
 }
 
-static void DoNothing() {
-}
 static int64_t DoNothing3(int64_t, int64_t, int64_t) {
 }
 // Psudeo op
@@ -3368,7 +3366,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       } else
         abort();
       // Undefined?
-      if (!enter_addr) {
+      if (!enter_addr||enter_addr==&DoNothing) {
         misc = AddRelocMisc(cctrl, next->global_var->base.str);
         AIWNIOS_ADD_CODE(RISCV_AUIPC(into_reg, 0));
         AIWNIOS_ADD_CODE(RISCV_LD(into_reg, into_reg, 0));
@@ -4241,7 +4239,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin      = NULL;
     } else if (run == 1) {
       // Dont allocate on cctrl->hc heap ctrl as we want to share our data
-      bin      = A_MALLOC(1024 + code_off, heap);
+      bin      = A_MALLOC(1024 + code_off, heap?heap:Fs->code_heap);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);

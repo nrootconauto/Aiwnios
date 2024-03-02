@@ -147,6 +147,11 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | (add_flags & ~MAP_32BIT), -1, 0);
   #endif
+#if defined (__riscv__) || defined(__riscv)
+    ret = mmap(NULL, b,
+               (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
+               MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+#endif
   if (ret == MAP_FAILED)
     return NULL;
 #endif

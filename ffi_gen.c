@@ -136,7 +136,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #endif
 #if defined(__riscv__) || defined(__riscv)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8 * 12, NULL);
+  int32_t *blob = A_MALLOC(8 * 12, Fs->code_heap);
   blob[0] = RISCV_ADDI(10, 2, 0); // 2 is stack pointer,10 is 1st argument
   blob[1] = RISCV_ADDI(2, 2, -48);
   blob[2] = RISCV_SD(1, 2, 40);                 // 1 is return address
