@@ -49,16 +49,17 @@ Misc_Caller:
   addi sp,sp,-16
   sd fp,(sp)
   sd ra,8(sp)
-  addi fp,sp,0
+  addi fp,sp,16
   addi t1,a0,0
   addi a0,zero,0
   add t2,fp,zero
 .L_loop:
   beq t2,zero,.L_fail
-  ld a0,8(t2)
-  bne zero,a1,.L_fin2
-  addi a1,a1,-1
-  ld t2,(t2)
+  ld a0,-8(t2)
+  beq zero,t1,.L_fin2
+.L_fin:
+  addi t1,t1,-1
+  ld t2,-16(t2)
   j .L_loop
 .L_fin2:
   ld fp,(sp)

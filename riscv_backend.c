@@ -505,7 +505,7 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
       res->off += cctrl->backend_user_data4; // wiggle room start(if set)
     } else
       // Anonymus potatoes like to assume LR/FP pair too.
-      res->off += 16;
+      res->off += 24;
   }
 }
 int64_t ITmpRegToReg(int64_t r) {
@@ -2023,7 +2023,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     fsz += 8 - fsz % 8;
   int64_t to_push = (i2 = __FindPushedIRegs(cctrl, push_ireg)) * 8 +
                     (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 +
-                    cctrl->backend_user_data0 + fsz + 16,
+                    cctrl->backend_user_data0 + fsz+16,
           old_regs_start;
   if (i2 % 2)
     to_push += 8; // We push a dummy register in a pair if not aligned to 2
@@ -2032,8 +2032,8 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
 
   if (to_push % 16)
     to_push += 8;
-  cctrl->backend_user_data4 = fsz;
-  old_regs_start            = fsz + cctrl->backend_user_data0;
+  cctrl->backend_user_data4 = fsz+8;
+  old_regs_start            = fsz + cctrl->backend_user_data0+8;
 
   i2 = 0;
   for (i = 0; i != 32; i++)
@@ -2048,17 +2048,22 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   if (i3 % 2)
     flist[i3++] = 1; // 0 is return register
 
+
   AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -16));
   AIWNIOS_ADD_CODE(RISCV_SD(1, RISCV_REG_SP, 8)); // 1 is return register
   AIWNIOS_ADD_CODE(RISCV_SD(RISCV_REG_FP, RISCV_REG_SP, 0));
-  AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_FP, RISCV_REG_SP, 0)); // fp=sp
-  if (fsz)
+  AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_FP, RISCV_REG_SP, 16));
+  
+	  //
+	  // Eariler in OptPass.c and AIWNIOS_CodeGen.HC,I made room for ra/s0 in frame 
+	  //
     if (Is12Bit(-to_push)) {
       AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -to_push));
     } else {
       code_off = __ICMoveI64(cctrl, RISCV_IRET, -to_push, bin, code_off);
       AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_REG_SP, RISCV_REG_SP, RISCV_IRET));
     }
+
   off = -old_regs_start;
   for (i = 0; i != i2; i++) {
     stack.mode     = MD_INDIR_REG;
@@ -2091,7 +2096,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       fun_arg.mode     = MD_INDIR_REG;
       fun_arg.raw_type = lst->member_class->raw_type;
       fun_arg.reg      = RISCV_REG_FP;
-      fun_arg.off      = 16 + stk_arg_cnt++ * 8;
+      fun_arg.off      = stk_arg_cnt++ * 8;
       // This *shoudlnt* mutate any of the argument registers
       if (lst->reg >= 0 && lst->reg != REG_NONE) {
         write_to.mode     = MD_REG;
@@ -2106,7 +2111,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       if ((cctrl->cur_fun->base.flags & CLSF_VARGS) &&
           !strcmp("argv", lst->str)) {
         AIWNIOS_ADD_CODE(
-            RISCV_ADDI(RISCV_IRET, RISCV_REG_FP, 16 + arg_cnt * 8));
+            RISCV_ADDI(RISCV_IRET, RISCV_REG_FP, arg_cnt * 8));
         fun_arg.reg      = RISCV_IRET;
         fun_arg.mode     = MD_REG;
         fun_arg.raw_type = RT_I64i;
@@ -2124,7 +2129,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         fun_arg.raw_type =
             (arg = ICArgN(rpn, 0))->raw_type == RT_F64 ? RT_F64 : RT_I64i;
         fun_arg.reg = RISCV_REG_FP;
-        fun_arg.off = 16 + stk_arg_cnt++ * 8;
+        fun_arg.off = stk_arg_cnt++ * 8;
         PushTmp(cctrl, arg, NULL);
         PopTmp(cctrl, arg);
         if (fun_arg.off == -arg->res.off && arg->res.mode == MD_FRAME)
@@ -2136,10 +2141,10 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         PopTmp(cctrl, arg);
         if (arg->res.mode == MD_REG) {
           AIWNIOS_ADD_CODE(
-              RISCV_ADDI(arg->res.reg, RISCV_REG_FP, 16 + arg_cnt * 8));
+              RISCV_ADDI(arg->res.reg, RISCV_REG_FP, arg_cnt * 8));
         } else {
           AIWNIOS_ADD_CODE(
-              RISCV_ADDI(RISCV_IRET, RISCV_REG_FP, 16 + arg_cnt * 8));
+              RISCV_ADDI(RISCV_IRET, RISCV_REG_FP, arg_cnt * 8));
           tmp.reg      = RISCV_IRET;
           tmp.mode     = MD_REG;
           tmp.raw_type = RT_I64i;
@@ -2198,7 +2203,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     to_push += 8; // Ditto
   if (to_push % 16)
     to_push += 8;
-  old_regs_start = fsz + cctrl->backend_user_data0;
+  old_regs_start = fsz + cctrl->backend_user_data0+8;
   i2             = 0;
   for (i = 0; i != 32; i++)
     if (push_ireg[i])
@@ -2243,12 +2248,12 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   }
 
   if (is_vargs) {
-    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 16 + 0));
+    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP,0));
   } else {
-    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 16 + 8 * arg_cnt));
+    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 8 * arg_cnt));
   }
-  AIWNIOS_ADD_CODE(RISCV_LD(1, RISCV_REG_FP, 8)); // 1 is return regista
-  AIWNIOS_ADD_CODE(RISCV_LD(RISCV_REG_FP, RISCV_REG_FP, 0));
+  AIWNIOS_ADD_CODE(RISCV_LD(1, RISCV_REG_FP, -8)); // 1 is return regista
+  AIWNIOS_ADD_CODE(RISCV_LD(RISCV_REG_FP, RISCV_REG_FP, -16));
   AIWNIOS_ADD_CODE(RISCV_JALR(0, 1, 0));
   return code_off;
 }
@@ -4251,7 +4256,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
     forwards[cnt2 - ++cnt] = r;
   }
   // We DONT reset the wiggle room
-  cctrl->backend_user_data0 = 0;
+  cctrl->backend_user_data0 = 16;
   // 0 get maximum code size,
   // 1 compute bin
   for (run = 0; run < 2; run++) {

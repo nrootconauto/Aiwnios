@@ -1383,7 +1383,15 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
   }
   // Time to assign the rest of the function members to the base pointer
   qsort(mv, cnt, sizeof(COptMemberVar), (void *)&OptMemberVarSortSz);
+  #if defined(__riscv__) || defined(__riscv)
+  //In RiscV
+  // s0    -> TOP
+  // s0-8  -> return_address
+  // s0-16 -> old s0
+  off=16;
+  #else
   off = 0;
+  #endif
   for (i = 0; i != cnt; i++) {
     if (mv[i].m->reg == REG_NONE && !(mv[i].m->flags & MLF_STATIC)) {
       switch (mv[i].m->member_class->raw_type) {

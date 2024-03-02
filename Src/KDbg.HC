@@ -45,6 +45,22 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
 #endif
 #ifdef TARGET_RISCV
   x29=task->context_save_area[2];
+  if (num) {
+    while (x29) {
+      if(!ChkOnStk(x29,task))
+        break;
+      ptr=x29-1;
+      if(!ptr) break;
+      if (! --num)
+	return *ptr;
+      if (x29>=x29[-2])
+	break;
+      x29=x29[-2];
+    }
+    return NULL;
+  } else {
+  return task->context_save_area[0];
+  }
 #endif
   if (num) {
     while (x29) {
@@ -60,9 +76,6 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     }
     return NULL;
   } else {
-#ifdef TARGET_RISCV
-  return task->context_save_area[0];
-#endif
 #ifdef TARGET_X86
     return task->context_save_area[0];
 #else    
@@ -102,6 +115,14 @@ U0 CallerRep(U8 **x29=NULL,CTask *task=NULL)
     else
       x29=task->context_save_area[2];
   }
+  while (ChkOnStk(x29,task)) {
+    ptr=x29-1;
+    "%08X:%08tX:%P\n",ptr,*ptr,*ptr;
+    if (x29>=x29[-2])
+      break;
+    x29=x29[-2];
+  }
+  return;
   #endif
 
   "CallerRep:\n";
@@ -136,10 +157,18 @@ U0 DebuggerSpawn(CTask *debugee) {
 U0 DumbStackTrace(U8 **rbp,U8 *rip) {
   I64 cnt=1;
   DbgPrint("[0]::%P\n",rip);
+#ifdef TARGET_RISCV
+  while(ChkOnStk(rbp,Fs)) {
+    DbgPrint("[%d]::%P\n",cnt++,rbp[-1]);
+    rbp=rbp[-2];
+  }
+
+#else
   while(ChkOnStk(rbp,Fs)) {
     DbgPrint("[%d]::%P\n",cnt++,rbp[1]);
     rbp=*rbp;
   }
+#endif
 }
 U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   I64 gps[33];

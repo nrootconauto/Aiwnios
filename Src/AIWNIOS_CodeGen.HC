@@ -1190,7 +1190,15 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     
     //In FunRep,the function is assumes to store registers somewhere
     //So i "store" them at the start of the function
+#ifdef TARGET_RISCV
+    //In RiscV
+    // s0    -> TOP
+    // s0-8  -> return_address
+    // s0-16 -> old s0
+    foff=16;
+#else
     foff=0;
+#endif
     for(idx=0;idx!=member_cnt;idx++) {
       if(mv[idx].m->reg!=REG_NONE) {
         mv[idx].m->offset=foff;
@@ -1215,8 +1223,13 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
 	  //16 to offset [PC,RBP] pair at base 
+	  #ifdef TARGET_RISCV
+//See Above TARGET_RISCV_NOTE
+	  mlst->offset=-8*FunArgIdx(cc->htc.fun,mlst);
+	  #else
 	  mlst->offset=-16-8*FunArgIdx(cc->htc.fun,mlst);
-         foff_lookup[idx].i32[1]=mlst->offset;
+	  #endif
+          foff_lookup[idx].i32[1]=mlst->offset;
 	} else {
           foff_lookup[idx].i32[0]=mlst->offset;
           //In X86_64 the stack grows down and the RBP is above the stack pointer,
