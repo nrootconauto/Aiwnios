@@ -7066,7 +7066,10 @@ extern U32 char_bmp_displayable[16];
 extern U32 char_bmp_safe_dollar[16];
 extern U32 char_bmp_non_eol[16];
 
-extern class CNetAddr;
+class CNetAddr {
+  U8 *hostname;
+  I64 port;
+};
 extern CNetAddr *NetAddrNew(U8 *hn=NULL,I64);
 extern U0 NetAddrDel(CNetAddr *);
 extern I64 NetPollForHangup(I64 argc,I64 *argv);
