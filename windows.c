@@ -55,19 +55,15 @@ static void _DrawWindowNew() {
 static void UpdateViewPort() {
   int w, h, margin_x = 0, margin_y = 0, w2, h2;
   SDL_GetWindowSize(window, &w, &h);
-  if (w > h) {
-    h2       = w * 480. / 640;
+  double ratio = (double)640 / 480;
+  if (w > h * ratio) {
+    h2       = h;
+    w2       = ratio * h;
+    margin_x = (w - w2) / 2;
+  } else {
+    h2       = w / ratio;
     w2       = w;
     margin_y = (h - h2) / 2;
-    if (h < h2) {
-      margin_y = 0;
-      goto use_h;
-    }
-  } else {
-  use_h:
-    w2       = h * 640. / 480;
-    h2       = h;
-    margin_x = (w - w2) / 2;
   }
   view_port.x = margin_x;
   view_port.y = margin_y;
