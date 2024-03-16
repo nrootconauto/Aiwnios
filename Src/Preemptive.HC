@@ -1,0 +1,24 @@
+U0 AiwniosMutexLock(I64 *ptr,I64 bit=0,I64 sleep=300) {
+  I64 v,at;
+  while(LBts(ptr,bit)) {
+    v=*ptr;
+    AiwniosPreemptWait(ptr,v,sleep);
+  }
+}
+U0 AiwniosMutexUnlock(I64 *ptr,I64 bit=0) {
+  LBtr(ptr,bit);
+  AiwniosPreemptWake(ptr,1);
+}
+U0 AiwniosMutexWakeAlll(I64 *ptr,I64 bit) {
+  LBtr(ptr,bit);
+  AiwniosPreemptWake(ptr,I32_MAX);
+}
+U0 AiwniosSleep(I64 sleep_hp) {
+  LBts(&(Fs->wake_futex),0);
+  AiwniosPreemptWait(&(Fs->wake_futex),1,sleep_hp);
+  LBtr(&(Fs->wake_futex),0);  
+}
+U0 AiwniosAwakeTask(CTask *t) {
+  LBtr(&(Fs->wake_futex),0);
+  AiwniosPreemptWake(&(Fs->wake_futex),1);
+}
