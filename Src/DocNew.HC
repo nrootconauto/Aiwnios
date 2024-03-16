@@ -3,9 +3,7 @@
 public Bool DocLock(CDoc *doc)
 {//Make this task have exclusive access to this doc.
   if (!Bt(&doc->locked_flags,DOClf_LOCKED) || doc->owning_task!=Fs) {
-    while (LBts(&doc->locked_flags,DOClf_LOCKED)) {
-      Yield;
-    }
+    AiwniosMutexLock(&doc->locked_flags,DOClf_LOCKED);
     if (doc->owning_task!=Fs)
       LBEqu(&doc->flags,DOCf_BREAK_UNLOCKED,BreakLock(Fs));
     doc->owning_task=Fs;
@@ -20,7 +18,7 @@ public Bool DocUnlock(CDoc *doc)
   if (Bt(&doc->locked_flags,DOClf_LOCKED) && doc->owning_task==Fs) {
     doc->owning_task=0;
     unlock_break=Bt(&doc->flags,DOCf_BREAK_UNLOCKED);
-    LBtr(&doc->locked_flags,DOClf_LOCKED);
+    AiwniosMutexUnlock(&doc->locked_flags,DOClf_LOCKED);
     if (unlock_break)
       BreakUnlock(Fs);
     return TRUE;

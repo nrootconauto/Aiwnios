@@ -393,7 +393,9 @@ typedef union {
   double d;
   uint64_t i
 } dbl2u64;
-
+static uint64_t STK_AiwniosLoadFactor(double *stk) {                                       
+    return ((dbl2u64)AiwniosLoadFactor()).i;                                             
+  }
 #define MATHFUNDEF(x)                                                          \
   static uint64_t STK_##x(double *stk) {                                       \
     return ((dbl2u64)x(stk[0])).i;                                             \
@@ -1118,6 +1120,14 @@ static int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
 
+static void STK_AiwniosPreemptWait(int64_t *stk) {
+	AiwniosPreemptWait((void*)(stk[0]),stk[1],stk[2]);
+}
+
+static void STK_AiwniosPreemptWake(int64_t *stk) {
+	AiwniosPreemptWake((void*)(stk[0]),stk[1]);
+}
+
 #ifndef _WIN32
   #include "cli_vendor/bestline.h"
 #else
@@ -1147,6 +1157,9 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
+static void STK_AiwniosPreemptNewThread(void **stk) {
+	AiwniosPreemptNewThread(stk[0],stk[1],stk[2]);
+}
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1162,6 +1175,12 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("AiwniosLoadFactor",STK_AiwniosLoadFactor,0);
+    PrsAddSymbol("AiwniosPreemptNewThread",STK_AiwniosPreemptNewThread,3);
+    PrsAddSymbol("AiwniosPreemptYield",AiwniosPreemptYield,0);
+    PrsAddSymbol("AiwniosPreemptExit",AiwniosPreemptExit,0);
+    PrsAddSymbol("AiwniosPreemptWake",STK_AiwniosPreemptWake,2);
+    PrsAddSymbol("AiwniosPreemptWait",STK_AiwniosPreemptWait,3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
     PrsAddSymbol("GetVolume", STK_AiwniosGetVolume, 0);
@@ -1483,7 +1502,7 @@ static void ExitAiwnios(int64_t *stk) {
   #undef main
 #endif
 int main(int argc, char **argv) {
-  DebuggerBegin();
+//  DebuggerBegin();
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =

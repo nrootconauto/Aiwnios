@@ -15,7 +15,7 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
     LBts(&sys_semas[SEMA_JUST_PUMP_MSGS],0);
   while (Bt(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0)) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicksHP;
+      AiwniosAwakeTask(sys_winmgr_task);
     Sleep(1);
   }
   if (cnt>1 && old_doc)
@@ -23,7 +23,7 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
   update_cnt=winmgr.updates+cnt;
   while (winmgr.updates<update_cnt) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicksHP;
+      AiwniosAwakeTask(sys_winmgr_task);
     Sleep(1);
   }
   if (old_doc)
@@ -205,8 +205,8 @@ U0 WinCalcIdles()
     total_jiffies_delta=total_jiffies-t->last_total_jiffies;
     for (i=0;i<mp_cnt;i++) {
       c=&cpu_structs[i];
-      if (total_jiffies_delta && (k=idle_pt_hits[i]-t->last_idle_pt_hits[i])>=0)
-	c->idle_factor=Clamp(ToF64(k)/total_jiffies_delta,0.01,0.99);
+      if (1)
+	c->idle_factor=.90;
       else
 	c->idle_factor=0.01;
       t->last_idle_pt_hits[i]=idle_pt_hits[i];

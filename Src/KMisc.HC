@@ -66,7 +66,7 @@ U0 SleepUntil(I64 wake_jiffy)
     LBtr(&(Fs->task_flags),TASKf_IDLE);
 }
 
-U0 Sleep(I64 mS)
+U0 Sleep(I64 mS)
 {//Not for power-saving.  It is to make a program pause without hogging the CPU.
   Bool old_idle=LBts(&(Fs->task_flags),TASKf_IDLE);
   if (!mS)

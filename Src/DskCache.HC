@@ -4,8 +4,7 @@ U0 DskCacheInit(I64 size_in_U8s)
   CCacheBlk *tmpc;
   I64 i,cnt;
 
-  while (LBts(&dsk_cache_lock,0))
-    Yield;
+  AiwniosMutexLock(&dsk_cache_lock);
   Free(blkdev.cache_ctrl);
   Free(blkdev.cache_base);
   Free(blkdev.cache_hash_table);
@@ -35,7 +34,7 @@ U0 DskCacheInit(I64 size_in_U8s)
       tmpc->next_hash=tmpc->last_hash=tmpc;
     }
   }
-  LBtr(&dsk_cache_lock,0);
+  AiwniosMutexUnlock(&dsk_cache_lock);
 }
 
 I64 DskCacheHash(I64 blk)
@@ -78,8 +77,7 @@ U0 DskCacheAdd(CDrv *dv,U8 *buf, I64 blk, I64 cnt)
 {
   CCacheBlk *tmpc;
   if (blkdev.cache_base) {
-    while (LBts(&dsk_cache_lock,0))
-      Yield;
+    AiwniosMutexLock(&dsk_cache_lock);
     while (cnt-->0) {
       if (!(tmpc=DskCacheFind(dv,blk)))
 	tmpc=blkdev.cache_ctrl->next_lru;
@@ -91,7 +89,7 @@ U0 DskCacheAdd(CDrv *dv,U8 *buf, I64 blk, I64 cnt)
       blk++;
       buf+=BLK_SIZE;
     }
-    LBtr(&dsk_cache_lock,0);
+    AiwniosMutexUnlock(&dsk_cache_lock);
   }
 }
 
@@ -99,8 +97,7 @@ U0 DskCacheInvalidate2(CDrv *dv)
 {
   CCacheBlk *tmpc,*tmpc1;
   if (blkdev.cache_base) {
-    while (LBts(&dsk_cache_lock,0))
-      Yield;
+    AiwniosMutexLock(&dsk_cache_lock);
     tmpc=blkdev.cache_ctrl->last_lru;
     while (tmpc!=blkdev.cache_ctrl) {
       tmpc1=tmpc->last_lru;
@@ -113,7 +110,7 @@ U0 DskCacheInvalidate2(CDrv *dv)
       }
       tmpc=tmpc1;
     }
-    LBtr(&dsk_cache_lock,0);
+    AiwniosMutexLock(&dsk_cache_lock);
   }
 }
 
@@ -121,8 +118,7 @@ U0 RCache(CDrv *dv,U8 **_buf, I64 *_blk, I64 *_cnt)
 {
   CCacheBlk *tmpc;
   if (blkdev.cache_base) {
-    while (LBts(&dsk_cache_lock,0))
-      Yield;
+    AiwniosMutexLock(&dsk_cache_lock);
 //fetch leading blks from cache
     while (*_cnt>0) {
       if (tmpc=DskCacheFind(dv,*_blk)) {
@@ -141,6 +137,6 @@ U0 RCache(CDrv *dv,U8 **_buf, I64 *_blk, I64 *_cnt)
       } else
 	break;
     }
-    LBtr(&dsk_cache_lock,0);
+    AiwniosMutexUnlock(&dsk_cache_lock);
   }
 }

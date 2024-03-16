@@ -265,7 +265,7 @@ public Bool AutoComplete(Bool val=OFF)
 	old_val=TRUE;
       else {
 	ac.task=Spawn(&ACTask,NULL,"AutoComplete");
-	while(!TaskValidate(ac.task)) {
+	while(!TaskValidate(ac.task)) {
         Sleep(10);
     }
       }

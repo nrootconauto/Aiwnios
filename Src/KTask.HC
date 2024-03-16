@@ -15,6 +15,9 @@ U0 Exit()
     */
     LBts(&(Fs->task_flags),TASKf_KILL_TASK);
     TaskEnd; //Was TaskEndNow
+#ifdef MP_PREEMPTIVE
+    AiwniosPreemptExit;
+#endif
     Yield;
   }
 }
@@ -195,6 +198,9 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
     TaskQueInsChild(task);
     TaskQueIns(task);
   }
+#ifdef MP_PREEMPTIVE
+  AiwniosPreemptNewThread(task,&CallPooPoo,0);
+#endif
   if(bl)
     BreakUnlock;
   return task;
@@ -204,14 +210,14 @@ U0 TaskDerivedValsUpdate(CTask *task=NULL,Bool update_z_buf=TRUE)
 {//Those things calculated from other variables.
   if (!task) task=Fs;
   Bool bl=BreakLock;
-  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-    ;//TODO PAUSE
+  AiwniosMutexLock(&task->task_flags,TASKf_TASK_LOCK);
   WinDerivedValsUpdate(task);
   if (fp_update_ctrls)
     (*fp_update_ctrls)(task);
   if (update_z_buf && Bt(&task->display_flags,DISPLAYf_SHOW))
     LBts(&sys_semas[SEMA_UPDATE_WIN_Z_BUF],0);
-  LBtr(&task->task_flags,TASKf_TASK_LOCK);
+
+  AiwniosMutexUnlock(&task->task_flags,TASKf_TASK_LOCK);
   if(bl) BreakUnlock;
 }
 
@@ -403,10 +409,8 @@ I64 TaskEnd()
   if (LBtr(&task->display_flags,DISPLAYf_SHOW))
     LBts(&sys_semas[SEMA_UPDATE_WIN_Z_BUF],0);
   
-  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-    ; //TODO atomic LOCK
-  while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))
-    ; //TODO atomic LOCK
+  AiwniosMutexLock(&task->task_flags,TASKf_TASK_LOCK);
+  AiwniosMutexLock(&task->srv_ctrl.flags,JOBCf_LOCKED);
   JobQueDel(&task->srv_ctrl.next_waiting);
   JobQueDel(&task->srv_ctrl.next_done);
   
@@ -438,10 +442,9 @@ I64 TaskEnd()
   LBtr(&task->task_flags,TASKf_TASK_LOCK);
 
   task->wake_jiffy=__GetTicksHP+DYING_JIFFIES*1000; //Use __GetTicksUP
-  while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
-    ; //TODO ATOMIC LOCK
+  AiwniosMutexLock(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
   QueIns(task,Gs->last_dying);
-  LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
+  AiwniosMutexUnlock(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
 
   return tmpt;
 }
@@ -451,8 +454,7 @@ U0 TaskKillDying()
 //What if the user is doing this: $LK,"DoTreeCheckers",A="FF:::/Misc/OSTestSuite.HC,DoTreeCheckers"$.
   CTaskDying *task,*task1;
   if (Gs->kill_jiffy<cnts.jiffies) {//Avoid doing as many lock operations.
-    while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
-      ; //TODO atomic lock
+    AiwniosMutexLock(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
     task=Gs->next_dying;
     while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicksHP) {
       task1=task->next;
@@ -460,7 +462,7 @@ U0 TaskKillDying()
       TaskDel(task);
       task=task1;
     }
-    LBtr(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
+    AiwniosMutexUnlock(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE);
     Gs->kill_jiffy=cnts.jiffies+DYING_JIFFIES;
   }  
 }

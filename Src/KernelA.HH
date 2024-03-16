@@ -3306,6 +3306,8 @@ public class CTask //The Fs segment reg points to current CTask.
   CWinScroll horz_scroll,vert_scroll;
 
   I64	user_data,user_data2,is_single_step;
+//For use with MP_PREEMPTIVE
+  I64 wake_futex;
 };
 
 class CTSS
@@ -3828,6 +3830,12 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import F64 AiwniosLoadFactor();
+import U0 AiwniosPreemptNewThread(CTask *,U0(*fptr)(I64),I64);
+import U0 AiwniosPreemptYield();
+import U0 AiwniosPreemptExit();
+import U0 AiwniosPreemptWait(I64,I64,I64 ns=1000);
+import U0 AiwniosPreemptWake(I64 *,I64 wake_cnt);
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
 //This will cause the debugger to write the regs into reg_dump
 import U0 DebuggerClientStart(CTask*,U8 **reg_dump);
@@ -3952,6 +3960,12 @@ import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
 #else
+extern F64 AiwniosLoadFactor();
+extern U0 AiwniosPreemptNewThread(CTask *,U0(*fptr)(I64),I64);
+extern U0 AiwniosPreemptYield();
+extern U0 AiwniosPreemptExit();
+extern U0 AiwniosPreemptWait(I64,I64,I64 ns=1000);
+extern U0 AiwniosPreemptWake(I64 *,I64 wake_cnt);
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
 extern U0 MPAwake(I64);
@@ -7105,3 +7119,4 @@ public extern CCntsGlbls cnts;
 extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
+extern U0 AiwniosSleep(I64 sleep_hp);

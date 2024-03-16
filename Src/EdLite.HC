@@ -325,11 +325,10 @@ Bool EdLiteFileLine(U8 *fl_file_line,I64 edf_dof_flags=0)
 U0 FixSet(U8 *filename,I64 line)
 {//Compiler calls this to set file line for Fix
   U8 *st=MStrPrint("FL:%s,%d",filename,line);
-  while (LBts(&sys_semas[SEMA_FIX],0))
-    Yield;
+  AiwniosMutexLock(&sys_semas[SEMA_FIX]);
   Free(dbg.fix_file_line);
   dbg.fix_file_line=AStrNew(st);
-  LBtr(&sys_semas[SEMA_FIX],0);
+  AiwniosMutexUnlock(&sys_semas[SEMA_FIX],0);
 }
 
 Bool Fix(I64 edf_dof_flags=0)
@@ -337,10 +336,9 @@ Bool Fix(I64 edf_dof_flags=0)
   U8 *st;
   Bool res=FALSE;
 
-  while (LBts(&sys_semas[SEMA_FIX],0))
-    Yield;
+  AiwniosMutexLock(&sys_semas[SEMA_FIX]);
   st=StrNew(dbg.fix_file_line);
-  LBtr(&sys_semas[SEMA_FIX],0);
+  AiwniosMutexUnlock(&sys_semas[SEMA_FIX],0);
 
   if (st) {
     if (IsRaw)

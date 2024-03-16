@@ -4,8 +4,7 @@ Bool BlkDevLock(CBlkDev *bd)
   while (bd->lock_fwding)
     bd=bd->lock_fwding; //If two blkdevs on same controller, use just one lock
   if (!Bt(&bd->locked_flags,BDlf_LOCKED) || bd->owning_task!=Fs) {
-    while (LBts(&bd->locked_flags,BDlf_LOCKED))
-      Yield;
+    AiwniosMutexLock(&bd->locked_flags,BDlf_LOCKED);
     bd->owning_task=Fs;
     return TRUE;
   } else
@@ -21,7 +20,7 @@ Bool BlkDevUnlock(CBlkDev *bd,Bool rst=FALSE)
     if (rst)
       bd->flags&=~(BDF_INITIALIZED|BDF_INIT_IN_PROGRESS);
     bd->owning_task=NULL;
-    LBtr(&bd->locked_flags,BDlf_LOCKED);
+    AiwniosMutexUnlock(&bd->locked_flags,BDlf_LOCKED);
     Yield; //Prevent deadlock
     return TRUE;
   } else

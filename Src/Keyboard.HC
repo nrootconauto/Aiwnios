@@ -352,8 +352,7 @@ I64 KbdMsEvtTime()
 I64 kb_mtx=0;
 U0 KBCb(I64 c,I64 s) {
   I64 initial_time,freeze_time=100;
-  while(LBts(&kb_mtx,0))
-    ; //TODO ATOMIC WAIT
+  AiwniosMutexLock(&kb_mtx,0);
   if(!(s&SCF_KEY_UP))
     kbd.cnt++;
   kbd.last_down_scan_code=s;
@@ -372,7 +371,7 @@ U0 KBCb(I64 c,I64 s) {
       InteruptCore(0);
     }
   }
-  LBtr(&kb_mtx,0);
+  AiwniosMutexUnlock(&kb_mtx,0);
 }
 SetKBCallback(&KBCb);
 U0 CheckForKBData() {

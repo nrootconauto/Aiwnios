@@ -2,6 +2,7 @@
 #include "CompilerA.HH"
 #include "CExts.HC"
 #include "CompilerB.HH"
+#include "Preemptive.HC"
 #include "KGlbls.HC"
 CCPU cpu_structs[64];
 SetGs(&cpu_structs[0]);

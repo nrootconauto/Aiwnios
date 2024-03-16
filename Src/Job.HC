@@ -50,19 +50,18 @@ CJob *TaskExe(CTask *srv,CTask *master,U8 *data,I64 flags)
   res->aux_str=StrNew(data,adam_task);
   res->ctrl=&srv->srv_ctrl;
   bl=BreakLock;
-  while (LBts(&srv->srv_ctrl.flags,JOBCf_LOCKED))
-    ; //TODO  pause
+  AiwniosMutexLock(&srv->srv_ctrl.flags,JOBCf_LOCKED);
   if (!TaskValidate(srv)) {
-    LBtr(&srv->srv_ctrl.flags,JOBCf_LOCKED);
+    AiwniosMutexUnlock(&srv->srv_ctrl.flags,JOBCf_LOCKED);
     if(bl)
       BreakUnlock;
     JobDel(res);
     return NULL;
   } else {
-    LBtr(&srv->task_flags,TASKf_IDLE);
+    AiwniosMutexUnlock(&srv->task_flags,TASKf_IDLE);
     TaskRstAwaitingMsg(srv);
     QueIns(res,srv->srv_ctrl.last_waiting);
-    LBtr(&srv->srv_ctrl.flags,JOBCf_LOCKED);
+    AiwniosMutexUnlock(&srv->srv_ctrl.flags,JOBCf_LOCKED);
     if (Bt(&flags,JOBf_WAKE_MASTER)) {
       Suspend(master);
       Yield;
@@ -103,8 +102,7 @@ CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
     task=srv->next_input_filter_task;
   }
   res->ctrl=&task->srv_ctrl;
-  while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))
-    ;// TODO PAUSE
+  AiwniosMutexLock(&task->srv_ctrl.flags,JOBCf_LOCKED);
   if (!TaskValidate(task)) {
     JobDel(res);
     res=NULL;
@@ -112,7 +110,7 @@ CJob *TaskText(CTask *srv,CTask *master,U8 *data,I64 flags)
     LBtr(&task->task_flags,TASKf_IDLE);
     TaskRstAwaitingMsg(task);
     QueIns(res,task->srv_ctrl.last_waiting);
-    LBtr(&task->srv_ctrl.flags,JOBCf_LOCKED);
+    AiwniosMutexUnlock(&task->srv_ctrl.flags,JOBCf_LOCKED);
   }
   if(bl)
     BreakUnlock;
@@ -148,8 +146,7 @@ CJob *TaskMsg(CTask *_srv,CTask *master,
 	!Bt(&flags,JOBf_DONT_FILTER))
     srv=srv->next_input_filter_task;
   tmpc->ctrl=&srv->srv_ctrl;
-  while (LBts(&srv->srv_ctrl.flags,JOBCf_LOCKED))
-    ; //TODO PAUSE
+  AiwniosMutexLock(&srv->srv_ctrl.flags,JOBCf_LOCKED);
   if (!TaskValidate(srv)) {
     JobDel(tmpc);
     tmpc=NULL;
@@ -157,7 +154,7 @@ CJob *TaskMsg(CTask *_srv,CTask *master,
     LBtr(&srv->task_flags,TASKf_IDLE);
     TaskRstAwaitingMsg(srv);
     QueIns(tmpc,srv->srv_ctrl.last_waiting);
-    LBtr(&srv->srv_ctrl.flags,JOBCf_LOCKED);
+    AiwniosMutexUnlock(&srv->srv_ctrl.flags,JOBCf_LOCKED);
   }
   if(bl)
     BreakLock;
@@ -177,14 +174,13 @@ Bool JobResScan(CJob *rqst=NULL,I64 *_res=NULL)
     else
       ctrl=rqst->ctrl;
     bl=BreakLock;
-    while (LBts(&ctrl->flags,JOBCf_LOCKED))
-      ; //TODO PAUSE
+    AiwniosMutexLock(&ctrl->flags,JOBCf_LOCKED);
     tmpc1=&ctrl->next_done;
     tmpc=tmpc1->next;
     while (tmpc!=tmpc1) {
       if (!rqst || rqst==tmpc) {
 	QueRem(tmpc);
-	LBtr(&ctrl->flags,JOBCf_LOCKED);
+        AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
 	if(bl) BreakUnlock;
 	if (_res)
 	  *_res=tmpc->res;
@@ -193,7 +189,7 @@ Bool JobResScan(CJob *rqst=NULL,I64 *_res=NULL)
       }
       tmpc=tmpc->next;
     }
-    LBtr(&ctrl->flags,JOBCf_LOCKED);
+    AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
     if(bl) BreakUnlock;
   }
   if (_res)
@@ -323,11 +319,10 @@ I64 JobRunOne(I64 run_flags,CJobCtrl *ctrl)
     if (master=tmpc->master_task) {
       if (!Bt(&flags,JOBf_FREE_ON_COMPLETE)) {
 	//CLI TODO RESTORE???
-	while (LBts(&master->srv_ctrl.flags,JOBCf_LOCKED))
-	  ; //TODO PAUSE
+        AiwniosMutexLock(&master->srv_ctrl.flags,JOBCf_LOCKED);
 	QueIns(tmpc,master->srv_ctrl.last_done);
 	LBts(&tmpc->flags,JOBf_DONE);
-	LBtr(&master->srv_ctrl.flags,JOBCf_LOCKED);
+        AiwniosMutexUnlock(&master->srv_ctrl.flags,JOBCf_LOCKED);
 	//SetRFlags(old_flags); TODO RESTORE???
       }
       if (Bt(&flags,JOBf_FOCUS_MASTER) &&
@@ -341,11 +336,10 @@ I64 JobRunOne(I64 run_flags,CJobCtrl *ctrl)
       JobDel(tmpc);
     else if (!master) {
       //CLI TODO RESTORE???
-      while (LBts(&ctrl->flags,JOBCf_LOCKED))
-	Yield;
+      AiwniosMutexLock(&ctrl->flags,JOBCf_LOCKED);
       QueIns(tmpc,ctrl->last_done);
       LBts(&tmpc->flags,JOBf_DONE);
-      LBtr(&ctrl->flags,JOBCf_LOCKED);
+      AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
       //SetRFlags(old_flags); TODO RESTORE
     }
   }
@@ -358,8 +352,7 @@ I64 JobsHndlr(I64 run_flags,CTask *task=NULL)
   if (!task) task=Fs;
   while (TRUE) {
     //CLI TODO RESTORE
-    while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))
-      ; //TODO PAUSE
+    AiwniosMutexLock(&task->srv_ctrl.flags,JOBCf_LOCKED);
     if (task->srv_ctrl.next_waiting!=&task->srv_ctrl)
       switch (JobRunOne(run_flags,&task->srv_ctrl)) {
 	case JOB_CONT:
@@ -374,7 +367,7 @@ I64 JobsHndlr(I64 run_flags,CTask *task=NULL)
       goto jh_done;
   }
 jh_done:
-  LBtr(&task->srv_ctrl.flags,JOBCf_LOCKED);
+  AiwniosMutexUnlock(&task->srv_ctrl.flags,JOBCf_LOCKED);
   //SetRFlags(old_flags); TODO RESTORE???
   return cnt;
 }
@@ -395,7 +388,7 @@ I64 PopUp(U8 *buf,CTask *parent=NULL,CTask **_pu_task=NULL)
     JobResScan(tmpc,&res);
     Fs->popup_task=NULL;
     Kill(task);
-    if (_pu_task) *_pu_task=NULL;
+    if (_pu_task) *_pu_task=NULL;
     return res;
   }
 }
@@ -533,14 +526,13 @@ CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
   tmpc->ctrl=ctrl;
   if(target_cpu) //TODO REMOVE target_cpu!=0 check
     MPAwake(target_cpu);
-  while (LBts(&ctrl->flags,JOBCf_LOCKED))
-    Yield;
+  AiwniosMutexLock(&ctrl->flags,JOBCf_LOCKED);
   if(ctrl->next_waiting==ctrl)
     LBtr(&seth->task_flags,TASKf_AWAITING_MSG);
   if(target_cpu) //TODO REMOVE target_cpu!=0 check
     MPAwake(target_cpu);
   QueIns(tmpc,ctrl->last_waiting);
-  LBtr(&ctrl->flags,JOBCf_LOCKED);
+  AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
   return tmpc;
 }
 
@@ -562,10 +554,9 @@ CTask *SpawnQue(U0 (*fp_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
 
   res=tmpc->spawned_task;
   ctrl=tmpc->ctrl;
-  while (LBts(&ctrl->flags,JOBCf_LOCKED))
-    Yield;
+  AiwniosMutexLock(&ctrl->flags,JOBCf_LOCKED);
   QueRem(tmpc);
-  LBtr(&ctrl->flags,JOBCf_LOCKED);
+  AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
   JobDel(tmpc);
   return res;
 }

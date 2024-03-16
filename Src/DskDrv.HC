@@ -3,8 +3,7 @@ Bool DrvLock(CDrv *dv)
   DrvChk(dv);
   BlkDevLock(dv->bd);
   if (!Bt(&dv->locked_flags,DVlf_LOCKED) || dv->owning_task!=Fs) {
-    while (LBts(&dv->locked_flags,DVlf_LOCKED))
-      Yield;
+    AiwniosMutexLock(&dv->locked_flags,DVlf_LOCKED);
     dv->owning_task=Fs;
     return TRUE;
   } else
@@ -17,7 +16,7 @@ Bool DrvUnlock(CDrv *dv,Bool rst=FALSE)
   if (Bt(&dv->locked_flags,DVlf_LOCKED) && dv->owning_task==Fs) {
     BlkDevUnlock(dv->bd,rst);
     dv->owning_task=NULL;
-    LBtr(&dv->locked_flags,DVlf_LOCKED);
+    AiwniosMutexUnlock(&dv->locked_flags,DVlf_LOCKED);
     Yield; //Prevent deadlock
     return TRUE;
   } else

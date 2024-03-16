@@ -1374,3 +1374,9 @@ int64_t RISCV_I(int64_t imm,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t RISCV_R(int64_t f7,int64_t s2,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t ScreenUpdateInProgress();
 
+void AiwniosPreemptWait(void *addr,int64_t,uint64_t ns);
+void AiwniosPreemptWake(void *addr,int64_t wake_cnt);
+void AiwniosPreemptExit();
+void AiwniosPreemptYield();
+void AiwniosPreemptNewThread(void*fs,void*fptr,void*arg);
+double AiwniosLoadFactor();

@@ -102,6 +102,8 @@ typedef struct {
   #include <unistd.h>
 typedef struct {
   pthread_t pt;
+  CTask *base_fs;
+  CTask *base_gs;
   int wake_futex;
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
@@ -239,7 +241,7 @@ void MPSleepHP(int64_t ns) {
   syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
   #endif
   #if defined(__FreeBSD__)
-  _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
+  _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, (void*)sizeof(ts), &ts);
   #endif
   Misc_LBtr(&cores[core_num].wake_futex, 0);
 }
@@ -365,5 +367,58 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
     cores[c].profiler_freq = 1;
   cores[c].profiler_last_tick = ticks;
   ReleaseMutex(cores[c].mtx);
+}
+#endif
+//
+// Pre-emptive multitasking routines
+//
+#if defined(__FreeBSD__)
+#include <errno.h>
+void AiwniosPreemptWait(void *addr,int64_t have,uint64_t ns) {
+  struct timespec ts = {0};
+  ts.tv_nsec         = ((int64_t)ns % 1000000) * 1000U;
+  ts.tv_sec          = (int64_t)ns / 1000000;
+  _umtx_op(addr, UMTX_OP_WAIT, have, (void*)sizeof(ts), &ts);
+}
+void AiwniosPreemptWake(void *addr,int64_t wake_cnt) {
+  _umtx_op(addr, UMTX_OP_WAKE, wake_cnt, NULL, NULL);
+}
+typedef struct CThreadTuple {
+	void *new_fs;
+	void *fptr;
+	void *arg;
+	void *fs,*gs;
+} CThreadTuple;
+
+void AiwniosPreemptExit() {
+	pthread_exit(0);
+}
+static void AiwniosPreemptNewThreadStart(CThreadTuple *triple) {
+	ThreadFs=triple->new_fs;
+	ThreadGs=triple->gs;
+	void *routine=triple->fptr,*arg=triple->arg;
+	Fs=triple->fs;
+	free(triple);
+	FFI_CALL_TOS_1(routine,arg);
+	AiwniosPreemptExit();
+}
+#include <sched.h>
+void AiwniosPreemptYield() {
+	sched_yield();
+}
+void AiwniosPreemptNewThread(void *fs,void *fptr,void *arg) {
+	CThreadTuple *t=malloc(sizeof(CThreadTuple));
+	t->new_fs=fs;
+	t->fptr=fptr;
+	t->arg=arg;
+	t->gs=ThreadGs;
+	t->fs=Fs;
+	pthread_t ul;
+	pthread_create(&ul,NULL,&AiwniosPreemptNewThreadStart,t);
+}
+double AiwniosLoadFactor() {
+	double samps[1];
+	getloadavg(samps,1);
+	return samps[0];
 }
 #endif

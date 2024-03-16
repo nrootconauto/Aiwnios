@@ -65,8 +65,7 @@ U0 DrawCtrls(CTask *task)
       if (c->flags&CTRLF_BORDER) {
 	if (!Bt(&task->display_flags,DISPLAYf_NO_BORDER)) {
 	  bl=BreakLock;
-	  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-	    ; //TODO atomic
+          AiwniosMutexLock(&task->task_flags,TASKf_TASK_LOCK);
 
 	  task->win_left--; //Allow drawing on border
 	  task->win_right++;
@@ -74,23 +73,21 @@ U0 DrawCtrls(CTask *task)
 	  task->win_bottom++;
 	  WinDerivedValsUpdate(task);
 
-	  LBtr(&task->task_flags,TASKf_TASK_LOCK);
+          AiwniosMutexUnlock(&task->task_flags,TASKf_TASK_LOCK);
 	  if(bl) BreakUnlock;
 
 	  if (c->draw_it)
 	    (*c->draw_it)(dc,c);
 
 	  bl=BreakLock;
-	  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-	    ; //TODO PAUSE
-
+          AiwniosMutexLock(&task->task_flags,TASKf_TASK_LOCK);
 	  task->win_left++;
 	  task->win_right--;
 	  task->win_top++;
 	  task->win_bottom--;
 	  WinDerivedValsUpdate(task);
 
-	  LBtr(&task->task_flags,TASKf_TASK_LOCK);
+          AiwniosMutexUnlock(&task->task_flags,TASKf_TASK_LOCK);
 	  if(bl) BreakUnlock;
 	}
       } else

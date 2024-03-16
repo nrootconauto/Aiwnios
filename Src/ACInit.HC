@@ -112,9 +112,7 @@ public U0 ACInit(U8 *mask=NULL)
 {//Read files and build AutoComplete statistics.
   Bool start_flag;
   AutoComplete;
-  while (LBts(&ac.flags,ACf_INIT_IN_PROGRESS)) {
-    Yield;
-  }
+  AiwniosMutexLock(&ac.flags,ACf_INIT_IN_PROGRESS);
   if (FileFind(ACD_DEF_FILENAME_Z) &&
 	!FileFind(ACD_DEF_FILENAME)) {
     Move(ACD_DEF_FILENAME_Z,ACD_DEF_FILENAME);
@@ -129,7 +127,7 @@ public U0 ACInit(U8 *mask=NULL)
   if (mask)
     ACMainFileLstTraverse(mask);
   ACDWordsLoad;
-  LBtr(&ac.flags,ACf_INIT_IN_PROGRESS);
+  AiwniosMutexUnlock(&ac.flags,ACf_INIT_IN_PROGRESS);
   //On boot we want to spawn AutoComplete on core 0
   if(Gs->num==0)
 	AutoComplete(ON);

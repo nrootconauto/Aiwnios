@@ -4,7 +4,7 @@ U0 CoreAPSethTask()
   Bool bl;
   U8 *ul;
   CTask *task,task1;
-  I64 ns,t;
+  I64 ns,t,last_load;
   while (TRUE) {
     bl=BreakLock;
     do {
@@ -13,15 +13,15 @@ U0 CoreAPSethTask()
       //Messages will return a JOBT_DONE(0) from a JobRunOne
       //Seth task's dont need messages so i will flush them
       FlushMsgs;
-      while (LBts(&ctrl->flags,JOBCf_LOCKED))
-        ; //TODO atomic lock
+      AiwniosMutexLock(&ctrl->flags,JOBCf_LOCKED);
     } while (ctrl->next_waiting!=ctrl && JobRunOne(0,ctrl));
     if(bl)
       BreakUnlock;
     LBts(&(Fs->task_flags),TASKf_AWAITING_MSG);
-    LBtr(&(ctrl->flags),JOBCf_LOCKED);
+    AiwniosMutexUnlock(&ctrl->flags,JOBCf_LOCKED);
     LBts(&(Fs->task_flags),TASKf_IDLE);
     ns=0.1*JIFFY_FREQ*1000,t=__GetTicksHP;
+#ifndef MP_PREEMPTIVE
     task1=Fs;
     for(task=Fs->next_task;task!=task1;task=task->next_task) {
       if(Bt(&task->task_flags,TASKf_SUSPENDED)||Bt(&task->task_flags,TASKf_AWAITING_MSG))
@@ -36,6 +36,13 @@ next:;
     }
     Gs->total_jiffies=__GetTicksHP;
     Yield;
+#else
+    MPSleepHP(ns);
+    Gs->idle_pt_hits+=ns;
+//Gs->idle_ptr_hits is handled in Yeild
+    Gs->total_jiffies=__GetTicksHP;
+    Yield;
+#endif
     LBtr(&(Fs->task_flags),TASKf_IDLE);
   }
 }
