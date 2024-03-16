@@ -144,7 +144,7 @@ public I64 PopUp2(U8 *b1,I64 n1,U8 *b2,I64 n2,U8 *header=NULL,U8 *footer=NULL)
   return i;
 }
 
-public Bool PopUpOk(U8 *header=NULL,U8 *footer=NULL)
+public Bool PopUpOk(U8 *header=NULL,U8 *footer=NULL)
 {//Make PopUp win task with OKAY bttn.
   return PopUp1("OKAY",1,header,footer)>0;
 }

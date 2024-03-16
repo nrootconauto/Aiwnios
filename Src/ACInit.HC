@@ -127,7 +127,7 @@ public U0 ACInit(U8 *mask=NULL)
   if (mask)
     ACMainFileLstTraverse(mask);
   ACDWordsLoad;
-  AiwniosMutexUnlock(&ac.flags,ACf_INIT_IN_PROGRESS);
+  AiwniosMutexUnlock(&ac.flags,ACf_INIT_IN_PROGRESS);
   //On boot we want to spawn AutoComplete on core 0
   if(Gs->num==0)
 	AutoComplete(ON);

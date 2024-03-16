@@ -37,7 +37,7 @@ next:;
     Gs->total_jiffies=__GetTicksHP;
     Yield;
 #else
-    MPSleepHP(ns);
+    MPSleepHP(10000);
     Gs->idle_pt_hits+=ns;
 //Gs->idle_ptr_hits is handled in Yeild
     Gs->total_jiffies=__GetTicksHP;

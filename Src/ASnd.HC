@@ -99,7 +99,7 @@ public F64 Beat()
   Bool bl=BreakLock;
   if (mp_cnt>1)
     AiwniosMutexLock(&sys_semas[SEMA_TMBEAT]);
-  cur_tM=tM;
+  cur_tM=tM;
   res=music.last_Beat;
   if (music.tempo)
     res+=(cur_tM-music.last_tM)*music.tempo;

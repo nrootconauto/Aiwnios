@@ -79,12 +79,12 @@ loop:;
     LBts(&sys_focus_task->task_flags,TASKf_KILL_TASK);
     Exit;
   }
-  if(Bt(&Fs->task_flags,TASKf_KILL_TASK)) {
+  if(Bt(&Fs->task_flags,TASKf_KILL_TASK)) {
     Exit;
   }
   if(Fs->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED)) {
-    AiwniosSleep(10000);
-    Gs->idle_pt_hits+=10000;
+    AiwniosSleep(1000);
+    Gs->idle_pt_hits+=1000;
     goto loop;
   }
   if(Bt(&Fs->task_flags,TASKf_IDLE)&&Fs->wake_jiffy) {

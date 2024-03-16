@@ -87,7 +87,7 @@ U0 DrawCtrls(CTask *task)
 	  task->win_bottom--;
 	  WinDerivedValsUpdate(task);
 
-          AiwniosMutexUnlock(&task->task_flags,TASKf_TASK_LOCK);
+          AiwniosMutexUnlock(&task->task_flags,TASKf_TASK_LOCK);
 	  if(bl) BreakUnlock;
 	}
       } else

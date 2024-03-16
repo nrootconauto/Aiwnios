@@ -1218,7 +1218,7 @@ sm_import:
 		    if (!cc->htc.fun->return_class->size)
 		      LexWarn(cc,"Function should NOT return val ");
 		    if (!PrsExpression(cc,NULL,FALSE))
-		      throw('Compiler');
+		      throw('Compiler');
 //Lunk added by nroot,we will convert the result to the return type(F64 or not F64)
 		    if(cc->coc.coc_head.next(CRPN*)->ic_class->raw_type==RT_F64) {
 		      if(cc->htc.fun->return_class->raw_type==RT_F64) {

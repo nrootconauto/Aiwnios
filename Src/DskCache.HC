@@ -137,6 +137,6 @@ U0 RCache(CDrv *dv,U8 **_buf, I64 *_blk, I64 *_cnt)
       } else
 	break;
     }
-    AiwniosMutexUnlock(&dsk_cache_lock);
+    AiwniosMutexUnlock(&dsk_cache_lock);
   }
 }

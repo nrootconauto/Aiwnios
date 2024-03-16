@@ -3307,7 +3307,7 @@ public class CTask //The Fs segment reg points to current CTask.
 
   I64	user_data,user_data2,is_single_step;
 //For use with MP_PREEMPTIVE
-  I64 wake_futex;
+  I64 wake_futex;
 };
 
 class CTSS

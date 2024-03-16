@@ -371,7 +371,7 @@ U0 KBCb(I64 c,I64 s) {
       InteruptCore(0);
     }
   }
-  AiwniosMutexUnlock(&kb_mtx,0);
+  AiwniosMutexUnlock(&kb_mtx,0);
 }
 SetKBCallback(&KBCb);
 U0 CheckForKBData() {
