@@ -71,7 +71,6 @@ U0 TaskContextRestore(CTask *task) {
 extern CTask *TaskEnd(); 
 U0 Yield() {
 #ifdef MP_PREEMPTIVE
-  I64 sleep_for;
 loop:;
   cnts.jiffies=__GetTicks;
   AiwniosPreemptYield;
@@ -83,14 +82,11 @@ loop:;
     Exit;
   }
   if(Fs->task_flags&(1<<TASKf_AWAITING_MSG|1<<TASKf_SUSPENDED)) {
-    AiwniosSleep(1000);
-    Gs->idle_pt_hits+=1000;
+    AiwniosSleep(3000);
     goto loop;
   }
   if(Bt(&Fs->task_flags,TASKf_IDLE)&&Fs->wake_jiffy) {
-    sleep_for=MaxI64(Fs->wake_jiffy-__GetTicksHP,0);
-    AiwniosSleep(sleep_for);
-    Gs->idle_pt_hits+=sleep_for;
+    AiwniosSleep(MaxI64(Fs->wake_jiffy-__GetTicksHP,0));
   }
   return;
 #endif

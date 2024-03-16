@@ -4,8 +4,10 @@ U0 CoreAPSethTask()
   Bool bl;
   U8 *ul;
   CTask *task,task1;
-  I64 ns,t,last_load;
+  I64 t,last_load,slept,total,last_jiffies;
+  F64 ns;
   while (TRUE) {
+    last_jiffies=__GetTicksHP;
     bl=BreakLock;
     do {
       TaskKillDying;
@@ -37,11 +39,18 @@ next:;
     Gs->total_jiffies=__GetTicksHP;
     Yield;
 #else
+    task1=Fs;
     MPSleepHP(10000);
-    Gs->idle_pt_hits+=ns;
-//Gs->idle_ptr_hits is handled in Yeild
+    ns=1.;
+    for(task=Fs->next_task;task!=task1;task=task->next_task) {
+      if(task->born_jiffy) {
+	total=__GetTicksHP-task->born_jiffy;
+        ns=(ns+ToF64(task->slept_jiffies)/total)/2.;
+      }
+    }
     Gs->total_jiffies=__GetTicksHP;
-    Yield;
+//Approximate
+    Gs->idle_pt_hits=ns*Gs->total_jiffies;
 #endif
     LBtr(&(Fs->task_flags),TASKf_IDLE);
   }

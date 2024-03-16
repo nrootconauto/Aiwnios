@@ -372,8 +372,7 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
 //
 // Pre-emptive multitasking routines
 //
-#if defined(__FreeBSD__)
-#include <errno.h>
+#if defined(__FreeBSD__) 
 void AiwniosPreemptWait(void *addr,int64_t have,uint64_t ns) {
   struct timespec ts = {0};
   ts.tv_nsec         = ((int64_t)ns % 1000000) * 1000U;
@@ -382,6 +381,55 @@ void AiwniosPreemptWait(void *addr,int64_t have,uint64_t ns) {
 }
 void AiwniosPreemptWake(void *addr,int64_t wake_cnt) {
   _umtx_op(addr, UMTX_OP_WAKE, wake_cnt, NULL, NULL);
+}
+typedef struct CThreadTuple {
+	void *new_fs;
+	void *fptr;
+	void *arg;
+	void *fs,*gs;
+} CThreadTuple;
+
+void AiwniosPreemptExit() {
+	pthread_exit(0);
+}
+static void AiwniosPreemptNewThreadStart(CThreadTuple *triple) {
+	ThreadFs=triple->new_fs;
+	ThreadGs=triple->gs;
+	void *routine=triple->fptr,*arg=triple->arg;
+	Fs=triple->fs;
+	free(triple);
+	FFI_CALL_TOS_1(routine,arg);
+	AiwniosPreemptExit();
+}
+#include <sched.h>
+void AiwniosPreemptYield() {
+	sched_yield();
+}
+void AiwniosPreemptNewThread(void *fs,void *fptr,void *arg) {
+	CThreadTuple *t=malloc(sizeof(CThreadTuple));
+	t->new_fs=fs;
+	t->fptr=fptr;
+	t->arg=arg;
+	t->gs=ThreadGs;
+	t->fs=Fs;
+	pthread_t ul;
+	pthread_create(&ul,NULL,&AiwniosPreemptNewThreadStart,t);
+}
+double AiwniosLoadFactor() {
+	double samps[1];
+	getloadavg(samps,1);
+	return samps[0];
+}
+#endif
+#if defined(__linux__)
+void AiwniosPreemptWait(void *addr,int64_t have,uint64_t ns) {
+  struct timespec ts = {0};
+  ts.tv_nsec         = ((int64_t)ns % 1000000) * 1000U;
+  ts.tv_sec          = (int64_t)ns / 1000000;
+  syscall(SYS_futex, addr, FUTEX_WAIT, have, &ts, NULL, 0);
+}
+void AiwniosPreemptWake(void *addr,int64_t wake_cnt) {
+  syscall(SYS_futex, addr, FUTEX_WAKE, 1, NULL, NULL, 0);
 }
 typedef struct CThreadTuple {
 	void *new_fs;

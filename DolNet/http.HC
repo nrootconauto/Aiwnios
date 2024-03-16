@@ -708,7 +708,7 @@ nxt:;
       for(idx=0;idx!=BACKLOG;idx++) {
         if(fds[idx]==-1) {
 	  unique_tokens[idx].srv=srv;
-	  unique_tokens[idx].con=NULL;
+	  unique_tokens[idx].con=NULL;
 	  fds[idx]=NetAccept(srv->s_sock,NULL);
 	  found=TRUE;
 	  break;

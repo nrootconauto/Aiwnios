@@ -199,6 +199,7 @@ CTask *Spawn(U0 (*fp_start_addr)(U8 *data),U8 *data=NULL,U8 *task_name=NULL,
     TaskQueIns(task);
   }
 #ifdef MP_PREEMPTIVE
+  task->born_jiffy=__GetTicksHP;
   AiwniosPreemptNewThread(task,&CallPooPoo,0);
 #endif
   if(bl)

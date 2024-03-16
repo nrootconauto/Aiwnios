@@ -280,14 +280,17 @@ public Bool DocRecalc(CDoc *doc,I64 recalc_flags=RECALCt_NORMAL)
 
     //WinMgr updates all wins $TX,"(target_fps)",D="WINMGR_FPS"$, 33.33333mS
   if (recalc_flags&RECALCG_MASK==RECALCt_TO_SCRN && doc->owning_task!=Fs) {
+#ifndef MP_PREEMPTIVE
     i_jif=__GetTicks+JIFFY_FREQ/250; //4 ms
+#else
+    i_jif=__GetTicks+JIFFY_FREQ/50; //Slightly better value
+#endif
     while (Bt(&doc->locked_flags,DOClf_LOCKED)) {
       if (cnts.jiffies>=i_jif)
 	return FALSE; //Bail-out if doc locked.
       Yield;
     }
   }
-
   unlock=DocLock(doc);
   if (doc->doc_signature!=DOC_SIGNATURE_VAL) {
     DocUnlock(doc);

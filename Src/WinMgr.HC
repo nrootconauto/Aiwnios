@@ -205,8 +205,8 @@ U0 WinCalcIdles()
     total_jiffies_delta=total_jiffies-t->last_total_jiffies;
     for (i=0;i<mp_cnt;i++) {
       c=&cpu_structs[i];
-      if (1)
-	c->idle_factor=.90;
+      if (total_jiffies_delta && (k=idle_pt_hits[i]-t->last_idle_pt_hits[i])>=0)
+	c->idle_factor=Clamp(ToF64(k)/total_jiffies_delta,0.01,0.99);
       else
 	c->idle_factor=0.01;
       t->last_idle_pt_hits[i]=idle_pt_hits[i];
@@ -265,7 +265,7 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
   WinMsUpdate;
 
   if (!LBtr(&sys_semas[SEMA_JUST_PUMP_MSGS],0)) {
-    t=tS+WINMGR_PERIOD/2;
+    t=tS+WINMGR_PERIOD/8;
     while (winmgr.ideal_refresh_tS<t) {
       winmgr.ideal_refresh_tS+=WINMGR_PERIOD;
     }

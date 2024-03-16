@@ -333,7 +333,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
         HtmlPutS(doc_out,0xF000//.u8[1]=F0(white),no other attribs needed so it's a constant
 	      ,&old_u32_attr,TRUE,"\n",&col,style_bitmap);
         if (++y!=old_y) {
-	  if (old_u32_attr&DOCET_UNDERLINE) DocPutS(doc_out,"</u>");
+	  if (old_u32_attr&DOCET_UNDERLINE) DocPutS(doc_out,"</u>");
 	  if (old_u32_attr&DOCET_BLINK) DocPutS(doc_out,"</blink>");
 	  if (line_anchors) DocPrint(doc_out,"<a name=\"l%d\"></a>",y+1);
 	  if (line_nums) DocPrint(doc_out,"<a href=\"#l%d\">%0*d</a>",y+1,digits,y+1);
