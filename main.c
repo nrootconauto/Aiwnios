@@ -495,6 +495,10 @@ static int64_t STK_MemSetU64(int64_t *stk) {
   return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
+static int64_t STK_MemSetI64(int64_t *stk) {
+  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
+}
+
 static int64_t STK_strlen(int64_t *stk) {
   return (int64_t)strlen((void *)stk[0]);
 }
@@ -1208,6 +1212,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MemSetU16", STK_MemSetU16, 3);
     PrsAddSymbol("MemSetU32", STK_MemSetU32, 3);
     PrsAddSymbol("MemSetU64", STK_MemSetU64, 3);
+    PrsAddSymbol("MemSetI64", STK_MemSetU64, 3);
     PrsAddSymbol("StrLen", STK_strlen, 1);
     PrsAddSymbol("StrCmp", STK_strcmp, 2);
     PrsAddSymbol("ToUpper", STK_toupper, 1);
