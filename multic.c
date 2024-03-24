@@ -117,7 +117,7 @@ typedef struct {
   HANDLE thread;
   HANDLE event;
   HANDLE restore_ctx_event;
-  HANDLE mtx;
+  CRITICAL_SECTION mtx;
   CONTEXT ctx;
   int64_t awake_at;
   void (*profiler_int)(void *fs);
@@ -280,18 +280,19 @@ static CCPU cores[128];
 CHashTable *glbl_table;
 static int64_t ticks    = 0;
 static int64_t tick_inc = 1;
+static int64_t nproc;
 static void WindowsProfileCode(int c);
 static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
                          void *ul2) {
   int64_t period;
   ticks += tick_inc;
-  for (int64_t idx = 0; idx < mp_cnt(NULL); ++idx) {
-    WaitForSingleObject(cores[idx].mtx, INFINITE);
+  for (int64_t idx = 0; idx < nproc; ++idx) {
+    EnterCriticalSection(&cores[idx].mtx);
     if (cores[idx].awake_at && ticks >= cores[idx].awake_at) {
       SetEvent(cores[idx].event);
       cores[idx].awake_at = 0;
     }
-    ReleaseMutex(cores[idx].mtx);
+    LeaveCriticalSection(&cores[idx].mtx);
   }
 }
 int64_t GetTicksHP() {
@@ -310,19 +311,20 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   if(Fs) parent_table=Fs->hash_table;
   CorePair pair = {fp, gs, core,NULL,parent_table}, *ptr = malloc(sizeof(CorePair));
   *ptr                          = pair;
-  cores[core].mtx               = CreateMutex(NULL, FALSE, NULL);
+  InitializeCriticalSection(&cores[core].mtx);
   cores[core].event             = CreateEvent(NULL, 0, 0, NULL);
   cores[core].restore_ctx_event = CreateEvent(NULL, 0, 0, NULL);
   cores[core].thread            = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
   InstallDbgSignalsForThread();
+  nproc++;
 }
 void MPSleepHP(int64_t us) {
   int64_t s, e;
   s = GetTicksHP() / 1000;
-  WaitForSingleObject(cores[core_num].mtx, INFINITE);
+  EnterCriticalSection(&cores[core_num].mtx);
   cores[core_num].awake_at = s + us / 1000;
-  ReleaseMutex(cores[core_num].mtx);
+  LeaveCriticalSection(&cores[core_num].mtx);
   WaitForSingleObject(cores[core_num].event, INFINITE);
 }
 // Dont make this static,used for miscWIN.s
@@ -349,21 +351,21 @@ int64_t mp_cnt() {
   return info.dwNumberOfProcessors;
 }
 void MPAwake(int64_t c) {
-  WaitForSingleObject(cores[c].mtx, INFINITE);
+  EnterCriticalSection(&cores[c].mtx);
   cores[c].awake_at = 0;
   SetEvent(cores[c].event);
-  ReleaseMutex(cores[c].mtx);
+  LeaveCriticalSection(&cores[c].mtx);
 }
 void __ShutdownCore(int core) {
   TerminateThread(cores[core].thread, 0);
 }
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
-  WaitForSingleObject(cores[c].mtx, INFINITE);
+  EnterCriticalSection(&cores[c].mtx);
   cores[c].profiler_int  = fp;
   cores[c].profiler_freq = f * 1000. / 1000000.;
   if (!cores[c].profiler_freq)
     cores[c].profiler_freq = 1;
   cores[c].profiler_last_tick = ticks;
-  ReleaseMutex(cores[c].mtx);
+  LeaveCriticalSection(&cores[c].mtx);
 }
 #endif
