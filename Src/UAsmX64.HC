@@ -499,9 +499,9 @@ I64 GetOpcodeReg(CX86Opcode *opc,I64 rex,U8 *data) {
   }
   throw('UAsmItrn');
 }
-U8 *DisasOpc(CDoc *doc,U8 *data) {
-  DocPrint(doc,"%P\t",data);
-  I64 prefix_groups=0,opc,ext;
+U8 *DisasOpc(CDoc *doc_out,U8 *data) {
+  CDoc *doc=DocNew;
+  I64 prefix_groups=0,opc,ext,i;
   Bool found_opc=FALSE;
   I64 pf1=-1,cnt,cnt2;
   Bool _66=FALSE,_67=FALSE,_0f=FALSE;
@@ -890,6 +890,12 @@ next:
       }
     }
     DocPrint(doc,"\n");
+    DocPrint(doc_out,"%P\t\dFG,PURPLE\d",data);
+    for (i=0;i<imm_off+1;++i)
+      DocPrint(doc_out,"%02X ",data[i]);
+    DocPrint(doc_out,"\dFG\d\n\t\t");
+    DocInsDoc(doc_out,doc);
+    DocDel(doc);
     return data+imm_off;
   }
 //wut
