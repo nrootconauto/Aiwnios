@@ -1285,7 +1285,10 @@ static void BootAiwnios(char *bootstrap_text) {
     // MUDDY THE STACK WITH ABI "translations"
     PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
     PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
-    PrsAddSymbolNaked("Call", TempleOS_CallN, 3);
+    PrsAddSymbolNaked("Call", TempleOS_Call, 1);
+    PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
+    PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs, 5);//fptr,argc1,argv1,argc,argv but argpop so ignored
+							    //(this is for parser.c checks)
     PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);

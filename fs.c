@@ -191,7 +191,8 @@ int64_t VFsFSize(char *name) {
     s64 = 0;
     dh  = FindFirstFileA(buffer, &data);
     while (FindNextFileA(dh, &data))
-      s64++;
+      if (strcmp(data.cFileName,".")&&strcmp(data.cFileName,".."))
+        s64++;
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
@@ -284,6 +285,7 @@ int64_t VFsFSize(char *name) {
   struct stat s;
   long cnt;
   DIR *d;
+  struct dirent *de;
   char *fn = __VFsFileNameAbs(name);
   if (!__FExists(fn)) {
     A_FREE(fn);
@@ -291,8 +293,9 @@ int64_t VFsFSize(char *name) {
   } else if (__FIsDir(fn)) {
     d   = opendir(fn);
     cnt = 0;
-    while (readdir(d))
-      cnt++;
+    while (de=readdir(d))
+      if (strcmp(de->d_name,".")&&strcmp(de->d_name,".."))
+        cnt++;
     closedir(d);
     A_FREE(fn);
     return cnt;

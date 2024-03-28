@@ -1216,7 +1216,9 @@ void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
 const char *ResolveBootDir(char *use, int overwrite, int make_new_dir);
 
 // Uses TempleOS ABI
-int64_t TempleOS_CallN(void(*fptr), int64_t argc, int64_t *argv);
+int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
+int64_t TempleOS_Call(void (*fptr)(void));
+int64_t TempleOS_CallVaArgs(void (*fptr)(void),int64_t argc,int64_t *argv);
 CRPN *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt);
 
 extern int64_t bc_enable;
