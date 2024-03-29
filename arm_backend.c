@@ -3899,11 +3899,14 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   code_off = __OptPassFinal(cctrl, next2, bin, code_off);                      \
   PopTmp(cctrl, next2);                                                        \
   PopTmp(cctrl, next);                                                         \
+  i = RT_I64i ; \
+  if(next->raw_type==RT_F64||next2->raw_type==RT_F64) \
+	i = RT_F64; \
   code_off =                                                                   \
-      PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, 2, bin, code_off);     \
+      PutICArgIntoReg(cctrl, &next->res, i, 2, bin, code_off);     \
   code_off =                                                                   \
-      PutICArgIntoReg(cctrl, &next2->res, rpn->raw_type, 1, bin, code_off);    \
-  if (rpn->raw_type == RT_F64) {                                               \
+      PutICArgIntoReg(cctrl, &next2->res, i, 1, bin, code_off);    \
+  if (i == RT_F64) {                                               \
     AIWNIOS_ADD_CODE(ARM_fcmp(next->res.reg, next2->res.reg));                 \
   } else {                                                                     \
     AIWNIOS_ADD_CODE(ARM_cmpRegX(next->res.reg, next2->res.reg));              \
