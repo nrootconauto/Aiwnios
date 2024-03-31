@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line, *arg_fork;
+    *sixty_fps, *arg_cmd_line, *arg_fork,*arg_no_debug;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1491,7 +1491,6 @@ static void ExitAiwnios(int64_t *stk) {
   #undef main
 #endif
 int main(int argc, char **argv) {
-  DebuggerBegin();
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =
@@ -1510,6 +1509,8 @@ int main(int argc, char **argv) {
                                 "boot directory if present)."),
     arg_fork =
         arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+    arg_no_debug =
+        arg_lit0("d", "user-debugger", "Faults will be handled by an external debugger(such as gdb)."),
 #endif
     sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
     arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
@@ -1526,6 +1527,8 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
+  if(!arg_no_debug->count)
+    DebuggerBegin();
 #ifndef _WIN32
   if (arg_fork->count) {
     pid_t pid = fork();
