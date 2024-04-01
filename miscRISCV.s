@@ -152,7 +152,13 @@ Misc_LBtr:
   snez a0,a0
   jalr zero,ra
 
+TempleOS_Call:
+  ret
+
 TempleOS_CallN:
+  ret
+
+TempleOS_CallVaArgs:
   ret
 
 Misc_BP:

@@ -150,11 +150,11 @@ typedef struct CMemBlk {
   CQue base;
   int64_t pags;
 } CMemBlk;
-typedef struct CMemUnused {
+typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
   struct CMemUnused *next;
   CHeapCtrl *hc;
-  int64_t sz, pad;
+  int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 typedef struct CHash {
   struct CHash *next;

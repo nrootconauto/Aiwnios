@@ -53,6 +53,17 @@ U8 *AMAllocIdent(U8 *ptr) {
   return MAllocIdent(ptr,adam_task);
 }
 
+U8 *MAllocAligned(I64 size,I64 alignment,
+       CTask *mem_task=NULL,I64 misalignment=0)
+{//Only powers of two alignment. This is awful.
+  I64 mask=alignment-1;
+  U8 *ptr=MAlloc(size+mask+sizeof(I64)+misalignment,mem_task),
+       *res=(ptr+sizeof(I64)+mask)&~mask+misalignment;
+  res(I64 *)[-1]=ptr-res;
+  return res;
+}
+
+
 CTask *aiwnios_boot_task=__CAlloc(sizeof CTask);
 extern U0 Print(U8*,...);
 

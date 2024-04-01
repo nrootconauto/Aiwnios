@@ -213,12 +213,12 @@ void __AIWNIOS_Free(void *ptr) {
   if (!ptr)
     return;
   un--; // Area before ptr is CMemUnused*
+  if (un->sz < 0) // Aligned chunks are negative and point to start
+    un = un->sz + (char *)un;
   if (!un->hc)
     throw('BadFree');
   if (un->hc->hc_signature != 'H')
     throw('BadFree');
-  if (un->sz < 0) // Aligned chunks are negative and point to start
-    un = un->sz + (char *)un;
   if (bc_enable) {
     cnt = MSize(ptr);
     assert((int64_t)ptr < (1ll << 31));
@@ -249,10 +249,10 @@ int64_t MSize(void *ptr) {
   if (!ptr)
     return 0;
   un--;
-  if (un->hc->hc_signature != 'H')
-    throw('BadFree');
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
+  if (un->hc->hc_signature != 'H')
+    throw('BadFree');
   return un->sz - sizeof(CMemUnused);
 }
 

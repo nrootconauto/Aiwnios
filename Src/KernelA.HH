@@ -5274,6 +5274,8 @@ extern U8 *AMAlloc(I64 cnt,CTask *task=NULL) ;
 extern U8 *ACAlloc(I64 cnt) ;
 extern U8 *MAllocIdent(U8 *ptr,CTask *task=NULL) ;
 extern U8 *AMAllocIdent(U8 *ptr) ;
+extern U8 *MAllocAligned(I64 size,I64 alignment,
+       CTask *mem_task=NULL,I64 misalignment=0);
 extern U0 SwapU8(U8 *a,U8 *b) ;
 extern U0 SwapU16(U16 *a,U16 *b) ;
 extern U0 SwapU32(I32 *a,I32 *b) ;
