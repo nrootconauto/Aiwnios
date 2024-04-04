@@ -170,8 +170,6 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
     LexWarn(cc,"Function should return val ");
   RPNAddNew(cc,IC_LABEL,cc->lb_leave,0,FALSE);
   cc->lb_leave=saved_leave_label;
-  RPNAddNew(cc,IC_IMM_I64,0,cc->htc.fun->return_class,FALSE);
-  RPNAddNew(cc,IC_RET,0,cc->htc.fun->return_class,FALSE);
   cc->htc.fun->size&=~7;
   if (cc->flags&CCF_AOT_COMPILE) {
     //ARM likes 4byte align for instrcutions

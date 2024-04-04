@@ -7881,12 +7881,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);
     // TempleOS will always store F64 result in RAX(integer register)
     // Let's merge the two togheter
-    if (tmp.raw_type == RT_F64) {
+    if (tmp.raw_type == RT_F64)
       AIWNIOS_ADD_CODE(X86MovQI64F64, 0, 0);
-    } else {
-      // Vise versa
-      AIWNIOS_ADD_CODE(X86MovQF64I64, 0, 0);
-    }
     // TODO  jump to return area,not generate epilog for each poo poo
     AIWNIOS_ADD_CODE(X86Jmp, 0);
     CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4);
