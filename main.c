@@ -1560,10 +1560,10 @@ int main(int argc, char **argv) {
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count, 1);
 #endif
+  InitSound();
   if (!arg_cmd_line->count) {
     SDL_Init(SDL_INIT_TIMER);
     SDL_Init(SDL_INIT_EVENTS);
-    InitSound();
     user_ev_num = SDL_RegisterEvents(1);
     SpawnCore(&Boot, NULL, 0);
     InputLoop(&quit);

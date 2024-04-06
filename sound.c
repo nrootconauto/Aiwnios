@@ -3,7 +3,7 @@
 static SDL_AudioDeviceID output;
 static int64_t sample, freq;
 static SDL_AudioSpec have;
-static double vol = .1;
+static double vol = .2;
 void AiwniosSetVolume(double v) {
   if (v > 100.)
     v = 100;
@@ -14,16 +14,16 @@ double AiwniosGetVolume() {
 }
 static void AudioCB(void *ul, int8_t *out, int64_t len) {
   unsigned int i, i2;
-  int64_t fpb = len / have.channels / 2;
+  int64_t fpb = len / have.channels;
   for (i = 0; i < fpb; i++) {
     double t      = (double)++sample / have.freq;
     double amp    = -1.0 + 2.0 * round(fmod(2.0 * t * freq, 1.0));
-    int64_t maxed = (amp > 0) ? 16384 : -16384;
+    int64_t maxed = (amp > 0) ? 127 : -127;
     maxed *= vol;
     if (!freq)
       maxed = 0;
     for (i2 = 0; i2 != have.channels; i2++)
-      ((int16_t*)out)[have.channels * i + i2] = maxed;
+      out[have.channels * i + i2] = maxed;
   }
 }
 void SndFreq(int64_t f) {
@@ -37,7 +37,7 @@ void InitSound() {
   }
   memset(&want, 0, sizeof(SDL_AudioSpec));
   want.freq     = 24000;
-  want.format   = AUDIO_S16;
+  want.format   = AUDIO_S8;
   want.channels = 2;
   want.samples  = 64;
   want.callback = (void *)&AudioCB;
