@@ -152,7 +152,7 @@ static void InteruptRt(int ul) {
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  CHashExport *y = HashFind("Yield", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+  CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
   void (*fp)();
   if (y) {
     fp = y->val;

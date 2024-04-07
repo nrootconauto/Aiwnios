@@ -141,7 +141,6 @@ U0 DumbStackTrace(U8 **rbp,U8 *rip) {
     rbp=*rbp;
   }
 }
-
 U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   I64 gps[33];
   MemCpy(gps,_gps,8*33);

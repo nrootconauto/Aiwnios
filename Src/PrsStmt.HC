@@ -1238,7 +1238,7 @@ sm_import:
 		    if (cc->htc.fun->return_class->size)
 		      LexWarn(cc,"Function should return val ");
 //ICAdd(cc,IC_JMP,cc->lb_leave,0); RETURN's  are handled by AIWNIOS as IC_RET,they do housekeeping for you
-		    RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
+		    RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
 		    RPNAddNew(cc,IC_RET,,cc->htc.fun->return_class,FALSE);
 		  }
 		  goto sm_semicolon;
