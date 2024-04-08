@@ -1509,9 +1509,9 @@ int main(int argc, char **argv) {
                                 "boot directory if present)."),
     arg_fork =
         arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+#endif
     arg_no_debug =
         arg_lit0("d", "user-debugger", "Faults will be handled by an external debugger(such as gdb)."),
-#endif
     sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
     arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
     arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,

@@ -190,9 +190,7 @@ int64_t VFsFSize(char *name) {
       *delim = '\\';
     s64 = 0;
     dh  = FindFirstFileA(buffer, &data);
-    while (FindNextFileA(dh, &data))
-      if (strcmp(data.cFileName,".")&&strcmp(data.cFileName,".."))
-        s64++;
+    do s64++; while (FindNextFileA(dh, &data));
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
