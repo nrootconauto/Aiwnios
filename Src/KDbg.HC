@@ -147,6 +147,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   DebuggerClientStart(Fs,gps);
   CBpt *bp;
   CTask clone;
+  CHashTable *old;
   I64 idx;
   #ifdef TARGET_X86
   I64 oip=gps[0],rbp=gps[2]; 
@@ -157,24 +158,29 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   #ifdef TARGET_RISCV
   I64 oip=gps[0],rbp=gps[2]; 
   #endif
+  #ifdef TARGET_RISCV
+  I64 trap=4;
+  #else
+  I64 trap=5;
+  #endif
   Fs->is_single_step=FALSE;
   if(Fs==sys_winmgr_task) {
     //Oh no,you crashed the window manager
-    DbgPutS("You crashed the window manager,aborting\n");
+    DbgPutS("You crashed the window manager,Ill try to restart it\n");
+    old=Fs->hash_table;
     Fs->hash_table=sys_task_being_scrn_updated->hash_table;
     DumbStackTrace(rbp,oip);
-    ExitAiwnios;
+    Fs->hash_table=old;
+    sys_task_being_scrn_updated->draw_it=NULL;
+    LBts(&sys_task_being_scrn_updated->task_flags,TASKf_KILL_TASK);
+    sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
+    Exit;
   }
   DumbStackTrace(rbp,oip);
   MemCpy(Fs->context_save_area,gps,22*8);
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
   DeathWait(&task);
-  #ifdef TARGET_RISCV
-  I64 trap=4;
-  #else
-  I64 trap=5;
-  #endif
   if(sig!=trap)
     Exit;
   if(sig==trap) { //SIGTRAP
