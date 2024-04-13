@@ -745,8 +745,10 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
 	    mv[tmp].addrof_cnt++;
 	    mv[tmp].score=0;
 	    mv[tmp].m->reg=REG_NONE;
-	  }
-	  if(!mv[tmp].addrof_cnt)
+	  } else if(cc->flags&CCF_NO_REG_OPT) {
+	    mv[tmp].score=0;
+	    mv[tmp].m->reg=REG_NONE;
+	  } else if(!mv[tmp].addrof_cnt)
 	    mv[tmp].score++;
         }
 
