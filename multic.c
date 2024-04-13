@@ -1,6 +1,29 @@
 #include "aiwn.h"
 #include <SDL2/SDL.h>
 #include <inttypes.h>
+#if defined(__linux__) && defined( __x86_64__)
+    // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
+    enum {
+      REG_R8 = 0,
+      REG_R9,
+      REG_R10,
+      REG_R11,
+      REG_R12,
+      REG_R13,
+      REG_R14,
+      REG_R15,
+      REG_RDI,
+      REG_RSI,
+      REG_RBP,
+      REG_RBX,
+      REG_RDX,
+      REG_RAX,
+      REG_RCX,
+      REG_RSP,
+      REG_RIP,
+    };
+#endif
+
 // In x86_64_backend,we are going to (if supported) use the raw FS/GS registers
 // If unable to,we will fill in the "__Fs/__Gs" relocations with a function to
 // return the
@@ -147,16 +170,26 @@ CHashTable *glbl_table;
 void InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
 }
-static void InteruptRt(int ul) {
+static void InteruptRt(int ul,siginfo_t *info, ucontext_t *_ctx) {
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
   CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+  mcontext_t *ctx=&_ctx->uc_mcontext;
   void (*fp)();
   if (y) {
     fp = y->val;
-    (*fp)();
+    #if defined(__FreeBSD__) && defined(__x86_64__)
+    FFI_CALL_TOS_2(fp,ctx->mc_rip,ctx->mc_rbp);
+    #elif defined(__linux__) && defined(__x86_64__)
+    FFI_CALL_TOS_2(fp,ctx->regs[REG_RIP],ctx->regs[REG_RBP]);
+    #endif
+    #if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
+    FFI_CALL_TOS_2(fp,NULL,ctx->mc_gpregs.gp_x[29]);
+    #elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
+    FFI_CALL_TOS_2(fp,NULL,ctx->regs[29]);
+    #endif
   }
 }
 static void ExitCoreRt(int s) {
@@ -176,26 +209,6 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     #if defined(__FreeBSD__)
     FFI_CALL_TOS_1(cores[c].profiler_int, _ctx->uc_mcontext.mc_rip);
     #elif defined(__linux__)
-    // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
-    enum {
-      REG_R8 = 0,
-      REG_R9,
-      REG_R10,
-      REG_R11,
-      REG_R12,
-      REG_R13,
-      REG_R14,
-      REG_R15,
-      REG_RDI,
-      REG_RSI,
-      REG_RBP,
-      REG_RBX,
-      REG_RDX,
-      REG_RAX,
-      REG_RCX,
-      REG_RSP,
-      REG_RIP,
-    };
     FFI_CALL_TOS_1(cores[c].profiler_int, _ctx->uc_mcontext.gregs[REG_RIP]);
     #endif
   #endif

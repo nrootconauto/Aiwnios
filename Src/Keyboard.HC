@@ -350,8 +350,17 @@ I64 KbdMsEvtTime()
 }
 
 I64 kb_mtx=0;
-U0 InteruptRt() {
-  DbgPrint("Interuppted at %p,%p,%p,%p,%p,%p\n",Caller(2),Caller(3),Caller(4),Caller(5),Caller(6),Caller(7));
+U0 InteruptRt(I64 rip,U8 **rbp) {
+  U8 **ptr;
+  DbgPrint("Interupt At:%p",rip,rip);
+  while(ChkOnStk(rbp)) {
+    ptr=rbp+1;
+    DbgPrint(",%p",*ptr);
+    if(rbp>=*rbp)
+      break;
+    rbp=*rbp;
+  }
+  DbgPrint("\n");
   Yield;
 }
 U0 KBCb(I64 c,I64 s) {

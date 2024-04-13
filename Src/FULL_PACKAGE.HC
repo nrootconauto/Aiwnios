@@ -238,19 +238,28 @@ U8 *body=
 CDoc *unfound=DocNew("unfound.DD");
 #endif
 U0 ImportSymbolsCB(U8 *name,U8 *addr) {
-  CHash *find=HashFind(name,Fs->hash_table,-1);
+  CHashExport *find=HashFind(name,Fs->hash_table,-1);
   I64 cnt=1;
   if(find&&find->type&HTT_GLBL_VAR) {
     find(CHashGlblVar*)->data_addr=addr;
-  } else if(find&&find->type&HTT_FUN&&!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
-    find(CHashFun*)->exe_addr=addr;
-    LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
+  } else if(find&&find->type&HTT_FUN) {
+    if(!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
+      find(CHashFun*)->exe_addr=addr;
+      LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
+    }
   } 
   #ifdef GEN_HEADERS
   else if(1) {
     DocPrint(unfound,"%s\n",name);
   }
   #endif
+  else {
+    find=CAlloc(sizeof(CHashExport),adam_task);
+    find->str=AStrNew(name);
+    find->type=HTT_EXPORT_SYS_SYM;
+    find->val=addr;
+    HashAdd(find,Fs->hash_table);
+  }
 }
 #include "HomeKeyPlugIns.HC"
 U0 InitSymbols() {
