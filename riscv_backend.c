@@ -3812,14 +3812,16 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   next2    = ICArgN(rpn, 0);                                                   \
   code_off = __OptPassFinal(cctrl, next, bin, code_off);                       \
   code_off = __OptPassFinal(cctrl, next2, bin, code_off);                      \
+  i=RT_I64i ; \
+  if(next2->res.raw_type==RT_F64||next->res.raw_type==RT_F64) i=RT_F64; \
   code_off = PutICArgIntoReg(                                                  \
-      cctrl, &next2->res, rpn->raw_type,                                       \
-      (rpn->raw_type == RT_F64) ? RISCV_FPOOP1 : RISCV_IPOOP1, bin, code_off); \
+      cctrl, &next2->res, i,                                       \
+      (i == RT_F64) ? RISCV_FPOOP1 : RISCV_IPOOP1, bin, code_off); \
   code_off = PutICArgIntoReg(                                                  \
-      cctrl, &next->res, rpn->raw_type,                                        \
-      (rpn->raw_type == RT_F64) ? RISCV_FPOOP2 : RISCV_IPOOP2, bin, code_off); \
+      cctrl, &next->res, i,                                        \
+      (i == RT_F64) ? RISCV_FPOOP2 : RISCV_IPOOP2, bin, code_off); \
   if (old_pass_misc && old_fail_misc) {                                        \
-    if (rpn->raw_type != RT_F64) {                                             \
+    if (i != RT_F64) {                                             \
       code_off = RISCV_JccToLabel(old_pass_misc, cond, next->res.reg,          \
                                   next2->res.reg, bin, code_off);              \
       AIWNIOS_ADD_CODE(RISCV_JAL(0, 0));                                       \
@@ -3833,7 +3835,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->is_jal = 1;           \
     }                                                                          \
   } else {                                                                     \
-    if (rpn->raw_type != RT_F64) {                                             \
+    if (i != RT_F64) {                                             \
       AIWNIOS_ADD_CODE(RISCV_SUB(RISCV_IRET, next->res.reg, next2->res.reg));  \
       if ((cond) == RISCV_COND_E) {                                            \
         AIWNIOS_ADD_CODE(RISCV_SLTIU(RISCV_IRET, RISCV_IRET, 1));              \

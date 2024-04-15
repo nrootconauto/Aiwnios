@@ -1,5 +1,6 @@
 .text
 .global TempleOS_CallN
+.global TempleOS_Call
 .global Misc_Btc
 .global Misc_LBtc
 .global Misc_Caller
@@ -10,6 +11,7 @@
 .global Misc_LBts
 .global Misc_BP
 .global Misc_ThreadReg
+.global TempleOS_CallVaArgs
 # I dont know the psudeo ops,sorry profressionals
 Misc_Btc:
   srli t0,a1,3 # divide by 8 bits
@@ -127,7 +129,7 @@ Misc_Btr:
   lb t2,(t0)
   and a0,t2,t1
   not t4,t1
-  and t3,t2,t4
+  and t2,t2,t4
   sb t2,(t0)
   snez a0,a0
   jalr zero,ra
@@ -157,8 +159,63 @@ TempleOS_Call:
 
 TempleOS_CallN:
   ret
-
+# I64 CallVaArgs(fptr,argc1,argv1,...)
+# fptr is a variadic fun with argc normal args
+# argc1/argv1 are propogated for fptr's varargs
 TempleOS_CallVaArgs:
+  ld a0,(sp)
+  ld a1,8(sp)
+  ld a2,16(sp)
+  ld a3,24(sp)
+  addi sp,sp,-16
+  sd fp,(sp)
+  sd ra,8(sp)
+  addi fp,sp,0
+  addi a4,sp,48 # point to argv
+  
+  # sz=argc1+argc+1 
+  addi t1,a1,1
+  add t1,t1,a3
+    
+  # *=8
+  slli t1,t1,3
+  
+  # Make room
+  sub sp,sp,t1
+  
+  add t4,t1,sp
+  
+  slli a3,a3,3
+.Lregular_start:
+  beq zero,a3,.Lregular_end
+  addi a3,a3,-8
+  add t1,sp,a3
+  add t2,a4,a3
+  ld t2,(t2)
+  sd t2,(t1)
+  j .Lregular_start
+.Lregular_end:
+  
+  add t1,a1,zero
+  slli a1,a1,3
+  addi t4,t4,-8
+.Lvarg_start:
+  beq zero,a1,.Lvarg_end
+  addi a1,a1,-8
+  add t2,a2,a1
+  ld t2,(t2)
+  sd t2,(t4)
+  addi t4,t4,-8
+  j .Lvarg_start
+.Lvarg_end:
+  sd t1,(t4)
+  
+  jalr a0
+  
+  addi sp,fp,0
+  ld fp,(sp)
+  ld ra,8(sp)
+  addi sp,sp,16
   ret
 
 Misc_BP:
