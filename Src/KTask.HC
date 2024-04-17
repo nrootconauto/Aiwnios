@@ -252,7 +252,7 @@ I64 ExeCmdLine(CCmpCtrl *cc)
       } else
 	if ((ptr=cc->lex_include_stk->line_start) && *ptr) {
           ptr3=ptr2;
-          while(ptr2-ptr3<STR_LEN-1)
+          while(ptr2-ptr3<STR_LEN-1&&*ptr) //&&*ptr added by nroot
             *ptr2++=*ptr++;
           *ptr2=0;
       }

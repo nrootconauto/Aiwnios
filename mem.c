@@ -73,7 +73,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE,
                        hc->is_code_heap ? PAGE_EXECUTE_READWRITE
                                         : PAGE_READWRITE);
-  if (!ret)
+  if (!ret||ret==MAP_FAILED)
     return NULL;
 #else
   #if defined(__x86_64__)
@@ -168,6 +168,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     // Make a new lunk
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
+    if(!ret) return NULL;
     ret                 = (char *)ret + sizeof(CMemBlk);
     ret->sz             = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     hc->malloc_free_lst = ret;
