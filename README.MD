@@ -32,7 +32,7 @@ cd ..;
 ./aiwnios -b;
 
 # Run the HCRT2.BIN
-./aiwnios;
+./aiwnios; # Use -g or --grab-focus to grab the keyboard
 ```
 
 If you want to create a package for your system, you can use the [ESP Package Manager](https://github.com/jimjag/epm/). Simply run `epm aiwnios` to make a cool package for your system.

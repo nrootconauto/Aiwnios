@@ -8,8 +8,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+int64_t sdl_window_grab_enable=0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line, *arg_fork,*arg_no_debug;
+    *sixty_fps, *arg_cmd_line, *arg_fork,*arg_no_debug,*arg_grab;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1510,6 +1511,7 @@ int main(int argc, char **argv) {
     arg_fork =
         arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
 #endif
+	arg_grab = arg_lit0("g","grab-focus","Grab the keyboard(Windows/Logo key will be handled by aiwnios)"),
     arg_no_debug =
         arg_lit0("d", "user-debugger", "Faults will be handled by an external debugger(such as gdb)."),
     sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
@@ -1527,6 +1529,8 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
+  if(arg_grab->count)
+    sdl_window_grab_enable=1;
   if(!arg_no_debug->count)
     DebuggerBegin();
 #ifndef _WIN32

@@ -23,6 +23,10 @@ struct CHash;
 struct CHashTable;
 struct CHashFun;
 struct CTask;
+
+//See -g or --grab-focus
+extern int64_t sdl_window_grab_enable;
+
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t);
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
 void __AIWNIOS_Free(void *ptr);
@@ -1375,4 +1379,3 @@ int64_t RISCV_S(int64_t imm115,int64_t s1,int64_t d,int64_t f3,int64_t opc);
 int64_t RISCV_I(int64_t imm,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t RISCV_R(int64_t f7,int64_t s2,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t ScreenUpdateInProgress();
-
