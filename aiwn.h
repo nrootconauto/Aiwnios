@@ -852,7 +852,7 @@ enum {
   #define AIWNIOS_IREG_CNT       (28 - 19 + 1)
   #define AIWNIOS_REG_FP         ARM_REG_FP
   #define AIWNIOS_REG_SP         ARM_REG_SP
-  #define AIWNIOS_TMP_IREG_POOP  16 // Platform register,I use it as a poo poo
+  #define AIWNIOS_TMP_IREG_POOP  16
   #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
   #define AIWNIOS_TMP_IREG_START 8
   #define AIWNIOS_TMP_IREG_CNT   (15 - 8 + 1)

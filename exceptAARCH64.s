@@ -9,7 +9,6 @@ AIWNIOS_enter_try:
   str x30,[sp,8]
   bl __enter_try
   ldr x30,[sp,8]
-  str x18,[x0]
   str x19,[x0,8]
   str x20,[x0,8*2]
   str x21,[x0,8*3]
@@ -39,7 +38,6 @@ AIWNIOS_enter_try:
   ret
 AIWNIOS_throw:
   bl __throw
-  ldr x18,[x0]
   ldr x19,[x0,8]
   ldr x20,[x0,8*2]
   ldr x21,[x0,8*3]
