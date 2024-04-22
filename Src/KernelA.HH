@@ -1690,6 +1690,7 @@ class CPrsStk
 #define CMF_I16_JMP_TABLE	0x10
 #define CMF_U16_JMP_TABLE	0x20
 #define CMF_SHORT_ADDR	0x40
+#define CMF_STATIC	0x80
 
 #define CM_CONSTS_NUM		16
 
@@ -1989,13 +1990,13 @@ class CAOTAbsAddr
 class CAOTHeapGlblRef
 {
   CAOTHeapGlblRef *next;
-  I64	rip;
+  I64	rip,offset;
 };
 
 class CAOTHeapGlbl
 {
   CAOTHeapGlbl *next;
-  U8	*str;
+  U8	*str,*data;
   I64	size;
   CAOTHeapGlblRef *references;
 };
@@ -2162,7 +2163,7 @@ class CLexHashTableContext
 #define CCF_USE_LAST_U16	0x0200000000
 #define CCf_USE_LAST_U16	33
 #define CCF_LAST_WAS_DOT	0x0400000000
-#define CCF_AOT_COMPILE		0x0800000000
+#define CCF_AOT_COMPILE		0x0800000000
 #define CCf_AOT_COMPILE		35
 #define CCF_NO_ABSS		0x1000000000
 #define CCF_PAREN		0x2000000000
@@ -2192,7 +2193,7 @@ public class CCmpCtrl
   CAbsCntsI64 abs_cnts;
   CAsmUndefHash *asm_undef_hash;
   CMemberLst *local_var_entry;
-  CCodeMisc *lb_leave;
+  CCodeMisc *lb_leave,*lb_static; //lb_static added by Nroot
   U8	*cur_buf_ptr;
   CLexFile *lex_include_stk,
 	*lex_prs_stk,
@@ -3873,6 +3874,7 @@ import U0 PrintI(U8 *,I64);
 import U0 PrintF(U8 *,F64);
 import U0 Free(U8 *);
 import U0 MemCpy(U8*,U8*,I64);
+import U0 WriteProtectMemCpy(U8*,U8*,I64);
 import I64 MSize(U8i *);
 import U8 *MemSet(U8i *,U8 ch,I64 sz);
 import U8 *MemSetU16(U16 *,U16 ch,I64 sz);
@@ -3955,6 +3957,7 @@ import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
 #else
+extern U0 WriteProtectMemCpy(U8*,U8*,I64);
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
 extern U0 MPAwake(I64);
@@ -5786,8 +5789,8 @@ extern U0 PrsPutStr(CCmpCtrl *cc);
 extern U0 PrsStreamBlk(CCmpCtrl *cc);
 extern U0 PrsTryBlk(CCmpCtrl *cc,I64 try_cnt);
 extern Bool PrsStmt(CCmpCtrl *cc,I64 try_cnt=0,  CCodeMisc *lb_break=NULL,I64 cmp_flags=CMPF_PRS_SEMICOLON);
-extern U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,	U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass);
-extern U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass);
+extern U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,	U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass,CHash *to);
+extern U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass,CHash *to);
 extern U0 PrsGlblInit(CCmpCtrl *cc,CHashGlblVar *tmpg,I64 pass);
 extern U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass);
 extern U0 PrsArrayDims(CCmpCtrl *cc,I64 mode,CArrayDim *dim);
@@ -6802,8 +6805,8 @@ _intern IC_MAX_U64 U64 MaxU64(U64,U64);
 _intern IC_MIN_U64 U64 MinU64(U64,U64);
 #endif
 #ifdef TARGET_AARCH64
-_intern IC_FS CTask *Fs();
-_intern IC_GS CCPU *Gs();
+//_intern IC_FS CTask *Fs();
+//_intern IC_GS CCPU *Gs();
 _intern IC_MAX_I64 I64 MaxI64(I64,I64);
 _intern IC_MIN_I64 I64 MinI64(I64,I64);
 _intern IC_MAX_U64 U64 MaxU64(U64,U64);

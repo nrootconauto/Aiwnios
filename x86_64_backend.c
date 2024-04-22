@@ -5834,7 +5834,8 @@ static int64_t __SexyPostOp(
   return code_off;
 }
 
-static void DoNothing() {
+int64_t DoNothing() {
+	return 0;
 }
 
 static int64_t SEG_GS(char *to, int64_t dummy) {

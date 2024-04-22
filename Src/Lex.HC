@@ -55,7 +55,7 @@ CCmpCtrl *CmpCtrlNew(U8 *buf=NULL,I64 flags=0,U8 *filename=NULL)
   return cc;
 }
 
-U0 CmpCtrlDel(CCmpCtrl *cc)
+U0 CmpCtrlDel(CCmpCtrl *cc)
 {//Free CCmpCtrl.
   while (LexFilePop(cc));
   LinkedLstDel(cc->lex_prs_stk);

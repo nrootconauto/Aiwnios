@@ -118,7 +118,7 @@ typedef struct {
   #include <sys/types.h>
   #include <sys/umtx.h>
 #endif
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
   #include <pthread.h>
   #include <sys/syscall.h>
   #include <sys/time.h>
@@ -129,6 +129,9 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
+  #if defined(__APPLE__)
+  pthread_cond_t wake_cond;
+  #endif
 } CCPU;
 #elif defined(_WIN32) || defined(WIN32)
   #include <windows.h>
@@ -163,7 +166,7 @@ static void threadrt(CorePair *pair) {
   free(pair);
   fp();
 }
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
 static CCPU cores[128];
 CHashTable *glbl_table;
 
@@ -227,7 +230,14 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
   char nambuf[16];
   snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
+  #if defined(__APPLE__)
+  pthread_setname_np(nambuf);
+  #else
   pthread_setname_np(cores[core].pt, nambuf);
+  #endif
+  #if defined(__APPLE__)
+  pthread_cond_init(&cores[core].wake_cond,NULL);
+  #endif
   signal(SIGUSR1, InteruptRt);
   signal(SIGUSR2, ExitCoreRt);
   memset(&sa, 0, sizeof(struct sigaction));
@@ -254,6 +264,16 @@ void MPSleepHP(int64_t ns) {
   #if defined(__FreeBSD__)
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
   #endif
+  #if defined(__APPLE__)
+  clock_gettime(CLOCK_REALTIME,&ts);
+  ts.tv_nsec         += (ns % 1000000) * 1000U;
+  ts.tv_sec+=ts.tv_nsec/1000000000U;
+  ts.tv_nsec%=1000000000U;
+  ts.tv_sec          += ns / 1000000;
+  pthread_mutex_t mtx=PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_lock(&mtx);
+  pthread_cond_timedwait(&cores[core_num].wake_cond,&mtx,&ts);
+  #endif
   Misc_LBtr(&cores[core_num].wake_futex, 0);
 }
 
@@ -263,6 +283,9 @@ void MPAwake(int64_t core) {
     syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
   #elif defined(__FreeBSD__)
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
+  #endif
+  #if defined(__APPLE__)
+  pthread_cond_signal(&cores[core].wake_cond);
   #endif
   }
 }

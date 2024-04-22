@@ -140,7 +140,8 @@ if (NOT SDL2_FOUND)
 endif ()
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
 if (ARCH STREQUAL arm64)
-  target_link_libraries(aiwnios PRIVATE ${SDL2_LIBRARIES})
+    target_link_directories(aiwnios PUBLIC /usr/local/lib)
+    target_link_libraries(aiwnios PRIVATE SDL2)
 elseif (ARCH STREQUAL x86_64)
   if(NOT WIN32)
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
@@ -245,6 +246,13 @@ if (BUILD_HCRT)
   )
 endif ()
 
+#
+# Gay section
+#
+set_target_properties(aiwnios PROPERTIES
+  MACOSX_BUNDLE TRUE
+  MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+)
 
 #
 # Install section

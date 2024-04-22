@@ -25,7 +25,36 @@ struct CMemUnused;
 //
 int64_t bc_enable = 0;
 static char *bc_good_bitmap;
-
+#if defined(__APPLE__)
+static CQue code_pages={NULL,NULL};
+__thread int is_write_np=123;
+void InvalidateCache() {
+	return;
+	CMemBlk *blk;
+	CQue *head,*cur,cnt;
+    //Mac exclusive! CLEAR THE CODE PAGES
+      if(code_pages.next) {
+		head=&code_pages;
+		for(cur=head->next;cur!=head;cur=cur->next) {
+			blk=(char*)cur-offsetof(CMemBlk,base2);
+			__builtin___clear_cache(blk,(char*)blk+blk->pags*MEM_PAG_SIZE);
+		}
+      }
+}
+int SetWriteNP(int st) {
+	int old=is_write_np;
+	is_write_np=st;
+	if(st!=old) {
+	  pthread_jit_write_protect_np(st);
+	  if(!old&&st) InvalidateCache();
+	}	
+	return old;
+}
+#else
+int SetWriteNP(int st) {
+	return st;
+}
+#endif
 void InitBoundsChecker() {
   int64_t want   = (1ll << 31) / 8;
   bc_good_bitmap = calloc(want, 1);
@@ -37,6 +66,9 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
 #if defined(_WIN32) || defined(WIN32)
   VirtualFree(blk, 0, MEM_RELEASE);
 #else
+  #if defined(__APPLE__)
+  if(blk->base2.next) QueRem(&blk->base2);
+  #endif
   static int64_t ps;
   int64_t b;
   if (!ps)
@@ -86,13 +118,20 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
-  #if defined(__aarch64__) || defined(_M_ARM64)
+  #if (defined(__aarch64__) || defined(_M_ARM64)) && ! defined(__APPLE__)
   if (bc_enable)
     at = GetAvailRegion32(b);
   #endif
+  #if defined(__APPLE__)
+  CMemBlk *ret =
+      mmap(at, b, (hc->is_code_heap ? PROT_EXEC : PROT_READ) | PROT_WRITE,
+           MAP_PRIVATE | MAP_ANONYMOUS | add_flags|(hc->is_code_heap ?MAP_JIT|MAP_NOCACHE:0), -1, 0);
+  #else
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
+  
+  #endif
 #if defined (__x86_64__)
   if (ret == MAP_FAILED && (add_flags&MAP_32BIT))
     ret = mmap(GetAvailRegion32(b), b,
@@ -113,7 +152,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   QueIns(&ret->base, hc->mem_blks.last);
   ret->pags = pags;
   // Move silly willies malloc_free_lst,in to the heap_hash
-  do {
+   do {
     cnt = 0;
     unm = &hc->malloc_free_lst;
     while (tmp = *unm) {
@@ -129,6 +168,11 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     threshold <<= 1;
   } while (cnt > 8 && threshold <= MEM_HEAP_HASH_SIZE);
   hc->alloced_u8s += pags * MEM_PAG_SIZE;
+  #if defined(__APPLE__)
+  if(!code_pages.next) {
+	  QueInit(&code_pages);
+  }
+  #endif
   return ret;
 }
 
@@ -138,6 +182,7 @@ void *GetFs() {
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!cnt)
     return NULL;
+  int old_wnp=SetWriteNP(0);
   if (!t)
     t = Fs->heap;
   int64_t orig = cnt;
@@ -155,6 +200,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // HClF_LOCKED is 1  
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
+  if(hc->is_code_heap) goto big;
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
   if (hc->heap_hash[cnt / 8]) {
@@ -168,7 +214,11 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     // Make a new lunk
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
-    if(!ret) return NULL;
+    if(!ret) {
+		Misc_LBtr(&hc->locked_flags,1);
+		SetWriteNP(old_wnp);
+		return NULL;
+	}
     ret                 = (char *)ret + sizeof(CMemBlk);
     ret->sz             = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     hc->malloc_free_lst = ret;
@@ -186,8 +236,11 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     goto new_lunk;
 big:
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
-  if (!ret)
-    return NULL;
+  if (!ret) {
+     Misc_LBtr(&hc->locked_flags,1);
+     SetWriteNP(old_wnp);
+     return NULL;
+  }
   ret     = (char *)ret + sizeof(CMemBlk);
   ret->sz = cnt;
   goto almost_done;
@@ -204,6 +257,7 @@ almost_done:
       orig = 8 + orig & ~7ll;
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
+  SetWriteNP(old_wnp);
   return ret;
 }
 
@@ -213,6 +267,7 @@ void __AIWNIOS_Free(void *ptr) {
   int64_t cnt;
   if (!ptr)
     return;
+  int oldwnp=SetWriteNP(0);
   un--; // Area before ptr is CMemUnused*
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
@@ -242,6 +297,7 @@ void __AIWNIOS_Free(void *ptr) {
   }
 fin:
   Misc_LBtr(&hc->locked_flags, 1);
+  SetWriteNP(oldwnp);
 }
 
 int64_t MSize(void *ptr) {
@@ -249,16 +305,23 @@ int64_t MSize(void *ptr) {
   int64_t cnt;
   if (!ptr)
     return 0;
+  int oldwnp=SetWriteNP(0);
   un--;
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
   if (un->hc->hc_signature != 'H')
     throw('BadFree');
-  return un->sz - sizeof(CMemUnused);
+  cnt=un->sz - sizeof(CMemUnused);
+  SetWriteNP(oldwnp);
+  return cnt;
 }
 
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t) {
-  return memset(__AIWNIOS_MAlloc(cnt, t), 0, cnt);
+	void *ret=__AIWNIOS_MAlloc(cnt, t);
+	int oldwnp=SetWriteNP(0);
+    memset(ret, 0, cnt);
+	SetWriteNP(oldwnp);
+    return ret;
 }
 
 CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
@@ -276,6 +339,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
 
 void HeapCtrlDel(CHeapCtrl *ct) {
   CMemBlk *next, *m;
+  int old=SetWriteNP(0);
   while (Misc_Bt(&ct->locked_flags, 1))
     PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
@@ -288,10 +352,13 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     if (!ps)
       ps = sysconf(_SC_PAGESIZE);
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
+    if(m->base2.next)
+      QueRem(&m->base2);
     munmap(m, b);
 #endif
   }
   free(ct);
+  SetWriteNP(old);
 }
 
 char *__AIWNIOS_StrDup(char *str, void *t) {

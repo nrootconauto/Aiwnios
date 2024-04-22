@@ -152,6 +152,7 @@ typedef struct CHeapCtrl {
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
+  CQue base2;
   int64_t pags;
 } CMemBlk;
 typedef struct __attribute__((packed)) CMemUnused {
@@ -446,7 +447,7 @@ typedef struct CCmpCtrl {
   CCodeMisc *epilog_label, *statics_label;
   // In SysV,the fregs are not saved,so i will make a mini function to save them
   CCodeMisc *fregs_save_label, *fregs_restore_label;
-  CHeapCtrl *hc;
+  CHeapCtrl *hc,*final_hc;
   int64_t is_lock_expr; // lock EXPRESSION;
   // private for AARCH64 for use with IC_LOCK
   // I will use the ldxsr/stxr instructions in a loop
@@ -840,6 +841,19 @@ enum {
   #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
   #define AIWNIOS_TMP_IREG_START 8
   #define AIWNIOS_TMP_IREG_CNT   (16 - 8 + 1)
+  #define AIWNIOS_FREG_START     8
+  #define AIWNIOS_FREG_CNT       (15 - 8 + 1)
+  #define AIWNIOS_TMP_FREG_START 16
+  #define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
+#elif defined(__APPLE__) && (defined(_M_ARM64) || defined(__aarch64__))
+  #define AIWNIOS_IREG_START     19
+  #define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+  #define AIWNIOS_REG_FP         ARM_REG_FP
+  #define AIWNIOS_REG_SP         ARM_REG_SP
+  #define AIWNIOS_TMP_IREG_POOP  16 // Platform register,I use it as a poo poo
+  #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
+  #define AIWNIOS_TMP_IREG_START 8
+  #define AIWNIOS_TMP_IREG_CNT   (15 - 8 + 1)
   #define AIWNIOS_FREG_START     8
   #define AIWNIOS_FREG_CNT       (15 - 8 + 1)
   #define AIWNIOS_TMP_FREG_START 16
@@ -1379,3 +1393,5 @@ int64_t RISCV_S(int64_t imm115,int64_t s1,int64_t d,int64_t f3,int64_t opc);
 int64_t RISCV_I(int64_t imm,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t RISCV_R(int64_t f7,int64_t s2,int64_t s1,int64_t f3,int64_t d,int64_t opc);
 int64_t ScreenUpdateInProgress();
+
+int64_t DoNothing();

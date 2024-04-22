@@ -6,9 +6,7 @@
 # "There are many more known variants/revisions that we do not handle/detect."
 
 set(archdetect_c_code "
-#if defined (__riscv__) || defined (__riscv)
-    #error cmake_ARCH riscv64
-#elif defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64)
     #error cmake_ARCH arm64
 #elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
     #error cmake_ARCH i386

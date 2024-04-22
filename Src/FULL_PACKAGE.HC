@@ -1,4 +1,10 @@
 #include "KernelA.HH"
+PrintI("sane",0);
+class Foo {
+  I32 a,b;
+  U8 *str;
+} foo={1,2,"abc"};
+PrintI(foo.str,foo.b);
 #include "CompilerA.HH"
 #include "CExts.HC"
 #include "CompilerB.HH"
@@ -62,7 +68,6 @@ U8 *MAllocAligned(I64 size,I64 alignment,
   res(I64 *)[-1]=ptr-res;
   return res;
 }
-
 
 CTask *aiwnios_boot_task=__CAlloc(sizeof CTask);
 extern U0 Print(U8*,...);

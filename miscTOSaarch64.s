@@ -1,7 +1,10 @@
 .text
-.global TempleOS_Call
 .global TempleOS_CallN
+.global TempleOS_Call
 .global TempleOS_CallVaArgs
+.global _TempleOS_CallVaArgs
+.global _TempleOS_Call
+_TempleOS_Call:
 TempleOS_Call:
   ldr x0,[sp]
   stp x29,x30,[sp,-16]!
@@ -10,12 +13,17 @@ TempleOS_Call:
   mov sp,x29
   ldp x29,x30,[sp],16
   ret
+
+#For MacOS
+.global _TempleOS_CallN
+_TempleOS_CallN:
 TempleOS_CallN:
   ldr x0,[sp]
   ldr x1,[sp,8]
   ldr x2,[sp,16]
   stp x29,x30,[sp,-16]!
   mov x29,sp
+  mov x4,x1
   and x3,x1,1  /* %1*/
   add x1,x1,x3 /* If remainder of x1 is 1,add 1 to align to 2(we multiply by 8 to align to 16) */
   lsl x5,x1,3 /* times 8 */
@@ -45,6 +53,7 @@ __MemCpy:
   b .Lms
 
 TempleOS_CallVaArgs:
+_TempleOS_CallVaArgs:
   ldr x0,[sp]
   ldr x1,[sp,8]
   ldr x2,[sp,16]

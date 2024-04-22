@@ -116,6 +116,7 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->next_child_task=task->last_child_task=
 	(&task->next_child_task)(U8 *)-offset(CTask.next_sibling_task);
 
+
   JobCtrlInit(&task->srv_ctrl);
   QueInit(&task->next_cc);
   QueInit(&task->next_except);

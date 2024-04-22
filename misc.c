@@ -57,3 +57,8 @@ char *WhichFun(char *fptr) {
     return best->base.base.str;
   return NULL;
 }
+
+
+int64_t DoNothing() {
+	return 0;
+}

@@ -247,7 +247,7 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
                            char *bin, int64_t code_off) {
   int64_t code, which;
   int64_t z;
-  if (bin && !(cctrl->flags & CCF_AOT_COMPILE)) { // TODO make sure not AOT
+  if (bin && !(cctrl->flags & CCF_AOT_COMPILE)&&0) { // TODO make sure not AOT
     if (ARM_ERR_INV_OFF !=
         (code = ARM_adrX(reg, imm - (int64_t)(bin + code_off)))) {
       AIWNIOS_ADD_CODE(code);
@@ -713,7 +713,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   if (rpn2->type == IC_GLOBAL) {
     if (rpn2->global_var->base.type & HTT_FUN) {
       fptr = ((CHashFun *)rpn2->global_var)->fun_ptr;
-      if (cctrl->code_ctrl->final_pass) {
+      if (cctrl->code_ctrl->final_pass&&fptr!=&DoNothing&&fptr) {
         if (ARM_ERR_INV_OFF != ARM_bl((char *)fptr - (bin + code_off)))
           AIWNIOS_ADD_CODE(ARM_bl((char *)fptr - (bin + code_off)))
         else
@@ -2517,7 +2517,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     // See __HC_SetAOTRelocBeforeRIP(Seriously read it)
     if ((cctrl->flags & CCF_AOT_COMPILE) &&
         (ARM_ERR_INV_OFF != ARM_adrX(into_reg, i)) &&
-        misc->aot_before_hint < 0) {
+        misc->aot_before_hint < 0 && 0) {
       AIWNIOS_ADD_CODE(ARM_adrX(into_reg, i));
     } else {
       misc->use_cnt++;
@@ -3383,15 +3383,15 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       } else
         abort();
       // Undefined?
-      if (!enter_addr) {
-        misc = AddRelocMisc(cctrl, next->global_var->base.str);
-        if (cctrl->code_ctrl->final_pass) {
-          AIWNIOS_ADD_CODE(ARM_ldrLabelX(into_reg, 0))
-          ref                = CodeMiscAddRef(misc, bin + code_off - 4);
-          ref->patch_cond_br = ARM_ldrLabelX;
-          ref->user_data1    = into_reg;
+      if (!enter_addr||enter_addr==&DoNothing) {
+		if (next->global_var->base.type & HTT_GLBL_VAR) {
+          enter_addr = &next->global_var->data_addr;
+        } else if (next->global_var->base.type & HTT_FUN) {
+          enter_addr = &((CHashFun *)next->global_var)->fun_ptr;
         } else
-          AIWNIOS_ADD_CODE(0);
+          abort();
+        code_off=__ICMoveI64(cctrl,0,enter_addr,bin,code_off);
+        AIWNIOS_ADD_CODE(ARM_ldrRegImmX(into_reg,0,0));
         goto restore_reg;
       } else if (cctrl->code_ctrl->final_pass) {
         i = ARM_adrX(into_reg, (char *)enter_addr - (bin + code_off));
@@ -4279,9 +4279,6 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   return code_off;
 }
 
-static void DoNothing() {
-}
-
 // This dude calls __OptPassFinal 2 times.
 // 1. Get size of WORST CASE compiled body,and generate any extra needed
 // CCodeMisc's
@@ -4290,6 +4287,7 @@ static void DoNothing() {
 //
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                    CHeapCtrl *heap) {
+  pthread_jit_write_protect_np(0);
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
   char *bin = NULL;
@@ -4300,6 +4298,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   CRPN *r;
   cctrl->epilog_label  = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->statics_label = CodeMiscNew(cctrl, CMT_LABEL);
+  int old_wnp=SetWriteNP(0);
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
        r = r->base.next) {
     if (r->ic_line) {
@@ -4346,7 +4345,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin      = NULL;
     } else if (run == 1) {
       // Dont allocate on cctrl->hc heap ctrl as we want to share our data
-      bin      = A_MALLOC(code_off + 1024, heap);
+      bin      = A_MALLOC(code_off + 1024, cctrl->final_hc);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);
@@ -4492,7 +4491,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                            // statics_sz in the count!!
       code_off += statics_sz + 8;
   }
-  __builtin___clear_cache(bin, bin + MSize(bin));
+  SetWriteNP(old_wnp);
+  if(old_wnp) sys_icache_invalidate(bin, MSize(bin));
   if (dbg_info) {
     cnt         = MSize(dbg_info) / 8;
     dbg_info[0] = bin;

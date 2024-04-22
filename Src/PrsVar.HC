@@ -1,5 +1,5 @@
 U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
-	U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass)
+	U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass,CHash *to)
 {
   U8 *dst=*_dst;
   I64 (*machine_code)();
@@ -21,7 +21,7 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
     Lex(cc);
     while (tmpm) {
       PrsVarInit2(cc,&dst,tmpm->member_class,&tmpm->dim,
-	    data_addr_rip,_base,data_heap,pass);
+	    data_addr_rip,_base,data_heap,pass,to);
       if (cc->token==',')
 	Lex(cc);
       tmpm=tmpm->next;
@@ -31,13 +31,13 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
       LexExcept(cc,"Missing '}' at ");
     Lex(cc);
   } else {
-    if (tmpc->ptr_stars_cnt==1 &&
+    /*if (tmpc->ptr_stars_cnt==1 &&
 	  ((tmpc-1)->raw_type==RT_I8 || (tmpc-1)->raw_type==RT_U8) &&
 	  !tmpad && cc->token==TK_STR)
       is_str=TRUE;
     else
       is_str=FALSE;
-    if (cc->flags&CCF_AOT_COMPILE  && is_str) {
+    if (cc->flags&CCF_AOT_COMPILE  && is_str && 0) {
       LexPopNoRestore(cc);
       machine_code=LexExtStr(cc,&i);
       if (pass==2) {
@@ -51,14 +51,16 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	  AOTStoreCodeU8(cc,machine_code(U8*)[j]);
       }
       Free(machine_code);
-    } else {
+    } else */{
       old_flags=cc->flags;
       cc->flags=CCF_NO_ABSS | cc->flags &
 	    ~(CCF_AOT_COMPILE|CCF_HAS_MISC_DATA|CCF_NOT_CONST);
       machine_code=LexExpression2Bin(cc,&type);
-      if (old_flags&CCF_AOT_COMPILE &&
+      if (old_flags&CCF_AOT_COMPILE
 	    /*cc->flags&CCF_NOT_CONST && */ //Const-folding is done in the C end
-	    !Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)) {
+	//Nroot forces all AOT globals to go on the heap for Apple hardedned runtime
+	    /*!Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)*/
+	) {
 	cc->flags=cc->flags&~CCF_NO_ABSS|CCF_AOT_COMPILE;
 	Free(machine_code);
 	if (pass==2) {
@@ -67,19 +69,18 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	  Lex(cc);
 	  COCPush(cc);
 	  COCInit(cc);
-    RPNAddNew(cc,IC_ABS_ADDR,data_addr_rip,tmpc+1,FALSE);
+	  if(to) {
+    RPNAddNew(cc,IC_ADDR_IMPORT,CodeMiscHashNew(cc,to),tmpc+1,FALSE);
 	  RPNAddNew(cc,IC_IMM_I64,dst-*_base,tmpc+1,FALSE);
 	  RPNAddNew(cc,IC_ADD,0,cmp.internal_types[RT_I64],FALSE);
     RPNAddNew(cc,IC_DEREF,0,tmpc,FALSE);
+    }
     if(cc->token==',') //DUMB FIX by nroot
       Lex(cc);
 	  if (!PrsExpression(cc,NULL,PEF_NO_COMMA)) //Changed by nroot
 	    throw('Compiler');
-	  RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);
+	  if(to) {RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);
 	  RPNAddNew(cc,IC_RET,0,tmpc,FALSE);
-    //ARM likes 4byte align for instrcutions
-    while(cc->aotc->rip%4)
-      AOTStoreCodeU8(cc,0);
 	  if (machine_code=COCCompile(cc,&size,NULL,NULL)) {
 	    tmpie=CAlloc(sizeof(CAOTImportExport));
 	    tmpie->type=IET_MAIN;
@@ -88,6 +89,7 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	    for (i=0;i<size;i++)
 	      AOTStoreCodeU8(cc,machine_code(U8*)[i]);
 	    Free(machine_code);
+	    }
 	  }
 	  COCPop(cc);
 	} else
@@ -123,7 +125,7 @@ class CVI2
 };
 
 U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
-	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass)
+	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass,CHash *to)
 {
   I64 i,j,cnt;
   U8 *st,*_b;
@@ -164,7 +166,7 @@ U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
 	while (cc->token!='}') {
 	  tmpvi=MAlloc(offset(CVI2.base)+tmpad1->total_cnt*tmpc->size);
 	  _b=&tmpvi->base;
-	  PrsVarInit2(cc,&_b,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass);
+	  PrsVarInit2(cc,&_b,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass,to);
 	  QueIns(tmpvi,head.last);
 	  if (cc->token==',')
 	    Lex(cc);
@@ -191,7 +193,7 @@ U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
 	*_dst=_b;
       } else {
 	for (i=0;i<tmpad1->cnt;i++) {
-	  PrsVarInit2(cc,_dst,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass);
+	  PrsVarInit2(cc,_dst,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass,to);
 	  if (tmpad1->cnt>1 && cc->token==',')
 	    Lex(cc);
 	}
@@ -200,7 +202,7 @@ U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
       }
     }
   } else {
-    PrsVarInit(cc,_dst,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass);
+    PrsVarInit(cc,_dst,tmpc,tmpad1,data_addr_rip,_base,data_heap,pass,to);
     LexPush(cc);
   }
 }
@@ -211,7 +213,7 @@ U0 PrsGlblInit(CCmpCtrl *cc,CHashGlblVar *tmpg,I64 pass)
   PrsVarInit2(cc,&dst,tmpg->var_class,&tmpg->dim,
 	tmpg->data_addr_rip,&tmpg->data_addr,
 	Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)||
-	Bt(&cc->flags,CCf_AOT_COMPILE),pass);
+	Bt(&cc->flags,CCf_AOT_COMPILE),pass,tmpg);
 }
 
 U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
@@ -230,7 +232,7 @@ U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
     COCInit(cc);
   }
   PrsVarInit2(cc,&dst,tmpc,&tmpm->dim,tmpm->static_data_rip,
-	&tmpm->static_data,Bt(&cc->flags,CCf_AOT_COMPILE),pass);
+	&tmpm->static_data,Bt(&cc->flags,CCf_AOT_COMPILE),pass,NULL);
   if (cc->flags&CCF_AOT_COMPILE && pass==2) {
     if (cc->coc.coc_head.next!=&cc->coc.coc_head) {
       RPNAddNew(cc,IC_RET,,AssignRawTypeToNode(cc->coc.coc_head.next),FALSE);

@@ -112,7 +112,9 @@ static void FuzzTest1() {
   PrsAddSymbol("PrintI", &STK_PrintI, 2);
   ccmp->cur_fun      = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop5)() = ccmp->cur_fun->fun_ptr;
+  SetWriteNP(0);
   FFI_CALL_TOS_0(poop5);
+  SetWriteNP(1);
 }
 static void FuzzTest2() {
   int64_t i, i2, o;
@@ -1152,17 +1154,27 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
+static int64_t WriteProtectMemCpy(int64_t *stk) {
+	int old=SetWriteNP(0);
+	int64_t r=(int64_t)memcpy((void*)stk[0],(void*)stk[1],stk[2]);
+	SetWriteNP(old);
+	if(old) sys_icache_invalidate(stk[0],stk[2]);
+	return r;
+}
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
+  int old;
   ccmp->flags|=CCF_STRINGS_ON_HEAP; //We free the code data,so dont put code data with string data
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
     to_run = Compile(ccmp, NULL, NULL,NULL);
+    old=SetWriteNP(1);
     FFI_CALL_TOS_0(to_run);
+    SetWriteNP(old);
     A_FREE(to_run);
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
@@ -1242,6 +1254,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", GetHolyFs, 0);
+    PrsAddSymbol("WriteProtectMemCpy", WriteProtectMemCpy, 3);
     PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
 #if defined(__x86_64__)
   #if defined(__linux__) || defined(__FreeBSD__)
@@ -1289,7 +1302,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("Call", TempleOS_Call, 1);
     PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
     PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs, 5);//fptr,argc1,argv1,argc,argv but argpop so ignored
-							    //(this is for parser.c checks)
+    							    //(this is for parser.c checks)
     PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
@@ -1441,6 +1454,7 @@ static void BootAiwnios(char *bootstrap_text) {
 static const char *t_drive;
 static void Boot() {
   int64_t len;
+puts("ass");
   char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");
@@ -1453,7 +1467,7 @@ static void Boot() {
     FuzzTest3();*/
   if (arg_bootstrap_bin->count) {
 #define BOOTSTRAP_FMT                                                          \
-  "#define TARGET_%s \n"                                                       \
+  "#define TARGET_%s 1\n"                                                       \
   "#define lastclass \"U8\"\n"                                                 \
   "#define public \n"                                                          \
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
@@ -1532,7 +1546,7 @@ int main(int argc, char **argv) {
   if(arg_grab->count)
     sdl_window_grab_enable=1;
   if(!arg_no_debug->count)
-    DebuggerBegin();
+    ;//DebuggerBegin();
 #ifndef _WIN32
   if (arg_fork->count) {
     pid_t pid = fork();

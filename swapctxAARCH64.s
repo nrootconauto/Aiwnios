@@ -2,15 +2,21 @@
 .global AIWNIOS_getcontext
 .global AIWNIOS_setcontext
 .global AIWNIOS_makecontext
+#For MacOS
+.global _AIWNIOS_getcontext
+.global _AIWNIOS_setcontext
+.global _AIWNIOS_makecontext
+_AIWNIOS_makecontext:
 AIWNIOS_makecontext:
   str x1,[x0,8*12]
   str x2,[x0,8*21]
   ret
+_AIWNIOS_getcontext:
 AIWNIOS_getcontext:
   ldr x0,[sp]
   stp x29,x30,[sp,-16]!
   str x30,[sp,8]
-  str x18,[x0]
+#  str x18,[x0]
   str x19,[x0,8]
   str x20,[x0,8*2]
   str x21,[x0,8*3]
@@ -36,10 +42,11 @@ AIWNIOS_getcontext:
   ldp x29,x30,[sp],16
   mov x0,0
   ret
+_AIWNIOS_setcontext:
 AIWNIOS_setcontext:
   ldr x0,[sp]
   mov x8,x0
-  ldr x18,[x0]
+#  ldr x18,[x0]
   ldr x19,[x0,8]
   ldr x20,[x0,8*2]
   ldr x21,[x0,8*3]

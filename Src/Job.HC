@@ -15,6 +15,8 @@ U0 JobQueDel(CJob *head)
   }
 }
 
+
+PrintI("abc123",123);
 U0 JobCtrlInit(CJobCtrl *ctrl)
 {
   QueInit(&ctrl->next_waiting);
@@ -507,7 +509,7 @@ U0 XTalkStrWait(CTask *task,U8 *fmt,...)
   TaskWait(task);
 }
 
-CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
+CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
        I64 target_cpu=1,I64 flags=1<<JOBf_FREE_ON_COMPLETE,
        I64 job_code=JOBT_CALL,U8 *aux_str=NULL,I64 aux1=0,I64 aux2=0)
 {//Queue multicore jobs, handled by Seth tasks.

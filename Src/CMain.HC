@@ -239,10 +239,10 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
   return res;
 }
 
-I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
+I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
 {//AOT Compile HC or PRJ file a and output BIN file. Returns err_cnt.
   U8 *ptr,*fbuf=NULL,*fbuf2=NULL,*fbuf3=NULL,
-	*patch_table=MAlloc(0x60000);
+	*patch_table=MAlloc(0x800000);
   CAOT *tmpaot;
   I64 i,cnt,size=0,error_cnt=0,warning_cnt=0,aot_U8s=0;
   CBinFile *bfh;
@@ -300,10 +300,16 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
 	} else
 	  *ptr++=0;
 	*ptr(I64 *)++=tmphg->size;
+	if(!tmphg->data)
+	  tmphg->data=CAlloc(tmphg->size);
+	MemCpy(ptr,tmphg->data,tmphg->size);
+	ptr+=tmphg->size;
+	Free(tmphg->data);
 	tmphgr=tmphg->references;
 	while (tmphgr) {
 	  tmphgr1=tmphgr->next;
 	  *ptr(U32 *)++=tmphgr->rip;
+	  *ptr(U32 *)++=tmphgr->offset; //Added by nroot
 	  Free(tmphgr);
 	  tmphgr=tmphgr1;
 	}
@@ -575,3 +581,4 @@ riscv_patch:
     }
   }
 }
+

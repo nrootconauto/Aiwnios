@@ -100,7 +100,12 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   // 10: ldp x29,x30[sp],16
   // 14: ret
   // 18: label: fptr
-  int32_t *blob = A_MALLOC(0x18 + 8, NULL);
+  static CHeapCtrl *code=NULL;
+  if(!code) {
+	  code=HeapCtrlInit(NULL,Fs,1);
+  }
+  int old=SetWriteNP(0);
+  int32_t *blob = A_MALLOC(0x18 + 8, code);
   blob[0]       = ARM_stpPreImmX(29, 30, 31, -16);
   blob[1]       = ARM_addImmX(0, 31, 16);
   blob[2]       = ARM_ldrLabelX(1, 0x18 - 0x8);
@@ -108,6 +113,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   blob[4]       = ARM_ldpPostImmX(29, 30, 31, 16);
   blob[5]       = ARM_ret();
   memcpy(blob + 6, &fptr, sizeof(void *));
+  SetWriteNP(old);
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {

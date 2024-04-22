@@ -44,7 +44,7 @@ int64_t NetSocketNew() {
   InitSock();
 #endif
   int64_t s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-#if defined(__FreeBSD__) || defined(__linux__)
+#if defined(__FreeBSD__) || defined(__linux__) || defined(__APPLE__)
   int yes = 1;
   // On FreeBSD the port will stay in use for awhile after death,so reuse the
   // address
@@ -175,7 +175,7 @@ int64_t NetUDPSocketNew() {
   u_long mode = 1; // 1 to enable non-blocking socket
   ioctlsocket(s, FIONBIO, &mode);
 #endif
-#if defined(__FreeBSD__) || defined(__linux__)
+#if defined(__FreeBSD__) || defined(__linux__)|| defined(__APPLE__)
   int yes = 1;
   // https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
   struct timeval read_timeout;

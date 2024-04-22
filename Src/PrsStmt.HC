@@ -346,19 +346,22 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	  break;
 	default:
 	  if (cc->flags&CCF_AOT_COMPILE) {
-	    if (Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)) {
-	      if (cc->token=='=')
-		LexExcept(cc,"Can't init glbl var on data heap in AOT module ");
+	    //Nroot is forcing the for AOT binarys because Apple hardened runtime wants the heaps seperated 
+	    //if (Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP))
+	    if(1) {
+//	      if (cc->token=='=')
+//		LexExcept(cc,"Can't init glbl var on data heap in AOT module ");
 	      tmpg=CAlloc(sizeof(CHashGlblVar));
 	      tmphg=tmpg->heap_glbl=CAlloc(sizeof(CAOTHeapGlbl));
+	      tmpg->data_addr=CAlloc(j);
 	      tmphg->size=j;
 	      tmphg->str=StrNew(st);
 	      tmphg->next=aotc->heap_glbls;
 	      aotc->heap_glbls=tmphg;
 	      tmpg->flags=GVF_DATA_HEAP;
 	      tmpg->type=HTT_GLBL_VAR; //TODO: HTF_EXPORT
-	      if (tmpex && tmpex->type & HTT_GLBL_VAR) //TODO!! extern
-		LexExcept(cc,"Feature not implemented ");
+//	      if (tmpex && tmpex->type & HTT_GLBL_VAR) //TODO!! extern
+//		LexExcept(cc,"Feature not implemented ");
 	    } else {
 	      tmpg=CAlloc(sizeof(CHashGlblVar));
 	      if (cc->token=='=')
@@ -444,9 +447,13 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	LexPush(cc);
 	Lex(cc);
 	PrsGlblInit(cc,tmpg,2);
-	if (cc->flags&CCF_AOT_COMPILE)
-	  for (k=0;k<tmpg->size;k++)
-	    AOTStoreCodeU8At(cc,tmpg->data_addr_rip+k,tmpg->data_addr[k]);
+	if (cc->flags&CCF_AOT_COMPILE) {
+//Gutted by nroot
+//	  for (k=0;k<tmpg->size;k++)
+//	    AOTStoreCodeU8At(cc,tmpg->data_addr_rip+k,tmpg->data_addr[k]);
+//Nroot is modifing Load to include the ->data_addr in the IET_DATA_HEAP and in loader.c
+	tmpg->heap_glbl->data=MAllocIdent(tmpg->data_addr);
+	}
 	LexPopNoRestore(cc);
       }
       if (has_alias) {

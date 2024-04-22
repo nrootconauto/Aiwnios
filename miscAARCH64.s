@@ -1,4 +1,4 @@
-.text
+.text	
 .global Misc_LBts
 .global Misc_LBtr
 .global Misc_LBtc
@@ -9,12 +9,26 @@
 .global Misc_TLS_Base
 .global Misc_Caller
 .global Misc_BP
+# For MacOS
+.global _Misc_LBts
+.global _Misc_LBtr
+.global _Misc_LBtc
+.global _Misc_Bt
+.global _Misc_Btr
+.global _Misc_Btc
+.global _Misc_Bts
+.global _Misc_TLS_Base
+.global _Misc_Caller
+.global _Misc_BP
+_Misc_BP:
 Misc_BP:
   mov x0,x29
   ret
+_Misc_TLS_Base:
 Misc_TLS_Base:
   mrs x0, tpidr_el0
   ret
+_Misc_Bt:
 Misc_Bt:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -25,7 +39,7 @@ Misc_Bt:
   tst w3,w1
   cset x0, ne
   ret
-
+_Misc_LBts:
 Misc_LBts:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -41,7 +55,7 @@ Misc_LBts:
   cbnz w4,.L_Bts_0
   mov x0,x5
   ret
-
+_Misc_Btc:
 Misc_Btc:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -55,7 +69,7 @@ Misc_Btc:
   strb w3,[x0]
   mov x0,x5
   ret
-
+_Misc_Bts:
 Misc_Bts:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -69,7 +83,7 @@ Misc_Bts:
   strb w3,[x0]
   mov x0,x5
   ret
-
+_Misc_Btr:
 Misc_Btr:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -85,7 +99,7 @@ Misc_Btr:
   mov x0,x5
   ret
 
-
+_Misc_LBtc:
 Misc_LBtc:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -102,7 +116,7 @@ Misc_LBtc:
   mov x0,x5
   ret
 
-
+_Misc_LBtr:
 Misc_LBtr:
   lsr x3,x1,3
   and x1,x1,0x7
@@ -119,6 +133,7 @@ Misc_LBtr:
   cbnz w4,.L_Btr_0
   mov x0,x5
   ret
+_Misc_Caller:
 Misc_Caller:
   add x1,x0,1
   mov x2,x29
