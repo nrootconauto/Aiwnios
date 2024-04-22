@@ -348,6 +348,10 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
       if (tmpie->aot)
 	tmpie->rip+=tmpie->aot->rip2;
       *ptr(U32 *)++=tmpie->rip;
+      switch(tmpie->type) {
+      case IET_REL_I0 ... IET_REL_RISCV:
+		*ptr(I32 *)++=tmpie->offset;
+      }
       if (tmpie->str) {
 	i=StrLen(tmpie->str);
 	MemCpy(ptr,tmpie->str,i+1);

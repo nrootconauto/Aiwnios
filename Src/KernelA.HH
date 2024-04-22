@@ -2163,7 +2163,7 @@ class CLexHashTableContext
 #define CCF_USE_LAST_U16	0x0200000000
 #define CCf_USE_LAST_U16	33
 #define CCF_LAST_WAS_DOT	0x0400000000
-#define CCF_AOT_COMPILE		0x0800000000
+#define CCF_AOT_COMPILE		0x0800000000
 #define CCf_AOT_COMPILE		35
 #define CCF_NO_ABSS		0x1000000000
 #define CCF_PAREN		0x2000000000
@@ -4979,7 +4979,7 @@ class CMusicGlbls
 
   F64	tM_correction,last_Beat,last_tM;
 };
-extern CMusicGlbls music;
+extern CMusicGlbls music;
 class CGodGlbls
 {
   U8	**words,

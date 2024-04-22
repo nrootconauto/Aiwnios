@@ -15,8 +15,6 @@ U0 JobQueDel(CJob *head)
   }
 }
 
-
-PrintI("abc123",123);
 U0 JobCtrlInit(CJobCtrl *ctrl)
 {
   QueInit(&ctrl->next_waiting);

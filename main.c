@@ -1459,7 +1459,6 @@ static void BootAiwnios(char *bootstrap_text) {
 static const char *t_drive;
 static void Boot() {
   int64_t len;
-  puts("ass");
   char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");

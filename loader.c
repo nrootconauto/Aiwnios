@@ -38,7 +38,7 @@ static int64_t Is12Bit(int64_t i) {
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   char *src = *_src, *ptr2, *st_ptr;
-  int64_t i, etype;
+  int64_t i, etype,offset;
   CHashExport *tmpex = NULL;
   int64_t first      = 1;
   // GNU extension, copied from TINE(https://github.com/eb-lan/TINE)
@@ -52,11 +52,18 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
+    switch(etype) {
+		case IET_REL_I0 ... IET_REL_RISCV:
+		offset=READ_NUM(src,int32_t);
+		src+=4;
+		break;
+		default: offset=0;
+	}
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     if (*st_ptr) {
       if (!first) {
-        *_src = st_ptr - 5;
+        *_src = st_ptr - 9;
         return;
       } else {
         first = 0;
@@ -71,7 +78,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
                       .str  = A_STRDUP(st_ptr, NULL),
                       .type = HTT_IMPORT_SYS_SYM2,
                   },
-              .module_header_entry = st_ptr - 5,
+              .module_header_entry = st_ptr - 9,
               .module_base         = module_base,
           };
           HashAdd(tmpiss, Fs->hash_table);
@@ -99,6 +106,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         i = ((CHashGlblVar *)tmpex)->data_addr;
       else
         i = tmpex->val;
+      i+=offset;
       switch (etype) {
       case IET_REL_I8:
         REL(char);
@@ -113,21 +121,20 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         REL(int64_t);
         break;
       case IET_IMM_U8:
-        IMM(char);
+        IMM(int8_t);
         break;
       case IET_IMM_U16:
         IMM(int16_t);
         break;
       case IET_IMM_U32:
-        IMM(int32_t);
+      IMM(uint32_t);
         break;
       case IET_IMM_I64:
-        IMM(int64_t);
+      IMM(int64_t);
         break;
       case IET_REL_RISCV: {
-        int64_t low12, idx;
-        idx   = (char *)i - (char *)ptr2;
-        low12 = idx - (idx & ~((1 << 12) - 1));
+        int64_t idx   = (char *)i - (char *)ptr2;
+        int64_t low12 = idx - (idx & ~((1 << 12) - 1));
         if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
           *(int32_t *)(ptr2) |= (idx >> 12) << 12;
           *(int32_t *)((char *)ptr2 + 4) |= low12 << 20;
@@ -165,6 +172,11 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
+    switch(etype) {
+      case IET_REL_I0 ... IET_REL_RISCV :
+		src+=4;
+		break;
+	}
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
@@ -186,7 +198,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       SysSymImportsResolve2(st_ptr, ld_flags);
       break;
     case IET_REL_I0 ... IET_REL_RISCV:
-      src = st_ptr - 5;
+      src = st_ptr - 9;
       LoadOneImport(&src, module_base, ld_flags);
       break;
     case IET_ABS_ADDR:
@@ -223,8 +235,8 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         src += 4;
         int64_t off = READ_NUM(src, int32_t);
         src += 4;
-        off += (intptr_t)ptr3;
-        memcpy(ptr2, &off, sizeof(int32_t));
+        off += (int64_t)ptr3;
+        memcpy(ptr2, &off, sizeof(int64_t));
       }
       break;
     case IET_DATA_HEAP:
@@ -246,6 +258,11 @@ static void LoadPass2(char *src, char *module_base) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
+    switch(etype) {
+      case IET_REL_I0 ... IET_REL_RISCV:
+		//Special has form [BINOFF,OFFSET]
+		src+=4;
+	}
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {

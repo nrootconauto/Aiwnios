@@ -1,6 +1,6 @@
 # Aiwnios
 
-Welcome to Aiwnios, a HolyC Compiler/Runtime designed for 64-bit ARM and x86 machines, with plans for supporting other architectures in the future. 
+Welcome to Aiwnios, a HolyC Compiler/Runtime designed for 64-bit ARM,RISCV and x86 machines include Apple M1 Macs, with plans for supporting other architectures in the future. 
 
 *Please note that this project is currently a work in progress, so there will be regular updates and improvements.*
 
@@ -40,8 +40,6 @@ If you want to create a package for your system, you can use the [ESP Package Ma
 ## Future Plans
 
 In the future, I ([nrootconauto](mailto:nrootconauto@gmail.com)) plan to add an AARCH64 assembler accessible through HolyC. However, please note that assembly on ARM has limitations in terms of address space, which may not be ideal for certain tasks. Nonetheless, it would be valuable for optimizing functions and other purposes.
-
-Additionally, I intend to develop a proper `ptrace` debugger for Linux and future FreeBSD builds. Although `ptrace` can be frustrating, I would appreciate any assistance in this area if you're up for the challenge. Please note that a "proper" debugger may not be ideal for real-time debugging.
 
 Given that Aiwnios currently runs quite slowly on my current hardware, I may implement time-based (*tS*) animations instead of relying on `Sleep(n)`.
 

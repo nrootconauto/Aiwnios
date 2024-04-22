@@ -1827,7 +1827,7 @@ break;case IC_ASM:
           tmpghr=CAlloc(sizeof CAOTHeapGlblRef);
           tmpghr->next=tmpgh->references;
           tmpgh->references=tmpghr;
-	  //tmpghr->offset=misc->offset; TODO TODO TODO
+	      //tmpghr->offset=misc->offset;
           tmpghr->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
 	} else {
 	      WriteProtectMemCpy(misc->addr,&dumb_static,8);

@@ -265,7 +265,7 @@ I64 WinMgrSleep(Bool flush_msgs=FALSE)
   WinMsUpdate;
 
   if (!LBtr(&sys_semas[SEMA_JUST_PUMP_MSGS],0)) {
-    t=tS+WINMGR_PERIOD/8;
+    t=tS+WINMGR_PERIOD/4;
     while (winmgr.ideal_refresh_tS<t) {
       winmgr.ideal_refresh_tS+=WINMGR_PERIOD;
     }

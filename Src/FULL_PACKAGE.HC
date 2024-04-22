@@ -1,10 +1,4 @@
 #include "KernelA.HH"
-PrintI("sane",0);
-class Foo {
-  I32 a,b;
-  U8 *str;
-} foo={1,2,"abc"};
-PrintI(foo.str,foo.b);
 #include "CompilerA.HH"
 #include "CExts.HC"
 #include "CompilerB.HH"
