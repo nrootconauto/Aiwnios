@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 static SDL_AudioDeviceID output;
 static int64_t sample, freq;

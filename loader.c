@@ -18,7 +18,7 @@ typedef struct _CHashImport {
 #define IET_IMM_U32     9
 #define IET_REL_I64     10
 #define IET_IMM_I64     11
-#define IET_REL_RISCV	12
+#define IET_REL_RISCV   12
 #define IEF_IMM_NOT_REL 1
 // reserved
 #define IET_REL32_EXPORT     16
@@ -83,10 +83,14 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 #define REL(T)                                                                 \
   {                                                                            \
     size_t off = OFF(T);                                                       \
-    memcpy(ptr2, &off, sizeof(T));__builtin___clear_cache(ptr2,ptr2+sizeof(T));                                             \
+    memcpy(ptr2, &off, sizeof(T));                                             \
+    __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
 #define IMM(T)                                                                 \
-  { memcpy(ptr2, &i, sizeof(T)); __builtin___clear_cache(ptr2,ptr2+sizeof(T));}
+  {                                                                            \
+    memcpy(ptr2, &i, sizeof(T));                                               \
+    __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
+  }
     if (tmpex) {
       ptr2 = module_base + i;
       if (tmpex->base.type & HTT_FUN)
@@ -121,17 +125,17 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         IMM(int64_t);
         break;
       case IET_REL_RISCV: {
-      int64_t low12,idx;
-				idx=(char *)i - (char *)ptr2;
-				low12=idx-(idx&~((1<<12)-1));
-				if(Is12Bit(low12)) {/*Chekc for bit 12 being set*/
-				  *(int32_t*)(ptr2)|=(idx>>12)<<12;
-				  *(int32_t*)((char*)ptr2+4)|=low12<<20;
-			    } else {
-				  *(int32_t*)(ptr2)|=((idx>>12)+1)<<12;
-				  *(int32_t*)((char*)ptr2+4)|=low12<<20;
-				}
-	    }
+        int64_t low12, idx;
+        idx   = (char *)i - (char *)ptr2;
+        low12 = idx - (idx & ~((1 << 12) - 1));
+        if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
+          *(int32_t *)(ptr2) |= (idx >> 12) << 12;
+          *(int32_t *)((char *)ptr2 + 4) |= low12 << 20;
+        } else {
+          *(int32_t *)(ptr2) |= ((idx >> 12) + 1) << 12;
+          *(int32_t *)((char *)ptr2 + 4) |= low12 << 20;
+        }
+      }
       }
 #undef OFF
 #undef REL
@@ -144,7 +148,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 static void SysSymImportsResolve2(char *st_ptr, int64_t ld_flags) {
   _CHashImport *tmpiss;
   char *ptr;
-  int old=SetWriteNP(0);
+  int old = SetWriteNP(0);
   while (tmpiss = HashSingleTableFind(st_ptr, Fs->hash_table,
                                       HTT_IMPORT_SYS_SYM2, 1)) {
     ptr = tmpiss->module_header_entry;
@@ -191,7 +195,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         ptr2 = module_base + READ_NUM(src, int32_t);
         src += 4;
         // Changed to 64bit by nroot
-        int64_t off=0;
+        int64_t off = 0;
         memcpy(&off, ptr2, sizeof(int64_t));
         off += (intptr_t)module_base;
         memcpy(ptr2, &off, sizeof(int64_t));
@@ -217,19 +221,19 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       for (j = 0; j < cnt; j++) {
         ptr2 = module_base + READ_NUM(src, int32_t);
         src += 4;
-        int64_t off=READ_NUM(src, int32_t);
-        src+=4;
+        int64_t off = READ_NUM(src, int32_t);
+        src += 4;
         off += (intptr_t)ptr3;
         memcpy(ptr2, &off, sizeof(int32_t));
       }
       break;
     case IET_DATA_HEAP:
     case IET_ZEROED_DATA_HEAP:
-      cnt=READ_NUM(src, int64_t);
+      cnt  = READ_NUM(src, int64_t);
       ptr3 = A_CALLOC(cnt, NULL);
       src += 8;
-      memcpy(ptr3,src,cnt);
-      src+=cnt;
+      memcpy(ptr3, src, cnt);
+      src += cnt;
       goto end;
     }
   }
@@ -237,7 +241,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
 
 static void LoadPass2(char *src, char *module_base) {
   char *st_ptr;
-  int64_t i, etype,cnt2;
+  int64_t i, etype, cnt2;
   void (*fptr)();
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
@@ -248,9 +252,9 @@ static void LoadPass2(char *src, char *module_base) {
     case IET_MAIN:
       fptr = (i + module_base);
       SetWriteNP(1);
-	  FFI_CALL_TOS_0(fptr);
+      FFI_CALL_TOS_0(fptr);
       SetWriteNP(0);
-	  break;
+      break;
     case IET_ABS_ADDR:
       src += sizeof(int32_t) * i;
       break;
@@ -260,11 +264,11 @@ static void LoadPass2(char *src, char *module_base) {
       break;
     case IET_DATA_HEAP:
     case IET_ZEROED_DATA_HEAP:
-      cnt2=READ_NUM(src, int64_t);
-      //I64 size
-      //U8 data[cnt2];
-      //union {I32 ptr,I32 offset}[i]
-      src += 8 + sizeof(int32_t) * i*2+cnt2;
+      cnt2 = READ_NUM(src, int64_t);
+      // I64 size
+      // U8 data[cnt2];
+      // union {I32 ptr,I32 offset}[i]
+      src += 8 + sizeof(int32_t) * i * 2 + cnt2;
       break;
     }
   }
@@ -292,14 +296,14 @@ char *Load(char *filename) { // Load a .BIN file module into memory.
   int64_t size, module_align, misalignment;
   CBinFile *bfh;
   CBinFile *bfh_addr;
-  CHeapCtrl *hc=HeapCtrlInit(NULL,Fs,1);
+  CHeapCtrl *hc = HeapCtrlInit(NULL, Fs, 1);
   if (!(bfh = FileRead(fbuf, &size))) {
     return NULL;
   }
   SetWriteNP(0);
-  fbuf=(CBinFile*)bfh;
-  bfh=A_MALLOC(size,hc);
-  memcpy(bfh,fbuf,size);
+  fbuf = (CBinFile *)bfh;
+  bfh  = A_MALLOC(size, hc);
+  memcpy(bfh, fbuf, size);
   A_FREE(fbuf);
 
   // See $LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$

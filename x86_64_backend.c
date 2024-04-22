@@ -2719,17 +2719,17 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
     else if (idx = __AddScale(ICArgN(arg, 1), &i2))
       is_sib = 1;
   }
-  //Adjust for offesets in base/index
-  if(b)
-	  while (__AddOffset(b, &tmp)) {
-		  b=__AddOffset(b, &tmp);
-		  i+=tmp;
-	  }
-  if(idx)
-	  while (__AddOffset(idx, &tmp)) {
-		  idx=__AddOffset(idx, &tmp);
-		  i+=tmp*i2;
-	  }
+  // Adjust for offesets in base/index
+  if (b)
+    while (__AddOffset(b, &tmp)) {
+      b = __AddOffset(b, &tmp);
+      i += tmp;
+    }
+  if (idx)
+    while (__AddOffset(idx, &tmp)) {
+      idx = __AddOffset(idx, &tmp);
+      i += tmp * i2;
+    }
   if (_b)
     *_b = b;
   if (_idx)
@@ -2926,8 +2926,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (b) {
         if (b->type != IC_IREG)
           tmp++;
-        else if(b->integer==13) //R13 has quirks when used with SIBs
-		  goto binop;
+        else if (b->integer == 13) // R13 has quirks when used with SIBs
+          goto binop;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
           goto binop;
         PushTmpDepthFirst(cctrl, b, 0);
@@ -2936,8 +2936,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (idx && 0) {
         if (idx->type != IC_IREG)
           tmp++;
-        else if(idx->integer==13) //R13 has quirks when used with SIBs
-		  goto binop;
+        else if (idx->integer == 13) // R13 has quirks when used with SIBs
+          goto binop;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
           goto binop;
         PushTmpDepthFirst(cctrl, idx, 0);
@@ -3050,8 +3050,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (b) {
         if (b->type != IC_IREG)
           tmp++;
-        else if(b->integer==13) //R13 has quirks when used with SIBs
-		  goto binop;
+        else if (b->integer == 13) // R13 has quirks when used with SIBs
+          goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
@@ -3063,8 +3063,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       } else if (idx) {
         if (idx->type != IC_IREG)
           tmp++;
-        else if(idx->integer==13) //R13 has quirks when used with SIBs
-		  goto binop;
+        else if (idx->integer == 13) // R13 has quirks when used with SIBs
+          goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
@@ -3311,8 +3311,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   if (rpn2->type == IC_GLOBAL) {
     if (rpn2->global_var->base.type & HTT_FUN) {
       fptr = ((CHashFun *)rpn2->global_var)->fun_ptr;
-    use_fptr:
-      if (!((CHashFun *)rpn2->global_var)->fun_ptr)
+      if (!fptr||fptr==&DoNothing)
         goto defacto;
       if (!Is32Bit((int64_t)fptr - (int64_t)(bin + code_off)))
         goto defacto;
@@ -5834,10 +5833,6 @@ static int64_t __SexyPostOp(
   return code_off;
 }
 
-int64_t DoNothing() {
-	return 0;
-}
-
 static int64_t SEG_GS(char *to, int64_t dummy) {
   char buf[16];
   if (!to)
@@ -6376,27 +6371,27 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.reg = into_reg;
     next    = rpn->base.next;
     if (ModeIsDerefToSIB(next) && next->raw_type != RT_F64) {
-      code_off =
-          DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP, bin, code_off);
+      code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP, bin,
+                              code_off);
       switch (tmp.raw_type) {
       case RT_I8i:
       case RT_U8i:
-        AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
-                         derefed.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB8Imm, 0, derefed.__SIB_scale, derefed.reg2,
+                         derefed.reg, derefed.off);
         break;
       case RT_I16i:
       case RT_U16i:
-        AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
-                         derefed.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB16Imm, 0, derefed.__SIB_scale, derefed.reg2,
+                         derefed.reg, derefed.off);
         break;
       case RT_I32i:
       case RT_U32i:
-        AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
-                         derefed.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB32Imm, 0, derefed.__SIB_scale, derefed.reg2,
+                         derefed.reg, derefed.off);
         break;
       default:
-        AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
-                         derefed.off);
+        AIWNIOS_ADD_CODE(X86CmpSIB64Imm, 0, derefed.__SIB_scale, derefed.reg2,
+                         derefed.reg, derefed.off);
         break;
       }
       AIWNIOS_ADD_CODE(X86Setcc, X86_COND_E | 1, into_reg);
@@ -7099,7 +7094,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       } else
         abort();
       // Undefined?
-      if (!enter_addr) {
+      if (!enter_addr||enter_addr==&DoNothing) {
         misc = AddRelocMisc(cctrl, next->global_var->base.str);
         AIWNIOS_ADD_CODE(
             X86MovRegIndirI64, into_reg, -1, -1, RIP,
@@ -7544,8 +7539,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define BACKEND_LOGICAL_BINOP(op)                                              \
   next     = ICArgN(rpn, 1);                                                   \
   next2    = ICArgN(rpn, 0);                                                   \
-  code_off = __OptPassFinal(cctrl, next, bin, code_off);                      \
-  code_off = __OptPassFinal(cctrl, next2, bin, code_off);                       \
+  code_off = __OptPassFinal(cctrl, next, bin, code_off);                       \
+  code_off = __OptPassFinal(cctrl, next2, bin, code_off);                      \
   if (rpn->res.mode == MD_REG) {                                               \
     into_reg = rpn->res.reg;                                                   \
   } else                                                                       \
@@ -7571,15 +7566,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   next2    = ICArgN(rpn, 0);                                                   \
   code_off = __OptPassFinal(cctrl, next, bin, code_off);                       \
   code_off = __OptPassFinal(cctrl, next2, bin, code_off);                      \
-  i =RT_I64i; \
-  if(next->raw_type==RT_F64||next2->raw_type==RT_F64) \
-  i=RT_F64; \
-  code_off = PutICArgIntoReg(                                                  \
-      cctrl, &next2->res, i,                                       \
-      (i == RT_F64) ? 1 : AIWNIOS_TMP_IREG_POOP2, bin, code_off);  \
-  code_off =                                                                   \
-      PutICArgIntoReg(cctrl, &next->res, i, 0, bin, code_off);     \
-  if (i == RT_F64) {                                               \
+  i        = RT_I64i;                                                          \
+  if (next->raw_type == RT_F64 || next2->raw_type == RT_F64)                   \
+    i = RT_F64;                                                                \
+  code_off = PutICArgIntoReg(cctrl, &next2->res, i,                            \
+                             (i == RT_F64) ? 1 : AIWNIOS_TMP_IREG_POOP2, bin,  \
+                             code_off);                                        \
+  code_off = PutICArgIntoReg(cctrl, &next->res, i, 0, bin, code_off);          \
+  if (i == RT_F64) {                                                           \
     AIWNIOS_ADD_CODE(X86COMISDRegReg, next->res.reg, next2->res.reg);          \
   } else {                                                                     \
     AIWNIOS_ADD_CODE(X86CmpRegReg, next->res.reg, next2->res.reg);             \
@@ -8100,7 +8094,8 @@ ret:
 // 2. Fill in function body,accounting for not worst case jumps
 // 3. Fill in the poo poo's
 //
-char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,CHeapCtrl *heap) {
+char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
+                   CHeapCtrl *heap) {
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
   char *bin = NULL;
@@ -8156,7 +8151,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,CHeapCtrl *
       bin      = NULL;
     } else if (run == 1) {
       // Dont allocate on cctrl->hc heap ctrl as we want to share our data
-      bin      = A_CALLOC(1024 + code_off, heap);
+      bin      = A_CALLOC(1024 + code_off, cctrl->final_hc);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);

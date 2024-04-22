@@ -58,7 +58,6 @@ char *WhichFun(char *fptr) {
   return NULL;
 }
 
-
 int64_t DoNothing() {
-	return 0;
+  return 0;
 }

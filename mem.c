@@ -26,33 +26,34 @@ struct CMemUnused;
 int64_t bc_enable = 0;
 static char *bc_good_bitmap;
 #if defined(__APPLE__)
-static CQue code_pages={NULL,NULL};
-__thread int is_write_np=123;
+static CQue code_pages   = {NULL, NULL};
+__thread int is_write_np = 123;
 void InvalidateCache() {
-	return;
-	CMemBlk *blk;
-	CQue *head,*cur,cnt;
-    //Mac exclusive! CLEAR THE CODE PAGES
-      if(code_pages.next) {
-		head=&code_pages;
-		for(cur=head->next;cur!=head;cur=cur->next) {
-			blk=(char*)cur-offsetof(CMemBlk,base2);
-			__builtin___clear_cache(blk,(char*)blk+blk->pags*MEM_PAG_SIZE);
-		}
-      }
+  return;
+  CMemBlk *blk;
+  CQue *head, *cur, cnt;
+  // Mac exclusive! CLEAR THE CODE PAGES
+  if (code_pages.next) {
+    head = &code_pages;
+    for (cur = head->next; cur != head; cur = cur->next) {
+      blk = (char *)cur - offsetof(CMemBlk, base2);
+      __builtin___clear_cache(blk, (char *)blk + blk->pags * MEM_PAG_SIZE);
+    }
+  }
 }
 int SetWriteNP(int st) {
-	int old=is_write_np;
-	is_write_np=st;
-	if(st!=old) {
-	  pthread_jit_write_protect_np(st);
-	  if(!old&&st) InvalidateCache();
-	}	
-	return old;
+  int old     = is_write_np;
+  is_write_np = st;
+  if (st != old) {
+    pthread_jit_write_protect_np(st);
+    if (!old && st)
+      InvalidateCache();
+  }
+  return old;
 }
 #else
 int SetWriteNP(int st) {
-	return st;
+  return st;
 }
 #endif
 void InitBoundsChecker() {
@@ -67,7 +68,8 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   VirtualFree(blk, 0, MEM_RELEASE);
 #else
   #if defined(__APPLE__)
-  if(blk->base2.next) QueRem(&blk->base2);
+  if (blk->base2.next)
+    QueRem(&blk->base2);
   #endif
   static int64_t ps;
   int64_t b;
@@ -105,7 +107,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE,
                        hc->is_code_heap ? PAGE_EXECUTE_READWRITE
                                         : PAGE_READWRITE);
-  if (!ret||ret==MAP_FAILED)
+  if (!ret || ret == MAP_FAILED)
     return NULL;
 #else
   #if defined(__x86_64__)
@@ -118,33 +120,34 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
-  #if (defined(__aarch64__) || defined(_M_ARM64)) && ! defined(__APPLE__)
+  #if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(__APPLE__)
   if (bc_enable)
     at = GetAvailRegion32(b);
   #endif
   #if defined(__APPLE__)
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : PROT_READ) | PROT_WRITE,
-           MAP_PRIVATE | MAP_ANONYMOUS | add_flags|(hc->is_code_heap ?MAP_JIT|MAP_NOCACHE:0), -1, 0);
+           MAP_PRIVATE | MAP_ANONYMOUS | add_flags |
+               (hc->is_code_heap ? MAP_JIT | MAP_NOCACHE : 0),
+           -1, 0);
   #else
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-  
   #endif
-#if defined (__x86_64__)
-  if (ret == MAP_FAILED && (add_flags&MAP_32BIT))
+  #if defined(__x86_64__)
+  if (ret == MAP_FAILED && (add_flags & MAP_32BIT))
     ret = mmap(GetAvailRegion32(b), b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-    
-  //Just give it a 64bit address and hope for the best
-  if (ret == MAP_FAILED&& (add_flags&MAP_32BIT))
+
+  // Just give it a 64bit address and hope for the best
+  if (ret == MAP_FAILED && (add_flags & MAP_32BIT))
     ret = mmap(NULL, b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
-               MAP_PRIVATE | MAP_ANONYMOUS | (add_flags&~MAP_32BIT), -1, 0);  
-#endif
-  if(ret==MAP_FAILED)
+               MAP_PRIVATE | MAP_ANONYMOUS | (add_flags & ~MAP_32BIT), -1, 0);
+  #endif
+  if (ret == MAP_FAILED)
     return NULL;
 #endif
   int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
@@ -152,7 +155,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   QueIns(&ret->base, hc->mem_blks.last);
   ret->pags = pags;
   // Move silly willies malloc_free_lst,in to the heap_hash
-   do {
+  do {
     cnt = 0;
     unm = &hc->malloc_free_lst;
     while (tmp = *unm) {
@@ -168,11 +171,11 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     threshold <<= 1;
   } while (cnt > 8 && threshold <= MEM_HEAP_HASH_SIZE);
   hc->alloced_u8s += pags * MEM_PAG_SIZE;
-  #if defined(__APPLE__)
-  if(!code_pages.next) {
-	  QueInit(&code_pages);
+#if defined(__APPLE__)
+  if (!code_pages.next) {
+    QueInit(&code_pages);
   }
-  #endif
+#endif
   return ret;
 }
 
@@ -182,7 +185,7 @@ void *GetFs() {
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!cnt)
     return NULL;
-  int old_wnp=SetWriteNP(0);
+  int old_wnp = SetWriteNP(0);
   if (!t)
     t = Fs->heap;
   int64_t orig = cnt;
@@ -197,10 +200,11 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // Rounnd up to 8
   cnt += 7 + sizeof(CMemUnused);
   cnt &= (int8_t)0xf8;
-  // HClF_LOCKED is 1  
+  // HClF_LOCKED is 1
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
-  if(hc->is_code_heap) goto big;
+  if (hc->is_code_heap)
+    goto big;
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
   if (hc->heap_hash[cnt / 8]) {
@@ -214,11 +218,11 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     // Make a new lunk
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
-    if(!ret) {
-		Misc_LBtr(&hc->locked_flags,1);
-		SetWriteNP(old_wnp);
-		return NULL;
-	}
+    if (!ret) {
+      Misc_LBtr(&hc->locked_flags, 1);
+      SetWriteNP(old_wnp);
+      return NULL;
+    }
     ret                 = (char *)ret + sizeof(CMemBlk);
     ret->sz             = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     hc->malloc_free_lst = ret;
@@ -237,9 +241,9 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
 big:
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
   if (!ret) {
-     Misc_LBtr(&hc->locked_flags,1);
-     SetWriteNP(old_wnp);
-     return NULL;
+    Misc_LBtr(&hc->locked_flags, 1);
+    SetWriteNP(old_wnp);
+    return NULL;
   }
   ret     = (char *)ret + sizeof(CMemBlk);
   ret->sz = cnt;
@@ -267,8 +271,8 @@ void __AIWNIOS_Free(void *ptr) {
   int64_t cnt;
   if (!ptr)
     return;
-  int oldwnp=SetWriteNP(0);
-  un--; // Area before ptr is CMemUnused*
+  int oldwnp = SetWriteNP(0);
+  un--;           // Area before ptr is CMemUnused*
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
   if (!un->hc)
@@ -305,23 +309,23 @@ int64_t MSize(void *ptr) {
   int64_t cnt;
   if (!ptr)
     return 0;
-  int oldwnp=SetWriteNP(0);
+  int oldwnp = SetWriteNP(0);
   un--;
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
   if (un->hc->hc_signature != 'H')
     throw('BadFree');
-  cnt=un->sz - sizeof(CMemUnused);
+  cnt = un->sz - sizeof(CMemUnused);
   SetWriteNP(oldwnp);
   return cnt;
 }
 
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t) {
-	void *ret=__AIWNIOS_MAlloc(cnt, t);
-	int oldwnp=SetWriteNP(0);
-    memset(ret, 0, cnt);
-	SetWriteNP(oldwnp);
-    return ret;
+  void *ret  = __AIWNIOS_MAlloc(cnt, t);
+  int oldwnp = SetWriteNP(0);
+  memset(ret, 0, cnt);
+  SetWriteNP(oldwnp);
+  return ret;
 }
 
 CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
@@ -339,7 +343,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
 
 void HeapCtrlDel(CHeapCtrl *ct) {
   CMemBlk *next, *m;
-  int old=SetWriteNP(0);
+  int old = SetWriteNP(0);
   while (Misc_Bt(&ct->locked_flags, 1))
     PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
@@ -352,7 +356,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     if (!ps)
       ps = sysconf(_SC_PAGESIZE);
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
-    if(m->base2.next)
+    if (m->base2.next)
       QueRem(&m->base2);
     munmap(m, b);
 #endif
@@ -436,57 +440,57 @@ static void *Str2Ptr(char *ptr, char **end) {
     *end = ptr;
   return (void *)v;
 }
-#if defined(__FreeBSD__)
-#include <kvm.h>
-       #include	<sys/param.h>
- #include	<sys/sysctl.h>
-#include	<sys/user.h>
-#include	<sys/param.h>
-#include	<sys/queue.h>
-#include	<sys/socket.h>
-#include	<libprocstat.h>
-#include <sys/user.h>
+  #if defined(__FreeBSD__)
+    #include <sys/param.h>
+    #include <sys/queue.h>
+    #include <sys/socket.h>
+    #include <libprocstat.h>
+    #include <kvm.h>
+    #include <sys/sysctl.h>
+    #include <sys/user.h>
+    #include <sys/user.h>
 typedef struct CRange {
-	uint64_t s;
-	uint64_t e;
-} CRange; 
-static int64_t RangeSort(CRange *a,CRange *b) {
-	return a->s-b->s;
+  uint64_t s;
+  uint64_t e;
+} CRange;
+static int64_t RangeSort(CRange *a, CRange *b) {
+  return a->s - b->s;
 }
 static void *GetAvailRegion32(int64_t len) {
   int64_t poop_ant;
-  //https://forums.freebsd.org/threads/how-to-get-virtual-memory-size-of-current-process-in-c-c.87022/
-  //Thank God
- struct procstat *ps=procstat_open_sysctl();
- void *ret;
- unsigned int proc_cnt,vm_cnt,i;
- //man kvm_getprocs
- struct kinfo_proc* kproc=procstat_getprocs(ps,KERN_PROC_PID,getpid(),&proc_cnt);
- struct kinfo_vmentry *vments=procstat_getvmmap(ps,kproc,&vm_cnt);
-  CRange ranges[vm_cnt+2];
- for(i=0;i!=vm_cnt;i++) {
-	 ranges[i].s=vments[i].kve_start;
-	 ranges[i].e=vments[i].kve_end;
- }
- //Start range
-   ranges[vm_cnt].s=0x10000;
-   ranges[vm_cnt].e=0x10000;
-   ranges[vm_cnt+1].s=0x100000000ull/2; //32bits(31 forward,31 backwards)
-   ranges[vm_cnt+1].e=0x100000000ull/2;
- qsort(ranges,vm_cnt,sizeof(CRange),&RangeSort);
- for(poop_ant=0;poop_ant!=vm_cnt+1;poop_ant++) {
-	 if(ranges[poop_ant+1].s-ranges[poop_ant].e>=len) {
-		 ret=ranges[poop_ant].e;
-		 break;
-	 }
- }
- procstat_freeprocs(ps,kproc);
- procstat_freevmmap(ps,vments); 
- procstat_close(ps);
- return ret;
+  // https://forums.freebsd.org/threads/how-to-get-virtual-memory-size-of-current-process-in-c-c.87022/
+  // Thank God
+  struct procstat *ps = procstat_open_sysctl();
+  void *ret;
+  unsigned int proc_cnt, vm_cnt, i;
+  // man kvm_getprocs
+  struct kinfo_proc *kproc =
+      procstat_getprocs(ps, KERN_PROC_PID, getpid(), &proc_cnt);
+  struct kinfo_vmentry *vments = procstat_getvmmap(ps, kproc, &vm_cnt);
+  CRange ranges[vm_cnt + 2];
+  for (i = 0; i != vm_cnt; i++) {
+    ranges[i].s = vments[i].kve_start;
+    ranges[i].e = vments[i].kve_end;
+  }
+  // Start range
+  ranges[vm_cnt].s     = 0x10000;
+  ranges[vm_cnt].e     = 0x10000;
+  ranges[vm_cnt + 1].s = 0x100000000ull / 2; // 32bits(31 forward,31 backwards)
+  ranges[vm_cnt + 1].e = 0x100000000ull / 2;
+  qsort(ranges, vm_cnt, sizeof(CRange), &RangeSort);
+  for (poop_ant = 0; poop_ant != vm_cnt + 1; poop_ant++) {
+    if (ranges[poop_ant + 1].s - ranges[poop_ant].e >= len) {
+      ret = ranges[poop_ant].e;
+      break;
+    }
+  }
+  procstat_freeprocs(ps, kproc);
+  procstat_freevmmap(ps, vments);
+  procstat_close(ps);
+  return ret;
 }
-#endif
-#if defined (__linux__)
+  #endif
+  #if defined(__linux__)
 static void *GetAvailRegion32(int64_t len) {
   static int64_t ps;
   if (!ps) {
@@ -501,7 +505,7 @@ static void *GetAvailRegion32(int64_t len) {
   char buf[BUFSIZ];
   ssize_t n;
   while ((n = read(fd, buf, BUFSIZ)) > 0) {
-      ssize_t pos = 0;
+    ssize_t pos = 0;
     while (pos < n) {
       char *ptr = buf + pos;
       start     = Str2Ptr(ptr, &ptr);
@@ -520,7 +524,7 @@ ret:
   close(fd);
   return ((int64_t)retv + ps - 1) & ~(ps - 1);
 }
-#endif
+  #endif
 
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;

@@ -190,7 +190,9 @@ int64_t VFsFSize(char *name) {
       *delim = '\\';
     s64 = 0;
     dh  = FindFirstFileA(buffer, &data);
-    do s64++; while (FindNextFileA(dh, &data));
+    do
+      s64++;
+    while (FindNextFileA(dh, &data));
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
@@ -216,12 +218,12 @@ char **VFsDir(char *name) {
   }
   int64_t sz = VFsFSize("");
   if (sz) {
-	#if defined(WIN32) || defined(_WIN32)
-	//+1 for "."
-    ret = A_CALLOC((sz + 1 +1 ) * 8, NULL);
-    #else
+  #if defined(WIN32) || defined(_WIN32)
+    //+1 for "."
+    ret = A_CALLOC((sz + 1 + 1) * 8, NULL);
+  #else
     ret = A_CALLOC((sz + 1) * 8, NULL);
-    #endif
+  #endif
     WIN32_FIND_DATAA data;
     HANDLE dh;
     char buffer[strlen(fn) + 4];
@@ -237,9 +239,9 @@ char **VFsDir(char *name) {
       if (strlen(data.cFileName) <= 37)
         ret[s64++] = A_STRDUP(data.cFileName, NULL);
     }
-    #if defined(WIN32) || defined(_WIN32)
-    ret[s64++]=A_STRDUP(".",NULL);
-    #endif
+  #if defined(WIN32) || defined(_WIN32)
+    ret[s64++] = A_STRDUP(".", NULL);
+  #endif
     A_FREE(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
@@ -267,7 +269,7 @@ char **VFsDir(char *fn) {
     sz++;
   rewinddir(dir);
   ret = A_MALLOC((sz + 1) * sizeof(char *), NULL);
-  sz  = 0;
+  sz = 0;
   while (ent = readdir(dir)) {
     // CDIR_FILENAME_LEN  is 38(includes nul terminator)
     if (strlen(ent->d_name) <= 37)
@@ -289,10 +291,10 @@ int64_t VFsFSize(char *name) {
     A_FREE(fn);
     return -1;
   } else if (__FIsDir(fn)) {
-    d   = opendir(fn);
+    d = opendir(fn);
     cnt = 0;
-    while (de=readdir(d))
-      if (strcmp(de->d_name,".")&&strcmp(de->d_name,".."))
+    while (de = readdir(d))
+      if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
         cnt++;
     closedir(d);
     A_FREE(fn);
@@ -501,8 +503,8 @@ static int __FIsNewer(char *fn, char *fn2) {
   int32_t h32;
   int64_t s64, s64_2;
   FILETIME t;
-  HANDLE fh  = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
+  HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
+                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
          fh2 = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
   GetFileTime(fh, NULL, NULL, &t);

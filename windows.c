@@ -1,10 +1,10 @@
 #include "aiwn.h"
 #include "logo.c"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_video.h>
+#include <SDL.h>
+#include <SDL_pixels.h>
+#include <SDL_render.h>
+#include <SDL_surface.h>
+#include <SDL_video.h>
 static SDL_Palette *sdl_p;
 static SDL_Surface *screen;
 static SDL_Surface *window_icon;
@@ -35,7 +35,8 @@ static void _DrawWindowNew() {
                           SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
                           SDL_HINT_OVERRIDE);
-  SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED,"1",SDL_HINT_OVERRIDE);
+  SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
+                          SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
   screen_mutex  = SDL_CreateMutex();
   screen_mutex2 = SDL_CreateMutex();
@@ -44,7 +45,8 @@ static void _DrawWindowNew() {
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   SDL_SetWindowIcon(window, window_icon);
-  SDL_SetWindowKeyboardGrab(window, sdl_window_grab_enable?SDL_TRUE:SDL_FALSE);
+  SDL_SetWindowKeyboardGrab(window,
+                            sdl_window_grab_enable ? SDL_TRUE : SDL_FALSE);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);

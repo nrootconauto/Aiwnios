@@ -1,6 +1,7 @@
 #include "aiwn.h"
 #include <string.h>
 #if defined(_WIN32) || defined(WIN32)
+static CHeapCtrl *code_heap = NULL;  
 void *GenFFIBinding(void *fptr, int64_t arity) {
   /*
   0:  55                      push   rbp
@@ -18,11 +19,14 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   26: 41 5a                   pop    r10
   28: c9                      leave
   29: c2 34 12                ret    0x1234 */
+  if (!code_heap) {
+    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  }
   char *ffi_binding =
       "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x41\x52\x41\x53\x48\x83\xEC\x20\x48\xB8"
       "\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\x48\x83\xC4\x20"
       "\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
-  char *ret = A_MALLOC(0x2c, NULL);
+  char *ret = A_MALLOC(0x2c, code_heap);
   memcpy(ret, ffi_binding, 0x2c);
   memcpy(ret + 0x12, &fptr, 0x8);
   arity *= 8;
@@ -36,14 +40,18 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   c:  00 00 00
   f:  ff e0 					jmp rax
   */
+  if (!code_heap) {
+    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  }
   const char *ffi_binding =
       "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  char *ret = A_MALLOC(0x12, NULL);
+  char *ret = A_MALLOC(0x12, code_heap);
   memcpy(ret, ffi_binding, 0x12);
   memcpy(ret + 0x7, &fptr, 0x8);
   return ret;
 }
 #elif (defined(__linux__) || defined(__FreeBSD__)) && defined(__x86_64__)
+static CHeapCtrl *code_heap = NULL;  
 void *GenFFIBinding(void *fptr, int64_t arity) {
   /*
 0:  55                      push   rbp
@@ -66,11 +74,14 @@ e:  48 8d 7d 10             lea    rdi,[rbp+0x10]
 */
   // Look at the silly sauce at
   // https://defuse.ca/online-x86-assembler.htm#disassembly Is 0x22 bytes long
+  if (!code_heap) {
+    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  }
   const char *ffi_binding =
       "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x56\x57\x41\x52\x41\x53\x48\x8D\x7D\x10"
       "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x41\x5B\x41\x5A\x5F\x5E"
       "\xC9\xC2\x11\x00";
-  char *ret = A_MALLOC(0x28, NULL);
+  char *ret = A_MALLOC(0x28, code_heap);
   memcpy(ret, ffi_binding, 0x28);
   memcpy(ret + 0x14, &fptr, 0x8); // in place of 0x1122334455
   arity *= 8;
@@ -83,8 +94,11 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   7:  00 00 00
   a:  ff e0 					jmp rax
   */
+  if (!code_heap) {
+    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  }
   const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  char *ret               = A_MALLOC(0xd, NULL);
+  char *ret               = A_MALLOC(0xd, code_heap);
   memcpy(ret, ffi_binding, 0xd);
   memcpy(ret + 0x2, &fptr, 0x8);
   return ret;
@@ -100,11 +114,11 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   // 10: ldp x29,x30[sp],16
   // 14: ret
   // 18: label: fptr
-  static CHeapCtrl *code=NULL;
-  if(!code) {
-	  code=HeapCtrlInit(NULL,Fs,1);
+  static CHeapCtrl *code = NULL;
+  if (!code) {
+    code = HeapCtrlInit(NULL, Fs, 1);
   }
-  int old=SetWriteNP(0);
+  int old       = SetWriteNP(0);
   int32_t *blob = A_MALLOC(0x18 + 8, code);
   blob[0]       = ARM_stpPreImmX(29, 30, 31, -16);
   blob[1]       = ARM_addImmX(0, 31, 16);
@@ -120,20 +134,21 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;
 }
 #endif
-#if defined (__riscv__) || defined (__riscv)
+#if defined(__riscv__) || defined(__riscv)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8*12, NULL);
-  blob[0]=RISCV_ADDI(10,2,0); //2 is stack pointer,10 is 1st argument
-  blob[1]=RISCV_ADDI(2,2,-48);
-  blob[2]=RISCV_SD(1,2,40); //1 is return address
-  blob[3]=RISCV_AUIPC(6,0);//6 is 1st temporoary
-  blob[4]=RISCV_LD(6,6,4*(1+(10-4))); //+4 for LD,+4 for JALR,+4 for AUIPC(address starts at AUIPC)
-  blob[5]=RISCV_JALR(1,6,0);
-  blob[6]=RISCV_LD(1,2,40); //1 is return address
-  blob[7]=RISCV_ADDI(2,2,48+arity*8);
-  blob[8]=RISCV_FMV_D_X(10,10);
-  blob[9]=RISCV_JALR(0,1,0);
-  *(void**)(blob+10)=fptr; //16 aligned
+  int32_t *blob = A_MALLOC(8 * 12, NULL);
+  blob[0] = RISCV_ADDI(10, 2, 0); // 2 is stack pointer,10 is 1st argument
+  blob[1] = RISCV_ADDI(2, 2, -48);
+  blob[2] = RISCV_SD(1, 2, 40);                 // 1 is return address
+  blob[3] = RISCV_AUIPC(6, 0);                  // 6 is 1st temporoary
+  blob[4] = RISCV_LD(6, 6, 4 * (1 + (10 - 4))); //+4 for LD,+4 for JALR,+4 for
+                                                //AUIPC(address starts at AUIPC)
+  blob[5]               = RISCV_JALR(1, 6, 0);
+  blob[6]               = RISCV_LD(1, 2, 40); // 1 is return address
+  blob[7]               = RISCV_ADDI(2, 2, 48 + arity * 8);
+  blob[8]               = RISCV_FMV_D_X(10, 10);
+  blob[9]               = RISCV_JALR(0, 1, 0);
+  *(void **)(blob + 10) = fptr; // 16 aligned
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {

@@ -175,7 +175,7 @@ int64_t NetUDPSocketNew() {
   u_long mode = 1; // 1 to enable non-blocking socket
   ioctlsocket(s, FIONBIO, &mode);
 #endif
-#if defined(__FreeBSD__) || defined(__linux__)|| defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__linux__) || defined(__APPLE__)
   int yes = 1;
   // https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
   struct timeval read_timeout;

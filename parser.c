@@ -137,11 +137,10 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   int64_t idx, idx2;
   CHashClass *cls;
   CCmpCtrl *ccmp;
-  *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) = (CCmpCtrl){
-      .lex = lex,
-      .hc  = HeapCtrlInit(NULL, Fs, 0),
-      .final_hc= HeapCtrlInit(NULL, Fs, 1)
-  };
+  *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) =
+      (CCmpCtrl){.lex      = lex,
+                 .hc       = HeapCtrlInit(NULL, Fs, 0),
+                 .final_hc = HeapCtrlInit(NULL, Fs, 1)};
   struct {
     char *name;
     int64_t rt;
@@ -1040,7 +1039,7 @@ CMemberLst *MemberFind(char *needle, CHashClass *cls) {
 void SysSymImportsResolve(char *sym, int64_t flags) {
   CHashImport *imp;
   CHash *thing = HashFind(sym, Fs->hash_table, HTT_FUN | HTT_GLBL_VAR, 1);
-  int written=0;
+  int written  = 0;
   void *with;
   if (thing->type & HTT_FUN) {
     with = ((CHashFun *)thing)->fun_ptr;
@@ -1050,15 +1049,19 @@ void SysSymImportsResolve(char *sym, int64_t flags) {
     throw(*(int64_t *)"Resolve");
   if (!with)
     return;
-   int old=SetWriteNP(0);
+  int old = SetWriteNP(0);
   while (imp =
              HashSingleTableFind(sym, Fs->hash_table, HTT_IMPORT_SYS_SYM, 1)) {
-  SetWriteNP(0);
-    *imp->address  = with; // TODO make TempleOS like
-  SetWriteNP(1);
-    sys_icache_invalidate(imp->address,8);
+    SetWriteNP(0);
+    *imp->address = with; // TODO make TempleOS like
+    SetWriteNP(1);
+    #if defined(__APPLE__)
+    sys_icache_invalidate(imp->address, 8);
+    #else
+    __builtin___clear_cache(imp->address,imp->address+8);
+    #endif
     imp->base.type = HTT_INVALID;
-    written=1;
+    written        = 1;
   }
 }
 static int64_t SetIncAmt(CCmpCtrl *ccmp, CRPN *target) {
@@ -2136,9 +2139,9 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin  = Compile(ccmp, NULL, NULL,NULL);
-  binf = (void *)bin;
-  int old=SetWriteNP(1);
+  bin     = Compile(ccmp, NULL, NULL, NULL);
+  binf    = (void *)bin;
+  int old = SetWriteNP(1);
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
@@ -2161,9 +2164,9 @@ double PrsF64(CCmpCtrl *ccmp) {
   ir_code       = A_CALLOC(sizeof(CRPN), NULL);
   ir_code->type = IC_RET;
   QueIns(ir_code, ccmp->code_ctrl->ir_code);
-  bin  = Compile(ccmp, NULL, NULL,NULL);
-  binf = (void *)bin;
-  int old=SetWriteNP(1);
+  bin     = Compile(ccmp, NULL, NULL, NULL);
+  binf    = (void *)bin;
+  int old = SetWriteNP(1);
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
     res = (*bin)();
   else
@@ -2411,8 +2414,8 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
   CArrayDim dim;
   CHashClass *cls;
   CMemberLst *lst, *bungis;
-  CHashFun *fun,*extern_fun;
-  CHashGlblVar *glbl_var, *import_var,*extern_glbl;
+  CHashFun *fun, *extern_fun;
+  CHashGlblVar *glbl_var, *import_var, *extern_glbl;
   CRPN *rpn;
   char *name;
   double tmpf;
@@ -2441,26 +2444,25 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
       ParseErr(ccmp, "No nested functions!!!");
       return 0;
     }
-    *(fun = ccmp->cur_fun = A_CALLOC(sizeof(CHashFun), NULL)) = (CHashFun){
-        .base =
-            {
-                .base =
-                    {
-                        .str  = A_STRDUP(name, NULL),
-                        .type = HTT_FUN,
-                    },
-                .raw_type = RT_FUNC,
-            },
-        .fun_ptr=&DoNothing,
-        .return_class = cls
-    };
+    *(fun = ccmp->cur_fun = A_CALLOC(sizeof(CHashFun), NULL)) =
+        (CHashFun){.base =
+                       {
+                           .base =
+                               {
+                                   .str  = A_STRDUP(name, NULL),
+                                   .type = HTT_FUN,
+                               },
+                           .raw_type = RT_FUNC,
+                       },
+                   .fun_ptr      = &DoNothing,
+                   .return_class = cls};
     HashAdd(fun, Fs->hash_table);
     if (flags & (PRSF_EXTERN | PRSF__EXTERN)) {
       fun->base.base.type |= HTF_EXTERN;
     } else if (flags & (PRSF_IMPORT | PRSF__IMPORT)) {
       fun->base.base.type |= HTF_IMPORT;
     }
-found_fun:
+  found_fun:
     if (flags & (PRSF__EXTERN | PRSF__IMPORT)) {
       fun->import_name = A_STRDUP(import_name, NULL);
     }
@@ -2494,12 +2496,12 @@ found_fun:
     // filled in later
     //
     ccmp->cur_fun->base.base.type |= HTF_EXTERN;
-    ccmp->cur_fun->fun_ptr = Compile(ccmp, NULL, NULL,NULL);
+    ccmp->cur_fun->fun_ptr = Compile(ccmp, NULL, NULL, NULL);
     ccmp->cur_fun->base.base.type &= ~HTF_EXTERN;
-	if(extern_fun=HashFind(name,Fs->hash_table,HTT_FUN,2)) { //Pick 2nd EXTERN(?) function
-		extern_fun->fun_ptr=ccmp->cur_fun->fun_ptr;
-		
-	}
+    if (extern_fun = HashFind(name, Fs->hash_table, HTT_FUN,
+                              2)) { // Pick 2nd EXTERN(?) function
+      extern_fun->fun_ptr = ccmp->cur_fun->fun_ptr;
+    }
     if (ccmp->cur_fun->base.base.str)
       SysSymImportsResolve(ccmp->cur_fun->base.base.str, 0);
     CodeCtrlPop(ccmp);
@@ -2581,7 +2583,7 @@ found_fun:
     glbl_var->fun_ptr   = lst->fun_ptr;
     lst->fun_ptr        = NULL; // We steal this
     // lst will be Free'd at ret
-    if(!(flags&PRSF_EXTERN))
+    if (!(flags & PRSF_EXTERN))
       glbl_var->data_addr =
           A_CALLOC(glbl_var->var_class->sz * glbl_var->dim.total_cnt, NULL);
     if (flags & PRSF_IMPORT) {
@@ -2614,13 +2616,15 @@ found_fun:
       }
     }
     HashAdd(glbl_var, Fs->hash_table);
-found_glbl:
-   if(!(flags&PRSF_EXTERN)) {
-		if(extern_glbl=HashFind(glbl_var->base.str,Fs->hash_table,HTT_GLBL_VAR,2)) { //Pick 2nd EXTERN(?) Var
-			extern_glbl->data_addr=glbl_var->data_addr;
-		}    
-	}
-    if(!(flags&PRSF_EXTERN)) SysSymImportsResolve(glbl_var->base.str, 0);
+  found_glbl:
+    if (!(flags & PRSF_EXTERN)) {
+      if (extern_glbl = HashFind(glbl_var->base.str, Fs->hash_table,
+                                 HTT_GLBL_VAR, 2)) { // Pick 2nd EXTERN(?) Var
+        extern_glbl->data_addr = glbl_var->data_addr;
+      }
+    }
+    if (!(flags & PRSF_EXTERN))
+      SysSymImportsResolve(glbl_var->base.str, 0);
     if (ccmp->lex->cur_tok == '=') {
       Lex(ccmp->lex);
       if (ccmp->lex->cur_tok == '{') {
@@ -3812,7 +3816,7 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
         puts(name);
         abort();
       }
-      if (!fun->fun_ptr||fun->fun_ptr==&DoNothing) {
+      if (!fun->fun_ptr || fun->fun_ptr == &DoNothing) {
         fun->base.base.type &= ~HTF_EXTERN;
         if (naked)
           fun->fun_ptr = GenFFIBindingNaked(ptr, arity);
@@ -4315,8 +4319,8 @@ CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp) {
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp) {
   CodeCtrlPop(ccmp);
 }
-char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info,CHeapCtrl *h) {
-  return Compile(ccmp, sz, dbg_info,h);
+char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info, CHeapCtrl *h) {
+  return Compile(ccmp, sz, dbg_info, h);
 }
 CCodeMisc *__HC_CodeMiscLabelNew(CCmpCtrl *ccmp, void **patch_addr) {
   CCodeMisc *misc;
@@ -4542,7 +4546,7 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
                                       void (*fptr)(void *addr, void *user_data),
                                       void *user_data) {
   CCodeMiscRef *refs = cm->refs;
-  int old=SetWriteNP(1);
+  int old            = SetWriteNP(1);
   while (refs) {
     FFI_CALL_TOS_2(fptr, refs->add_to, user_data);
     refs = refs->next;

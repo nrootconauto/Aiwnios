@@ -2,7 +2,7 @@
 #include <signal.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
-#define _XOPEN_SOURCE 1 
+#define _XOPEN_SOURCE    1
 #define DBG_MSG_RESUME   "%p:%d,RESUME,%p\n"   //(task,pid,single_step)
 #define DBG_MSG_START    "%p:%d,START,%p\n"    //(task,pid,dump_regs_to)
 #define DBG_MSG_SET_GREG "%p:%d,SGREG,%p,%p\n" //(task,pid,which_reg,value)
@@ -33,13 +33,13 @@
 #endif
 #if defined(__APPLE__)
 typedef struct CFuckup {
-struct CQue base;
-int64_t signal;
-pid_t pid;
-void *task;
+  struct CQue base;
+  int64_t signal;
+  pid_t pid;
+  void *task;
 } CFuckup;
-  #define PTRACE_TRACEME   PT_TRACE_ME
-  #define gettid           getpid
+  #define PTRACE_TRACEME PT_TRACE_ME
+  #define gettid         getpid
 #endif
 #if defined(__FreeBSD__)
 typedef struct CFuckup {
@@ -199,8 +199,8 @@ static int64_t MsgPoll() {
 }
 static void GrabDebugger(int64_t code) {
   #if defined(__APPLE__)
-  //Tee hee
-  #else	
+  // Tee hee
+  #else
   raise(code);
   #endif
 }
@@ -252,7 +252,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
   if (pid <= 0)
     return 0;
   if (WIFEXITED(code)) {
-die:
+  die:
     close(debugger_pipe[0]);
     close(debugger_pipe[1]);
     ptrace(PT_DETACH, pid, 0, 0);
@@ -611,7 +611,7 @@ void DebuggerBegin() {
               // in addr(only 1 is used my homie)
               ptrace(PTRACE_SETREGS, tid, &fu->regs, &fu->regs);
               ptrace(PTRACE_SETFPREGS, tid, &fu->fp, &fu->fp);
-  #elif defined (__linux__)
+  #elif defined(__linux__)
               poop.iov_len  = sizeof(fu->regs);
               poop.iov_base = &fu->regs;
               ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
@@ -685,10 +685,10 @@ static void UnblockSignals() {
   sigprocmask(SIG_UNBLOCK, &set, NULL);
 #endif
 }
-#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
-#if defined(__APPLE__)
-#include <arm/_mcontext.h>
-#endif
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+  #if defined(__APPLE__)
+    #include <arm/_mcontext.h>
+  #endif
 static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   #if defined(__x86_64__)
     #if defined(__linux__)
@@ -771,8 +771,9 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     #elif defined(__FreeBSD__)
       actx[i - 18] = ctx->mc_gpregs.gp_x[i];
     #elif defined(__APPLE__)
-    //See the /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h  file
-    //actx[i-18]=ctx->__ss.__x[i];
+    // See the
+    // /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
+    // file actx[i-18]=ctx->__ss.__x[i];
     #endif
     #if defined(__linux__)
   // We will look for FPSIMD_MAGIC(0x46508001)
@@ -801,8 +802,9 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     #elif defined(__FreeBSD__)
   actx[21] = ctx->mc_gpregs.gp_sp;
     #elif defined(__APPLE__)
-    //See the /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h  file
-    //actx[21]=ctx->__ss.__sp;
+    // See the
+    // /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
+    // file actx[21]=ctx->__ss.__sp;
     #endif
   // AiwniosDbgCB will return 1 for singlestep
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
@@ -885,7 +887,7 @@ fin:
 }
 #endif
 void InstallDbgSignalsForThread() {
-#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;

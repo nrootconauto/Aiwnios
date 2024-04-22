@@ -1,27 +1,27 @@
 #include "aiwn.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <inttypes.h>
-#if defined(__linux__) && defined( __x86_64__)
-    // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
-    enum {
-      REG_R8 = 0,
-      REG_R9,
-      REG_R10,
-      REG_R11,
-      REG_R12,
-      REG_R13,
-      REG_R14,
-      REG_R15,
-      REG_RDI,
-      REG_RSI,
-      REG_RBP,
-      REG_RBX,
-      REG_RDX,
-      REG_RAX,
-      REG_RCX,
-      REG_RSP,
-      REG_RIP,
-    };
+#if defined(__linux__) && defined(__x86_64__)
+// See /usr/include/x86_64-linux-gnu/sys/ucontext.h
+enum {
+  REG_R8 = 0,
+  REG_R9,
+  REG_R10,
+  REG_R11,
+  REG_R12,
+  REG_R13,
+  REG_R14,
+  REG_R15,
+  REG_RDI,
+  REG_RSI,
+  REG_RBP,
+  REG_RBX,
+  REG_RDX,
+  REG_RAX,
+  REG_RCX,
+  REG_RSP,
+  REG_RIP,
+};
 #endif
 
 // In x86_64_backend,we are going to (if supported) use the raw FS/GS registers
@@ -73,7 +73,7 @@ void *GetHolyGsPtr() {
 void *GetHolyFsPtr() {
   return &ThreadFs;
 }
-#endif
+  #endif
 #elif (defined(_M_ARM64) || defined(__aarch64__))
 __thread void *ThreadGs;
 __thread void *ThreadFs;
@@ -118,7 +118,7 @@ typedef struct {
   #include <sys/types.h>
   #include <sys/umtx.h>
 #endif
-#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
   #include <pthread.h>
   #include <sys/syscall.h>
   #include <sys/time.h>
@@ -158,7 +158,7 @@ static void threadrt(CorePair *pair) {
   Fs = calloc(sizeof(CTask), 1);
   VFsThrdInit();
   TaskInit(Fs, NULL, 0);
-  Fs->hash_table->next=pair->parent_table;
+  Fs->hash_table->next = pair->parent_table;
   SetHolyGs(pair->gs);
   core_num = pair->num;
   void (*fp)();
@@ -166,33 +166,33 @@ static void threadrt(CorePair *pair) {
   free(pair);
   fp();
 }
-#if defined(__linux__) || defined(__FreeBSD__) || defined (__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 static CCPU cores[128];
 CHashTable *glbl_table;
 
 void InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
 }
-static void InteruptRt(int ul,siginfo_t *info, ucontext_t *_ctx) {
+static void InteruptRt(int ul, siginfo_t *info, ucontext_t *_ctx) {
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
-  mcontext_t *ctx=&_ctx->uc_mcontext;
+  CHashExport *y  = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+  mcontext_t *ctx = &_ctx->uc_mcontext;
   void (*fp)();
   if (y) {
     fp = y->val;
-    #if defined(__FreeBSD__) && defined(__x86_64__)
-    FFI_CALL_TOS_2(fp,ctx->mc_rip,ctx->mc_rbp);
-    #elif defined(__linux__) && defined(__x86_64__)
-    FFI_CALL_TOS_2(fp,ctx->regs[REG_RIP],ctx->regs[REG_RBP]);
-    #endif
-    #if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
-    FFI_CALL_TOS_2(fp,NULL,ctx->mc_gpregs.gp_x[29]);
-    #elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
-    FFI_CALL_TOS_2(fp,NULL,ctx->regs[29]);
-    #endif
+  #if defined(__FreeBSD__) && defined(__x86_64__)
+    FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
+  #elif defined(__linux__) && defined(__x86_64__)
+    FFI_CALL_TOS_2(fp, ctx->regs[REG_RIP], ctx->regs[REG_RBP]);
+  #endif
+  #if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
+    FFI_CALL_TOS_2(fp, NULL, ctx->mc_gpregs.gp_x[29]);
+  #elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
+    FFI_CALL_TOS_2(fp, NULL, ctx->regs[29]);
+  #endif
   }
 }
 static void ExitCoreRt(int s) {
@@ -223,10 +223,12 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   struct sigaction sa;
   char buf[144];
-  CHashTable *parent_table=NULL;
-  if(Fs) parent_table=Fs->hash_table;
-  CorePair pair = {fp, gs, core,NULL,parent_table}, *ptr = malloc(sizeof(CorePair));
-  *ptr = pair;
+  CHashTable *parent_table = NULL;
+  if (Fs)
+    parent_table = Fs->hash_table;
+  CorePair pair = {fp, gs, core, NULL, parent_table},
+           *ptr = malloc(sizeof(CorePair));
+  *ptr          = pair;
   pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
   char nambuf[16];
   snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
@@ -236,7 +238,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   pthread_setname_np(cores[core].pt, nambuf);
   #endif
   #if defined(__APPLE__)
-  pthread_cond_init(&cores[core].wake_cond,NULL);
+  pthread_cond_init(&cores[core].wake_cond, NULL);
   #endif
   signal(SIGUSR1, InteruptRt);
   signal(SIGUSR2, ExitCoreRt);
@@ -265,14 +267,14 @@ void MPSleepHP(int64_t ns) {
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
   #endif
   #if defined(__APPLE__)
-  clock_gettime(CLOCK_REALTIME,&ts);
-  ts.tv_nsec         += (ns % 1000000) * 1000U;
-  ts.tv_sec+=ts.tv_nsec/1000000000U;
-  ts.tv_nsec%=1000000000U;
-  ts.tv_sec          += ns / 1000000;
-  pthread_mutex_t mtx=PTHREAD_MUTEX_INITIALIZER;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  ts.tv_nsec += (ns % 1000000) * 1000U;
+  ts.tv_sec += ts.tv_nsec / 1000000000U;
+  ts.tv_nsec %= 1000000000U;
+  ts.tv_sec += ns / 1000000;
+  pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
   pthread_mutex_lock(&mtx);
-  pthread_cond_timedwait(&cores[core_num].wake_cond,&mtx,&ts);
+  pthread_cond_timedwait(&cores[core_num].wake_cond, &mtx, &ts);
   #endif
   Misc_LBtr(&cores[core_num].wake_futex, 0);
 }
@@ -285,7 +287,7 @@ void MPAwake(int64_t core) {
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
   #endif
   #if defined(__APPLE__)
-  pthread_cond_signal(&cores[core].wake_cond);
+    pthread_cond_signal(&cores[core].wake_cond);
   #endif
   }
 }
@@ -343,10 +345,12 @@ int64_t GetTicksHP() {
   return ticks * 1000;
 }
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
-  CHashTable *parent_table=NULL;
-  if(Fs) parent_table=Fs->hash_table;
-  CorePair pair = {fp, gs, core,NULL,parent_table}, *ptr = malloc(sizeof(CorePair));
-  *ptr                          = pair;
+  CHashTable *parent_table = NULL;
+  if (Fs)
+    parent_table = Fs->hash_table;
+  CorePair pair = {fp, gs, core, NULL, parent_table},
+           *ptr = malloc(sizeof(CorePair));
+  *ptr          = pair;
   InitializeCriticalSection(&cores[core].mtx);
   cores[core].event             = CreateEvent(NULL, 0, 0, NULL);
   cores[core].restore_ctx_event = CreateEvent(NULL, 0, 0, NULL);

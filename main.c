@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-int64_t sdl_window_grab_enable=0;
+int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line, *arg_fork,*arg_no_debug,*arg_grab;
+    *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -398,12 +398,10 @@ typedef union {
 } dbl2u64;
 
 #define MATHFUNDEF(x)                                                          \
+  static uint64_t STK_##x(double *stk) { return ((dbl2u64)x(stk[0])).i; }
+#define MATHFUNDEF2(x)                                                         \
   static uint64_t STK_##x(double *stk) {                                       \
-    return ((dbl2u64)x(stk[0])).i;                                             \
-  }
-#define MATHFUNDEF2(x)                                                          \
-  static uint64_t STK_##x(double *stk) {                                       \
-    return ((dbl2u64)x(stk[0], stk[1])).i;                                             \
+    return ((dbl2u64)x(stk[0], stk[1])).i;                                     \
   }
 
 MATHFUNDEF(cos);
@@ -872,7 +870,7 @@ static int64_t STK___HC_CodeCtrlPop(int64_t *stk) {
 }
 static int64_t STK___HC_Compile(int64_t *stk) {
   return (int64_t)__HC_Compile((CCmpCtrl *)stk[0], (int64_t *)stk[1],
-                               (char **)stk[2],(char**)stk[3]);
+                               (char **)stk[2], (char **)stk[3]);
 }
 static int64_t STK___HC_ICAdd_Label(int64_t *stk) {
   return __HC_ICAdd_Label(stk[0], stk[1]);
@@ -1155,11 +1153,16 @@ static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
 static int64_t WriteProtectMemCpy(int64_t *stk) {
-	int old=SetWriteNP(0);
-	int64_t r=(int64_t)memcpy((void*)stk[0],(void*)stk[1],stk[2]);
-	SetWriteNP(old);
-	if(old) sys_icache_invalidate(stk[0],stk[2]);
-	return r;
+  int old   = SetWriteNP(0);
+  int64_t r = (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
+  SetWriteNP(old);
+  #if defined(__APPLE__)
+  if (old)
+    sys_icache_invalidate(stk[0], stk[2]);
+  #else
+  __builtin___clear_cache(stk[0],stk[0]+stk[2]);
+  #endif
+  return r;
 }
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
@@ -1167,12 +1170,13 @@ static void BootAiwnios(char *bootstrap_text) {
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
   int old;
-  ccmp->flags|=CCF_STRINGS_ON_HEAP; //We free the code data,so dont put code data with string data
+  ccmp->flags |= CCF_STRINGS_ON_HEAP; // We free the code data,so dont put code
+                                      // data with string data
   CodeCtrlPush(ccmp);
   Lex(lex);
   while (PrsStmt(ccmp)) {
-    to_run = Compile(ccmp, NULL, NULL,NULL);
-    old=SetWriteNP(1);
+    to_run = Compile(ccmp, NULL, NULL, NULL);
+    old    = SetWriteNP(1);
     FFI_CALL_TOS_0(to_run);
     SetWriteNP(old);
     A_FREE(to_run);
@@ -1301,8 +1305,9 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
     PrsAddSymbolNaked("Call", TempleOS_Call, 1);
     PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
-    PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs, 5);//fptr,argc1,argv1,argc,argv but argpop so ignored
-    							    //(this is for parser.c checks)
+    PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs,
+                      5); // fptr,argc1,argv1,argc,argv but argpop so ignored
+                          //(this is for parser.c checks)
     PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
@@ -1454,7 +1459,7 @@ static void BootAiwnios(char *bootstrap_text) {
 static const char *t_drive;
 static void Boot() {
   int64_t len;
-puts("ass");
+  puts("ass");
   char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");
@@ -1467,7 +1472,7 @@ puts("ass");
     FuzzTest3();*/
   if (arg_bootstrap_bin->count) {
 #define BOOTSTRAP_FMT                                                          \
-  "#define TARGET_%s 1\n"                                                       \
+  "#define TARGET_%s 1\n"                                                      \
   "#define lastclass \"U8\"\n"                                                 \
   "#define public \n"                                                          \
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
@@ -1525,9 +1530,12 @@ int main(int argc, char **argv) {
     arg_fork =
         arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
 #endif
-	arg_grab = arg_lit0("g","grab-focus","Grab the keyboard(Windows/Logo key will be handled by aiwnios)"),
-    arg_no_debug =
-        arg_lit0("d", "user-debugger", "Faults will be handled by an external debugger(such as gdb)."),
+    arg_grab = arg_lit0(
+        "g", "grab-focus",
+        "Grab the keyboard(Windows/Logo key will be handled by aiwnios)"),
+    arg_no_debug = arg_lit0(
+        "d", "user-debugger",
+        "Faults will be handled by an external debugger(such as gdb)."),
     sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
     arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
     arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
@@ -1543,10 +1551,12 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
-  if(arg_grab->count)
-    sdl_window_grab_enable=1;
-  if(!arg_no_debug->count)
-    ;//DebuggerBegin();
+  if (arg_grab->count)
+    sdl_window_grab_enable = 1;
+  #if !defined(__APPLE__)
+  if (!arg_no_debug->count)
+     DebuggerBegin();
+  #endif
 #ifndef _WIN32
   if (arg_fork->count) {
     pid_t pid = fork();
