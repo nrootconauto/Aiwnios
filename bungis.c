@@ -24,6 +24,7 @@ void TaskInit(CTask *task, void *addr, int64_t stk_sz) {
   CExcept *except;
   memset(task, 0, sizeof(CTask));
   task->heap   = HeapCtrlInit(NULL, task, 0);
+  task->code_heap   = HeapCtrlInit(NULL, task, 1);
   task->except = A_MALLOC(sizeof(CQue), task);
   task->stack  = A_MALLOC(stk_sz, task);
   QueInit(task->except);

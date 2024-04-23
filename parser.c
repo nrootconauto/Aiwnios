@@ -140,7 +140,7 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) =
       (CCmpCtrl){.lex      = lex,
                  .hc       = HeapCtrlInit(NULL, Fs, 0),
-                 .final_hc = HeapCtrlInit(NULL, Fs, 1)};
+                 .final_hc = Fs->code_heap};
   struct {
     char *name;
     int64_t rt;

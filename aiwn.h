@@ -140,7 +140,7 @@ typedef struct CTask {
   void *stack;
   char ctx[2048];
   jmp_buf throw_pad;
-  struct CHeapCtrl *heap;
+  struct CHeapCtrl *heap,*code_heap;
 } CTask;
 typedef struct CHeapCtrl {
   int32_t hc_signature;
