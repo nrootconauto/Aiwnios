@@ -239,7 +239,7 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
   return res;
 }
 
-I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
+I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
 {//AOT Compile HC or PRJ file a and output BIN file. Returns err_cnt.
   U8 *ptr,*fbuf=NULL,*fbuf2=NULL,*fbuf3=NULL,
 	*patch_table=MAlloc(0x800000);

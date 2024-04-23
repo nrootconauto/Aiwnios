@@ -206,7 +206,7 @@ CIntermediateStruct intermediate_code_table[IC_ICS_NUM]={
 };
 
 //These come from Opcodes.DD in orthodox TempleOS
-U0 CmpAddKw(CHashTable *t,U8 *str,I64 tok) {
+U0 CmpAddKw(CHashTable *t,U8 *str,I64 tok) {
   CHashGeneric *gen=CAlloc(sizeof CHashGeneric);
   gen->str=StrNew(str);
   gen->type=HTT_KEYWORD;

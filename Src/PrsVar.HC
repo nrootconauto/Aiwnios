@@ -9,6 +9,7 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
   CIntermediateCode *tmpi;
   CAOTCtrl *aotc=cc->aotc;
   CAOTAbsAddr *tmpa;
+  CCodeMisc *cm;
   CAOTImportExport *tmpie;
   Bool is_str;
   	
@@ -64,19 +65,19 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	cc->flags=cc->flags&~CCF_NO_ABSS|CCF_AOT_COMPILE;
 	Free(machine_code);
 	if (pass==2) {
-	  MemSet(dst,0,tmpc->size);
-	  LexPopRestore(cc);
-	  Lex(cc);
-	  COCPush(cc);
-	  COCInit(cc);
-	  if(to) {
-    RPNAddNew(cc,IC_ADDR_IMPORT,CodeMiscHashNew(cc,to),tmpc+1,FALSE);
-	  RPNAddNew(cc,IC_IMM_I64,dst-*_base,tmpc+1,FALSE);
-	  RPNAddNew(cc,IC_ADD,0,cmp.internal_types[RT_I64],FALSE);
-    RPNAddNew(cc,IC_DEREF,0,tmpc,FALSE);
-    }
-    if(cc->token==',') //DUMB FIX by nroot
-      Lex(cc);
+	   MemSet(dst,0,tmpc->size);
+	   LexPopRestore(cc);
+	   Lex(cc);
+	   COCPush(cc);
+	   COCInit(cc);
+	   if(to) {
+	     cm=CodeMiscHashNew(cc,to);
+	     cm->offset=dst-*_base;
+	     RPNAddNew(cc,IC_ADDR_IMPORT,cm,tmpc+1,FALSE);
+	     RPNAddNew(cc,IC_DEREF,0,tmpc,FALSE);
+           }
+          if(cc->token==',') //DUMB FIX by nroot
+            Lex(cc);
 	  if (!PrsExpression(cc,NULL,PEF_NO_COMMA)) //Changed by nroot
 	    throw('Compiler');
 	  if(to) {RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);

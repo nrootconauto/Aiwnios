@@ -4979,7 +4979,7 @@ class CMusicGlbls
 
   F64	tM_correction,last_Beat,last_tM;
 };
-extern CMusicGlbls music;
+extern CMusicGlbls music;
 class CGodGlbls
 {
   U8	**words,

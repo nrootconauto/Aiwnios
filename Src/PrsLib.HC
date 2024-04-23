@@ -130,7 +130,7 @@ U0 COCAppend(CCmpCtrl *cc, CCodeCtrl *tmpcbh)
   Free(tmpcbh);
 }
 
-CCodeMisc *COCMiscNew(CCmpCtrl *cc,I64 ty)
+CCodeMisc *COCMiscNew(CCmpCtrl *cc,I64 ty)
 {
   CCodeMisc *res=CAlloc(sizeof(CCodeMisc));
   res->addr=INVALID_PTR;

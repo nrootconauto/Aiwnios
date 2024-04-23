@@ -186,7 +186,7 @@ static void InteruptRt(int ul, siginfo_t *info, ucontext_t *_ctx) {
   #if defined(__FreeBSD__) && defined(__x86_64__)
     FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
   #elif defined(__linux__) && defined(__x86_64__)
-    FFI_CALL_TOS_2(fp, ctx->regs[REG_RIP], ctx->regs[REG_RBP]);
+    FFI_CALL_TOS_2(fp, ctx->gregs[REG_RIP], ctx->gregs[REG_RBP]);
   #endif
   #if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
     FFI_CALL_TOS_2(fp, NULL, ctx->mc_gpregs.gp_x[29]);
