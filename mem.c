@@ -107,7 +107,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE,
                        hc->is_code_heap ? PAGE_EXECUTE_READWRITE
                                         : PAGE_READWRITE);
-  if (!ret || ret == MAP_FAILED)
+  if (!ret)
     return NULL;
 #else
   #if defined(__x86_64__)
