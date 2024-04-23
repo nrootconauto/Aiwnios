@@ -863,14 +863,24 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       else
         use_reg = tmp.reg = 0;
       tmp.mode = MD_REG;
-      code_off = ICMov(cctrl, &tmp, src, bin, code_off);
       if (dst->raw_type == RT_F64 && src->raw_type != dst->raw_type) {
-        AIWNIOS_ADD_CODE(ARM_scvtf(use_reg, use_reg));
+		tmp.reg=0;
+		code_off = ICMov(cctrl, &tmp, src, bin, code_off);
+        AIWNIOS_ADD_CODE(ARM_scvtf(0, 0));
         tmp.raw_type = RT_F64;
+        tmp.reg=0;
+        code_off = ICMov(cctrl, dst, &tmp, bin, code_off);
+        return code_off;
       } else if (src->raw_type == RT_F64 && src->raw_type != dst->raw_type) {
-        AIWNIOS_ADD_CODE(ARM_fcvtzs(use_reg, use_reg));
+        tmp.reg=0;
+		code_off = ICMov(cctrl, &tmp, src, bin, code_off);
+        AIWNIOS_ADD_CODE(ARM_fcvtzs(0, 0));
         tmp.raw_type = RT_I64i;
+        tmp.reg=0;
+        code_off = ICMov(cctrl, dst, &tmp, bin, code_off);
+        return code_off;
       }
+      code_off = ICMov(cctrl, &tmp, src, bin, code_off);
       code_off = ICMov(cctrl, dst, &tmp, bin, code_off);
       return code_off;
     }
