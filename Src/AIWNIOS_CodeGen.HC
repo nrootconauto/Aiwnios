@@ -1759,20 +1759,19 @@ break;case IC_ASM:
       __HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     }
   }
-}
-    if(cur->ic_line&&cur->ic_line>=cc->min_line) { //check for oddities(maybe includes accross a file boundary)
+  if(cur->ic_line&&cur->ic_line>=cc->min_line) { //check for oddities(maybe includes accross a file boundary)
       reported_max_ln=MaxI64(reported_max_ln,cur->ic_line);
       reported_min_ln=MinI64(reported_min_ln,cur->ic_line);
       __HC_ICSetLine(new,cur->ic_line);
     }
     if(cur->ic_flags&ICF_LOCK)
 	__HC_ICSetLock(new);
+}
   if(reported_min_ln!=I16_MAX) {
     aiwnios_dbg_info=CAlloc(8*(reported_max_ln-reported_min_ln+2));
   } else 
 	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
-  dumb_crap_apple=NULL;
   if(res_sz) *res_sz=idx;
   if(info&&aiwnios_dbg_info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {
