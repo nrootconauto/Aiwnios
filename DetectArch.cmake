@@ -11,7 +11,7 @@ set(archdetect_c_code "
 #elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
     #error cmake_ARCH i386
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)
-    #error cmake_ARCH x86_6
+    #error cmake_ARCH x86_64
 #elif defined(__riscv__) || defined(__riscv)
     #error cmake_ARCH riscv64
 #elif defined(__ia64) || defined(__ia64__) || defined(_M_IA64)
