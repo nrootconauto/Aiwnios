@@ -443,6 +443,7 @@ typedef struct CCmpCtrl {
   int64_t backend_user_data8;
   int64_t backend_user_data9;
   int64_t backend_user_data10;
+  int64_t backend_user_data11;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
   // In SysV,the fregs are not saved,so i will make a mini function to save them
@@ -887,6 +888,22 @@ enum {
     AIWNIOS_ExitCatch();                                                       \
   }                                                                            \
   }
+
+int64_t X86PushReg(char *to, int64_t reg);
+int64_t X86MovRegReg(char *to, int64_t a, int64_t b);
+int64_t X86AndImm(char *to, int64_t a, int64_t b);
+int64_t X86SubImm32(char *to, int64_t a, int64_t b);
+int64_t X86MovImm(char *to, int64_t a, int64_t off);
+int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                         int64_t off);
+int64_t X86CallReg(char *to, int64_t reg);
+int64_t X86AddImm32(char *to, int64_t a, int64_t b);
+int64_t X86PopReg(char *to, int64_t reg);
+int64_t X86Ret(char *to, int64_t ul);
+int64_t X86Leave(char *to, int64_t ul);
+int64_t X86JmpReg(char *to, int64_t r);
+
+
 int64_t ARM_ldrsbRegRegX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_ldrshRegRegX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_ldrswRegRegX(int64_t r, int64_t a, int64_t b);

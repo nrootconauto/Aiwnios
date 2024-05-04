@@ -302,7 +302,7 @@ static int64_t X86CmpRegImm(char *to, int64_t a, int64_t imm) {
   return len;
 }
 
-static int64_t X86MovRegReg(char *to, int64_t a, int64_t b) {
+int64_t X86MovRegReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -325,7 +325,7 @@ static int64_t X86CMovsRegReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-static int64_t X86Leave(char *to, int64_t ul) {
+int64_t X86Leave(char *to, int64_t) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -334,7 +334,7 @@ static int64_t X86Leave(char *to, int64_t ul) {
   return len;
 }
 
-static int64_t X86Ret(char *to, int64_t ul) {
+int64_t X86Ret(char *to, int64_t ul) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -425,7 +425,7 @@ static int64_t X86MovF64RIP(char *to, int64_t a, int64_t off) {
   return len;
 }
 
-static int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
+int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -575,7 +575,7 @@ static int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
 
 //
 
-static int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
+int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -980,7 +980,7 @@ static int64_t X86AndReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-static int64_t X86AndImm(char *to, int64_t a, int64_t b) {
+int64_t X86AndImm(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1423,7 +1423,7 @@ static int64_t X86MovQF64I64(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-static int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
                          int64_t off) {
   int64_t len = 0;
   char buf[16];
@@ -1470,7 +1470,7 @@ static int64_t X86JmpSIB(char *to, int64_t scale, int64_t idx, int64_t base,
   return len;
 }
 
-static int64_t X86JmpReg(char *to, int64_t r) {
+int64_t X86JmpReg(char *to, int64_t r) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -7878,9 +7878,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     // Let's merge the two togheter
     if (tmp.raw_type == RT_F64)
       AIWNIOS_ADD_CODE(X86MovQI64F64, 0, 0);
-    // TODO  jump to return area,not generate epilog for each poo poo
-    AIWNIOS_ADD_CODE(X86Jmp, 0);
-    CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4);
+    {
+      char __buf[0x10];
+      if (__FindPushedIRegs(cctrl, __buf) || __FindPushedFRegs(cctrl, __buf)) {
+        if (bin) cctrl->backend_user_data11 = bin + code_off;
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4); // fills in JMP IMM right above
+      }
+    }
     break;
   ic_base_ptr:
     tmp.raw_type = rpn->raw_type;
@@ -8150,7 +8155,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       code_off = 0;
       bin      = NULL;
     } else if (run == 1) {
-      bin      = A_CALLOC(1024 + code_off, heap?heap:Fs->code_heap);
+      bin      = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);
@@ -8307,6 +8312,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
     if (statics_sz)
       code_off += statics_sz + 8;
   }
+  // TODO something more elegant, like checking the label addr (how?)
+  if (cctrl->backend_user_data11 && !memcmp(cctrl->backend_user_data11, /* jump with 0 offset */ "\xE9\x00\x00\x00\x00", 5))
+    memcpy(cctrl->backend_user_data11, "\x90\x90\x90\x90\x90", 5);
   final_size = code_off;
   if (dbg_info) {
     cnt         = MSize(dbg_info) / 8;

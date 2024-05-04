@@ -893,7 +893,7 @@ next:
     DocPrint(doc,"\n");
     DocPrint(doc_out,"%P\t\dFG,PURPLE\d",odata);
     for (i=0;i<imm_off+1;++i)
-      DocPrint(doc_out,"%02X ",data[i]);
+      DocPrint(doc_out,"%02X ",odata[i]);
     DocPrint(doc_out,"\dFG\d\n\t\t");
     DocInsDoc(doc_out,doc);
     DocDel(doc);

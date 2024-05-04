@@ -1,108 +1,89 @@
 #include "aiwn.h"
 #include <string.h>
+#ifdef __x86_64__
+#define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
 #if defined(_WIN32) || defined(WIN32)
-static CHeapCtrl *code_heap = NULL;  
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  /*
-  0:  55                      push   rbp
-  1:  48 89 e5                mov    rbp,rsp
-  4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
-  8:  41 52                   push   r10
-  a:  41 53                   push   r11
-  c:  48 83 ec 20             sub    rsp,0x20
-  10: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
-  17: 00 00 00
-  1a: 48 8d 4d 10             lea    rcx,[rbp+0x10]
-  1e: ff d0                   call   rax
-  20: 48 83 c4 20             add    rsp,0x20
-  24: 41 5b                   pop    r11
-  26: 41 5a                   pop    r10
-  28: c9                      leave
-  29: c2 34 12                ret    0x1234 */
-  if (!code_heap) {
-    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  int64_t code_off = 0;
+  uint8_t *bin = NULL;
+  while (1) {
+    A(X86PushReg, RBP);
+    A(X86MovRegReg, RBP, RSP);
+    A(X86AndImm, RSP, ~0xF);
+    A(X86PushReg, R10);
+    A(X86PushReg, R11);
+    A(X86SubImm32, RSP, 0x20);
+    A(X86MovImm, RAX, fptr);
+    A(X86LeaSIB, RCX, -1, -1, RBP, 0x10);
+    A(X86CallReg, RAX);
+    A(X86AddImm32, RSP, 0x20);
+    A(X86PopReg, R11);
+    A(X86PopReg, R10);
+    A(X86Leave, 0);
+    A(X86Ret, arity * 8);
+    if (bin)
+      break;
+    bin = A_MALLOC(code_off, Fs->code_heap);
+    code_off = 0;
   }
-  char *ffi_binding =
-      "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x41\x52\x41\x53\x48\x83\xEC\x20\x48\xB8"
-      "\x55\x44\x33\x22\x11\x00\x00\x00\x48\x8D\x4D\x10\xFF\xD0\x48\x83\xC4\x20"
-      "\x41\x5B\x41\x5A\xC9\xC2\x34\x12";
-  char *ret = A_MALLOC(0x2c, code_heap);
-  memcpy(ret, ffi_binding, 0x2c);
-  memcpy(ret + 0x12, &fptr, 0x8);
-  arity *= 8;
-  memcpy(ret + 0x2a, &arity, 0x2);
-  return ret;
+  return bin;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
-  /*
-  0:  \x48\x8D\x4C\x24\x08          lea    rcx,[rsp+0x8]
-  5:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
-  c:  00 00 00
-  f:  ff e0 					jmp rax
-  */
-  if (!code_heap) {
-    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  int64_t code_off = 0;
+  uint8_t *bin = NULL;
+  while (1) {
+    A(X86LeaSIB, RCX, -1, -1, RSP, 0x8);
+    A(X86MovImm, RAX, fptr);
+    A(X86JmpReg, RAX);
+    if (bin)
+      break;
+    bin = A_MALLOC(code_off, Fs->code_heap);
+    code_off = 0;
   }
-  const char *ffi_binding =
-      "\x48\x8D\x4C\x24\x08\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  char *ret = A_MALLOC(0x12, code_heap);
-  memcpy(ret, ffi_binding, 0x12);
-  memcpy(ret + 0x7, &fptr, 0x8);
-  return ret;
+  return bin;
 }
-#elif (defined(__linux__) || defined(__FreeBSD__)) && defined(__x86_64__)
-static CHeapCtrl *code_heap = NULL;  
+#elif defined(__linux__) || defined(__FreeBSD__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  /*
-0:  55                      push   rbp
-1:  48 89 e5                mov    rbp,rsp
-4:  48 83 e4 f0             and    rsp,0xfffffffffffffff0
-8:  56                      push   rsi
-9:  57                      push   rdi
-a:  41 52                   push   r10
-c:  41 53                   push   r11
-e:  48 8d 7d 10             lea    rdi,[rbp+0x10]
-12: 48 b8 55 44 33 22 11    movabs rax,0x1122334455
-19: 00 00 00
-1c: ff d0                   call   rax
-1e: 41 5b                   pop    r11
-20: 41 5a                   pop    r10
-22: 5f                      pop    rdi
-23: 5e                      pop    rsi
-24: c9                      leave
-25: c2 11 00                ret    0x11
-*/
-  // Look at the silly sauce at
-  // https://defuse.ca/online-x86-assembler.htm#disassembly Is 0x22 bytes long
-  if (!code_heap) {
-    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  int64_t code_off = 0;
+  uint8_t *bin = NULL;
+  while (1) {
+    A(X86PushReg, RBP);
+    A(X86MovRegReg, RBP, RSP);
+    A(X86AndImm, RSP, ~0xF);
+    A(X86PushReg, RSI);
+    A(X86PushReg, RDI);
+    A(X86PushReg, R10);
+    A(X86PushReg, R11);
+    A(X86LeaSIB, RDI, -1, -1, RBP, 0x10);
+    A(X86MovImm, RAX, fptr);
+    A(X86CallReg, RAX);
+    A(X86PopReg, R11);
+    A(X86PopReg, R10);
+    A(X86PopReg, RDI);
+    A(X86PopReg, RSI);
+    A(X86Leave, 0);
+    A(X86Ret, arity * 8);
+    if (bin)
+      break;
+    bin = A_MALLOC(code_off, Fs->code_heap);
+    code_off = 0;
   }
-  const char *ffi_binding =
-      "\x55\x48\x89\xE5\x48\x83\xE4\xF0\x56\x57\x41\x52\x41\x53\x48\x8D\x7D\x10"
-      "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xD0\x41\x5B\x41\x5A\x5F\x5E"
-      "\xC9\xC2\x11\x00";
-  char *ret = A_MALLOC(0x28, code_heap);
-  memcpy(ret, ffi_binding, 0x28);
-  memcpy(ret + 0x14, &fptr, 0x8); // in place of 0x1122334455
-  arity *= 8;
-  memcpy(ret + 0x26, &arity, 0x2); // in place of 0x1122
-  return ret;
+  return bin;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
-  /*
-  0:  48 b8 55 44 33 22 11    movabs rax,0x1122334455
-  7:  00 00 00
-  a:  ff e0 					jmp rax
-  */
-  if (!code_heap) {
-    code_heap = HeapCtrlInit(NULL, Fs, 1);
+  int64_t code_off = 0;
+  uint8_t *bin = NULL;
+  while (1) {
+    A(X86MovImm, RAX, fptr);
+    A(X86JmpReg, RAX);
+    if (bin)
+      break;
+    bin = A_MALLOC(code_off, Fs->code_heap);
+    code_off = 0;
   }
-  const char *ffi_binding = "\x48\xB8\x55\x44\x33\x22\x11\x00\x00\x00\xFF\xe0";
-  char *ret               = A_MALLOC(0xd, code_heap);
-  memcpy(ret, ffi_binding, 0xd);
-  memcpy(ret + 0x2, &fptr, 0x8);
-  return ret;
+  return bin;
 }
+#endif
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)

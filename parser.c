@@ -137,7 +137,7 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   int64_t idx, idx2;
   CHashClass *cls;
   CCmpCtrl *ccmp;
-  *(ccmp = A_CALLOC(sizeof(CCmpCtrl), NULL)) =
+  *(ccmp = A_MALLOC(sizeof(CCmpCtrl), NULL)) =
       (CCmpCtrl){.lex      = lex,
                  .hc       = HeapCtrlInit(NULL, Fs, 0),
                  .final_hc = Fs->code_heap};
@@ -145,7 +145,7 @@ CCmpCtrl *CmpCtrlNew(CLexer *lex) {
     char *name;
     int64_t rt;
     int64_t sz;
-  } raw_types[] = {
+  } static raw_types[] = {
       {"U0", RT_U0, 0},     {"U8i", RT_U8i, 1},   {"I8i", RT_I8i, 1},
       {"U16i", RT_U16i, 2}, {"I16i", RT_I16i, 2}, {"U32i", RT_U32i, 4},
       {"I32i", RT_I32i, 4}, {"U64i", RT_U64i, 8}, {"I64i", RT_I64i, 8},
