@@ -6333,6 +6333,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     PopTmp(cctrl, next);
     next->res.keep_in_tmp=1;
     code_off = __OptPassFinal(cctrl, next, bin, code_off);
+    //
+    //res.keep_in_tmp always stores into RAX/XMM0,so 
+    //
+    // So later on don't use RAX/XMM0 as it is the tmp register
+    //
+    // See Below now
+    //
     if (next->res.set_flags) {
       if (!reverse) {
         AIWNIOS_ADD_CODE(X86Jcc, X86_COND_E | 1, 6);
@@ -6342,9 +6349,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
       }
     } else if (next->raw_type == RT_F64) {
-      code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 1, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, 0, bin, code_off);
-      AIWNIOS_ADD_CODE(X86COMISDRegReg, next->res.reg, 0);
+      code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 2, bin, code_off);
+      //See Above note
+      code_off = __ICMoveF64(cctrl, 1, 0, bin, code_off);
+      AIWNIOS_ADD_CODE(X86COMISDRegReg, next->res.reg, 1);
       if (!reverse) {
         AIWNIOS_ADD_CODE(X86Jcc, X86_COND_E | 1, 6);
         CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
@@ -7079,7 +7087,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       break;
     case IC_DEREF:
       next     = rpn->base.next;
-      next->res.keep_in_tmp=1;
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR,
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);
