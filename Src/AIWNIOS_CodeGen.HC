@@ -309,7 +309,7 @@ I64 VarIRegToReg(I64 r)  {
 #define AIWNIOS_REG_SP REG_RSP
 #define AIWNIOS_TMP_IREG_START 0
 #define AIWNIOS_FREG_START 6
-#define AIWNIOS_FREG_CNT (15-6+1)
+#define AIWNIOS_FREG_CNT 0 //SystemV ABI doesnt save the FRegs
 #define AIWNIOS_TMP_FREG_START 2
 #define AIWNIOS_TMP_FREG_CNT 14
 I64 VarFRegToReg(I64 r)  {

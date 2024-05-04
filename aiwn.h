@@ -444,6 +444,10 @@ typedef struct CCmpCtrl {
   int64_t backend_user_data9;
   int64_t backend_user_data10;
   int64_t backend_user_data11;
+  int64_t used_iregs_bmp;
+  int64_t used_fregs_bmp;
+  int found_used_iregs;
+  int found_used_fregs;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
   // In SysV,the fregs are not saved,so i will make a mini function to save them
@@ -830,9 +834,14 @@ enum {
   #define AIWNIOS_TMP_IREG_START 0
   #define AIWNIOS_TMP_IREG_CNT   2
   #define AIWNIOS_FREG_START     6
-  #define AIWNIOS_FREG_CNT       (15 - 6 + 1)
+  #define AIWNIOS_FREG_CNT       0
+#if defined(__linux__) || defined(__FreeBSD__)
+  #define AIWNIOS_TMP_FREG_START 3
+  #define AIWNIOS_TMP_FREG_CNT   (16 - 3 + 1)
+#else
   #define AIWNIOS_TMP_FREG_START 3
   #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
+#endif
 
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))

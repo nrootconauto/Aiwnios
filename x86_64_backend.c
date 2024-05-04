@@ -17,9 +17,11 @@ static int64_t IsCompoundCompare(CRPN *r);
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off);
 static int64_t IsSavedFReg(int64_t r) {
+#ifdef _WIN32
   if (r >= AIWNIOS_FREG_START)
     if (r - AIWNIOS_FREG_START < AIWNIOS_FREG_CNT)
       return 1;
+#endif
   return 0;
 }
 static int64_t IsSavedIReg(int64_t r);
@@ -1424,7 +1426,7 @@ static int64_t X86MovQF64I64(char *to, int64_t a, int64_t b) {
 }
 
 int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
-                         int64_t off) {
+                  int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -3291,18 +3293,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   }
   rpn2 = ICArgN(rpn, rpn->length);
-#if !(defined(WIN32) || defined(_WIN32))
-  #define SAVE_FREGS                                                           \
-    if (cctrl->backend_user_data8) {                                           \
-      AIWNIOS_ADD_CODE(X86Call32, 1000);                                       \
-      if (bin)                                                                 \
-        CodeMiscAddRef(cctrl->fregs_save_label, bin + code_off - 4);           \
-    }
-#else
-  #define SAVE_FREGS // Nothing to do
-#endif
   if (rpn2->type == IC_SHORT_ADDR) {
-    SAVE_FREGS;
     AIWNIOS_ADD_CODE(X86Call32, 0)
     if (bin)
       CodeMiscAddRef(rpn2->code_misc, bin + code_off - 4);
@@ -3311,12 +3302,11 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   if (rpn2->type == IC_GLOBAL) {
     if (rpn2->global_var->base.type & HTT_FUN) {
       fptr = ((CHashFun *)rpn2->global_var)->fun_ptr;
-      if (!fptr||fptr==&DoNothing)
+      if (!fptr || fptr == &DoNothing)
         goto defacto;
       if (!Is32Bit((int64_t)fptr - (int64_t)(bin + code_off)))
         goto defacto;
       if (cctrl->code_ctrl->final_pass) {
-        SAVE_FREGS;
         AIWNIOS_ADD_CODE(X86Call32, (int64_t)fptr - (int64_t)(bin + code_off));
       } else
         goto defacto;
@@ -3326,33 +3316,23 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   defacto:
     rpn2->res.raw_type = RT_PTR; // Not set for some reason
     if (rpn2->type == IC_RELOC) {
-      SAVE_FREGS;
 
       AIWNIOS_ADD_CODE(X86CallSIB64, -1, -1, RIP, 0);
       if (bin)
         CodeMiscAddRef(rpn2->code_misc, bin + code_off - 4);
     } else if (rpn2->type == IC_I64 &&
                Is32Bit(rpn2->integer - (int64_t)(bin + code_off))) {
-      SAVE_FREGS;
 
       AIWNIOS_ADD_CODE(X86Call32, rpn2->integer - (int64_t)(bin + code_off));
     } else {
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR,
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);
-      SAVE_FREGS;
 
       AIWNIOS_ADD_CODE(X86CallReg, rpn2->res.reg);
     }
   }
 after_call:
-#if !(defined(WIN32) || defined(_WIN32))
-  if (cctrl->backend_user_data8) {
-    AIWNIOS_ADD_CODE(X86Call32, 1000);
-    if (bin)
-      CodeMiscAddRef(cctrl->fregs_restore_label, bin + code_off - 4);
-  }
-#endif
   if (has_vargs)
     AIWNIOS_ADD_CODE(X86AddImm32, RSP, to_pop);
   if (rpn->raw_type != RT_U0 && rpn->res.mode != MD_NULL) {
@@ -5136,17 +5116,29 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
   CMemberLst *lst;
   CRPN *r;
   int64_t cnt = 0;
+  int64_t idx = 0;
   memset(to_push, 0, 16);
   if (!cctrl->cur_fun) {
-    // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
-    for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
-         r = r->base.next) {
-      if (r->type == IC_IREG && r->raw_type != RT_F64) {
-        if (!to_push[r->integer])
-          if (IsSavedIReg(r->integer)) {
-            to_push[r->integer] = 1;
-            cnt++;
-          }
+    if (!cctrl->found_used_iregs) {
+      // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
+      for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+           r = r->base.next) {
+        if (r->type == IC_IREG && r->raw_type != RT_F64) {
+          if (!to_push[r->integer])
+            if (IsSavedIReg(r->integer)) {
+              Misc_Bts(&cctrl->used_iregs_bmp, r->integer);
+              to_push[r->integer] = 1;
+              cnt++;
+            }
+        }
+      }
+      cctrl->found_used_iregs = 1;
+    } else {
+      for (idx = 0; idx != 16; idx++) {
+        if (Misc_Bt(&cctrl->used_iregs_bmp, idx)) {
+          to_push[idx] = 1;
+          cnt++;
+        }
       }
     }
     return cnt;
@@ -5162,21 +5154,34 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
 }
 
 static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
+  memset(to_push, 0, 16);
+#ifdef _WIN32
   CMemberLst *lst;
   int64_t cnt = 0;
-  memset(to_push, 0, 16);
+  int64_t idx;
   CRPN *r;
   if (!cctrl->cur_fun) {
     // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
-    for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
-         r = r->base.next) {
-      if (r->type == IC_FREG && r->raw_type == RT_F64) {
-        if (!to_push[r->integer])
-          if (IsSavedFReg(r->integer)) {
-            to_push[r->integer] = 1;
-            Misc_Bts(&cctrl->backend_user_data8, r->integer);
-            cnt++;
-          }
+    if (!cctrl->found_used_fregs) {
+      cctrl->found_used_fregs = 1;
+      for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+           r = r->base.next) {
+        if (r->type == IC_FREG && r->raw_type == RT_F64) {
+          if (!to_push[r->integer])
+            if (IsSavedFReg(r->integer)) {
+              to_push[r->integer] = 1;
+              Misc_Bts(&cctrl->backend_user_data8, r->integer);
+              Misc_Bts(&cctrl->used_fregs_bmp, r->integer);
+              cnt++;
+            }
+        }
+      }
+    } else {
+      for (idx = 0; idx != 16; idx++) {
+        if (Misc_Bt(&cctrl->used_fregs_bmp, idx)) {
+          to_push[idx] = 1;
+          cnt++;
+        }
       }
     }
     return cctrl->backend_user_data7 = cnt;
@@ -5190,6 +5195,9 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
     }
   }
   return cctrl->backend_user_data7 = cnt;
+#else
+  return 0;
+#endif
 }
 
 // Add 1 in first bit for oppositive
@@ -5595,23 +5603,6 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   } else {
     AIWNIOS_ADD_CODE(X86Ret, 8 * arg_cnt);
   }
-#if !(defined(WIN32) || defined(_WIN32))
-  if (cctrl->backend_user_data8) {
-    // In System V ABI,Fregs arent saved so make a save/restore leaf function
-    cctrl->fregs_save_label->addr = bin + code_off;
-    for (i = 0; i != i3; i++) {
-      AIWNIOS_ADD_CODE(X86MovIndirRegF64, flist[i], -1, -1, RBP,
-                       fsave_area - 8 * i);
-    }
-    AIWNIOS_ADD_CODE(X86Ret, 0);
-    cctrl->fregs_restore_label->addr = bin + code_off;
-    for (i = 0; i != i3; i++) {
-      AIWNIOS_ADD_CODE(X86MovRegIndirF64, flist[i], -1, -1, RBP,
-                       fsave_area - 8 * i);
-    }
-    AIWNIOS_ADD_CODE(X86Ret, 0);
-  }
-#endif
   return code_off;
 }
 static int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i,
@@ -7094,7 +7085,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       } else
         abort();
       // Undefined?
-      if (!enter_addr||enter_addr==&DoNothing) {
+      if (!enter_addr || enter_addr == &DoNothing) {
         misc = AddRelocMisc(cctrl, next->global_var->base.str);
         AIWNIOS_ADD_CODE(
             X86MovRegIndirI64, into_reg, -1, -1, RIP,
@@ -7879,12 +7870,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (tmp.raw_type == RT_F64)
       AIWNIOS_ADD_CODE(X86MovQI64F64, 0, 0);
     {
-      char __buf[0x10];
-      if (__FindPushedIRegs(cctrl, __buf) || __FindPushedFRegs(cctrl, __buf)) {
-        if (bin) cctrl->backend_user_data11 = bin + code_off;
-        AIWNIOS_ADD_CODE(X86Jmp, 0);
-        CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4); // fills in JMP IMM right above
-      }
+      // You need to always jump to epilog to avoid pass-through(A function with
+      // no registers can stil have multiple returns)
+      if (bin)
+        cctrl->backend_user_data11 = bin + code_off;
+      AIWNIOS_ADD_CODE(X86Jmp, 0);
+      CodeMiscAddRef(cctrl->epilog_label,
+                     bin + code_off - 4); // fills in JMP IMM right above
     }
     break;
   ic_base_ptr:
@@ -8313,7 +8305,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       code_off += statics_sz + 8;
   }
   // TODO something more elegant, like checking the label addr (how?)
-  if (cctrl->backend_user_data11 && !memcmp(cctrl->backend_user_data11, /* jump with 0 offset */ "\xE9\x00\x00\x00\x00", 5))
+  if (cctrl->backend_user_data11 &&
+      !memcmp(cctrl->backend_user_data11,
+              /* jump with 0 offset */ "\xE9\x00\x00\x00\x00", 5))
     memcpy(cctrl->backend_user_data11, "\x90\x90\x90\x90\x90", 5);
   final_size = code_off;
   if (dbg_info) {
