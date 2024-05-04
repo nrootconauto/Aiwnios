@@ -373,6 +373,7 @@ typedef struct CCodeCtrl {
 } CCodeCtrl;
 typedef struct CCodeMiscRef {
   struct CCodeMiscRef *next;
+  CRPN *from_ic;
   int32_t *add_to, offset;
   // For arm
   int32_t (*patch_cond_br)(int64_t, int64_t);
@@ -383,6 +384,7 @@ typedef struct CCodeMiscRef {
   // Used for RISC-V
   int8_t is_jal;     // Not JALR
   int8_t is_4_bytes; // Default is 8 bytes
+  int8_t is_dummy;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;
@@ -644,7 +646,8 @@ enum {
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
   ICF_LOCK_EXPR = 128,   // Used with lock {}
-  ICF_IS_BOOL   = 256
+  ICF_IS_BOOL   = 256,
+  ICF_NO_JUMP=512, //Used for eliminating jumps to next instruction
 };
 struct CRPN {
   CQue base;

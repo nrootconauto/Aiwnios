@@ -5889,8 +5889,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse,
           is_typecast, use_lock_prefix = 0;
   int64_t *range_cmp_types, use_flags  = rpn->res.set_flags;
-  CCodeMisc *old_fail_misc  = (CCodeMisc *)cctrl->backend_user_data5,
-            *old_pass_misc  = (CCodeMisc *)cctrl->backend_user_data6;
+  CCodeMisc *old_fail_misc = (CCodeMisc *)cctrl->backend_user_data5,
+            *old_pass_misc = (CCodeMisc *)cctrl->backend_user_data6;
+  CCodeMiscRef *cm_ref;
   cctrl->backend_user_data5 = 0;
   cctrl->backend_user_data6 = 0;
   rpn->res.set_flags        = 0;
@@ -6445,11 +6446,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
     break;
   ic_goto:
-    if (cctrl->code_ctrl->final_pass) {
-      AIWNIOS_ADD_CODE(X86Jmp, 5); // 1 for opcode,4 for offsetr
-      CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-    } else
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
+    if (!(rpn->flags & ICF_NO_JUMP)) {
+      if (cctrl->code_ctrl->final_pass) {
+        AIWNIOS_ADD_CODE(X86Jmp, 5); // 1 for opcode,4 for offsetr
+        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4)->from_ic = rpn;
+      } else
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+    }
     break;
   ic_label:
     rpn->code_misc->addr = bin + code_off;
@@ -7331,8 +7334,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (bin)
         X86Jmp(exit_addr, (bin + code_off) - exit_addr);
     } else {
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(old_pass_misc, bin + code_off - 4)->from_ic = rpn;
+      }
     }
     A_FREE(range);
     A_FREE(range_args);
@@ -7354,9 +7359,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z, 0);
       if (bin)
         CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      if (bin)
-        CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        if (bin)
+          CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->from_ic = rpn;
+      }
       goto ret;
     }
     if (rpn->res.mode == MD_REG && rpn->res.mode != RT_F64) {
@@ -7432,8 +7439,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       BACKEND_TEST(&b->res);
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z, 6);
       CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(old_pass_misc, bin + code_off - 4)->from_ic = rpn;
+      }
       goto ret;
     }
 #define BACKEND_BOOLIFY(to, reg, rt)                                           \
@@ -7485,8 +7494,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       BACKEND_TEST(&b->res);
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z ^ 1, 6);
       CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->from_ic = rpn;
+      }
       goto ret;
     }
     // A
@@ -7519,8 +7530,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.integer               = 0;
     tmp.raw_type              = RT_I64i;
     code_off                  = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-    AIWNIOS_ADD_CODE(X86Jmp, 0);
-    CodeMiscAddRef(rpn->code_misc2, bin + code_off - 4);
+    if (!(rpn->flags & ICF_NO_JUMP)) {
+      AIWNIOS_ADD_CODE(X86Jmp, 0);
+      CodeMiscAddRef(rpn->code_misc2, bin + code_off - 4)->from_ic = rpn;
+    }
     rpn->code_misc->addr  = bin + code_off;
     tmp.integer           = 1;
     code_off              = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
@@ -7573,8 +7586,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (old_pass_misc && old_fail_misc) {
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z, 0);
       CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->from_ic = rpn;
+      }
     }
     if (use_flags)
       goto ret;
@@ -7597,8 +7612,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (old_fail_misc && old_pass_misc) {
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z ^ 1, 0);
       CodeMiscAddRef(old_pass_misc, bin + code_off - 4);
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 0);
+        CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->from_ic = rpn;
+      }
     }
     if (use_flags)
       goto ret;
@@ -7873,10 +7890,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       // You need to always jump to epilog to avoid pass-through(A function with
       // no registers can stil have multiple returns)
       if (bin)
-        cctrl->backend_user_data11 = bin + code_off;
-      AIWNIOS_ADD_CODE(X86Jmp, 0);
-      CodeMiscAddRef(cctrl->epilog_label,
-                     bin + code_off - 4); // fills in JMP IMM right above
+        if (!(rpn->flags & ICF_NO_JUMP)) {
+          AIWNIOS_ADD_CODE(X86Jmp, 0);
+          CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4)->from_ic =
+              rpn;
+        }
     }
     break;
   ic_base_ptr:
@@ -8065,8 +8083,10 @@ ret:
       AIWNIOS_ADD_CODE(X86Jcc, X86_COND_Z | 1, 0);
       CodeMiscAddRef(misc2, bin + code_off - 4);
       // Fail address
-      AIWNIOS_ADD_CODE(X86Jmp, 5);
-      CodeMiscAddRef(misc, bin + code_off - 4);
+      if (!(rpn->flags & ICF_NO_JUMP)) {
+        AIWNIOS_ADD_CODE(X86Jmp, 5);
+        CodeMiscAddRef(misc, bin + code_off - 4)->from_ic = rpn;
+      }
     }
   }
   if (rpn->flags & ICF_STUFF_IN_REG) {
@@ -8138,7 +8158,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   cctrl->backend_user_data0 = 0;
   // 0 get maximum code size,
   // 1 compute bin
-  for (run = 0; run < 2; run++) {
+  for (run = 0; run < 3; run++) {
     cctrl->code_ctrl->final_pass = run;
     cctrl->backend_user_data1    = 0;
     cctrl->backend_user_data2    = 0;
@@ -8147,6 +8167,10 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       code_off = 0;
       bin      = NULL;
     } else if (run == 1) {
+      bin      = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      code_off = 0;
+    } else if (run == 2) {
+      A_FREE(bin);
       bin      = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
       code_off = 0;
     }
@@ -8198,6 +8222,14 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
             } else
               *cm_ref->add_to = (char *)misc->addr - (char *)cm_ref->add_to -
                                 4 + cm_ref->offset;
+            // Set ICF_NO_JUMP if necessary
+            if (cm_ref->from_ic) {
+              if ((char *)misc->addr - (char *)cm_ref->add_to -
+                      cm_ref->offset ==
+                  4) {
+                cm_ref->from_ic->flags |= ICF_NO_JUMP;
+              }
+            }
           }
           A_FREE(cm_ref);
         }
@@ -8234,8 +8266,14 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           break;
         goto fill_in_refs;
       case CMT_SHORT_ADDR:
-        if (run && misc->patch_addr) {
+        if (run == 2 && misc->patch_addr) {
           *misc->patch_addr = misc->addr;
+        } else if (run != 2) {
+          for (cm_ref = misc->refs; cm_ref; cm_ref = cm_ref_tmp) {
+            cm_ref_tmp = cm_ref->next;
+            A_FREE(cm_ref);
+          }
+          misc->refs = NULL;
         }
         break;
       case CMT_RELOC_U64:
@@ -8245,7 +8283,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         if (bin)
           *(void **)(bin + code_off) = &DoNothing;
         code_off += 8;
-        if (run) {
+        if (run == 2) {
           *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
               .base =
                   {
@@ -8256,7 +8294,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           };
           HashAdd(import, Fs->hash_table);
         }
-        if (run && misc->patch_addr) {
+        if (run == 2 && misc->patch_addr) {
           *misc->patch_addr = misc->addr;
         }
         goto fill_in_refs;
@@ -8270,7 +8308,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
             memcpy(bin + code_off, misc->str, misc->str_len);
           code_off += misc->str_len;
         } else {
-          if (run) {
+          if (run == 2) {
             // See IC_STR: We "steal" the ->str because it's already on the
             // heap.
             //  IC_STR steals the ->str point so we dont want to Free it
@@ -8304,11 +8342,6 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
     if (statics_sz)
       code_off += statics_sz + 8;
   }
-  // TODO something more elegant, like checking the label addr (how?)
-  if (cctrl->backend_user_data11 &&
-      !memcmp(cctrl->backend_user_data11,
-              /* jump with 0 offset */ "\xE9\x00\x00\x00\x00", 5))
-    memcpy(cctrl->backend_user_data11, "\x90\x90\x90\x90\x90", 5);
   final_size = code_off;
   if (dbg_info) {
     cnt         = MSize(dbg_info) / 8;
