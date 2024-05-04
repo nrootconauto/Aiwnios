@@ -669,6 +669,8 @@ struct CRPN {
   CCodeMisc *code_misc2, *code_misc3, *code_misc4;
   CICArg res;
   CRPN *tree1, *tree2, *ic_fwd;
+  //Use with Misc_Bt,includes temporaries
+  int64_t changes_iregs,changes_fregs;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
@@ -840,7 +842,7 @@ enum {
   #define AIWNIOS_FREG_CNT       0
 #if defined(__linux__) || defined(__FreeBSD__)
   #define AIWNIOS_TMP_FREG_START 3
-  #define AIWNIOS_TMP_FREG_CNT   (16 - 3 + 1)
+  #define AIWNIOS_TMP_FREG_CNT   (15 - 3 + 1)
 #else
   #define AIWNIOS_TMP_FREG_START 3
   #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)

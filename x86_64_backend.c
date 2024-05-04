@@ -2313,6 +2313,11 @@ static int64_t PushToStack(CCmpCtrl *cctrl, CICArg *arg, char *bin,
       goto defacto;
     }
     return code_off;
+  case MD_FRAME:
+    if(RawTypeIs64(tmp.raw_type)) {
+      AIWNIOS_ADD_CODE(X86PushM64, -1, -1, RBP, -tmp.off);
+    } else goto defacto;
+    return code_off;
   case MD_INDIR_REG:
     switch (tmp.raw_type) {
     case RT_I64i:
@@ -3288,6 +3293,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       has_vargs = 1;
       code_off  = __OptPassFinal(cctrl, rpn2, bin, code_off);
     } else {
+      rpn2->res.keep_in_tmp=1;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
       code_off = PushToStack(cctrl, &rpn2->res, bin, code_off);
     }
@@ -3340,6 +3346,8 @@ after_call:
     tmp.mode = MD_REG;
     tmp.raw_type =
         rpn->raw_type == RT_F64 ? RT_F64 : RT_I64i; // Promote to 64bits
+    if(rpn->res.keep_in_tmp)
+		rpn->res=tmp;
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
   }
   return code_off;
@@ -6400,8 +6408,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   ic_to_f64:
     next     = rpn->base.next;
     code_off = __OptPassFinal(cctrl, next, bin, code_off);
-    if (rpn->res.keep_in_tmp)
-      rpn->res = next->res;
     code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
     break;
   ic_typecast:
@@ -6417,7 +6423,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         tmp.reg = rpn->res.reg;
       AIWNIOS_ADD_CODE(X86MovQI64F64, tmp.reg, next->res.reg);
       if (rpn->res.keep_in_tmp)
-        rpn->res = next->res;
+        rpn->res = tmp;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (next->raw_type != RT_F64 && rpn->raw_type == RT_F64) {
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
@@ -6430,13 +6436,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         tmp.reg = rpn->res.reg;
       AIWNIOS_ADD_CODE(X86MovQF64I64, tmp.reg, next->res.reg);
       if (rpn->res.keep_in_tmp)
-        rpn->res = next->res;
+        rpn->res = tmp;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (next->type == IC_DEREF) {
       code_off     = DerefToICArg(cctrl, &tmp, next, 1, bin, code_off);
       tmp.raw_type = rpn->raw_type;
       if (rpn->res.keep_in_tmp)
-        rpn->res = next->res;
+        rpn->res = tmp;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else {
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
@@ -6471,7 +6477,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.off      = (int64_t)rpn->global_var->data_addr;
       tmp.raw_type = rpn->global_var->var_class->raw_type;
       if (rpn->res.keep_in_tmp)
-        rpn->res = next->res;
+        rpn->res = tmp;
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -6498,7 +6504,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   } else                                                                       \
     AIWNIOS_ADD_CODE(int_op, into_reg);                                        \
   if (rpn->res.keep_in_tmp)                                                    \
-    rpn->res = next->res;                                                      \
+    rpn->res = tmp;                                                      \
   code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     if (rpn->raw_type == RT_F64) {
       next = ICArgN(rpn, 0);
@@ -6688,7 +6694,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                            derefed.reg2, derefed.reg, derefed.off);            \
         }                                                                      \
         if (rpn->res.keep_in_tmp)                                              \
-          rpn->res = next->res;                                                \
+          rpn->res = tmp;                                                \
         if (rpn->res.mode != MD_NULL) {                                        \
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);             \
         }                                                                      \
