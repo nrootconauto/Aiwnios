@@ -1469,6 +1469,7 @@ static void BootAiwnios(char *bootstrap_text) {
 static const char *t_drive;
 static void Boot() {
   int64_t len;
+  char *host_abi;
   char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");
@@ -1487,19 +1488,31 @@ static void Boot() {
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
   "#define TEXT_MODE 1\n"                                                      \
   "#define BOOTSTRAP 1\n"                                                      \
+  "#define HOST_ABI '%s'\n"                                                      \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64");
+#if defined(__APPLE__) 
+    host_abi="Apple";
+#else
+    host_abi="SysV";
+#endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "AARCH64");
+    sprintf(buf, BOOTSTRAP_FMT, "AARCH64",host_abi);
 #elif defined(__x86_64__)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86");
+    #if defined(_WIN32)||defined(WIN32)
+    host_abi="Win";
+    #else
+    host_abi="SysV";
+    #endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "X86");
+    sprintf(buf, BOOTSTRAP_FMT, "X86",host_abi);
 #elif defined(__riscv) || defined(__riscv__)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV");
+    host_abi="SysV";
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "RISCV");
+    sprintf(buf, BOOTSTRAP_FMT, "RISCV",host_abi);
 #else
   #error "Arch not supported"
 #endif

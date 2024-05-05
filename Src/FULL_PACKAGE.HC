@@ -175,7 +175,7 @@ SetFs(Gs->seth_task);
 #ifdef BOOTSTRAP
 Cd("Src");
 U8 *body=
-	"#define IMPORT_AIWNIOS_SYMS 1\n"
+	MStrPrint("#define IMPORT_AIWNIOS_SYMS 1\n"
 	"#define TEXT_MODE 0\n"
 	#ifdef TARGET_X86
 	"#define TARGET_X86 1\n"
@@ -186,9 +186,11 @@ U8 *body=
 	#ifdef TARGET_RISCV
 	"#define TARGET_RISCV 1\n"
 	#endif
+	"#define HOST_ABI '%c'\n"
 	"#define STAGE1 1\n"
-	"#include \"HCRT_TOS.HC\";;\n"
-;
+	"#include \"HCRT_TOS.HC\";;\n",
+	HOST_ABI
+);
 //Put this in a scope to do this all at once
 {
 	FileWrite("STAGE1.HC",body,StrLen(body));

@@ -839,13 +839,14 @@ enum {
   #define AIWNIOS_TMP_IREG_START 0
   #define AIWNIOS_TMP_IREG_CNT   2
   #define AIWNIOS_FREG_START     6
-  #define AIWNIOS_FREG_CNT       0
 #if defined(__linux__) || defined(__FreeBSD__)
   #define AIWNIOS_TMP_FREG_START 3
   #define AIWNIOS_TMP_FREG_CNT   (15 - 3 + 1)
+  #define AIWNIOS_FREG_CNT       0
 #else
   #define AIWNIOS_TMP_FREG_START 3
   #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
+  #define AIWNIOS_FREG_CNT       (15-6+1)
 #endif
 
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
