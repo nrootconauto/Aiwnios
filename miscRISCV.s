@@ -171,7 +171,7 @@ TempleOS_CallVaArgs:
   addi sp,sp,-16
   sd fp,(sp)
   sd ra,8(sp)
-  addi fp,sp,0
+  addi fp,sp,16
   addi a4,sp,48 # point to argv
   
   # sz=argc1+argc+1 
@@ -213,7 +213,7 @@ TempleOS_CallVaArgs:
   
   jalr a0
   
-  addi sp,fp,0
+  addi sp,fp,-16
   ld fp,(sp)
   ld ra,8(sp)
   addi sp,sp,16
