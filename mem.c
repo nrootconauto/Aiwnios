@@ -189,7 +189,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!t)
     t = Fs->heap;
   int64_t orig = cnt;
-  cnt += 16;
+  if(bc_enable) cnt += 16;
   CHeapCtrl *hc = t;
   int64_t pags;
   CMemUnused *ret;
@@ -250,7 +250,6 @@ big:
   goto almost_done;
 almost_done:
   hc->used_u8s += cnt;
-  Misc_LBtr(&hc->locked_flags, 1);
   ret->hc = hc;
   ret++;
   if (bc_enable) {
@@ -261,6 +260,8 @@ almost_done:
       orig = 8 + orig & ~7ll;
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
+  if(ret-1!=NULL) QueIns(&ret[-1].next,hc->used_mem.last);
+  Misc_LBtr(&hc->locked_flags, 1);
   SetWriteNP(old_wnp);
   return ret;
 }
@@ -287,6 +288,8 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
+  QueRem(&un->next); //Remove from used mem
+  un->last=NULL;
   hc->used_u8s -= un->sz;
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
     hash                      = hc->heap_hash[un->sz / 8];
@@ -338,6 +341,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
   ct->mem_task        = task;
   ct->malloc_free_lst = NULL;
   QueInit(&ct->mem_blks);
+  QueInit(&ct->used_mem);
   return ct;
 }
 

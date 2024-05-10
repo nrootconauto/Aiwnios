@@ -206,6 +206,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
     Exit;
   }
   DumbStackTrace(rbp,oip);
+  if(Gs->num) Exit;
   MemCpy(Fs->context_save_area,gps,22*8);
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
@@ -536,4 +537,25 @@ U0 Da(U8 **addr,I64 cnt=0x10)
     "%08X:%08X,%P\n",addr,*addr,*addr;
     addr++;
   }
+}
+
+U0 HeapWho() {
+//Dont use current heapctrl for the poo poo suace(we will modify the heap possibly during print)
+  CHeapCtrl *old=Fs->data_heap;
+  CHeapCtrl *dummy=HeapCtrlInit(NULL,Fs,0);
+  CDoc *poop=DocNew; //MAke a dummy document because we are "swapping" CHeapCtrls
+  CMemUsed *used,*head;
+  Fs->data_heap=dummy;
+  head=&old->used_mem;
+  used=head->next;
+  while(LBts(&old->locked_flags,0))
+    Sleep(1);
+  while(used!=head) {
+    DocPrint(poop,"%X(%d) from %P,%P\n",used+1,used->size,used->caller1,used->caller2);
+    used=used->next;
+  }
+  LBtr(&old->locked_flags,0);
+  Fs->data_heap=old;
+  DocInsDoc(DocPut(Fs),poop);
+  HeapCtrlDel(dummy);
 }

@@ -1947,6 +1947,7 @@ break;case IC_ASM:
     }
   }
   __HC_CmpCtrlDel(acc);
+  COCDel(cc,&cc->coc);
   return machine_code;
 }
 

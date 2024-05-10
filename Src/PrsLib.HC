@@ -188,21 +188,21 @@ U0 COCDel(CCmpCtrl *cc,CCodeCtrl *coc)
 	  undef=cm->str;
 	  cm->str=NULL;
 	} else if (!cm->use_cnt) {
-	  PrintWarn("Unused label %s\n",cm->str);
-	  LexWarn(cc,"Unused label at ");
+//	  PrintWarn("Unused label %s\n",cm->str);
+//	  LexWarn(cc,"Unused label at ");
 	}
 	break;
       case CMT_JMP_TABLE:
 	Free(cm->jmp_table);
 	break;
       case CMT_FLOAT_CONSTS:
-	Free(cm->float_consts);
+//	Free(cm->float_consts);
 	break;
       case CMT_ARRAY_DIM:
 	LinkedLstDel(cm->dim);
 	break;
       case CMT_HASH_ENTRY:
-	HashDel(cm->h);
+//	HashDel(cm->h);
 	break;
     }
     Free(cm->str);

@@ -14,19 +14,31 @@ U8 *StrNew(U8 *str,CTask *task=NULL) {
 }
 U8 *MAlloc(I64 cnt,CTask *task=NULL) {
   U8 *hc;
+  CMemUnused *m;
   if(task)
     hc=task->data_heap;
   else
     hc=Fs->data_heap;
-  return __MAlloc(cnt,hc);
+  m=__MAlloc(cnt,hc);
+  if(m) {
+    m[-1].caller1=Caller(2);
+    m[-1].caller2=Caller(3);
+  }
+  return m;
 }
 U8 *CAlloc(I64 cnt,CTask *task=NULL) {
   U8 *hc;
+  CMemUnused *m;
   if(task)
     hc=task->data_heap;
   else
     hc=Fs->data_heap;
-  return __CAlloc(cnt,hc);
+  m=__CAlloc(cnt,hc);
+  if(m) {
+    m[-1].caller1=Caller(2);
+    m[-1].caller2=Caller(3);
+  }
+  return m;
 }
 U8 *AStrNew(U8 *str) {
   return StrNew(str,adam_task);
@@ -38,7 +50,7 @@ U8 *ACAlloc(I64 cnt) {
   return CAlloc(cnt,adam_task);
 }
 U8 *MAllocIdent(U8 *ptr,CTask *task=NULL) {
-  U8 *hc,*ret;
+  CMemUnused *hc,*ret;
   I64 cnt=MSize(ptr);
   if(task)
     hc=task->data_heap;
@@ -46,6 +58,10 @@ U8 *MAllocIdent(U8 *ptr,CTask *task=NULL) {
     hc=Fs->data_heap;
   ret=__MAlloc(cnt,hc);
   MemCpy(ret,ptr,cnt);
+  if(ret) {
+    ret[-1].caller1=Caller(2);
+    ret[-1].caller2=Caller(3);
+  }
   return ret;
 }
 

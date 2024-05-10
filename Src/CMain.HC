@@ -69,24 +69,24 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
         case IC_CALL_EXTERN:
         case IC_COMMA:
         case IC_TO_BOOL:
-        RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(rpn),FALSE);
-        break;defualt:
-        RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
-        RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
+	  RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(rpn),FALSE);
+	  break;defualt:
+	  RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
+	  RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
       }
       if(cc->flags&CCF_AOT_COMPILE)
-        //ARM likes 4byte align for instrcutions
+//ARM likes 4byte align for instrcutions
         while(cc->aotc->rip%4)
-          AOTStoreCodeU8(cc,0);
+	  AOTStoreCodeU8(cc,0);
       if (res=COCCompile(cc,&size,NULL,_type)) {
-	if (cc->flags&CCF_AOT_COMPILE) {
+        if (cc->flags&CCF_AOT_COMPILE) {
 	  j=cc->aotc->rip;
 	  k=(size+7)>>3;
-    for (i=0;i<k;i++)
+	  for (i=0;i<k;i++)
 	    AOTStoreCodeU64(cc,res[i]);
 	  Free(res);
 	  res=j;
-	}
+        }
       }
     } //TODO: else del misc?
   } else //TODO: too dangerous to del Misc?

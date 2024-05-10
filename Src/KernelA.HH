@@ -2756,21 +2756,17 @@ public class CFile //See $LK,"::/Demo/Dsk/DataBase.HC"$.
 
 #define _CFG_HEAP_DBG FALSE
 
-
+//See aiwn.h
 class CMemUnused
 {
-  U0	hc;
-  U0	caller1,caller2;
   CMemUnused *next;
+  CMemUnused *lasts;
+  CHeapCtrl *hc;
+  U8 *caller1,*caller2;
   I64	size;
 };
-class CMemUsed
+class CMemUsed:CMemUnused
 {
-  CHeapCtrl *hc;
-  U0	caller1,caller2;
-  U0	next,last;
-  I64	size;
-  U0	start;
 };
 
 
@@ -2824,17 +2820,15 @@ public class CBlkPool
 #define HClf_LOCKED		0
 
 #define HEAP_CTRL_SIGNATURE_VAL	'HcSV'
+//See aiwn.h
 public class CHeapCtrl
 {
-  CBlkPool *bp;
-  U32	hc_signature,pad;
+  U32	hc_signature,is_code_heap;
   I64	locked_flags,alloced_u8s,used_u8s;
   CTask *mem_task;
-  CMemBlk *next_mem_blk,*last_mem_blk;
-  CMemBlk *last_mergable;
-  CMemUnused *malloc_free_lst;
-  CMemUsed *next_um,*last_um;
-  CMemUnused *heap_hash[MEM_HEAP_HASH_SIZE/sizeof(U8 *)];
+  CMemUnused *malloc_free_lst,*heap_hash[MEM_HEAP_HASH_SIZE/sizeof(U8 *)+1];
+  CQue blks;
+  CQue used_mem; //CMemUsed
 };
 
 public class CDevGlbls
@@ -7122,3 +7116,4 @@ public extern CCntsGlbls cnts;
 extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
+extern U0 HeapWho();

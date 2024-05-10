@@ -144,11 +144,12 @@ typedef struct CTask {
 } CTask;
 typedef struct CHeapCtrl {
   int32_t hc_signature;
-  char is_code_heap;
+  int32_t is_code_heap;
   int64_t locked_flags, alloced_u8s, used_u8s;
   struct CTask *mem_task;
   struct CMemUnused *malloc_free_lst, *heap_hash[MEM_HEAP_HASH_SIZE / 8 + 1];
   CQue mem_blks;
+  CQue used_mem;
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
@@ -158,7 +159,9 @@ typedef struct CMemBlk {
 typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
   struct CMemUnused *next;
+  struct CMemUnused *last; //Used for used memory only
   CHeapCtrl *hc;
+  void *caller1,*caller2; //Used for used memory only
   int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 typedef struct CHash {
