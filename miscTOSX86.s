@@ -50,10 +50,11 @@ TempleOS_CallVaArgs:
 
   mov rcx,[rbp+5*8] #argc
   lea rsi,[rbp+6*8] #argv 
-  shl rcx,3
-  sub rsp,rcx
+  mov rax,rcx
+  neg rax
+  lea rsp,[rsp+8*rax]
   mov rdi,rsp
-  rep movsb
+  rep movsq
 
   call qword ptr [rbp+2*8] #fptr
   mov rcx,[rbp+3*8]#argc1
