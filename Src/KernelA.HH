@@ -18,7 +18,7 @@ extern class CTask;
 #define U8 U8i
 #define I8 I8i
 #define Bool U8
-#define NULL	0
+#define NULL	(0(U8*))
 #define TRUE	1
 #define FALSE	0
 #define ON	1
