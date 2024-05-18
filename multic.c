@@ -190,6 +190,8 @@ static void InteruptRt(int ul, siginfo_t *info, ucontext_t *_ctx) {
   #endif
   #if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
     FFI_CALL_TOS_2(fp, NULL, ctx->mc_gpregs.gp_x[29]);
+  #elif (defined(__riscv) || defined(__riscv__)) && defined(__linux__)
+    FFI_CALL_TOS_2(fp, NULL, ctx->__gregs[8]);
   #elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
     FFI_CALL_TOS_2(fp, NULL, ctx->regs[29]);
   #endif
