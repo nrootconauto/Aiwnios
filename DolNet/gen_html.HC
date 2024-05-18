@@ -8,8 +8,13 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
 
 U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con;
+  U8 *chroot;
   if(!url->abs_path) return;
   U8 *link=ChrootFile(url->abs_path,SERVER_HTML);
+  if(!FileFind(link,,FUF_Z_OR_NOT_Z)) {
+    Free(link);
+    link=ChrootFile(url->abs_path,SERVER_WWW);
+  }
   U8 *f,*mime,*dot=FileExtDot(link),*et;
   I64 len;
   if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
@@ -19,6 +24,7 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     else if(!StrICmp(dot,".PNG")||!StrICmp(dot,".PNG.Z"))  mime="image/png";
     else if(!StrICmp(dot,".BMP")||!StrICmp(dot,".BMP.Z"))  mime="image/bmp";
     else if(!StrICmp(dot,".CSS")||!StrICmp(dot,".CSS.Z"))  mime="text/css";
+    else if(!StrICmp(dot,".MP4")||!StrICmp(dot,".MP4.Z"))  mime="video/mp4";
     else if(!StrICmp(dot,".MIN.CSS")||!StrICmp(dot,".MIN.CSS.Z"))  mime="text/css";
     else mime="text/plain";
     con=Fs->user_data;
