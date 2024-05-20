@@ -1375,7 +1375,7 @@ enter:
     }
     sz=X86EncodeOpcode(len,best,modes,dummy,asm_patches);
     AddBytesToBuf(&buf,&len,sz,dummy);
-  } else if(cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
+  } else if(cc->token==TK_IDENT&&cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
     if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
 //TODO
     } else if(!StrCmp(cc->hash_entry->str,"BINFILE")) {
@@ -1396,6 +1396,7 @@ duxx:
 	  idx=0;
 	  while(tmp=cc->cur_str[idx++])
 	    AddBytesToBuf(&buf,&len,sz,&tmp);
+	  Lex(cc);
         } else {
 	  tmp_mode=CAlloc(sizeof CX86AddrMode);
 	  tmp_mode->type=X86MT_IMM;
