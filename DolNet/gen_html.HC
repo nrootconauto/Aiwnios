@@ -55,9 +55,12 @@ en:
 }
 U0 DirGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *prefix="/";
-  U8 *tmp;
+  U8 *tmp,*last;
   Bool raw=FALSE;
   if(!url->abs_path) return;
+  last=&url->abs_path[StrLen(url->abs_path)-1];
+  if (*last=='/')
+    *last=0;
   if(!StrNCmp(url->abs_path,SERVER_RAW_PREFIX,StrLen(SERVER_RAW_PREFIX))) {
     tmp=StrNew(url->abs_path+StrLen(SERVER_RAW_PREFIX));
     Free(url->abs_path);
