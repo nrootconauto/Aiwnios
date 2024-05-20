@@ -4531,7 +4531,7 @@ void __HC_ICSetLock(CRPN *l) {
   l->flags |= ICF_LOCK_EXPR;
 }
 
-void __HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) {
+CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc) {
   CRPN *rpn;
   *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
       .type     = IC_GET_VARGS_PTR,

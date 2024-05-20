@@ -51,10 +51,6 @@ int SetWriteNP(int st) {
   }
   return old;
 }
-#else
-int SetWriteNP(int st) {
-  return st;
-}
 #endif
 void InitBoundsChecker() {
   int64_t want   = (1ll << 31) / 8;

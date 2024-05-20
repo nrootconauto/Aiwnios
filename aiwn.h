@@ -907,6 +907,10 @@ enum {
   }                                                                            \
   }
 
+#ifndef __APPLE__
+#define SetWriteNP(n) (n)
+#endif
+
 int64_t X86PushReg(char *to, int64_t reg);
 int64_t X86MovRegReg(char *to, int64_t a, int64_t b);
 int64_t X86AndImm(char *to, int64_t a, int64_t b);
@@ -1083,6 +1087,7 @@ CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc, int64_t amt);
 #define HC_IC_BINDINGH(name) CRPN *__##name(CCodeCtrl *cc);
+HC_IC_BINDINGH(HC_ICAdd_GetVaArgsPtr)
 HC_IC_BINDINGH(HC_ICAdd_Pow)
 HC_IC_BINDINGH(HC_ICAdd_Eq)
 HC_IC_BINDINGH(HC_ICAdd_Div)
