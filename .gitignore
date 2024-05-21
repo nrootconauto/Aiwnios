@@ -22,3 +22,4 @@ HCRT2.BIN
 HCRT2.DBG.Z
 build
 Registry.HC.Z
+*.orig

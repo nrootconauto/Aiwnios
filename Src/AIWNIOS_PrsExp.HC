@@ -726,8 +726,6 @@ pop:
       } else if(rpn->type==IC_DEREF) {
          r2=cc->coc.coc_head.next;
 	if(&cc->coc.coc_head==r2) LexExcept(cc,"Can't get derefernce nothing at ");
-	 if(!r2->ic_dim&&!r2->ic_class->ptr_stars_cnt)
-           LexExcept(cc,"Expected pointer type at ");
       }
       if(rpn)
         RPNAdd(cc,rpn);

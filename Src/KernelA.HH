@@ -18,7 +18,7 @@ extern class CTask;
 #define U8 U8i
 #define I8 I8i
 #define Bool U8
-#define NULL	(0(U8*))
+#define NULL	0
 #define TRUE	1
 #define FALSE	0
 #define ON	1
@@ -6110,7 +6110,7 @@ extern I64 B2(CTask *task=NULL,Bool live=TRUE);
 extern U0 G(U8 *ip=INVALID_PTR,CTask *task=NULL);
 extern U0 G2(U8 *ip=INVALID_PTR,CTask *task=NULL);
 extern U0 BList(CTask *task=NULL) ;
-extern I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) ;
+extern I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type=RT_U64) ;
 extern Bool ClassRep2(CDoc *doc,U8 *_d,U8 *class_name=lastclass,	I64 depth,I64 max_depth,Bool dynamic,I64 types=HTT_CLASS,I64 offset=0);
 extern U0 ClassRep(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);
 extern U0 ClassRepD(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);

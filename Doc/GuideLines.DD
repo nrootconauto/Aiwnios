@@ -104,7 +104,7 @@ $FG,5$$TX+CX,"Hash Sym Tables"$$FG$
 
 
 
-$FG,5$$TX+CX,"Assembly Language"$$FG$
+$FG,5$$TX+CX,"Assembly Language"$$FG$
 
 See $LK,"::/Doc/Asm.DD"$.
 
