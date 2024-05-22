@@ -680,6 +680,7 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
   ret->body=CAlloc(16*8);
   ret->cap=16;
   ret->foffset=mlst->offset;
+  return ret;
   tset=I64SetNew;
   for(cur=head->next;cur!=head;cur=ICNext(cur)) {
     if(InfectAdjacent(tset,cur,member,visited)) {
@@ -1023,6 +1024,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
         case IC_BR_ZERO ... IC_BR_NOT_BTC:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
+	    if(!jump_to) throw('Compiler');
 	    _RPNConnect(jump_to,rpn);
 	    I64SetAddAll(rpn->live_out,jump_to->live_in);
 	    goto next_ic;
@@ -1041,6 +1043,7 @@ use_outgoing:
 	    for(idx2=0;idx2!=tab->range;idx2++) {
 	      if(tab->jmp_table[idx2]) {
 	        jump_to=LabelToRPN(cc,tab->jmp_table[idx2]);
+	        if(!jump_to) throw('Compiler');
 	        I64SetAddAll(rpn->live_out,jump_to->live_in);
 	        _RPNConnect(jump_to,rpn);
 	      }
@@ -1058,8 +1061,10 @@ use_outgoing:
         case IC_JMP:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
-	    I64SetAddAll(rpn->live_out,jump_to->live_in);
-	    _RPNConnect(jump_to,rpn);
+	    if(jump_to) {
+	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	      _RPNConnect(jump_to,rpn);
+	    }
 	  } else
 	    goto use_outgoing;
 	  break;
@@ -1067,14 +1072,16 @@ use_outgoing:
 //Special behavior,we are kind of linking the ends(IC_SUB_CALL/IC_SUB_RET) in a weird way
 //DO NOT first_run CHECK THIS
 	  jump_to=LabelToRPN(cc,rpn->ic_data);
-	  I64SetAddAll(rpn->live_out,jump_to->live_in);
-	  _RPNConnect(jump_to,rpn);
+	  if(jump_to) {
+	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    _RPNConnect(jump_to,rpn);
 //Also connect to end of SUB_CALL
-	  for(idx2=0;idx2!=cnt;idx2++) {
-	    if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
-	      jump_to=flat[idx2];
-	      _RPNConnect(rpn,jump_to);
-	      I64SetAddAll(jump_to->live_out,rpn->live_in);
+	    for(idx2=0;idx2!=cnt;idx2++) {
+	     if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
+	        jump_to=flat[idx2];
+	        _RPNConnect(rpn,jump_to);
+	        I64SetAddAll(jump_to->live_out,rpn->live_in);
+	      }
 	    }
 	  }
 	  goto next_ic;
