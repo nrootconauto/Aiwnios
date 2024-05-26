@@ -5908,7 +5908,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     goto ret;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
       ***range_fail_addrs;
-  if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass &&
+  if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass==2 &&
       rpn->ic_line) { // Final run
     if (MSize(cctrl->code_ctrl->dbg_info) / 8 >
         rpn->ic_line - cctrl->code_ctrl->min_ln) {

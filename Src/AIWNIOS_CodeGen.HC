@@ -680,7 +680,6 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
   ret->body=CAlloc(16*8);
   ret->cap=16;
   ret->foffset=mlst->offset;
-  return ret;
   tset=I64SetNew;
   for(cur=head->next;cur!=head;cur=ICNext(cur)) {
     if(InfectAdjacent(tset,cur,member,visited)) {
@@ -688,7 +687,6 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
       
       renum=CAlloc(sizeof CVarRenumber);
       renum->idx=MakeNumberedMember(cc,member,cnt++,*foff);
-      //DbgPrint("%s,%d,%x,%x\n",mlst->str,renum->idx,*foff,mlst->offset);
       renum->nodes=I64SetNew;
       renum->new_foffset=*foff;
       I64SetAddAll(renum->nodes,tset);
