@@ -309,11 +309,7 @@ I64 VarIRegToReg(I64 r)  {
 #define AIWNIOS_REG_SP REG_RSP
 #define AIWNIOS_TMP_IREG_START 0
 #define AIWNIOS_FREG_START 6
-#if HOST_ABI=='Win'
 #define AIWNIOS_FREG_CNT (15-6+1)
-#else
-#define AIWNIOS_FREG_CNT 0 //SystemV ABI doesnt save the FRegs
-#endif
 #define AIWNIOS_TMP_FREG_START 2
 #define AIWNIOS_TMP_FREG_CNT 14
 I64 VarFRegToReg(I64 r)  {
@@ -645,7 +641,7 @@ Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx,CI64Set *visited) {
     }
 skip:;
   }
-  I64SetDel(stack);
+  I64SetDel(stack);
   return TRUE;
 }
 I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off) {

@@ -46,9 +46,14 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
   uint8_t *bin = NULL;
+  int64_t reg;
   while (1) {
     A(X86PushReg, RBP);
     A(X86MovRegReg, RBP, RSP);
+    A(X86SubImm32,RSP,AIWNIOS_FREG_CNT*8);
+    for(reg=0;reg!=AIWNIOS_FREG_CNT;reg++) {
+      A(X86MovIndirRegF64,AIWNIOS_FREG_START+reg,-1,-1,RBP,-(1+reg)*8);
+	}
     A(X86AndImm, RSP, ~0xF);
     A(X86PushReg, RSI);
     A(X86PushReg, RDI);
@@ -61,6 +66,9 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
     A(X86PopReg, R10);
     A(X86PopReg, RDI);
     A(X86PopReg, RSI);
+    for(reg=0;reg!=AIWNIOS_FREG_CNT;reg++) {
+      A(X86MovRegIndirF64,AIWNIOS_FREG_START+reg,-1,-1,RBP,-(1+reg)*8);
+	}
     A(X86Leave, 0);
     A(X86Ret, arity * 8);
     if (bin)

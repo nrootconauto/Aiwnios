@@ -3,6 +3,7 @@
 #include "CExts.HC"
 #include "CompilerB.HH"
 #include "KGlbls.HC"
+#include "KMisc.HC"
 CCPU cpu_structs[64];
 SetGs(&cpu_structs[0]);
 //AIWNIOS Boot stuff
@@ -125,7 +126,6 @@ U0 SwapI64(I64 *a,I64 *b) {
 #include "StrB.HC"
 #include "KDefine.HC"
 #include "StrScan.HC"
-#include "KMisc.HC"
 adam_task=aiwnios_boot_task;
 SetFs(adam_task);
 TaskInit(adam_task,0);

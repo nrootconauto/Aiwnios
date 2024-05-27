@@ -476,42 +476,6 @@ static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_memcpy(int64_t *stk) {
-  return (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
-}
-
-static int64_t STK_memset(int64_t *stk) {
-  return (int64_t)memset((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU16(int64_t *stk) {
-  return (int64_t)MemSetU16((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU32(int64_t *stk) {
-  return (int64_t)MemSetU32((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU64(int64_t *stk) {
-  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetI64(int64_t *stk) {
-  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_strlen(int64_t *stk) {
-  return (int64_t)strlen((void *)stk[0]);
-}
-
-static int64_t STK_strcmp(int64_t *stk) {
-  return (int64_t)strcmp((void *)stk[0], (void *)stk[1]);
-}
-
-static int64_t STK_toupper(int64_t *stk) {
-  return toupper(stk[0]);
-}
-
 MATHFUNDEF(log10);
 MATHFUNDEF(log2);
 MATHFUNDEF(Pow10);
@@ -1224,15 +1188,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
-    PrsAddSymbol("MemCpy", STK_memcpy, 3);
-    PrsAddSymbol("MemSet", STK_memset, 3);
-    PrsAddSymbol("MemSetU16", STK_MemSetU16, 3);
-    PrsAddSymbol("MemSetU32", STK_MemSetU32, 3);
-    PrsAddSymbol("MemSetU64", STK_MemSetU64, 3);
-    PrsAddSymbol("MemSetI64", STK_MemSetU64, 3);
-    PrsAddSymbol("StrLen", STK_strlen, 1);
-    PrsAddSymbol("StrCmp", STK_strcmp, 2);
-    PrsAddSymbol("ToUpper", STK_toupper, 1);
     PrsAddSymbol("Log10", STK_log10, 1);
     PrsAddSymbol("Log2", STK_log2, 1);
     PrsAddSymbol("Pow10", STK_Pow10, 1);

@@ -17,11 +17,9 @@ static int64_t IsCompoundCompare(CRPN *r);
 static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off);
 static int64_t IsSavedFReg(int64_t r) {
-#ifdef _WIN32
   if (r >= AIWNIOS_FREG_START)
     if (r - AIWNIOS_FREG_START < AIWNIOS_FREG_CNT)
       return 1;
-#endif
   return 0;
 }
 static int64_t IsSavedIReg(int64_t r);
@@ -5164,7 +5162,6 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
 
 static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
   memset(to_push, 0, 16);
-#ifdef _WIN32
   CMemberLst *lst;
   int64_t cnt = 0;
   int64_t idx;
@@ -5204,9 +5201,6 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
     }
   }
   return cctrl->backend_user_data7 = cnt;
-#else
-  return 0;
-#endif
 }
 
 // Add 1 in first bit for oppositive
@@ -5460,9 +5454,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   for (i = 0; i != i3; i++) {
     // System V doesnt save the fregs,so i use a save/restore leaf function
     // instread
-#if defined(WIN32) || defined(_WIN32)
     AIWNIOS_ADD_CODE(X86MovIndirRegF64, flist[i], -1, -1, RBP, off);
-#endif
     off -= 8;
   }
   stk_arg_cnt = ireg_arg_cnt = freg_arg_cnt = 0;
@@ -5601,9 +5593,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   }
   fsave_area = off;
   for (i = 0; i != i3; i++) {
-#if defined(WIN32) || defined(_WIN32)
     AIWNIOS_ADD_CODE(X86MovRegIndirF64, flist[i], -1, -1, RBP, off);
-#endif
     off -= 8;
   }
   AIWNIOS_ADD_CODE(X86Leave, 0);
