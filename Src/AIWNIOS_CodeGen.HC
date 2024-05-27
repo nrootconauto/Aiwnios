@@ -621,19 +621,31 @@ U0 VarRenumbersDel(CVarRenumbers *s) {
   Free(s);
 }
 Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx,CI64Set *visited) {
+  CI64Set *stack=I64SetNew;
   CI64Set *set;
   I64 cnt;
-  if(I64SetHas(visited,a)) return FALSE;
   if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx))
     return FALSE;
-  I64SetAdd(visited,a);
-  I64SetAdd(add_to,a);
-  set=a->user_data;
-  for(cnt=0;cnt!=set->cnt;cnt++)
-    InfectAdjacent(add_to,set->body[cnt],midx,visited);
-  set=a->user_data2;
-  for(cnt=0;cnt!=set->cnt;cnt++)
-    InfectAdjacent(add_to,set->body[cnt],midx,visited);
+  if(I64SetHas(visited,a)) return FALSE;
+  I64SetAdd(stack,a);
+  while(stack->cnt) {
+    a=stack->body[--stack->cnt];
+    I64SetAdd(visited,a);
+    if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx)) goto skip;
+    I64SetAdd(add_to,a);  
+    set=a->user_data;
+    for(cnt=0;cnt!=set->cnt;cnt++) {
+      if(!I64SetHas(visited,set->body[cnt]))
+        I64SetAdd(stack,set->body[cnt]);
+    }
+    set=a->user_data2;
+    for(cnt=0;cnt!=set->cnt;cnt++) {
+      if(!I64SetHas(visited,set->body[cnt]))
+        I64SetAdd(stack,set->body[cnt]);
+    }
+skip:;
+  }
+  I64SetDel(stack);
   return TRUE;
 }
 I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off) {
