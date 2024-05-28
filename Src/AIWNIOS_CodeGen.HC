@@ -617,12 +617,13 @@ U0 VarRenumbersDel(CVarRenumbers *s) {
   Free(s);
 }
 Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx,CI64Set *visited) {
-  CI64Set *stack=I64SetNew;
+  CI64Set *stack;
   CI64Set *set;
   I64 cnt;
   if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx))
     return FALSE;
   if(I64SetHas(visited,a)) return FALSE;
+  stack=I64SetNew;
   I64SetAdd(stack,a);
   while(stack->cnt) {
     a=stack->body[--stack->cnt];
