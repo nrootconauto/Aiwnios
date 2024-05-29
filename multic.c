@@ -378,7 +378,7 @@ void ForceYield0() {
 void InteruptCore(int64_t core) {
   CONTEXT ctx;
   memset(&ctx, 0, sizeof ctx);
-  ctx.ContextFlags = CONTEXT_FULL;
+  ctx.ContextFlags = CONTEXT_ALL;
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
   *(uint64_t *)(ctx.Rsp -= 8) = ctx.Rip;
