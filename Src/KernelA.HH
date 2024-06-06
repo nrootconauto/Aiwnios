@@ -2756,21 +2756,17 @@ public class CFile //See $LK,"::/Demo/Dsk/DataBase.HC"$.
 
 #define _CFG_HEAP_DBG FALSE
 
-
+//See aiwn.h
 class CMemUnused
 {
-  U0	hc;
-  U0	caller1,caller2;
   CMemUnused *next;
+  CMemUnused *lasts;
+  CHeapCtrl *hc;
+  U8 *caller1,*caller2;
   I64	size;
 };
-class CMemUsed
+class CMemUsed:CMemUnused
 {
-  CHeapCtrl *hc;
-  U0	caller1,caller2;
-  U0	next,last;
-  I64	size;
-  U0	start;
 };
 
 
@@ -2824,17 +2820,15 @@ public class CBlkPool
 #define HClf_LOCKED		0
 
 #define HEAP_CTRL_SIGNATURE_VAL	'HcSV'
+//See aiwn.h
 public class CHeapCtrl
 {
-  CBlkPool *bp;
-  U32	hc_signature,pad;
+  U32	hc_signature,is_code_heap;
   I64	locked_flags,alloced_u8s,used_u8s;
   CTask *mem_task;
-  CMemBlk *next_mem_blk,*last_mem_blk;
-  CMemBlk *last_mergable;
-  CMemUnused *malloc_free_lst;
-  CMemUsed *next_um,*last_um;
-  CMemUnused *heap_hash[MEM_HEAP_HASH_SIZE/sizeof(U8 *)];
+  CMemUnused *malloc_free_lst,*heap_hash[MEM_HEAP_HASH_SIZE/sizeof(U8 *)+1];
+  CQue blks;
+  CQue used_mem; //CMemUsed
 };
 
 public class CDevGlbls
@@ -3873,17 +3867,8 @@ import U0 DbgPutS(U8 *);
 import U0 PrintI(U8 *,I64);
 import U0 PrintF(U8 *,F64);
 import U0 Free(U8 *);
-import U0 MemCpy(U8*,U8*,I64);
 import U0 WriteProtectMemCpy(U8*,U8*,I64);
 import I64 MSize(U8i *);
-import U8 *MemSet(U8i *,U8 ch,I64 sz);
-import U8 *MemSetU16(U16 *,U16 ch,I64 sz);
-import U8 *MemSetU32(U32 *,U32 ch,I64 sz);
-import U8 *MemSetU64(U64 *,U64 ch,I64 sz);
-import U8 *MemSetI644(I64 *,I64 ch,I64 sz);
-import I64 StrLen(I64);
-import I64 StrCmp(U8*,U8*);
-import U64 ToUpper(U64);
 import U64 Bt(U8 *,I64);
 import U64 Btr(U8 *,I64);
 import U64 Bts(U8 *,I64);
@@ -4015,16 +4000,7 @@ extern U0 DbgPutS(U8 *);
 extern U0 PrintI(U8 *,I64);
 extern U0 PrintF(U8 *,F64);
 extern U0 Free(U8 *);
-extern U0 MemCpy(U8*,U8*,I64);
 extern I64 MSize(U8i *);
-extern U8 *MemSet(U8i *,U8 ch,I64 sz);
-extern U8 *MemSetU16(U16 *,U16 ch,I64 sz);
-extern U8 *MemSetU32(U32 *,U32 ch,I64 sz);
-extern U8 *MemSetU64(U64 *,U64 ch,I64 sz);
-extern U8 *MemSetI64(I64 *,I64 ch,I64 sz);
-extern I64 StrLen(I64);
-extern I64 StrCmp(U8*,U8*);
-extern U64 ToUpper(U64);
 extern U64 Bt(U8 *,I64);
 extern F64 Log10(F64);
 extern F64 Log2(F64);
@@ -4068,6 +4044,15 @@ extern I64 FUnixTime(U8*);
 extern U0 VFsFTrunc(U8*,I64);
 extern F64 Sqrt(F64);
 #endif
+extern U0 MemCpy(U8*,U8*,I64);
+extern U8 *MemSet(U8i *,U8 ch,I64 sz);
+extern U8 *MemSetU16(U16 *,U16 ch,I64 sz);
+extern U8 *MemSetU32(U32 *,U32 ch,I64 sz);
+extern U8 *MemSetU64(U64 *,U64 ch,I64 sz);
+extern U8 *MemSetI64(I64 *,I64 ch,I64 sz);
+extern I64 StrLen(I64);
+extern I64 StrCmp(U8*,U8*);
+extern U64 ToUpper(U64);
 extern U8 *FileRead(U8 *,I64 *,I64 *attr=NULL);
 extern U0 FileWrite(U8 *filename,U8 *fbuf,I64 size,CDate cdt=0,I64 attr=0);
 
@@ -6116,7 +6101,7 @@ extern I64 B2(CTask *task=NULL,Bool live=TRUE);
 extern U0 G(U8 *ip=INVALID_PTR,CTask *task=NULL);
 extern U0 G2(U8 *ip=INVALID_PTR,CTask *task=NULL);
 extern U0 BList(CTask *task=NULL) ;
-extern I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) ;
+extern I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type=RT_U64) ;
 extern Bool ClassRep2(CDoc *doc,U8 *_d,U8 *class_name=lastclass,	I64 depth,I64 max_depth,Bool dynamic,I64 types=HTT_CLASS,I64 offset=0);
 extern U0 ClassRep(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);
 extern U0 ClassRepD(U8 *_d,U8 *class_name=lastclass,	I64 max_depth=2,Bool fun=FALSE,I64 offset=0);
@@ -7122,3 +7107,4 @@ public extern CCntsGlbls cnts;
 extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
+extern U0 HeapWho();

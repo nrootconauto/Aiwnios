@@ -235,8 +235,7 @@ I64 SrcLineNum(U8 *addr,I64 cnt=1)
 	  cur_line++;
 	}
 
-	if (addr<body[best_ln]+cnt)
-	  return best_ln+dbg_info->min_line;
+	return best_ln+dbg_info->min_line;
 
       } else if (tmph->src_link) {
 	src =StrNew(tmph->src_link);

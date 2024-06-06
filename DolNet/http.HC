@@ -41,40 +41,7 @@ class CConnection {
   U8 *etag_text;
   F64 last_ts;
 };
-I64 __EncodeQueryValue(U8 *s,U8 *to) {
-  I64 i,l=StrLen(s),len2=0;
-  U8 *xdigits="0123456789abcdef";
-  for(i=0;i!=l;i++) {
-    switch(s[i]) {
-      case 'a'...'z':
-      case 'A'...'Z':
-      case '_':
-      case '0'...'9':
-        if(to) *to++=s[i];
-        len2++;
-        break;
-      case ' ':
-        if(to) *to++='+';
-        len2++;
-        break;
-      default:
-        if(to) *to++='%';
-        if(to) *to++=xdigits[(s[i]>>4)&0xf];
-        if(to) *to++=xdigits[s[i]&0xf];
-        len2+=3;
-    }
-  }
-  if(to) *to++=0;
-  len2++;//NULL terminaoter
-  return len2;
-}
-U8 *EncodeQueryValue(U8 *s) {
-  I64 len=__EncodeQueryValue(s,NULL);
-  U8 *ret=MAlloc(len);
-  __EncodeQueryValue(s,ret);
-  return ret;
 
-}
 U8 *GetQueryValue(U8 *q,U8 *f) {
   I64 len=StrLen(q),bptr=0;
   U8 *buf,three[3],*name=MAlloc(StrLen(q)+1);
@@ -708,7 +675,7 @@ nxt:;
       for(idx=0;idx!=BACKLOG;idx++) {
         if(fds[idx]==-1) {
 	  unique_tokens[idx].srv=srv;
-	  unique_tokens[idx].con=NULL;
+	  unique_tokens[idx].con=NULL;
 	  fds[idx]=NetAccept(srv->s_sock,NULL);
 	  found=TRUE;
 	  break;

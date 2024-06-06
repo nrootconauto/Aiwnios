@@ -1,5 +1,5 @@
 #help_index "Debugging/Dump"
-I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type) {
+I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type=RT_U64) {
 #ifdef TARGET_AARCH64
   //See swapctxAARCH64.s
   if(raw_type==RT_F64) {

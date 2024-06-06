@@ -617,19 +617,32 @@ U0 VarRenumbersDel(CVarRenumbers *s) {
   Free(s);
 }
 Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx,CI64Set *visited) {
+  CI64Set *stack;
   CI64Set *set;
   I64 cnt;
-  if(I64SetHas(visited,a)) return FALSE;
   if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx))
     return FALSE;
-  I64SetAdd(visited,a);
-  I64SetAdd(add_to,a);
-  set=a->user_data;
-  for(cnt=0;cnt!=set->cnt;cnt++)
-    InfectAdjacent(add_to,set->body[cnt],midx,visited);
-  set=a->user_data2;
-  for(cnt=0;cnt!=set->cnt;cnt++)
-    InfectAdjacent(add_to,set->body[cnt],midx,visited);
+  if(I64SetHas(visited,a)) return FALSE;
+  stack=I64SetNew;
+  I64SetAdd(stack,a);
+  while(stack->cnt) {
+    a=stack->body[--stack->cnt];
+    I64SetAdd(visited,a);
+    if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx)) goto skip;
+    I64SetAdd(add_to,a);  
+    set=a->user_data;
+    for(cnt=0;cnt!=set->cnt;cnt++) {
+      if(!I64SetHas(visited,set->body[cnt]))
+        I64SetAdd(stack,set->body[cnt]);
+    }
+    set=a->user_data2;
+    for(cnt=0;cnt!=set->cnt;cnt++) {
+      if(!I64SetHas(visited,set->body[cnt]))
+        I64SetAdd(stack,set->body[cnt]);
+    }
+skip:;
+  }
+  I64SetDel(stack);
   return TRUE;
 }
 I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off) {
@@ -683,7 +696,6 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
       
       renum=CAlloc(sizeof CVarRenumber);
       renum->idx=MakeNumberedMember(cc,member,cnt++,*foff);
-      //DbgPrint("%s,%d,%x,%x\n",mlst->str,renum->idx,*foff,mlst->offset);
       renum->nodes=I64SetNew;
       renum->new_foffset=*foff;
       I64SetAddAll(renum->nodes,tset);
@@ -1019,6 +1031,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
         case IC_BR_ZERO ... IC_BR_NOT_BTC:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
+	    if(!jump_to) throw('Compiler');
 	    _RPNConnect(jump_to,rpn);
 	    I64SetAddAll(rpn->live_out,jump_to->live_in);
 	    goto next_ic;
@@ -1037,6 +1050,7 @@ use_outgoing:
 	    for(idx2=0;idx2!=tab->range;idx2++) {
 	      if(tab->jmp_table[idx2]) {
 	        jump_to=LabelToRPN(cc,tab->jmp_table[idx2]);
+	        if(!jump_to) throw('Compiler');
 	        I64SetAddAll(rpn->live_out,jump_to->live_in);
 	        _RPNConnect(jump_to,rpn);
 	      }
@@ -1054,8 +1068,10 @@ use_outgoing:
         case IC_JMP:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
-	    I64SetAddAll(rpn->live_out,jump_to->live_in);
-	    _RPNConnect(jump_to,rpn);
+	    if(jump_to) {
+	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	      _RPNConnect(jump_to,rpn);
+	    }
 	  } else
 	    goto use_outgoing;
 	  break;
@@ -1063,14 +1079,16 @@ use_outgoing:
 //Special behavior,we are kind of linking the ends(IC_SUB_CALL/IC_SUB_RET) in a weird way
 //DO NOT first_run CHECK THIS
 	  jump_to=LabelToRPN(cc,rpn->ic_data);
-	  I64SetAddAll(rpn->live_out,jump_to->live_in);
-	  _RPNConnect(jump_to,rpn);
+	  if(jump_to) {
+	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    _RPNConnect(jump_to,rpn);
 //Also connect to end of SUB_CALL
-	  for(idx2=0;idx2!=cnt;idx2++) {
-	    if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
-	      jump_to=flat[idx2];
-	      _RPNConnect(rpn,jump_to);
-	      I64SetAddAll(jump_to->live_out,rpn->live_in);
+	    for(idx2=0;idx2!=cnt;idx2++) {
+	     if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
+	        jump_to=flat[idx2];
+	        _RPNConnect(rpn,jump_to);
+	        I64SetAddAll(jump_to->live_out,rpn->live_in);
+	      }
 	    }
 	  }
 	  goto next_ic;
@@ -1943,6 +1961,7 @@ break;case IC_ASM:
     }
   }
   __HC_CmpCtrlDel(acc);
+  COCDel(cc,&cc->coc);
   return machine_code;
 }
 

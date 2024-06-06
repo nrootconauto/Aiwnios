@@ -22,7 +22,7 @@ U0 LoadOneImport(U8** _src, U8* module_base, I64 ld_flags)
 				if (!(tmpex = HashFind(st_ptr,
 						  Fs->hash_table, HTG_ALL - HTT_IMPORT_SYS_SYM))) {
 					if (!(ld_flags & LDF_SILENT))
-						"Unresolved Reference:%s\n", st_ptr;
+						"Unresolved Reference: %s\n", st_ptr;
 					tmpiss = CAlloc(sizeof(CHashImport));
 					tmpiss->str = StrNew(st_ptr);
 					tmpiss->type = HTT_IMPORT_SYS_SYM;

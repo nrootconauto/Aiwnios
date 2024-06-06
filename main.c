@@ -476,42 +476,6 @@ static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_memcpy(int64_t *stk) {
-  return (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
-}
-
-static int64_t STK_memset(int64_t *stk) {
-  return (int64_t)memset((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU16(int64_t *stk) {
-  return (int64_t)MemSetU16((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU32(int64_t *stk) {
-  return (int64_t)MemSetU32((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetU64(int64_t *stk) {
-  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_MemSetI64(int64_t *stk) {
-  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
-}
-
-static int64_t STK_strlen(int64_t *stk) {
-  return (int64_t)strlen((void *)stk[0]);
-}
-
-static int64_t STK_strcmp(int64_t *stk) {
-  return (int64_t)strcmp((void *)stk[0], (void *)stk[1]);
-}
-
-static int64_t STK_toupper(int64_t *stk) {
-  return toupper(stk[0]);
-}
-
 MATHFUNDEF(log10);
 MATHFUNDEF(log2);
 MATHFUNDEF(Pow10);
@@ -1224,15 +1188,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
-    PrsAddSymbol("MemCpy", STK_memcpy, 3);
-    PrsAddSymbol("MemSet", STK_memset, 3);
-    PrsAddSymbol("MemSetU16", STK_MemSetU16, 3);
-    PrsAddSymbol("MemSetU32", STK_MemSetU32, 3);
-    PrsAddSymbol("MemSetU64", STK_MemSetU64, 3);
-    PrsAddSymbol("MemSetI64", STK_MemSetU64, 3);
-    PrsAddSymbol("StrLen", STK_strlen, 1);
-    PrsAddSymbol("StrCmp", STK_strcmp, 2);
-    PrsAddSymbol("ToUpper", STK_toupper, 1);
     PrsAddSymbol("Log10", STK_log10, 1);
     PrsAddSymbol("Log2", STK_log2, 1);
     PrsAddSymbol("Pow10", STK_Pow10, 1);
@@ -1469,6 +1424,7 @@ static void BootAiwnios(char *bootstrap_text) {
 static const char *t_drive;
 static void Boot() {
   int64_t len;
+  char *host_abi;
   char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
   strcpy(bin, t_drive);
   strcat(bin, "/HCRT2.BIN");
@@ -1487,19 +1443,31 @@ static void Boot() {
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
   "#define TEXT_MODE 1\n"                                                      \
   "#define BOOTSTRAP 1\n"                                                      \
+  "#define HOST_ABI '%s'\n"                                                      \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64");
+#if defined(__APPLE__) 
+    host_abi="Apple";
+#else
+    host_abi="SysV";
+#endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "AARCH64");
+    sprintf(buf, BOOTSTRAP_FMT, "AARCH64",host_abi);
 #elif defined(__x86_64__)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86");
+    #if defined(_WIN32)||defined(WIN32)
+    host_abi="Win";
+    #else
+    host_abi="SysV";
+    #endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "X86");
+    sprintf(buf, BOOTSTRAP_FMT, "X86",host_abi);
 #elif defined(__riscv) || defined(__riscv__)
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV");
+    host_abi="SysV";
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV",host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "RISCV");
+    sprintf(buf, BOOTSTRAP_FMT, "RISCV",host_abi);
 #else
   #error "Arch not supported"
 #endif

@@ -185,8 +185,8 @@ U0 DocRemSoftNewLines(CDoc *doc=NULL,CDocEntry *doc_e=NULL)
     doc_e2=doc_e->next;
     if (doc_e->type_u8==DOCT_SOFT_NEW_LINE) {
       if (doc->cur_entry==doc_e) {
-	doc->cur_entry=doc_e2;
-	doc->cur_col=doc->cur_entry->min_col;
+        doc->cur_entry=doc_e2;
+        doc->cur_col=doc->cur_entry->min_col;
       }
       DocEntryDel(doc,doc_e);
     } else if (saved_ll && doc_e->type_u8==DOCT_NEW_LINE)

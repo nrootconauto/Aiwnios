@@ -1,11 +1,11 @@
-Cd("T:/");; //We are not serving from RootFS
-Cd("/DolNet");
+Cd("T:/DolNet");; //We are not serving from RootFS
 //if (IsCmdLineMode) Silent(ON);
 #define SERVER_HTML "../HTML"
 #define SERVER_WWW "../WWW"
 #define SERVER_PORT 8080
 #define SERVER_RAW_PREFIX "/raw/"
 #define SERVER_ISOC_PREFIX "/raw_dir/"
+
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
   if(to) {
@@ -16,24 +16,24 @@ U0 ServerYield() {
 }
 
 class CURL {
-	U8 *hostname;
-	U8 *abs_path;
-	U8 *query;
-	I64 port;
+  U8 *hostname;
+  U8 *abs_path;
+  U8 *query;
+  I64 port;
 };
 class CHTTPRequest {
-	#define HTTP_UNDEF 0
-	#define HTTP_GET 1
-	#define HTTP_POST 2
-	I64 method;
+#define HTTP_UNDEF 0
+#define HTTP_GET 1
+#define HTTP_POST 2
+  I64 method;
 };
 class CServer {
-	CTask *task; 
-	I64 port;
-	I64 s_sock;
-	U0(*get)(CServer*,I64,CURL*,CHTTPRequest*);
-	U0(*post)(CServer*,I64,CURL*,CHTTPRequest*,CHashTable *);
-	CQue connects;
+  CTask *task; 
+  I64 port;
+  I64 s_sock;
+  U0 (*get)(CServer*,I64,CURL*,CHTTPRequest*);
+  U0 (*post)(CServer*,I64,CURL*,CHTTPRequest*,CHashTable *);
+  CQue connects;
 };
 
 U0 EnsurePathExists(U8 *path) {
@@ -42,7 +42,6 @@ U0 EnsurePathExists(U8 *path) {
   Cd(opath);
   Free(tmp),Free(opath);
 }
-
 
 //Im too lazy to make a new file
 U8 *ChrootFile(U8 *fn,U8 *prefix=SERVER_WWW) {
@@ -53,7 +52,7 @@ U8 *ChrootFile(U8 *fn,U8 *prefix=SERVER_WWW) {
     fn=StrNew(fn);
   //Check for "." , ".." and "//"(root dir)
   t1=fn;
-  while(t2=StrFirstOcc(t1,"/")) {
+  while (t2=StrFirstOcc(t1,"/")) {
     if(!StrNCmp(t2,"/./",3)||!StrCmp(t2,"/.")) { //The regular StrCmp checks for end of string
       StrCpy(t2,t2+2);
     } else if(!StrNCmp(t2,"/../",4)||!StrCmp(t2,"/..")) {  //See above note

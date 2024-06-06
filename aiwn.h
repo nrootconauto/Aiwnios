@@ -144,11 +144,12 @@ typedef struct CTask {
 } CTask;
 typedef struct CHeapCtrl {
   int32_t hc_signature;
-  char is_code_heap;
+  int32_t is_code_heap;
   int64_t locked_flags, alloced_u8s, used_u8s;
   struct CTask *mem_task;
   struct CMemUnused *malloc_free_lst, *heap_hash[MEM_HEAP_HASH_SIZE / 8 + 1];
   CQue mem_blks;
+  CQue used_mem;
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
@@ -158,7 +159,9 @@ typedef struct CMemBlk {
 typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
   struct CMemUnused *next;
+  struct CMemUnused *last; //Used for used memory only
   CHeapCtrl *hc;
+  void *caller1,*caller2; //Used for used memory only
   int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 typedef struct CHash {
@@ -373,6 +376,7 @@ typedef struct CCodeCtrl {
 } CCodeCtrl;
 typedef struct CCodeMiscRef {
   struct CCodeMiscRef *next;
+  CRPN *from_ic;
   int32_t *add_to, offset;
   // For arm
   int32_t (*patch_cond_br)(int64_t, int64_t);
@@ -383,6 +387,7 @@ typedef struct CCodeMiscRef {
   // Used for RISC-V
   int8_t is_jal;     // Not JALR
   int8_t is_4_bytes; // Default is 8 bytes
+  int8_t is_dummy;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;
@@ -443,6 +448,11 @@ typedef struct CCmpCtrl {
   int64_t backend_user_data8;
   int64_t backend_user_data9;
   int64_t backend_user_data10;
+  int64_t backend_user_data11;
+  int64_t used_iregs_bmp;
+  int64_t used_fregs_bmp;
+  int found_used_iregs;
+  int found_used_fregs;
   // Used for returns
   CCodeMisc *epilog_label, *statics_label;
   // In SysV,the fregs are not saved,so i will make a mini function to save them
@@ -639,7 +649,8 @@ enum {
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
   ICF_LOCK_EXPR = 128,   // Used with lock {}
-  ICF_IS_BOOL   = 256
+  ICF_IS_BOOL   = 256,
+  ICF_NO_JUMP=512, //Used for eliminating jumps to next instruction
 };
 struct CRPN {
   CQue base;
@@ -661,6 +672,8 @@ struct CRPN {
   CCodeMisc *code_misc2, *code_misc3, *code_misc4;
   CICArg res;
   CRPN *tree1, *tree2, *ic_fwd;
+  //Use with Misc_Bt,includes temporaries
+  int64_t changes_iregs,changes_fregs;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
@@ -829,10 +842,9 @@ enum {
   #define AIWNIOS_TMP_IREG_START 0
   #define AIWNIOS_TMP_IREG_CNT   2
   #define AIWNIOS_FREG_START     6
-  #define AIWNIOS_FREG_CNT       (15 - 6 + 1)
   #define AIWNIOS_TMP_FREG_START 3
   #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
-
+  #define AIWNIOS_FREG_CNT       (15-6+1)
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))
   #define AIWNIOS_IREG_START     19
@@ -887,6 +899,26 @@ enum {
     AIWNIOS_ExitCatch();                                                       \
   }                                                                            \
   }
+
+#ifndef __APPLE__
+#define SetWriteNP(n) (n)
+#endif
+
+int64_t X86PushReg(char *to, int64_t reg);
+int64_t X86MovRegReg(char *to, int64_t a, int64_t b);
+int64_t X86AndImm(char *to, int64_t a, int64_t b);
+int64_t X86SubImm32(char *to, int64_t a, int64_t b);
+int64_t X86MovImm(char *to, int64_t a, int64_t off);
+int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                         int64_t off);
+int64_t X86CallReg(char *to, int64_t reg);
+int64_t X86AddImm32(char *to, int64_t a, int64_t b);
+int64_t X86PopReg(char *to, int64_t reg);
+int64_t X86Ret(char *to, int64_t ul);
+int64_t X86Leave(char *to, int64_t ul);
+int64_t X86JmpReg(char *to, int64_t r);
+
+
 int64_t ARM_ldrsbRegRegX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_ldrshRegRegX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_ldrswRegRegX(int64_t r, int64_t a, int64_t b);
@@ -1048,6 +1080,7 @@ CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc, int64_t amt);
 #define HC_IC_BINDINGH(name) CRPN *__##name(CCodeCtrl *cc);
+HC_IC_BINDINGH(HC_ICAdd_GetVaArgsPtr)
 HC_IC_BINDINGH(HC_ICAdd_Pow)
 HC_IC_BINDINGH(HC_ICAdd_Eq)
 HC_IC_BINDINGH(HC_ICAdd_Div)
