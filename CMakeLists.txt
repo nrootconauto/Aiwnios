@@ -22,8 +22,8 @@ message("PROCESSOR ARCHITECTURE IS ${ARCH}")
 if (ARCH STREQUAL "riscv64")
   set(
     C_SOURCES
-    riscv_backend.c 
     riscv_asm.c
+    riscv_backend.c
     bungis.c
     cque.c
     except.c
