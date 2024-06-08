@@ -261,7 +261,7 @@ U0 InitSymbols() {
   ExePrint("#define TARGET_RISCV\n;");
 #endif
 #ifdef STAGE1
-  ExePutS(KernelAHH);
+  ExePutS(KernelAHH,"/Src/KernelA.HH");
   ImportSymbolsToHolyC(&ImportSymbolsCB);
   if(FileFind("/HCRT2.DBG.Z")) DbgInfoRead("/HCRT2.DBG.Z");
 #else
