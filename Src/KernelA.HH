@@ -7108,3 +7108,5 @@ extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
 extern U0 HeapWho();
+//For bootsrapping
+extern U0 ExeEmbedFile(U8 *fn);

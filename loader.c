@@ -345,6 +345,8 @@ void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
     for (h = Fs->hash_table->body[idx]; h; h = h->base.next) {
       if (h->base.type & HTT_EXPORT_SYS_SYM) {
         FFI_CALL_TOS_2(cb, h->base.str, h->val);
+      } else if(h->base.type&HTT_FUN) {
+	    FFI_CALL_TOS_2(cb, h->base.str, ((CHashFun*)h)->fun_ptr);
       }
     }
   }

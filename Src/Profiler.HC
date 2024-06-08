@@ -17,7 +17,7 @@ U0 ProfTimerInt(U8 *cur_rip)
       if (k)
 	i=Caller(k+1);
       else
-        i=cur_rip;
+        i=cur_rip;
       if (pf_buf_in_ptr<PF_ARRAY_CNT) {
 	pf_array[pf_buf_in_ptr++]=i;
 	pf_jiffy_end=__GetTicks;
