@@ -135,6 +135,8 @@ typedef struct {
 } CCPU;
 #elif defined(_WIN32) || defined(WIN32)
   #include <windows.h>
+  #include <winnt.h>
+  #include <memoryapi.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
   #include <sysinfoapi.h>
@@ -142,14 +144,14 @@ typedef struct {
 typedef struct {
   HANDLE thread;
   HANDLE event;
-  HANDLE restore_ctx_event;
   CRITICAL_SECTION mtx;
   CONTEXT ctx;
   int64_t awake_at;
   void (*profiler_int)(void *fs);
-  int64_t profiler_freq, profiler_last_tick;
-  char profile_poop_stk[0x1000];
+  int64_t profiler_freq, next_prof_int;
+  uint8_t *alt_stack;
 } CCPU;
+static int64_t nproc;
 #endif
 static _Thread_local core_num = 0;
 
@@ -212,9 +214,11 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   if (cores[c].profiler_int) {
   #if defined(__x86_64__)
     #if defined(__FreeBSD__)
-    FFI_CALL_TOS_1(cores[c].profiler_int, _ctx->uc_mcontext.mc_rip);
+    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.mc_rbp,
+                           cores[c].profiler_int, _ctx->uc_mcontext.mc_rip);
     #elif defined(__linux__)
-    FFI_CALL_TOS_1(cores[c].profiler_int, _ctx->uc_mcontext.gregs[REG_RIP]);
+    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.gregs[REG_RBP],
+                           cores[c].profiler_int, _ctx->uc_mcontext.gregs[REG_RIP]);
     #endif
   #endif
     cores[c].profile_timer.it_value.tv_usec    = cores[c].profiler_freq;
@@ -320,8 +324,8 @@ static CCPU cores[128];
 CHashTable *glbl_table;
 static int64_t ticks    = 0;
 static int64_t tick_inc = 1;
-static int64_t nproc;
-static void WindowsProfileCode(int c);
+static int64_t pf_prof_active;
+static MMRESULT pf_prof_timer;
 static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
                          void *ul2) {
   int64_t period;
@@ -355,8 +359,8 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   *ptr          = pair;
   InitializeCriticalSection(&cores[core].mtx);
   cores[core].event             = CreateEvent(NULL, 0, 0, NULL);
-  cores[core].restore_ctx_event = CreateEvent(NULL, 0, 0, NULL);
   cores[core].thread            = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
+  cores[core].alt_stack         = VirtualAlloc(NULL, 65536, MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
   InstallDbgSignalsForThread();
   nproc++;
@@ -376,9 +380,7 @@ void ForceYield0() {
 }
 
 void InteruptCore(int64_t core) {
-  CONTEXT ctx;
-  memset(&ctx, 0, sizeof ctx);
-  ctx.ContextFlags = CONTEXT_ALL;
+  CONTEXT ctx = {.ContextFlags = CONTEXT_FULL};
   SuspendThread(cores[core].thread);
   GetThreadContext(cores[core].thread, &ctx);
   *(uint64_t *)(ctx.Rsp -= 8) = ctx.Rip;
@@ -401,13 +403,51 @@ void MPAwake(int64_t c) {
 void __ShutdownCore(int core) {
   TerminateThread(cores[core].thread, 0);
 }
+
+static void WinProfTramp() {
+  CCPU *c = cores + core_num;
+  FFI_CALL_TOS_CUSTOM_BP(c->ctx.Rbp, c->profiler_int, c->ctx.Rip);
+  RtlRestoreContext(&c->ctx, NULL);
+  __builtin_trap();
+}
+
+static void WinProf(uint32_t, uint32_t, uint64_t, uint64_t, uint64_t) {
+  for (int i = 0; i < nproc; ++i) {
+    if (!Misc_Bt(&pf_prof_active, i))
+      continue;
+    CCPU *c = cores + i;
+    if (ticks < c->next_prof_int || !c->profiler_int)
+      continue;
+    CONTEXT ctx = {.ContextFlags = CONTEXT_FULL};
+    EnterCriticalSection(&c->mtx);
+    SuspendThread(c->thread);
+    GetThreadContext(c->thread, &ctx);
+    if (ctx.Rip > INT32_MAX)
+      goto a;
+    c->ctx = ctx;
+    ctx.Rsp = (uint64_t)c->alt_stack + 65536;
+    *(uint64_t *)(ctx.Rsp -= 8) = ctx.Rip;
+    ctx.Rip = WinProfTramp;
+    SetThreadContext(c->thread, &ctx);
+a:  ResumeThread(c->thread);
+    c->next_prof_int = c->profiler_freq + ticks;
+    LeaveCriticalSection(&c->mtx);
+  }
+}
+
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
-  EnterCriticalSection(&cores[c].mtx);
-  cores[c].profiler_int  = fp;
-  cores[c].profiler_freq = f * 1000. / 1000000.;
-  if (!cores[c].profiler_freq)
-    cores[c].profiler_freq = 1;
-  cores[c].profiler_last_tick = ticks;
-  LeaveCriticalSection(&cores[c].mtx);
+  static _Bool init;
+  if (!init)
+    init = pf_prof_timer = timeSetEvent(tick_inc, tick_inc, WinProf, 0, TIME_PERIODIC);
+  CCPU *core = cores + c;
+  if (fp) {
+    EnterCriticalSection(&core->mtx);
+    core->profiler_freq = f / 1e3;
+    core->profiler_int = fp;
+    core->next_prof_int = 0;
+    Misc_LBts(&pf_prof_active, c);
+    LeaveCriticalSection(&core->mtx);
+  } else
+    Misc_LBtr(&pf_prof_active, c);
 }
 #endif

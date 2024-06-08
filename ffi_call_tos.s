@@ -5,6 +5,7 @@
 .global FFI_CALL_TOS_2
 .global FFI_CALL_TOS_3
 .global FFI_CALL_TOS_4
+.global FFI_CALL_TOS_CUSTOM_BP
 
 FFI_CALL_TOS_0:
   push rbp
@@ -61,3 +62,13 @@ FFI_CALL_TOS_4:
   pop rbx
   leave
   ret
+
+FFI_CALL_TOS_CUSTOM_BP:
+	push	rbp
+	push	rbx
+	mov	rbp,rdi
+	push	rdx
+	call	rsi
+	pop	rbx
+	pop	rbp
+	ret

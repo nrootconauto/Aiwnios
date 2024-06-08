@@ -14,10 +14,10 @@ U0 ProfTimerInt(U8 *cur_rip)
   CTask *task=Fs;
   if (Bt(&pf_prof_active,0))
     for (k=0;k<=pf_depth;k++) {
-      if (task==Gs->idle_task)
-	i=NULL;
+      if (k)
+	i=Caller(k+1);
       else
-	i=Caller(k);
+        i=cur_rip;
       if (pf_buf_in_ptr<PF_ARRAY_CNT) {
 	pf_array[pf_buf_in_ptr++]=i;
 	pf_jiffy_end=__GetTicks;
