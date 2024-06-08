@@ -136,6 +136,7 @@ typedef struct {
 #elif defined(_WIN32) || defined(WIN32)
   #include <windows.h>
   #include <winnt.h>
+  #include <memoryapi.h>
   #include <processthreadsapi.h>
   #include <synchapi.h>
   #include <sysinfoapi.h>

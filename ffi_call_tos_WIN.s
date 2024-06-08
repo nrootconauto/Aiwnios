@@ -77,10 +77,10 @@ FFI_CALL_TOS_4:
 
 FFI_CALL_TOS_CUSTOM_BP:
 	push	rbp
-	push	rbx
 	mov	rbp,rcx
-	push	rdx
-	call	r8
+	push	rbx
+	push	r8
+	call	rdx
 	pop	rbx
 	pop	rbp
 	ret

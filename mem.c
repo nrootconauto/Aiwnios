@@ -100,7 +100,8 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
                        hc->is_code_heap ? PAGE_EXECUTE_READWRITE
                                         : PAGE_READWRITE);
   } else
-    ret = VirtualAlloc(NULL, b, MEM_COMMIT | MEM_RESERVE,
+    ret = VirtualAlloc(hc->is_code_heap ? GetAvailRegion32(b) : NULL,
+		       b, MEM_COMMIT | MEM_RESERVE,
                        hc->is_code_heap ? PAGE_EXECUTE_READWRITE
                                         : PAGE_READWRITE);
   if (!ret)
