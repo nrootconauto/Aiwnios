@@ -4,6 +4,7 @@
 .global FFI_CALL_TOS_2
 .global FFI_CALL_TOS_3
 .global FFI_CALL_TOS_4
+.global FFI_CALL_TOS_CUSTOM_BP
 # Poo Poo FFI for Windows64 to TempleOS
 
 FFI_CALL_TOS_0:
@@ -73,3 +74,13 @@ FFI_CALL_TOS_4:
   pop rbx
   leave
   ret
+
+FFI_CALL_TOS_CUSTOM_BP:
+	push	rbp
+	push	rbx
+	mov	rbp,rcx
+	push	rdx
+	call	r8
+	pop	rbx
+	pop	rbp
+	ret

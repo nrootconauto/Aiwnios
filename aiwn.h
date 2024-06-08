@@ -1263,6 +1263,7 @@ extern int64_t FFI_CALL_TOS_1(void *fptr, int64_t);
 extern int64_t FFI_CALL_TOS_2(void *fptr, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_3(void *fptr, int64_t, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_4(void *fptr, int64_t, int64_t, int64_t, int64_t);
+extern int64_t FFI_CALL_TOS_CUSTOM_BP(uint64_t bp, void *fp, uint64_t ip);
 extern void *GenFFIBinding(void *fptr, int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
 extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
