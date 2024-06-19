@@ -499,8 +499,9 @@ static int64_t STK_MemSetU64(int64_t *stk) {
   return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_MemSetI64(int64_t *stk)
-    __attribute__((alias("STK_MemSetU64")));
+static int64_t STK_MemSetI64(int64_t *stk) {
+  return (int64_t)MemSetU64((void*)stk[0],stk[1],stk[2]);
+}
 
 static int64_t STK_StrLen(int64_t *stk) {
   return (int64_t)strlen((void *)stk[0]);

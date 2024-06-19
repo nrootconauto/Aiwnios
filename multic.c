@@ -118,6 +118,12 @@ typedef struct {
   #include <sys/types.h>
   #include <sys/umtx.h>
 #endif
+#if defined(__APPLE__)
+#include <dlfcn.h> 
+#define PRIVATE 1
+#include "ulock.h" //Not canoical
+#undef PRIVATE
+#endif
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
   #include <pthread.h>
   #include <sys/syscall.h>
@@ -262,6 +268,7 @@ int64_t mp_cnt() {
   return ret;
 }
 
+#include <errno.h>
 void MPSleepHP(int64_t ns) {
   struct timespec ts = {0};
   ts.tv_nsec         = (ns % 1000000) * 1000U;
@@ -274,14 +281,24 @@ void MPSleepHP(int64_t ns) {
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
   #endif
   #if defined(__APPLE__)
-  clock_gettime(CLOCK_REALTIME, &ts);
-  ts.tv_nsec += (ns % 1000000) * 1000U;
-  ts.tv_sec += ts.tv_nsec / 1000000000U;
-  ts.tv_nsec %= 1000000000U;
-  ts.tv_sec += ns / 1000000;
-  pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-  pthread_mutex_lock(&mtx);
-  pthread_cond_timedwait(&cores[core_num].wake_cond, &mtx, &ts);
+  static int (*ulWait)(void*,int64_t,int64_t,int32_t)=NULL;
+  static int init=0;
+  if(!init) {
+	  init=1;
+    ulWait=dlsym(RTLD_DEFAULT,"__ulock_wait");
+  }
+  if(ulWait!=NULL) {
+	  (*ulWait)(UL_COMPARE_AND_WAIT_SHARED,&cores[core_num].wake_futex, 1,ns);
+  } else { 
+	  clock_gettime(CLOCK_REALTIME, &ts);
+	  ts.tv_nsec += (ns % 1000000) * 1000U;
+	  ts.tv_sec += ts.tv_nsec / 1000000000U;
+	  ts.tv_nsec %= 1000000000U;
+	  ts.tv_sec += ns / 1000000;
+	  pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+	  pthread_mutex_lock(&mtx);
+	  pthread_cond_timedwait(&cores[core_num].wake_cond, &mtx, &ts);
+  }
   #endif
   Misc_LBtr(&cores[core_num].wake_futex, 0);
 }
@@ -294,7 +311,17 @@ void MPAwake(int64_t core) {
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
   #endif
   #if defined(__APPLE__)
+  static int (*ulWake)(int64_t,void*,int64_t)=NULL;
+  static int init=0;
+  if(!init) {
+	  init=1;
+      ulWake=dlsym(RTLD_DEFAULT,"__ulock_wake");
+  }
+  if(ulWake!=NULL) {
+	  (*ulWake)(UL_COMPARE_AND_WAIT_SHARED|ULF_WAKE_ALL,&cores[core].wake_futex,1);
+  } else {
     pthread_cond_signal(&cores[core].wake_cond);
+  }
   #endif
   }
 }
@@ -302,7 +329,7 @@ void __ShutdownCore(int core) {
   pthread_kill(cores[core].pt, SIGUSR2);
   pthread_join(cores[core].pt, NULL);
 }
-
+	
 // Freq in microseconds
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
   if (!fp) {
