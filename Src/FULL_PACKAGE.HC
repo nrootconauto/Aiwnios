@@ -188,6 +188,94 @@ InitCPUs;
 #ifndef NO_BOOT
 SetFs(Gs->seth_task);
 #endif
+#ifdef STAGE1
+#ifndef BOOTSTRAP
+//Embed them so the user cant mess it up
+U8 *KernelAHH;
+//Seperate to avoid weird bug with running #exe block twice
+KernelAHH=(#exe {ExeEmbedFile("/Src/KernelA.HH");});;
+#endif
+#endif
+//For use later(ABOVE)
+U0 ExeEmbedFile(U8 *fn) {
+//During Aiwnios bootstapping,only Functions  are imported and not macros
+  DbgPrint("Embedding File \"%Q\"(may take some time)\n",fn);
+  U8 *ptr,buf[144*4];
+  CArcCompress *comp;
+  I64 len,len2,b;
+  ptr=FileRead(fn,&len);
+  comp=CompressBuf(ptr,len+1); //+1 for NULL terminator
+  Free(ptr);
+  ptr=comp;
+  len=comp->compressed_size;
+  StreamPrint("ExpandBuf(");
+  while(len>0) {
+    len2=MinI64(len,144-1);
+    buf[0]=0;
+    for(b=0;b!=len2;b++) {
+      CatPrint(buf,"\\x%02x",ptr[b]);
+    }
+    ptr+=len2;
+    len-=len2;
+    StreamPrint("\"%s\"\n",buf);
+  }
+  StreamPrint(")");
+  Free(comp);
+}
+
+U0 ImportSymbolsCB(U8 *name,U8 *addr) {
+  CHashExport *find=HashFind(name,Fs->hash_table,-1);
+  I64 cnt=1;
+  if(find&&find->type&HTT_GLBL_VAR) {
+    find(CHashGlblVar*)->data_addr=addr;
+  } else if(find&&find->type&HTT_FUN) {
+    if(!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
+      find(CHashFun*)->exe_addr=addr;
+      LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
+    }
+  } 
+  #ifdef GEN_HEADERS
+  else if(1) {
+    DocPrint(unfound,"%s\n",name);
+  }
+  #endif
+  else {
+    find=CAlloc(sizeof(CHashExport),adam_task);
+    find->str=AStrNew(name);
+    find->type=HTT_EXPORT_SYS_SYM;
+    find->val=addr;
+    HashAdd(find,Fs->hash_table);
+  }
+}
+#ifdef GEN_HEADERS
+CDoc *unfound=DocNew("unfound.DD");
+#endif
+U0 InitSymbols() {
+#ifdef TARGET_X86
+  ExePrint("#define TARGET_X86\n;");
+#endif
+#ifdef TARGET_AARCH64
+  ExePrint("#define TARGET_AARCH64\n;");
+#endif
+#ifdef TARGET_RISCV
+  ExePrint("#define TARGET_RISCV\n;");
+#endif
+#ifdef STAGE1
+  ExePutS(KernelAHH,"/Src/KernelA.HH");
+  ImportSymbolsToHolyC(&ImportSymbolsCB);
+  if(FileFind("/HCRT2.DBG.Z")) DbgInfoRead("/HCRT2.DBG.Z");
+#else
+//BOOTSTRAP is defined
+  ExeFile("T:/Src/KernelA.HH");
+  ImportSymbolsToHolyC(&ImportSymbolsCB);
+#endif
+  #ifdef GEN_HEADERS
+  DocWrite(unfound);
+  DocDel(unfound);
+  #endif
+}
+InitSymbols;
+
 #ifdef BOOTSTRAP
 Cd("Src");
 U8 *body=
@@ -251,54 +339,7 @@ U8 *body=
 #ifdef TARGET_RISCV
 #include "UAsmRiscV.HC"
 #endif
-#ifdef GEN_HEADERS
-CDoc *unfound=DocNew("unfound.DD");
-#endif
-U0 ImportSymbolsCB(U8 *name,U8 *addr) {
-  CHashExport *find=HashFind(name,Fs->hash_table,-1);
-  I64 cnt=1;
-  if(find&&find->type&HTT_GLBL_VAR) {
-    find(CHashGlblVar*)->data_addr=addr;
-  } else if(find&&find->type&HTT_FUN) {
-    if(!(find(CHashFun*)->flags&1<<Ff_INTERNAL)) {
-      find(CHashFun*)->exe_addr=addr;
-      LBtr(&find(CHashFun*)->flags,Cf_EXTERN);
-    }
-  } 
-  #ifdef GEN_HEADERS
-  else if(1) {
-    DocPrint(unfound,"%s\n",name);
-  }
-  #endif
-  else {
-    find=CAlloc(sizeof(CHashExport),adam_task);
-    find->str=AStrNew(name);
-    find->type=HTT_EXPORT_SYS_SYM;
-    find->val=addr;
-    HashAdd(find,Fs->hash_table);
-  }
-}
 #include "HomeKeyPlugIns.HC"
-U0 InitSymbols() {
-#ifdef TARGET_X86
-  ExePrint("#define TARGET_X86\n;");
-#endif
-#ifdef TARGET_AARCH64
-  ExePrint("#define TARGET_AARCH64\n;");
-#endif
-#ifdef TARGET_RISCV
-  ExePrint("#define TARGET_RISCV\n;");
-#endif
-  ExeFile("T:/Src/KernelA.HH");
-  ImportSymbolsToHolyC(&ImportSymbolsCB);
-  if(FileFind("HCRT2.DBG.Z"))
-    DbgInfoRead("HCRT2.DBG.Z");
-  #ifdef GEN_HEADERS
-  DocWrite(unfound);
-  DocDel(unfound);
-  #endif
-}
-InitSymbols;
 if(!IsCmdLineMode)
   DrawWindowNew;
 #ifdef GEN_HEADERS

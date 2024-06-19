@@ -266,6 +266,7 @@ static void FuzzTest3() {
 static double Pow10(double d) {
   return pow(10, d);
 }
+
 static void *MemSetU16(int16_t *dst, int16_t with, int64_t cnt) {
   while (--cnt >= 0) {
     dst[cnt] = with;
@@ -398,7 +399,9 @@ typedef union {
 } dbl2u64;
 
 #define MATHFUNDEF(x)                                                          \
-  static uint64_t STK_##x(double *stk) { return ((dbl2u64)x(stk[0])).i; }
+  static uint64_t STK_##x(double *stk) {                                       \
+    return ((dbl2u64)x(stk[0])).i;                                             \
+  }
 #define MATHFUNDEF2(x)                                                         \
   static uint64_t STK_##x(double *stk) {                                       \
     return ((dbl2u64)x(stk[0], stk[1])).i;                                     \
@@ -474,6 +477,37 @@ static int64_t STK___GetTicksHP(int64_t *stk) {
 
 static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
+}
+
+static int64_t STK_MemCpy(int64_t *stk) {
+  return (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
+}
+
+static int64_t STK_MemSet(int64_t *stk) {
+  return (int64_t)memset((void *)stk[0], stk[1], stk[2]);
+}
+
+static int64_t STK_MemSetU16(int64_t *stk) {
+  return (int64_t)MemSetU16((void *)stk[0], stk[1], stk[2]);
+}
+
+static int64_t STK_MemSetU32(int64_t *stk) {
+  return (int64_t)MemSetU32((void *)stk[0], stk[1], stk[2]);
+}
+
+static int64_t STK_MemSetU64(int64_t *stk) {
+  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
+}
+
+static int64_t STK_MemSetI64(int64_t *stk)
+    __attribute__((alias("STK_MemSetU64")));
+
+static int64_t STK_StrLen(int64_t *stk) {
+  return (int64_t)strlen((void *)stk[0]);
+}
+
+static int64_t STK_StrCmp(int64_t *stk) {
+  return (int64_t)strcmp((void *)stk[0], (void *)stk[1]);
 }
 
 MATHFUNDEF(log10);
@@ -1120,12 +1154,12 @@ static int64_t WriteProtectMemCpy(int64_t *stk) {
   int old   = SetWriteNP(0);
   int64_t r = (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
   SetWriteNP(old);
-  #if defined(__APPLE__)
+#if defined(__APPLE__)
   if (old)
     sys_icache_invalidate(stk[0], stk[2]);
-  #else
-  __builtin___clear_cache(stk[0],stk[0]+stk[2]);
-  #endif
+#else
+  __builtin___clear_cache(stk[0], stk[0] + stk[2]);
+#endif
   return r;
 }
 static void BootAiwnios(char *bootstrap_text) {
@@ -1188,6 +1222,16 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
+#define X(a, b) PrsAddSymbol(#a, STK_##a, b)
+    X(MemCpy, 3);
+    X(MemSet, 3);
+    X(MemSetU16, 3);
+    X(MemSetU32, 3);
+    X(MemSetU64, 3);
+    X(MemSetI64, 3);
+    X(StrLen, 1);
+    X(StrCmp, 2);
+#undef X
     PrsAddSymbol("Log10", STK_log10, 1);
     PrsAddSymbol("Log2", STK_log2, 1);
     PrsAddSymbol("Pow10", STK_Pow10, 1);
@@ -1443,31 +1487,31 @@ static void Boot() {
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
   "#define TEXT_MODE 1\n"                                                      \
   "#define BOOTSTRAP 1\n"                                                      \
-  "#define HOST_ABI '%s'\n"                                                      \
+  "#define HOST_ABI '%s'\n"                                                    \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
-#if defined(__APPLE__) 
-    host_abi="Apple";
-#else
-    host_abi="SysV";
-#endif
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64",host_abi);
+  #if defined(__APPLE__)
+    host_abi = "Apple";
+  #else
+    host_abi = "SysV";
+  #endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64", host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "AARCH64",host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi);
 #elif defined(__x86_64__)
-    #if defined(_WIN32)||defined(WIN32)
-    host_abi="Win";
-    #else
-    host_abi="SysV";
-    #endif
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86",host_abi);
+  #if defined(_WIN32) || defined(WIN32)
+    host_abi = "Win";
+  #else
+    host_abi = "SysV";
+  #endif
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "X86",host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "X86", host_abi);
 #elif defined(__riscv) || defined(__riscv__)
-    host_abi="SysV";
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV",host_abi);
+    host_abi = "SysV";
+    len      = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV", host_abi);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "RISCV",host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "RISCV", host_abi);
 #else
   #error "Arch not supported"
 #endif
@@ -1530,10 +1574,10 @@ int main(int argc, char **argv) {
   }
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
-  #if !defined(__APPLE__)
+#if !defined(__APPLE__)
   if (!arg_no_debug->count)
-     DebuggerBegin();
-  #endif
+    DebuggerBegin();
+#endif
 #ifndef _WIN32
   if (arg_fork->count) {
     pid_t pid = fork();

@@ -2096,13 +2096,13 @@ U0 DbgInfoWrite(CHashTable *h,U8 *name) {
 	FileWrite(name,buf,len);
 	Free(buf);
 }
-U0 DbgInfoRead(U8 *name) {
-  I64 len,min,max,ln,type;
+U0 DbgInfoRead(U8 *file) {
+  I64 min,max,ln,type,len;
   CHashSrcSym *tmph;
   CMemberLst *tmpm=NULL,*tmpm2=NULL,*tmpm_start;
   CDbgInfo *dbg_info;
   CHashClass *tmpc;
-  U8 *body=FileRead(name,&len),*ptr=body,*fn,*idx;
+  U8 *body=FileRead(file,&len),*ptr=body,*fn,*idx;
   while(ptr<body+len) {
     type=ptr(I64*)[0];
     ptr+=8;
@@ -2187,5 +2187,4 @@ U0 DbgInfoRead(U8 *name) {
       HashAdd(tmph,Fs->hash_table);
     }
   }
-  Free(body);
 }

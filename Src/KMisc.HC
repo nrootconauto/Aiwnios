@@ -207,62 +207,6 @@ Bool IsDbgMode()
   return 0; //TODO RESTORE
 }
 
-U8 *MemSetI64(I64 *d,I64 v,I64 c) {
-  while(--c>=0) {
-   d[c]=v;
-  }
-  return d;
-}
-
-U8 *MemSetU64(I64 *d,I64 v,I64 c) {
-  while(--c>=0) {
-   d[c]=v;
-  }
-  return d;
-}
-
-U8 *MemSetU32(I32 *d,I64 v,I64 c) {
-  while(--c>=0) {
-   d[c]=v;
-  }
-  return d;
-}
-
-U8 *MemSetU16(I16 *d,I64 v,I64 c) {
-  while(--c>=0) {
-   d[c]=v;
-  }
-  return d;
-}
-
-U8 *MemSet(U8 *d,I64 v,I64 c) {
-  while(--c>=0) {
-   d[c]=v;
-  }
-  return d;
-}
-
-U8 *MemCpy(U8 *d,U8 *s,I64 c) {
-  while(--c>=0)
-    d[c]=s[c];
-  return d;
-}
-
-I64 StrLen(U8 *d) {
-  I64 c=0;
-  while(d[c])
-    c++;
-  return c;
-}
-
-I64 StrCmp(U8 *a,U8 *b) {
-  I64 r=0,c=0;
-  while(!(r=a[c]-b[c])&&a[c])
-    c++;
-  return r;
-}
-
-
 U0 ProgressBarsRst(U8 *path=NULL)
 {//Reset all progress bars to zero.
   ProgressBarsRegTf(path);

@@ -138,6 +138,7 @@ typedef struct {
   #include <winnt.h>
   #include <memoryapi.h>
   #include <processthreadsapi.h>
+  #include <profileapi.h>
   #include <synchapi.h>
   #include <sysinfoapi.h>
   #include <time.h>
@@ -341,14 +342,19 @@ static void update_ticks(UINT tid, UINT msg, DWORD_PTR dw_user, void *ul,
 }
 int64_t GetTicksHP() {
   static int64_t init;
-  TIMECAPS tc;
+  static LARGE_INTEGER freq, start;
   if (!init) {
     init = 1;
+    TIMECAPS tc;
     timeGetDevCaps(&tc, sizeof tc);
     tick_inc = tc.wPeriodMin;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&start);
     timeSetEvent(tick_inc, tick_inc, &update_ticks, NULL, TIME_PERIODIC);
   }
-  return ticks * 1000;
+  LARGE_INTEGER t;
+  QueryPerformanceCounter(&t);
+  return (t.QuadPart - start.QuadPart) * 1e6 / freq.QuadPart;
 }
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   CHashTable *parent_table = NULL;
