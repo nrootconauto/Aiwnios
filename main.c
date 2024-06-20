@@ -3,11 +3,21 @@
 #include "aiwn.h"
 #include "argtable3.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+// clang-format off
+#ifdef __FreeBSD__ 
+#include <machine/sysarch.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <dev/io/iodev.h>
+#include <machine/iodev.h>
+#endif
+// clang-format on
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
@@ -325,6 +335,46 @@ static int64_t __GetTicks() {
 static void __SleepHP(int64_t us) {
   usleep(us);
 }
+#if defined(__x86_64__)
+  #if defined(__FreeBSD__) || defined(__linux__)
+static int __iofd = -1, __iofd_warned;
+static char const *__iofd_str;
+static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
+  if (-1 == __iofd) {
+    if (__iofd_warned)
+      return;
+    fprintf(stderr, "Need sufficient priveliges to open %s\n", __iofd_str);
+    __iofd_warned = 1;
+    return;
+  }
+    #ifdef __linux__
+  lseek(__iofd, port, SEEK_SET);
+  write(__iofd, &wut, sz);
+    #elif defined(__FreeBSD__)
+  ioctl(fd, IODEV_PIO,
+        &(struct iodev_pio_req){
+            .access = IODEV_PIO_WRITE,
+            .port   = port,
+            .width  = sz,
+            .val    = wut,
+        });
+    #endif
+}
+  #elif defined(_WIN32)
+static void __out(int64_t, int64_t, int64_t) {
+  fprintf(stderr, "In/Out not supported on Windows\n");
+}
+  #endif
+static void STK_OutU8(uint64_t *stk) {
+  __out(stk[1], stk[0], 1);
+}
+static void STK_OutU16(uint64_t *stk) {
+  __out(stk[1], stk[0], 2);
+}
+static void STK_OutU32(uint64_t *stk) {
+  __out(stk[1], stk[0], 4);
+}
+#endif
 static int64_t MemCmp(char *a, char *b, int64_t s) {
   return memcmp(a, b, s);
 }
@@ -500,7 +550,7 @@ static int64_t STK_MemSetU64(int64_t *stk) {
 }
 
 static int64_t STK_MemSetI64(int64_t *stk) {
-  return (int64_t)MemSetU64((void*)stk[0],stk[1],stk[2]);
+  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_StrLen(int64_t *stk) {
@@ -1232,6 +1282,11 @@ static void BootAiwnios(char *bootstrap_text) {
     X(MemSetI64, 3);
     X(StrLen, 1);
     X(StrCmp, 2);
+#if defined(__x86_64__)
+    X(OutU8, 2);
+    X(OutU16, 2);
+    X(OutU32, 2);
+#endif
 #undef X
     PrsAddSymbol("Log10", STK_log10, 1);
     PrsAddSymbol("Log2", STK_log2, 1);
@@ -1575,6 +1630,13 @@ int main(int argc, char **argv) {
   }
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
+#if defined(__x86_64__) && (defined(__FreeBSD__) || defined(__linux__))
+  #ifdef __linux__
+  __iofd = open(__iofd_str = "/dev/port", O_RDWR);
+  #elif defined(__FreeBSD__)
+  __iofd = open(__iofd_str = "/dev/io", O_RDWR);
+  #endif
+#endif
 #if !defined(__APPLE__)
   if (!arg_no_debug->count)
     DebuggerBegin();

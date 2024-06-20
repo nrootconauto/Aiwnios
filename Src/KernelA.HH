@@ -3891,6 +3891,9 @@ import I64 Bsf(I64);
 import I64 Bsr(I64);
 import U0 PutS(U8*);
 #ifdef TARGET_X86
+import U0 OutU8(I64 port,I64 val);
+import U0 OutU16(I64 port,I64 val);
+import U0 OutU32(I64 port,I64 val);
 import U8 *__Fs();
 import U8 *__Gs();
 #endif
@@ -3996,6 +3999,11 @@ extern F64 Cos(F64);
 extern F64 ATan(F64);
 extern F64 ASin(F64);
 extern F64 ACos(F64);
+#ifdef TARGET_X86
+extern U0 OutU8(I64 port,I64 val);
+extern U0 OutU16(I64 port,I64 val);
+extern U0 OutU32(I64 port,I64 val);
+#endif
 //From AIWNIOS
 extern F64 Exp(F64);
 extern I64 MemCmp(U8*,U8*,I64);
