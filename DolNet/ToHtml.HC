@@ -251,15 +251,15 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
     res->y=-min_y;
     res->z=GR_Z_ALL;
     Mat4x4Equ(res->r,mat);
-    Sprite3(res,0,0,0,doc->bin_data->data);
+    Sprite3(res,0,0,0,doc->bin_data->data);
   } else 
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
   DocPrint(html_doc,"<div style=\"position: absolute;left:%drem\">",digits);
   DocPrint(html_doc,"<img src=\"%Q\" width=\"%.1f\" height=\"%.1f\">",fp,
-        1.3*(max_x-min_x)+1,
-        1.3*(max_y-min_y)+1
+        1.8*(max_x-min_x)+1,
+        1.8*(max_y-min_y)+1
         );
   DocPrint(html_doc,"</div>");
   DCDel(res);
