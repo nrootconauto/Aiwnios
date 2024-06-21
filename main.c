@@ -338,18 +338,20 @@ static void __SleepHP(int64_t us) {
 #if defined(__x86_64__)
 static int __iofd_warned;
 #if defined(__FreeBSD__) || defined(__linux__)
-static int __iofd = -1;
+static int __iofd = -1, __iofd_errno = -1, __iofd_cur_port = -1;
 static char const *__iofd_str;
 static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
   if (-1 == __iofd) {
     if (__iofd_warned)
       return;
-    fprintf(stderr, "Need sufficient privileges to open %s\n", __iofd_str);
+    fprintf(stderr, "Couldn't open %s: %s\n", __iofd_str,
+            strerror(__iofd_errno));
     __iofd_warned = 1;
     return;
   }
 #ifdef __linux__
-  lseek(__iofd, port, SEEK_SET);
+  if (port != __iofd_cur_port)
+    lseek(__iofd, port, SEEK_SET);
   write(__iofd, &wut, sz);
 #elif defined(__FreeBSD__)
   ioctl(fd, IODEV_PIO,
@@ -365,13 +367,15 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
   if (-1 == __iofd) {
     if (__iofd_warned)
       return -1ul;
-    fprintf(stderr, "Need sufficient privileges to open %s\n", __iofd_str);
+    fprintf(stderr, "Couldn't open %s: %s\n", __iofd_str,
+            strerror(__iofd_errno));
     __iofd_warned = 1;
     return -1ul;
   }
 #ifdef __linux__
   uint64_t res = 0;
-  lseek(__iofd, port, SEEK_SET);
+  if (port != __iofd_cur_port)
+    lseek(__iofd, port, SEEK_SET);
   read(__iofd, &res, sz);
   return res;
 #elif defined(__FreeBSD__)
@@ -1722,8 +1726,10 @@ int main(int argc, char **argv) {
 #elif defined(__FreeBSD__)
   __iofd = open(__iofd_str = "/dev/io", O_RDWR);
 #endif
+  if (-1 == __iofd)
+    __iofd_errno = errno;
 #endif
-#if !defined(__APPLE__)
+#ifndef __APPLE__
   if (!arg_no_debug->count)
     DebuggerBegin();
 #endif
