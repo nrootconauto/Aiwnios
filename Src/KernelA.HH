@@ -3894,6 +3894,15 @@ import U0 PutS(U8*);
 import U0 OutU8(I64 port,I64 val);
 import U0 OutU16(I64 port,I64 val);
 import U0 OutU32(I64 port,I64 val);
+import U8 InU8(I64 port);
+import U16 InU16(I64 port);
+import U32 InU32(I64 port);
+import U0 RepOutU8(U8 *buf,I64 cnt,I64 port);
+import U0 RepOutU16(U8 *buf,I64 cnt,I64 port);
+import U0 RepOutU32(U8 *buf,I64 cnt,I64 port);
+import U0 RepInU8(U8 *buf,I64 cnt,I64 port);
+import U0 RepInU16(U8 *buf,I64 cnt,I64 port);
+import U0 RepInU32(U8 *buf,I64 cnt,I64 port);
 import U8 *__Fs();
 import U8 *__Gs();
 #endif
@@ -4003,6 +4012,15 @@ extern F64 ACos(F64);
 extern U0 OutU8(I64 port,I64 val);
 extern U0 OutU16(I64 port,I64 val);
 extern U0 OutU32(I64 port,I64 val);
+extern U8 InU8(I64 port);
+extern U16 InU16(I64 port);
+extern U32 InU32(I64 port);
+extern U0 RepOutU8(U8 *buf,I64 cnt,I64 port);
+extern U0 RepOutU16(U8 *buf,I64 cnt,I64 port);
+extern U0 RepOutU32(U8 *buf,I64 cnt,I64 port);
+extern U0 RepInU8(U8 *buf,I64 cnt,I64 port);
+extern U0 RepInU16(U8 *buf,I64 cnt,I64 port);
+extern U0 RepInU32(U8 *buf,I64 cnt,I64 port);
 #endif
 //From AIWNIOS
 extern F64 Exp(F64);
