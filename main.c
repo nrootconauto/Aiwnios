@@ -354,7 +354,7 @@ static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
     lseek(__iofd, port, SEEK_SET);
   write(__iofd, &wut, sz);
 #elif defined(__FreeBSD__)
-  ioctl(fd, IODEV_PIO,
+  ioctl(__iofd, IODEV_PIO,
         &(struct iodev_pio_req){
             .access = IODEV_PIO_WRITE,
             .port   = port,
@@ -389,7 +389,7 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
       .port   = port,
       .width  = sz,
   };
-  ioctl(fd, IODEV_PIO, &req);
+  ioctl(__iofd, IODEV_PIO, &req);
   return req.val;
 #endif
 }
