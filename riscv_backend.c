@@ -3639,14 +3639,21 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off = PutICArgIntoReg(
         cctrl, &next->res, next->res.raw_type,
         next->res.raw_type == RT_F64 ? RISCV_FRET : RISCV_IRET, bin, code_off);
-    if (old_pass_misc && old_fail_misc) {
+    if (old_pass_misc && old_fail_misc&&next->res.raw_type!=RT_F64) {
       code_off = RISCV_JccToLabel(old_pass_misc, RISCV_COND_E, next->res.reg, 0,
                                   bin, code_off);
       AIWNIOS_ADD_CODE(RISCV_JAL(0, 0));
       if (bin)
         CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->is_jal = 1;
       goto ret;
-    }
+    } else if(old_pass_misc && old_fail_misc&&next->res.raw_type==RT_F64) {
+	  code_off=__ICMoveF64(cctrl,RISCV_FPOOP1,0,bin,code_off);
+      code_off=RISCV_FJcc(old_pass_misc, RISCV_COND_E,next->res.reg,RISCV_FPOOP1,bin,code_off);
+      AIWNIOS_ADD_CODE(RISCV_JAL(0, 0));
+      if (bin)
+        CodeMiscAddRef(old_fail_misc, bin + code_off - 4)->is_jal = 1;
+      goto ret;
+	}
     if (next->res.raw_type != RT_F64) {
       AIWNIOS_ADD_CODE(RISCV_SLTIU(into_reg, next->res.reg, 1));
     } else {
@@ -3706,8 +3713,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                                   bin, code_off);
       code_off = __OptPassFinal(cctrl, b, bin, code_off);
       code_off = PutICArgIntoReg(
-          cctrl, &b->res, a->res.raw_type == RT_F64 ? RT_F64 : RT_I64i,
-          a->res.raw_type == RT_F64 == RT_F64 ? RISCV_FRET : RISCV_IRET, bin,
+          cctrl, &b->res, b->res.raw_type == RT_F64 ? RT_F64 : RT_I64i,
+          b->res.raw_type == RT_F64? RISCV_FRET : RISCV_IRET, bin,
           code_off);
       F64_TO_BOOL_IF_NEEDED(&b->res, RISCV_IPOOP2);
       code_off = RISCV_JccToLabel(old_fail_misc, RISCV_COND_E, b->res.reg, 0,

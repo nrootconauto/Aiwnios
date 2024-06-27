@@ -1,13 +1,33 @@
+// vi: set fenc:utf-8 :vi
 #help_index "DolDoc/Conversion"
 
 //See $LK,"::/Doc/Credits.DD"$.
+
+I64 Cp437[0x100-0x7F]={
+'.',//not rendered
+'Ç','ü','é','â','ä','à','å','ç',
+'ê','ë','è','ï','î','ì','Ä','Å',
+'É','æ','Æ','ô','ö','ò','û','ù',
+'ÿ','Ö','Ü','¢','£','¥','₧','ƒ',
+'á','í','ó','ú','ñ','Ñ','ª','º',
+'¿','⌐','¬','½','¼','¡','«','»',
+'░','▒','▓','│','┤','╡','╢','╖',
+'╕','╣','║','╗','╝','╜','╛','┐',
+'└','┴','┬','├','─','┼','╞','╟',
+'╚','╔','╩','╦','╠','═','╬','╧',
+'╨','╤','╥','╙','╘','╒','╓','╫',
+'╪','┘','┌','█','▄','▌','▐','▀',
+'α','ß','Γ','π','Σ','σ','µ','τ',
+'Φ','Θ','Ω','δ','∞','φ','∈','∩',
+'≡','±','≥','≤','⌠','⌡','÷','≈',
+'°','∙','·','√','ⁿ','²','￭','■'};
 
 #define DOCET_UNDEF_COLOR	0x100000000
 #define DOCET_LINK_UNDERLINE	0x200000000
 U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	U8 *st,I64 *_col,U8 *style_bitmap=NULL)
 {
-  U8 *ch,*ptr;
+  U8 ch,*ptr;
   I64 cnt;
   u32_attr&=0xFFFFFF00;
   U32 old_attr=*_old_u32_attr;
@@ -48,19 +68,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
 	break;
 
       start:
-	case '�':	ptr="pi";	break;
-	case '�':	ptr="theta";	break;
-	case '�':	ptr="phi";	break;
-	case '�':	ptr="omega";	break;
-	case '�':	ptr="inf";	break;
-	case '�':	ptr="u";	break;
-      end:
-	DocPrint(doc,ptr);
-	*_col=*_col+StrLen(ptr);
-	break;
-
-      start:
-	case CH_SHIFT_SPACE: ptr="";	break;
+	case CH_SHIFT_SPACE: ptr=" ";	break;
 	case '&':	ptr="&amp;";	break;
 	case '<':	ptr="&lt;";	break;
 	case '>':	ptr="&gt;";	break;
@@ -88,7 +96,7 @@ U0 HtmlPutS(CDoc *doc,I64 u32_attr,I64 *_old_u32_attr,Bool underline_update,
             }*/
 	  DocPutKey(doc,ch,0);
 	} else
-	  DocPrint(doc,".");
+	  DocPrint(doc,"%c",Cp437[ch-0x7F]);
 	*_col=*_col+1;
     }
   }
@@ -251,15 +259,15 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
     res->y=-min_y;
     res->z=GR_Z_ALL;
     Mat4x4Equ(res->r,mat);
-    Sprite3(res,0,0,0,doc->bin_data->data);
+    Sprite3(res,0,0,0,doc->bin_data->data);
   } else 
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
   DocPrint(html_doc,"<div style=\"position: absolute;left:%drem\">",digits);
-  DocPrint(html_doc,"<img src=\"%Q\" width=\"%.1f\" height=\"%.1f\">",fp,
-        1.8*(max_x-min_x)+1,
-        1.8*(max_y-min_y)+1
+  DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
+        max_x-min_x+1,
+        max_y-min_y+1,
         );
   DocPrint(html_doc,"</div>");
   DCDel(res);
@@ -298,8 +306,7 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 	  "<html>\n"
 	  "<head>\n"
 	  "<meta http-equiv=\"Content-Type\" "
-	  "content=\"text/html;charset=US-ASCII\">\n"
-	  "<meta name=\"generator\" content=\"$TX,"",D="DD_OS_NAME_VERSION"$\">\n";
+	  "content=\"text/html;charset=UTF-8\">\n";
   if (!body_header) body_header=
 	  "<body>\n"
 	  "<pre>\n"; //Nroot removed font style for better compatability(it looks better)
@@ -310,7 +317,11 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 
   DocPutS(doc_out,html_header);
 
-  DocPutS(doc_out,"<style type=\"text/css\">\n");
+  DocPutS(doc_out,"<style type=\"text/css\">\n"
+		  "html * {\n"
+		  "\tfont-size: 10pt !important;\n"
+		  "\tfont-family: monospace, \"Cascadia Mono\", \"IBM Plex Mono\", \"Roboto\" !important;\n"
+		  "}\n");
   style=doc_out->cur_entry->last;
   DocPutS(doc_out,
         "</style>\n"
