@@ -1471,7 +1471,8 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     } else if (src->mode == MD_I64 && dst->raw_type == RT_F64) {
       code_off = __ICMoveF64(cctrl, dst->reg, src->integer, bin, code_off);
     } else if (src->mode == MD_F64 && dst->raw_type != RT_F64) {
-      code_off = __ICMoveI64(cctrl, dst->reg, src->flt, bin, code_off);
+		//Nroot here,be sure to do int64_t as we take uint64_t on riscV,which bugs out with negative values
+      code_off = __ICMoveI64(cctrl, dst->reg, (int64_t)src->flt, bin, code_off);
     } else if (src->mode == MD_STATIC) {
       if (dst->mode == MD_REG &&
           (dst->raw_type == RT_F64) == (src->raw_type == RT_F64)) {
