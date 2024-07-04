@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Aiwnios
+Comment=Run HolyC Code on X86/RISCV/AArch64 and beyond
+Icon=/usr/local/share/icons/aiwnios.png
+Exec=aiwnios
+Actions=NewBootEnv;
+Categories=Development;Game;
+
+[Desktop Action NewBootEnv]
+Name=New Boot Enviroment
+Exec=aiwnios -n

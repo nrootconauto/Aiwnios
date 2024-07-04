@@ -307,7 +307,6 @@ set(
   Doc
   Apps
   Src
-  Psalmody
   Vocab.DD
   PersonalMenu.DD
   HCRT2.BIN
@@ -318,8 +317,11 @@ set(
   ACWords.DATA
 )
 
-if(!WIN32)
+if(NOT WIN32)
+  set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
   install(PROGRAMS aiwnios TYPE BIN)
+  install(FILES aiwnios.png DESTINATION share/icons)
+  install(FILES aiwnios.desktop DESTINATION share/applications)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
       install(

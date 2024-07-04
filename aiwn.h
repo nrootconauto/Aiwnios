@@ -886,7 +886,7 @@ enum {
   #define AIWNIOS_TEMPLATE_DIR "TODO"
 #else
   #define AIWNIOS_OSTREAM      stderr
-  #define AIWNIOS_TEMPLATE_DIR "/usr/share/aiwnios"
+  #define AIWNIOS_TEMPLATE_DIR "/usr/local/share/aiwnios"
 #endif
 
 #define try                                                                    \
@@ -1170,6 +1170,7 @@ CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc, int64_t arg);
 CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg);
 CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
                        char *sym, int64_t rt, int64_t ptrs);
+int64_t IsCmdLineMode();
 CCodeMisc *AddRelocMisc(CCmpCtrl *cctrl, char *name);
 CRPN *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
 void __HC_ICSetLine(CRPN *r, int64_t ln);
@@ -1268,7 +1269,7 @@ extern void *GenFFIBinding(void *fptr, int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
 extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
-const char *ResolveBootDir(char *use, int overwrite, int make_new_dir);
+const char *ResolveBootDir(char *use, int make_new_dir);
 
 // Uses TempleOS ABI
 int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
