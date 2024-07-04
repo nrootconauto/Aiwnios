@@ -1,0 +1,56 @@
+$FG,5$$TX+CX,"Runtime Part 9: Multithreading"$$FD$
+
+  TempleOS is non-premptive. This means each Task has to manually tell the computer when to context swap. $FG,4$The way to do this and prevent freezing is to $HL,1$Yield$HL,0$$FD$
+
+  In TempleOS,spawning task's is easy,use the $HL,1$Spawn$HL,0$ function
+
+$HL,1$
+$BG,7$U0 Foo(U8 *data) {
+  Beep;
+}
+Spawn(&Foo,"Some_data","TaskName"); 
+$BD$$HL,0$
+
+  You can make a user terminal via $HL,1$User$HL,0$. You can talk to that task via $HL,1$XTalk$HL,0$
+
+$HL,1$
+$BG,7$CTask *u=User;
+XTalk(u,"\"Exiting in 5 seconds\\n\";\n"); //Be sure to put a semi-colon at the end as we are "the-user".
+Sleep(5000);
+XTalk(u,"Exit;\n");
+$BD$$HL,0$
+
+  Sometimes you want to wait for a task to die,to do this use $HL,1$DeathWait$HL,0$
+
+$HL,1$
+$BG,7$CTask *t=User;
+DeathWait(&t); //Note address of t
+Beep; //Will beep when you exit the User task 
+$BD$$HL,0$
+
+  There is also a $HL,1$BirthWait$HL,0$
+
+$HL,1$
+$BG,7$CTask *t=User;
+BirthWait(&t); //Note address of t
+Beep; //Will beep when you exit the User task 
+$BD$$HL,0$
+
+  To avoid race conditions we use locks. In TempleOS this is acheived through locked bit instructions with spinlocks. How it works is $HL,1$LBts$HL,0$ will set the bit,and return the old value of the bit. We keep on setting the bit. If the old value is not set,it means we have access to the lock,otherwise we keep on looping. Be sure to reset the bit when you are done with $HL,1$LBtr$HL,0$.
+
+$HL,1$
+$BG,7$I64 beep_lock=0;
+U0 OneThread(I64 snd) {
+  //This will spin until bit 0 is reset(look at the end of the function) 
+  while(LBts(&beep_lock,0)) //LBts has a side effect of setting the bit after it is checked
+    Yield; //We are going to be beeping for awhile so Yield out control to other tasks
+  Beep(snd);
+  //We reset bit 0 of beep_lock to signify we are done with it.
+  LBtr(&beep_lock,0);
+}
+I64 i;
+for(i;i!=10;i++) {
+  Spawn(&OneThread,i*7+10);
+  "Spawned a thread!!\n";
+}
+$BD$$HL,0$

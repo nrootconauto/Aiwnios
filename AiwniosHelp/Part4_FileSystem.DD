@@ -1,0 +1,99 @@
+$FG,5$$TX+CX,"Runtime Part 4: Filesystem"$$FD$
+
+  If you are used to using TempleOS,use the $HL,1$Cd("Folder");$HL,0$ to move into a folder. You can list the contents of the directory via $HL,1$Dir(".");$HL,0$($UL,1$"." is the current folder$UL,0$). Sometimes you want your programs to be aware of the folders. Luckily for you,you have come to the right place
+
+  In TempleOS,each task has a current directory path in $HL,1$Fs->cur_dir$HL,0$(this doesnt include the drive letter). If you want the full path,use $HL,1$DirCur$HL,0$.
+
+  To make a file,use $HL,1$FileWrite("filename","text",4 /*text length*/);$HL,0$. When you want to read it use $HL,1$FilleRead("filename",&len);$HL,0$ $FG,4$FileRead will always put a NULL terminator at the end of the file for your,so you can use it like a string$FD$.
+
+  Like C,in TempleOS you can read files in a stream,$FG,4$But in TempleOS,all file reads/writes act directly on the Hard-Disks sectors$FD$(Which are $HL,1$BLK_SIZE$HL,0$ bytes big). You $HL,1$FOpen("filename","w")$HL,0$ for writing $HL,1$FOpen("filename","r")$HL,0$ for reading. To open a file for adding more data to it,use $HL,1$FOpen("filename","w+")$HL,0$. Lets see an example
+
+$HL,1$
+$BG,7$//
+// Files opened with FOpen MUST WRITE BLK_SIZE bytes at once
+// A BLK is the size of a hard-disk sector
+//
+CFile *file=FOpen("Database.BIN","w");
+class CFileEnt {
+  U8 name[STR_LEN];
+  U8 password[STR_LEN];
+};
+#assert sizeof(CFileEnt)<=BLK_SIZE
+CFileEnt clayton={"Clayton","123"};
+CFileEnt root={"Root","toor"};
+U8 buffer[BLK_SIZE];
+MemCpy(buffer,&root,sizeof(CFileEnt));
+FBlkWrite(file,buffer,0,1); //Write 1 blk at the first block(blk 0)
+MemCpy(buffer,&clayton,sizeof(CFileEnt));
+FBlkWrite(file,buffer,1,1); //Write 1 blk at the second block(blk 1)
+FClose(file);
+//
+// Now we read
+//
+file=FOpen("Database.BIN","r");
+CFileEnt user;
+while(FBlkRead(file,buffer,,1)) {
+  MemCpy(&user,buffer,sizeof(CFileEnt));
+  "Got  user \"%s\" with password \"%s\"\n",user.name,user.password;
+}
+FClose(file);
+$BD$$HL,0$
+
+  Making and reading files is fun,but first you need to figure out where a file is. To do this use, $ER$. This will return a $HL,1$CDirEntry$HL,0$ of the results(which may be multiple files). Assuming you are familiar with wildcards from Linux,DOS and CP/M. Look at this example
+
+$HL,1$
+$BG,7$FileWrite("abc.TXT","abc",3);
+FileWrite("def.TXT","def",3);
+FileWrite("ghi.TXT","ghi",3);
+CDirEntry *cur,*root=FilesFind("*.TXT",FUF_JUST_FILES);
+for(cur=root;cur!=NULL;cur=cur->next) {
+  "I Found %s\n",cur->full_name;
+}
+DirEntryDel(root);
+$BD$$HL,0$
+
+  A $HL,1$CDirEntry$HL,0$ has much information about the directory structure. The most important is $HL,1$full_name$HL,0$ which tells you the full name of the file as you may expect($UL,1$name is the filename without the path$UL,0$). When you are done with a $HL,1$CDirEntry$HL,0$ be sure to free the root data with $ER$.
+
+  To check if a file exists,you can use $HL,1$FileFind("file.HC")$HL,0$ to check if a file exists.
+
+  Time to get to the nitty gritty. $HL,1$Has some epic flags you can use$HL,0$.Im not going to waste time with exposiiton,rather I will give you a table of flags
+
+
+$TR-C,"FUF_RECURSE"$
+$ID,2$
+This will search in the child folders for the pattern too
+$ID,-2$
+$TR-C,"FUF_JUST_DIRS"$
+$ID,2$
+Chooses only directories(folders)
+$ID,-2$
+$TR-C,"FUF_JUST_FILES"$
+$ID,2$
+Chooses only files
+$ID,-2$
+$TR-C,"FUF_JUST_TXT"$
+$ID,2$
+Chooses only text files
+$ID,-2$
+$TR-C,"FUF_JUST_DD"$
+$ID,2$
+Chooses only DolDoc files
+$ID,-2$
+$TR-C,"FUF_JUST_SRC"$
+$ID,2$
+Chooses only source files
+$ID,-2$
+$TR-C,"FUF_Z_OR_NOT_Z"$
+$ID,2$
+This will ignore $HL,1$Zip$HL,0$ed named of files and just check as normal
+$ID,-2$
+$TR-C,"FUF_FLATTEN_TREE"$
+$ID,2$
+This will flatten a $HL,1$FUF_RECURSE$HL,0$ tree for you conveince
+$ID,-2$
+
+  If you want to delete files,use $HL,1$DelTree("folder/files");$HL,0$,or if you just want to remove a fule use $HL,1$Del("file");$HL,0$
+
+  There are 2 ways to make a folder,use $HL,1$Cd("a/b/c/d/e",TRUE);$HL,0$ to make a path,or make a folder one at a time via $HL,1$DirMk("folder_name");$HL,0$. Copy your stuff via $HL,1$CopyTree("old","new")$HL,0$ or just a file via  $HL,1$Copy("old","new")$HL,0$.
+
+  And by the way you can open a file chooser via $HL,1$PopUpPickFile("T:/")$HL,0$; 

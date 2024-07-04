@@ -1,0 +1,234 @@
+$FG,5$$TX+CX,"Part.1 Graphics"$$FD$
+
+  Use the $HL,1$Fs->draw_it$HL,0$ callback to draw something to the current window
+
+$HL,1$
+$BG,7$U0 DrawIt(CTask *,CDC *dc) {
+  dc->color=BLUE;
+  GrRect(dc,0,0,100,100);
+}
+Fs->draw_it=&DrawIt;
+$BD$$HL,0$
+  The first argument is a pointer to the $HL,1$CTask$HL,0$ being drawn,and the second argument is a $HL,1$CDC$HL,0$ drawing context,use some primitives to draw to the screen.
+
+$TR-C,"GrRect"$
+$ID,2$
+$HL,1$GrRect(dc,200,200,100,100);$HL,0$
+$ID,-2$
+$TR-C,"GrPlot(single pixel)"$
+$ID,2$
+$HL,1$GrPlot(dc,200,200);$HL,0$
+$ID,-2$
+$TR-C,"GrFillCircle"$
+$ID,2$
+$HL,1$GrFillCircle(dc,100,100,50);$HL,0$
+$ID,-2$
+$TR-C,"GrCircle"$
+$ID,2$
+$HL,1$GrCircle(dc,100,100,50);$HL,0$
+$ID,-2$
+$TR-C,"GrLine"$
+$ID,2$
+$HL,1$GrLine(dc,100,100,0,0);$HL,0$
+$ID,-2$
+$ER$$TR-C,"GrPrint"$
+$ID,2$
+$HL,1$GrPrint(dc,100,100,"Hello World");$HL,0$
+$ID,-2$
+$ER$$ER$$TR-C,"GrBlot(copy dc to other dc)"$
+$ID,2$
+$HL,1$GrBlot(dc,100,100,new);$HL,0$
+$ID,-2$
+$TR-C,"DCClear"$
+$ID,2$
+$HL,1$DCClear(dc); /*Resets Z buffer*/$HL,0$
+$ID,-2$
+$TR-C,"DCFill"$
+$ID,2$
+$HL,1$DCFill(dc,COLOR);$HL,0$
+$ID,-2$
+
+$FG,5$$TX+CX,"Runtime Part 1:Graphics Transformations and 3D graphics"$$FD$
+
+  TempleOS lets you do sexy stuff with the graphics like 3D graphics. At the heart of this is a transformation matrix. Im not a math genius but luckily for me there are functions for managing the math for me. Before we can use a transformation matrix,we need to set the $HL,1$DCF_TRANSFORMATION$HL,0$ flag in $HL,1$CDC->flags$HL,0$. After wards you can use matrix functions to rotate your drawing things cordanates
+
+$HL,1$
+$BG,7$CDC *dc=DCNew(100,100);
+Mat4x4IdentEqu(dc->r); //Assign a identity matrix(No transformation)
+DCFill;
+dc->flags|=DCF_TRANSFORMATION;
+F64 rotx=0;
+for(;rotx<=2*pi;rotx+=(2*pi/100.)) {
+  DCFill(dc);
+  Mat4x4IdentEqu(dc->r); //Reset our transformation
+  Mat4x4RotZ(dc->r,rotx);
+  Mat4x4TranslationEqu(dc->r,50,50,0);
+  dc->color=YELLOW;
+  GrRect3(dc,0,0,0,50,50); 
+  DCFill;
+  GrBlot(,100,100,dc);
+  Sleep(33);
+}
+DCDel(dc);
+DCFill;
+$BD$$HL,0$
+
+Here are a list of (transformation) matrix goodies:
+$TR-C,"Mat4x4RotX"$
+$ID,2$
+$HL,1$//Rotates around the X axis,used for Y-flipping$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4RotY"$
+$ID,2$
+$HL,1$//Rotates around the Y axis,used for X-flipping$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4RotZ"$
+$ID,2$
+$HL,1$//Rotates around the Z axis,use general 2D rotations$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4Scale"$
+$ID,2$
+$HL,1$//Zooms a matrix$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4TranslationEqu"$
+$ID,2$
+$HL,1$Mat4x4TranslationEqu(mat,x,y,z); //Sets the cordantes of a matrix$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4TranslationAdd"$
+$ID,2$
+$HL,1$Mat4x4TranslationAdd(mat,x,y,z); //Add to the cordantes of a matrix$HL,0$
+$ID,-2$
+$UL,1$$TR-C,"Mat4x4MulXYZ"$$UL,0$
+$ID,2$
+$HL,1$Mat4x4MulXYZ(mat,&x,&y,&z); //THIS WILL TRANSFORM THE CORDANTES BY THE MATRIX$HL,0$
+$ID,-2$
+
+You may want to do general math on matricies too:
+$TR-C,"Mat4x4IdentEqu"$
+$ID,2$
+$HL,1$Mat4x4IdentEqu(mat); //This makes a normal matrix that doesnt do transofrmations$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4IdentNew"$
+$ID,2$
+$HL,1$I64 *malloced=Mat4x4IdentNew; //This makes a normal matrix that doesnt do transofrmations$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4MulMat4x4Equ"$
+$ID,2$
+$HL,1$Mat4x4MulMat4x4Equ(dst,a,b); //Multiplies a matrix to another matrix,ask a genius what this actually does$HL,0$
+$ID,-2$
+$TR-C,"Mat4x4MulMat4x4New"$
+$ID,2$
+$HL,1$I64 *malloced=Mat4x4MulMat4x4Nw(a,b); //Same as above but MAlloced$HL,0$
+$ID,-2$
+
+  Sometimes in your 3D adventures you may want to make sure you draw things in the distacne behind the things in the front. This is called $UL,0$Z-buffering$UL,0$. In TempleOS this is easy-peasy. Just call $HL,1$DCDepthBufAlloc(dc)$HL,0$. This will handle your depths for you.
+
+Here is a cube thing for you:
+
+$HL,1$
+$BG,7$CD3I32 poly[4]= {{-100,-100,-100},{100,-100,-100},{100,100,-100},{-100,100,-100}};
+I64 colors[4]= {BLUE,YELLOW,GREEN,CYAN};
+CDC *dc=DCNew(200,200);
+dc->r=Mat4x4IdentNew;
+DCDepthBufAlloc(dc);
+DCFill;
+dc->flags|=DCF_TRANSFORMATION;
+F64 rotx=0,roty;
+CD3I32 cube[6][6];
+I64 i=0,i2=0;
+I64 *trans=Mat4x4IdentNew; 
+for(rotx=0.; rotx<=(2.*pi)-1.; rotx+=2*pi/4.) {
+  Mat4x4IdentEqu(trans);
+  Mat4x4RotX(trans,rotx);
+  Mat4x4RotY(trans,roty);
+  for(i2=0; i2!=4; i2++) {
+    MemCpy(&cube[i][i2],&poly[i2],sizeof(CD3I32));
+    Mat4x4MulXYZ(trans,&cube[i][i2].x,&cube[i][i2].y,&cube[i][i2].z);
+  }
+  i++;
+}
+for(rotx=0; rotx<=2*pi; rotx+=(2*pi/100.)) {
+  DCFill(dc);
+  DCDepthBufRst(dc);
+  Mat4x4IdentEqu(dc->r);
+  Mat4x4RotX(dc->r,rotx);
+  Mat4x4RotY(dc->r,rotx);
+  Mat4x4RotZ(dc->r,rotx);
+  Mat4x4Scale(dc->r,.5);
+  Mat4x4TranslationEqu(dc->r,0,0,3000);
+  for(i2=0; i2!=6; i2++) {
+    dc->color=colors[i2];
+    GrFillPoly3(dc,4,cube[i2]);
+   }
+   DCFill;
+   GrBlot(,100,100,dc);
+   Sleep(33);
+}
+DCDel(dc);
+DCFill;
+$BD$$HL,0$
+
+  If you ran the above example,the cube looks flat,$FG,4$THIS IS BECUASE YOU NEED TO MAKE THINGS SHRINK IN THE DISTANCE$FD$
+
+  Let me introduce the $HL,1$CDC->transform$HL,0$ callback: This callback will be called for every point that is rendered when $HL,1$DCF_TRANSFORMATION$HL,0$ is enabled. To acheive the epic "shrinking effect",$FG,4$divide the X/Y coordinates by the Z coordanate times a scale distance$FD$ Let's see an example:
+Heres an example:
+
+$HL,1$
+$BG,7$#define SCRN_SCALE 512
+U0 Transform(CDC *dc,I64 *x,I64 *y,I64 *z)
+{
+  I64 zz;
+  Mat4x4MulXYZ(dc->r,x,y,z);
+  zz=SCRN_SCALE/3+*z;
+  if (zz<1) zz=1;
+  *x=SCRN_SCALE/2* *x/zz;
+  *y=SCRN_SCALE/2* (*y)/zz;
+  *x+=dc->x;
+  *y+=dc->y;
+  *z+=dc->z;
+}
+CDC *dc=DCAlias;
+dc->transform=&Transform;
+dc->flags|=DCF_TRANSFORMATION;
+I64 dist=0;
+dc->z=-60;
+for(dist=0;dist!=100;dist++) { 
+  Mat4x4TranslationEqu(dc->r,0,0,dist);
+  dc->color=LTRED;
+  GrRect3(dc,0,0,0,100,100);
+  Refresh;
+  DCFill;
+} 
+$BD$$HL,0$
+$FG,5$$TX+CX,"Runtime Part 1:Graphics Raster Operations"$$FD$
+
+  In TempleOS there are 16 colors,but you can mix them to make "new" colors. This is called dithering. To use dithering to use $UL,1$raster operations$UL,0$. This allows us to do things like make shading or invert the colors below what your drawing. Let's get started
+
+$HL,1$
+$BG,7$CDC *dc=DCAlias;
+I64 cnt;
+for(cnt=0;cnt!=100;cnt++) { 
+  dc->color=LTRED+YELLOW<<16+ROPF_DITHER; //Mix LTRED+YELLOW for Orange-ish color
+  GrRect3(dc,0,0,0,100,100);
+  Refresh;
+  DCFill;
+}
+$BD$$HL,0$ 
+
+  If you though that was cool,check out probability dithering. This will make a shading effect. You can change the percentage of what color gets used to make a shading of your choice.The $HL,1$CDC->dither_probability_u16$HL,0$ is a 16bit percentage of the the colors being used. If the dither_probability_u16 is 0,it will use dc->color,otherwise it will use dc->color.u8[2] if the probability is U16_MAX;
+
+Let's rock($HL,1$.u8[2]$HL,0$ is 16 bits over):
+$HL,1$
+$BG,7$CDC *dc=DCAlias;
+I64 cnt;
+for(cnt=0;cnt!=100;cnt++) {
+  dc->color=BLACK; 
+  GrRect(dc,0,0,100,100);
+  dc->color=LTRED+YELLOW<<16+ROPF_PROBABILITY_DITHER;
+  dc->dither_probability_u16=U16_MAX*ToF64(cnt)/100.;
+  GrFloodFill(dc,10,10);
+  Refresh;
+  DCFill;
+}
+DCDel(dc);
+$BD$$HL,0$

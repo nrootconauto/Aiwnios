@@ -4,7 +4,6 @@ TabWidth: '2'
 UseTab: Never
 Language: Cpp
 AllowShortFunctionsOnASingleLine: false
-IndentPPDirectives: BeforeHash
 AlignConsecutiveMacros: Consecutive
 AlignConsecutiveAssignments: Consecutive
 IncludeCategories: [

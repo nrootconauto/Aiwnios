@@ -3,11 +3,21 @@
 #include "aiwn.h"
 #include "argtable3.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+// clang-format off
+#ifdef __FreeBSD__ 
+#include <machine/sysarch.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <dev/io/iodev.h>
+#include <machine/iodev.h>
+#endif
+// clang-format on
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
@@ -325,6 +335,127 @@ static int64_t __GetTicks() {
 static void __SleepHP(int64_t us) {
   usleep(us);
 }
+#if defined(__x86_64__)
+static int __iofd_warned;
+#if defined(__FreeBSD__) || defined(__linux__)
+static int __iofd = -1, __iofd_errno = -1, __iofd_cur_port = -1;
+static char const *__iofd_str;
+static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
+  if (-1 == __iofd) {
+    if (__iofd_warned)
+      return;
+    fprintf(stderr, "Couldn't open %s: %s\n", __iofd_str,
+            strerror(__iofd_errno));
+    __iofd_warned = 1;
+    return;
+  }
+#ifdef __linux__
+  if (port != __iofd_cur_port)
+    lseek(__iofd, port, SEEK_SET);
+  write(__iofd, &wut, sz);
+#elif defined(__FreeBSD__)
+  ioctl(__iofd, IODEV_PIO,
+        &(struct iodev_pio_req){
+            .access = IODEV_PIO_WRITE,
+            .port   = port,
+            .width  = sz,
+            .val    = wut,
+        });
+#endif
+}
+static uint64_t __in(uint64_t port, uint64_t sz) {
+  if (-1 == __iofd) {
+    if (__iofd_warned)
+      return -1ul;
+    fprintf(stderr, "Couldn't open %s: %s\n", __iofd_str,
+            strerror(__iofd_errno));
+    __iofd_warned = 1;
+    return -1ul;
+  }
+#ifdef __linux__
+  uint64_t res = 0;
+  if (port != __iofd_cur_port)
+    lseek(__iofd, port, SEEK_SET);
+  read(__iofd, &res, sz);
+  return res;
+#elif defined(__FreeBSD__)
+  // IODEV_PIO_READ
+  //     The operation is an "in" type.  A value will be read
+  //     from the specified port (retrieved from the port member)
+  //     and the result will be stored in the val member.
+  //  --man 4 io
+  struct iodev_pio_req req = {
+      .access = IODEV_PIO_READ,
+      .port   = port,
+      .width  = sz,
+  };
+  ioctl(__iofd, IODEV_PIO, &req);
+  return req.val;
+#endif
+}
+#elif defined(_WIN32)
+static void __out(uint64_t, uint64_t, uint64_t) {
+  if (__iofd_warned)
+    return;
+  fprintf(stderr, "In/Out not supported on Windows\n");
+  __iofd_warned = 1;
+}
+static uint64_t __in(uint64_t, uint64_t) {
+  if (__iofd_warned)
+    return -1ull;
+  fprintf(stderr, "In/Out not supported on Windows\n");
+  __iofd_warned = 1;
+  return -1ull;
+}
+#endif
+static void STK_OutU8(uint64_t *stk) {
+  __out(stk[1], stk[0], 1);
+}
+static void STK_OutU16(uint64_t *stk) {
+  __out(stk[1], stk[0], 2);
+}
+static void STK_OutU32(uint64_t *stk) {
+  __out(stk[1], stk[0], 4);
+}
+static uint64_t STK_InU8(uint64_t *stk) {
+  return __in(stk[0], 1);
+}
+static uint64_t STK_InU16(uint64_t *stk) {
+  return __in(stk[0], 2);
+}
+static uint64_t STK_InU32(uint64_t *stk) {
+  return __in(stk[0], 4);
+}
+#ifdef _WIN32
+#define RepIn(n)                                                               \
+  static void STK_RepInU##n(uint64_t *) __attribute__((alias("STK_InU32")))
+#define RepOut(n)                                                              \
+  static void STK_RepOutU##n(uint64_t *) __attribute__((alias("STK_InU32")))
+#else
+#define RepIn(n)                                                               \
+  static void STK_RepInU##n(uint64_t *stk) {                                   \
+    uint64_t port = stk[2], cnt = stk[1];                                      \
+    uint##n##_t *buf = stk[0];                                                 \
+    for (uint64_t i = 0; i < cnt; i++)                                         \
+      buf[i] = __in(port, n / 8) & ((1ull << n) - 1);                          \
+  }
+#define RepOut(n)                                                              \
+  static void STK_RepOutU##n(uint64_t *stk) {                                  \
+    uint64_t port = stk[2], cnt = stk[1];                                      \
+    uint##n##_t *buf = stk[0];                                                 \
+    for (uint64_t i = 0; i < cnt; i++)                                         \
+      __out(buf[i] & ((1ull << n) - 1), port, n / 8);                          \
+  }
+#endif
+RepIn(8);
+RepIn(16);
+RepIn(32);
+RepOut(8);
+RepOut(16);
+RepOut(32);
+#undef RepIn
+#undef RepOut
+#endif
 static int64_t MemCmp(char *a, char *b, int64_t s) {
   return memcmp(a, b, s);
 }
@@ -499,8 +630,9 @@ static int64_t STK_MemSetU64(int64_t *stk) {
   return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_MemSetI64(int64_t *stk)
-    __attribute__((alias("STK_MemSetU64")));
+static int64_t STK_MemSetI64(int64_t *stk) {
+  return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
+}
 
 static int64_t STK_StrLen(int64_t *stk) {
   return (int64_t)strlen((void *)stk[0]);
@@ -1122,9 +1254,9 @@ static int64_t IsCmdLineMode() {
 }
 
 #ifndef _WIN32
-  #include "cli_vendor/bestline.h"
+#include "cli_vendor/bestline.h"
 #else
-  #include "cli_vendor/linenoise.h"
+#include "cli_vendor/linenoise.h"
 #endif
 
 static void _freestr(char **p) {
@@ -1231,6 +1363,20 @@ static void BootAiwnios(char *bootstrap_text) {
     X(MemSetI64, 3);
     X(StrLen, 1);
     X(StrCmp, 2);
+#if defined(__x86_64__)
+    X(OutU8, 2);
+    X(OutU16, 2);
+    X(OutU32, 2);
+    X(RepOutU8, 3);
+    X(RepOutU16, 3);
+    X(RepOutU32, 3);
+    X(InU8, 1);
+    X(InU16, 1);
+    X(InU32, 1);
+    X(RepInU8, 3);
+    X(RepInU16, 3);
+    X(RepInU32, 3);
+#endif
 #undef X
     PrsAddSymbol("Log10", STK_log10, 1);
     PrsAddSymbol("Log2", STK_log2, 1);
@@ -1260,7 +1406,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("WriteProtectMemCpy", WriteProtectMemCpy, 3);
     PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
 #if defined(__x86_64__)
-  #if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
@@ -1269,11 +1415,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("__Gs", NULL, 0);
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
-  #else
+#else
     // Pass function pointer(not the result)
     PrsAddSymbol("__Fs", GetHolyFsPtr, 0);
     PrsAddSymbol("__Gs", GetHolyGsPtr, 0);
-  #endif
+#endif
 #endif
 #if defined(_M_ARM64) || defined(__aarch64__)
     //__Fs is special
@@ -1490,20 +1636,20 @@ static void Boot() {
   "#define HOST_ABI '%s'\n"                                                    \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
-  #if defined(__APPLE__)
+#if defined(__APPLE__)
     host_abi = "Apple";
-  #else
+#else
     host_abi = "SysV";
-  #endif
+#endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64", host_abi);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi);
 #elif defined(__x86_64__)
-  #if defined(_WIN32) || defined(WIN32)
+#if defined(_WIN32) || defined(WIN32)
     host_abi = "Win";
-  #else
+#else
     host_abi = "SysV";
-  #endif
+#endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "X86", host_abi);
@@ -1513,7 +1659,7 @@ static void Boot() {
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "RISCV", host_abi);
 #else
-  #error "Arch not supported"
+#error "Arch not supported"
 #endif
     BootAiwnios(buf);
   } else
@@ -1529,7 +1675,7 @@ static void ExitAiwnios(int64_t *stk) {
   exit(stk[0]);
 }
 #ifdef main
-  #undef main
+#undef main
 #endif
 int main(int argc, char **argv) {
   void *argtable[] = {
@@ -1574,7 +1720,16 @@ int main(int argc, char **argv) {
   }
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
-#if !defined(__APPLE__)
+#if defined(__x86_64__) && (defined(__FreeBSD__) || defined(__linux__))
+#ifdef __linux__
+  __iofd = open(__iofd_str = "/dev/port", O_RDWR);
+#elif defined(__FreeBSD__)
+  __iofd = open(__iofd_str = "/dev/io", O_RDWR);
+#endif
+  if (-1 == __iofd)
+    __iofd_errno = errno;
+#endif
+#ifndef __APPLE__
   if (!arg_no_debug->count)
     DebuggerBegin();
 #endif

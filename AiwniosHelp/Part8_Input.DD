@@ -1,0 +1,265 @@
+$FG,5$$TX+CX,"Runtime Part 8: User Input"$$FD$
+
+  TempleOS lets you do lit stuff like click on things and use the keyboard. These events are passed through messages. We use $HL,1$GetMsg$HL,0$ to get the messages,along with a message mask.
+$HL,1$ 
+$BG,7$I64 x,y;
+U0 DrawIt(CTask *t,CDC *dc) {
+  dc->color=RED;
+  GrRect(dc,x,y,100,100);
+}
+U0 Run() {
+  Fs->draw_it=&DrawIt;
+  I64 m,x2,y2;
+  while(TRUE) {
+    m=GetMsg(&x2,&y2,1<<MSG_MS_MOVE+1<<MSG_MS_R_DOWN);
+    if(m==MSG_MS_R_DOWN)
+      break;
+    x=x2;
+    y=y2;
+    Refresh;
+  }
+}
+Run;
+$BD$$HL,0$ 
+
+  Keyboard messages can be gotten via $HL,1$ScanKey(&ch,&sc)$HL,0$. The first argument is the ASCII charactor,and the second one is the scancode. The scancode is the raw key being pressed and has flags in it. I'll give an example usage of the function first before I dive into details.
+$HL,1$
+$BG,7$I64 x,y;
+U0 DrawIt(CTask*,CDC*dc) {
+  dc->color=GREEN;
+  GrRect(dc,x,y,100,100); 
+}
+U0 Run() {
+  Fs->draw_it=&DrawIt;
+  I64 msg,sc,ch;
+  for(;TRUE;) {
+    if(ScanKey(&ch,&sc)) {
+      if(sc&0xff==SC_ESC) break;
+      if(sc&0xff==SC_CURSOR_UP) {
+        y-=3;
+      } else if(sc&0xff==SC_CURSOR_DOWN) {
+        y+=3;
+      } else if(sc&0xff==SC_CURSOR_LEFT) {
+        x-=3;
+      } else if(sc&0xff==SC_CURSOR_RIGHT) {
+        x+=3;
+      }
+    } else {
+      Refresh;
+    }
+  }
+}
+Run;
+$BD$$HL,0$
+  As you can see,I check the first 8 bits(0xff) of the scan code to test what key it is. There also flags on the scancode that tell you things like if the shift key is down etc.
+
+  The first byte of scancode is the key code,but the other bytes are flags which can be tested via the "&" operator
+
+$HL,1$
+$BG,7$I64 x,y;
+I64 color=GREEN;
+U0 DrawIt(CTask*,CDC*dc) {
+  dc->color=color;
+  GrRect(dc,x,y,100,100);
+  dc->color=RED;
+}
+U0 Run() {
+  Fs->draw_it=&DrawIt;
+  I64 msg,sc,ch;
+  for(;TRUE;) {
+    if(ScanMsg(&ch,&sc,1<<MSG_KEY_UP|1<<MSG_KEY_DOWN)) {
+      if(sc.u8[0]==SC_ESC) break;
+      if(sc.u8[0]==SC_CURSOR_UP) {
+        y-=3;
+      } else if(sc.u8[0]==SC_CURSOR_DOWN) {
+        y+=3;
+      } else if(sc.u8[0]==SC_CURSOR_LEFT) {
+        x-=3;
+      } else if(sc.u8[0]==SC_CURSOR_RIGHT) {
+        x+=3;
+      }
+      if(sc&SCF_CTRL)
+        color=RED;
+      else if(sc&SCF_SHIFT)
+        color=YELLOW;
+      else
+        color=GREEN;
+    } else {
+      Refresh;
+    }
+  }
+}
+Run;
+$BD$$HL,0$
+
+  Here's a list of scancode flags:
+
+$TR-C,"SCF_KEY_UP"$
+$ID,2$
+The key was released
+$ID,-2$
+$TR-C,"SCF_CTRL"$
+$ID,2$
+The Ctrl key is down
+$ID,-2$
+$TR-C,"SCF_SHIFT"$
+$ID,2$
+The shift key is down
+$ID,-2$
+$TR-C,"SCF_ALT"$
+$ID,2$
+The alt key is down
+$ID,-2$
+$TR-C,"SCF_CAPS"$
+$ID,2$
+The Caps lock key is down
+$ID,-2$
+$TR-C,"SCF_NUM"$
+$ID,2$
+The NumLock key is kdown
+$ID,-2$
+$TR-C,"SCF_SCROLL"$
+$ID,2$
+Scroll Lock key is down
+$ID,-2$
+$TR-C,"SCF_MS_L_DOWN"$
+$ID,2$
+The left mouse is down
+$ID,-2$
+$TR-C,"SCF_MS_R_DOWN"$
+$ID,2$
+The right mouse is down
+$ID,-2$
+$TR-C,"SCF_NO_SHIFT"$
+$ID,2$
+There is no shift
+$ID,-2$
+
+  Here's a list of scancode keys:
+
+$TR-C,"SC_ESC"$
+$ID,2$
+The escape key
+$ID,-2$
+$TR-C,"SC_BACKSPACE"$
+$ID,2$
+The backspace key
+$ID,-2$
+$TR-C,"SC_TAB"$
+$ID,2$
+The tab key
+$ID,-2$
+$TR-C,"SC_ENTER"$
+$ID,2$
+The enter key
+$ID,-2$
+$TR-C,"SC_CTRL"$
+$ID,2$
+The ctrl key
+$ID,-2$
+$TR-C,"SC_ALT"$
+$ID,2$
+The alt key
+$ID,-2$
+$TR-C,"SC_CAPS"$
+$ID,2$
+The caps lock key
+$ID,-2$
+$TR-C,"SC_NUM"$
+$ID,2$
+The num lock key
+$ID,-2$
+$TR-C,"SC_SCROLL"$
+$ID,2$
+The scroll lock key
+$ID,-2$
+$TR-C,"SC_CURSOR_UP"$
+$ID,2$
+The up key
+$ID,-2$
+$TR-C,"SC_CURSOR_DOWN"$
+$ID,2$
+The down key
+$ID,-2$
+$TR-C,"SC_CURSOR_LEFT"$
+$ID,2$
+The left key
+$ID,-2$
+$TR-C,"SC_CURSOR_RIGHT"$
+$ID,2$
+The right key
+$ID,-2$
+$TR-C,"SC_PAGE_DOWN"$
+$ID,2$
+The page down key
+$ID,-2$
+$TR-C,"SC_PAGE_UP"$
+$ID,2$
+The page up key
+$ID,-2$
+$TR-C,"SC_HOME"$
+$ID,2$
+The home key
+$ID,-2$
+$TR-C,"SC_END"$
+$ID,2$
+The end key
+$ID,-2$
+$TR-C,"SC_INS"$
+$ID,2$
+The insert key
+$ID,-2$
+$TR-C,"SC_DELETE"$
+$ID,2$
+The delete key
+$ID,-2$
+$TR-C,"SC_F1-SC_F12"$
+$ID,2$
+The Fxx keys
+$ID,-2$
+$TR-C,"SC_PAUSE"$
+$ID,2$
+The pause key
+$ID,-2$
+$TR-C,"SC_GUI"$
+$ID,2$
+The logo key
+$ID,-2$
+$TR-C,"SC_PRTSCRN1"$
+$ID,2$
+The print screen key
+$ID,-2$
+$TR-C,"SC_PRTSCRN2"$
+$ID,2$
+The print screen key
+$ID,-2$
+
+  I mentioned eariler about $HL,1$GetMsg$HL,0$,and I used $HL,1$ScanMsg$HL,0$. $HL,1$GetMsg$HL,0$ waits for an event,but $HL,1$ScanMsg$HL,0$ doesn't. There are also message codes
+
+$TR-C,"MSG_KEY_DOWN(ch,scancode)"$
+$ID,2$
+A Key is put down
+$ID,-2$
+$TR-C,"MSG_KEY_UP(ch,scancode)"$
+$ID,2$
+A Key is release
+$ID,-2$
+$TR-C,"MSG_MS_MOVE(x,y)"$
+$ID,2$
+The mouse is moved
+$ID,-2$
+$TR-C,"MSG_MS_L_DOWN(x,y)"$
+$ID,2$
+The left button is down
+$ID,-2$
+$TR-C,"MSG_MS_L_UP(x,y)"$
+$ID,2$
+The left button is down
+$ID,-2$
+$TR-C,"MSG_MS_R_DOWN(x,y)"$
+$ID,2$
+The right button is down
+$ID,-2$
+$TR-C,"MSG_MS_R_UP(x,y)"$
+$ID,2$
+The right button is down

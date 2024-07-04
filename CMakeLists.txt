@@ -181,7 +181,7 @@ set_target_properties(FFI PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(aiwnios PRIVATE FFI m)
 
 if (WIN32)
-  target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 -static)
+  target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 ntdll -static)
 else()
   target_link_libraries(aiwnios PRIVATE pthread)
   if (ARCH STREQUAL "riscv64")
