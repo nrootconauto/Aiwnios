@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR) #For sauce I have come,and to sauce I shall return
+if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(CMAKE_INSTALL_PREFIX "/usr/local")
+elseif(NOT WIN32)
+  set(CMAKE_INSTALL_PREFIX "/usr")
+endif ()
+
+configure_file(generated.h.in generated.h @ONLY)
+configure_file(aiwnios.desktop.in aiwnios.desktop @ONLY)
+
 include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
 project(AIWNIOS
   LANGUAGES C CXX ASM
@@ -85,7 +94,7 @@ elseif ("${ARCH}" STREQUAL "x86_64")
     dbg.c
     multic.c
     ffi_gen.c
-    argtable3.c
+     argtable3.c
     socket.c
   )
 elseif ("${ARCH}" STREQUAL "arm64")
@@ -267,6 +276,8 @@ set_target_properties(aiwnios PROPERTIES
 #
 # Install section
 #
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+  
 
 set (AIWNIOS_VERSION "0.0.1")
 
@@ -307,7 +318,6 @@ set(
   Doc
   Apps
   Src
-  Psalmody
   Vocab.DD
   PersonalMenu.DD
   HCRT2.BIN
@@ -318,8 +328,10 @@ set(
   ACWords.DATA
 )
 
-if(!WIN32)
+if(NOT WIN32)
   install(PROGRAMS aiwnios TYPE BIN)
+  install(FILES aiwnios.png DESTINATION share/icons)
+  install(FILES aiwnios.desktop DESTINATION share/applications)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
       install(

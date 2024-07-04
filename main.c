@@ -1249,7 +1249,7 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
   NetUDPAddrDel(stk[0]);
 }
 
-static int64_t IsCmdLineMode() {
+int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
 
@@ -1674,6 +1674,12 @@ static void ExitAiwnios(int64_t *stk) {
   quit = 1;
   exit(stk[0]);
 }
+#if defined (WIN32) || defined(_WIN32)
+#include <Shlobj.h>
+#else
+#include <sys/types.h>
+#include <pwd.h>
+#endif
 #ifdef main
 #undef main
 #endif
@@ -1757,13 +1763,25 @@ int main(int argc, char **argv) {
   else if (arg_bootstrap_bin->count)
     t_drive = "."; // Bootstrap in current directory
 #if !defined(WIN32) && !defined(_WIN32)
-  if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count,
+  struct passwd *pwd=getpwuid(getuid());
+  const char *dft="/.local/share/aiwnios/T";
+  char *home=".";
+  if(pwd) home=pwd->pw_dir;
+  char template_dir[strlen(dft)+strlen(home)+1];
+  strcpy(template_dir,home);
+  strcat(template_dir,dft);
+  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count ) && !arg_bootstrap_bin->count)
+    t_drive = ResolveBootDir(!t_drive ?  template_dir: t_drive,
                              arg_new_boot_dir->count);
 #else
+  char home_dir[MAX_PATH];
+  strcpy(home_dir,"");
+  SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
+  sprintf(home_dir+strlen(home_dir),"/.local/share/aiwnios/T");
   if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? "T" : t_drive, arg_overwrite->count, 1);
+    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive, 1);
 #endif
+  if(arg_new_boot_dir->count) exit(EXIT_SUCCESS);
   InitSound();
   if (!arg_cmd_line->count) {
     SDL_Init(SDL_INIT_TIMER);

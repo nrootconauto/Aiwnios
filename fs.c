@@ -476,7 +476,7 @@ static void CopyDir(char *dst, char *src) {
           fclose(read);
         if (write)
           fclose(write);
-        return;
+        continue;
       }
       while (r = fread(buffer, 1, sizeof(buffer), read)) {
         if (r < 0)
@@ -487,6 +487,7 @@ static void CopyDir(char *dst, char *src) {
       fclose(write);
     }
   }
+  closedir(d);
 }
 
 static int __FIsNewer(char *fn, char *fn2) {
@@ -515,31 +516,33 @@ static int __FIsNewer(char *fn, char *fn2) {
   return s64 > s64_2;
 #endif
 }
-
-int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
+#define DUMB_MESSAGE(FMT,...) \
+	{ \
+	  int64_t l=snprintf(NULL,0,FMT,__VA_ARGS__); \
+	  char buffer3[l]; \
+	  snprintf(buffer3,l,FMT,__VA_ARGS__); \
+	  if(!IsCmdLineMode()) { \
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Aiwnios",buffer3,NULL); \
+	  } else { \
+		fprintf(AIWNIOS_OSTREAM,"%s",buffer3); \
+	  } \
+    }
+int CreateTemplateBootDrv(char *to, char *template) {
   char buffer[1024], drvl[16], buffer2[1024];
   if (!__FExists(template)) {
-    fprintf(AIWNIOS_OSTREAM,
-            "Template directory %s doesn't exist. You probably didnt install "
+	  DUMB_MESSAGE("Template directory %s doesn't exist. You probably didnt install "
             "Aiwnios\n",
             template);
     return 0;
   }
-  if (!overwrite)
-    if (__FExists(to)) {
-      if (!__FExists(template)) {
-        return 1;
-      } else if (!__FIsNewer(template, to)) {
-        return 1;
-      }
-    }
   if (__FExists(to)) {
+	  if(__FIsNewer(to,template))
+		return 1;
     int64_t _try;
     for (_try = 0; _try != 0x10000; _try++) {
       sprintf(buffer, "%s_BAKCUP.%ld", to, _try);
       if (!__FExists(buffer)) {
-        printf("Newer Template drive found,backing up old drive to \"%s\".\n",
-               buffer);
+	  DUMB_MESSAGE("Newer Template drive found,backing up old drive to \"%s\".\n",buffer);
 // Rename the old boot drive to something else
 #if defined(_WIN32) || defined(WIN32)
         MoveFile(to, buffer);
@@ -549,7 +552,6 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
         break;
       }
     }
-    return 0;
   }
 #if defined(_WIN32) || defined(WIN32)
   strcpy(buffer2, template);
@@ -562,21 +564,53 @@ int CreateTemplateBootDrv(char *to, char *template, int overwrite) {
             "Use \"./aiwnios -t T\" to specify the T drive.\n");
     return 0;
   }
-  CopyDir(to, buffer2);
-  return 1;
+  if(!__FExists(to)) {
+	  char *next,*old;
+	  char delim;
+	  strcpy(buffer,to);
+	  old=buffer;
+#if defined(_WIN32) || defined(WIN32)
+	const char fdelim='\\';
+#else
+	const char fdelim='/';
+#endif
+	  while(next=strchr(old,fdelim)) {
+		  delim=*next;
+		  *next=0;
+#if defined(_WIN32) || defined(WIN32)
+		  mkdir(buffer);
+#else
+          mkdir(buffer, 0700);
+#endif
+		  *next=delim;
+		  old=next+1;
+	  }
+	  if(!__FExists(buffer)) {
+	  #if defined(_WIN32) || defined(WIN32)
+		  mkdir(buffer);
+#else
+          mkdir(buffer, 0700);
+#endif
+	 }
+    CopyDir(to, buffer2);
+    return 1;
+  }
+  return 0;
 }
 
-const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
+const char *ResolveBootDir(char *use, int make_new_dir) {
   if (__FExists("HCRT2.BIN")) {
     return ".";
   }
   if (__FExists("T/HCRT2.BIN")) {
     return "T";
   }
-  if (!make_new_dir)
-    goto fail;
+  if(__FExists(use)&&!make_new_dir) {
+	  return strdup(use);
+  }
+  //CreateTemplateBootDrv will return existing boot dir if missing
 #if !defined(_WIN32) && !defined(WIN32)
-  if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR, overwrite)) {
+  if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR)) {
 #else
   char exe_name[0x10000];
   int64_t len;
@@ -585,7 +619,7 @@ const char *ResolveBootDir(char *use, int overwrite, int make_new_dir) {
   PathRemoveFileSpecA(exe_name); // Remove /bin
   len = strlen(exe_name);
   sprintf(exe_name + len, "\\T");
-  if (!CreateTemplateBootDrv(use, exe_name, overwrite)) {
+  if (!CreateTemplateBootDrv(use, exe_name)) {
 #endif
   fail:
     fprintf(AIWNIOS_OSTREAM, "I don't know where the HCRT2.BIN is!!!\n");

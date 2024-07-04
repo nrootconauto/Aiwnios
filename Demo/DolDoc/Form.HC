@@ -6,7 +6,7 @@ class FDStruct
   I64 num3	format "$$DA-TRM,A=\"Int1:0x%016X\"$$\n";
   I64 num4	format "$$DA-TRM,A=\"Int2:%12d\"$$\n";
   I64 type	format "$$LS,D=\"ST_PERSON_TYPE\"$$\n";
-  U8  name[32]	format "$$DA-P,A=\"Name:%s\"$$\n";
+  U8  name[32]	format "$$DA-P,A=\"Name:%s\"$$\n";
   U8  *address1	format "$$DA+M,A=\"Address:%s\"$$\n"; //+M is unlimited len U8 *.
   U8  *address2	format "$$DA+M,A=\"Address:%s\"$$\n"; //+M is unlimited len U8 *.
   CDate datetime format "$$DA-TRM,A=\"Date:%8D\"$$\n";
