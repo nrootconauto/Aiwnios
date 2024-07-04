@@ -1,0 +1,399 @@
+$FG,5$$TX+CX,"Runtime Part 11: "$DolDoc$FD$
+
+  Most of the text you see on screen is from the DolDoc layout engine. It uses a series of dollar signs to set things like the text color and make elements. The are stored as a circular queue of $HL,1$CDocEntry$HL,0$'s. The easyiest way to make a DolDoc element is to use $HL,1$DocPrint$HL,0$,use $HL,1$DocPut$HL,0$ to get the current task's document.
+
+$BD$$HL,1$
+$BG,7$//BT is a button
+CDocEntry *de=DocPrint(DocPut,"\n\n$$BT,\"Hello\"$$\n\n");
+$BD$$HL,0$ 
+
+  As you can see,the DolDoc entries have a type and argument. They are surrounded by $$'s. They can also have flags too. This let's you do things like center the text. Lets see an example:
+
+$BD$$HL,1$
+$BG,7$//TX is a text,+CX is the center flag
+CDocEntry *de=DocPrint(DocPut,"\n\n$$TX+CX,\"Hello\"$$\n\n");
+$BD$$HL,0$
+
+  DolDoc entries can also take an argument,Links use this to figure out where to go when you click them. Arguments for DolDoc entries come after the comma,some of the arguments are named and have the format "name=value"
+
+$HL,1$
+$BG,7$CDocEntry *de=DocPrint(DocPut,"\n\n$$LK,\"Text\",A=\"FL:/PersonalMenu.DD\"$$\n\n");
+$BD$$HL,0$
+
+  You can interact directly with the generated $HL,1$CDocEntry$HL,0$s. You can put things like callbacks into them. In our below example I set the left_cb function pointer to Beep2 and I tell the entry that it has a callback with $HL,1$DOCEF_LEFT_CB$HL,0$.
+
+$HL,1$
+$BG,7$I64 Beep2(CDoc *,CDocEntry *) {
+  Beep;
+}
+CDocEntry *de=DocPrint(DocPut,"\n\n$$BT+CX,\"Hello\"$$\n\n");
+de->de_flags|=DOCEF_LEFT_CB;
+de->left_cb=&Beep2;
+$BD$$HL,0$
+
+  You can use the $HL,1$DocMenu$HL,0$ function to get a value from your document. I use the LE for a left-click-expression.
+
+$HL,1$
+$BG,7$U0 CreateDialog() {
+  CDocEntry *nums[3];
+  I64 i;
+  DocClear(DocPut);
+  "$$TX+CX,\"Pick a number:\"$$\n";
+  for(i=0;i!=3;i++) {
+    nums[i]=DocPrint(DocPut,"\n\n$$BT+CX,\"%d\",LE=%d$$\n\n",i,i);
+  }
+  DocBottom(DocPut);
+  switch(DocMenu(DocPut)) {
+    start:
+      DocClear(DocPut);
+      case 0:
+        "You picked nothing lol.\n";
+        break;
+      case 1:
+        "One is the one\n";
+        break;
+      case 2:
+        "Two is too good\n";
+        break;
+    end:
+  }
+}
+CreateDialog;
+$BD$$HL,0$
+
+  You can use $HL,1$PopUpForm$HL,0$ to use a class's meta data for making a menu.
+
+$HL,1$
+$BG,7$U0 CreateDialog() {
+class CInput {
+  //Be sure to use -P with strings
+  U8 name[STR_LEN] format "\n";
+  I64 age format "\n";
+  Bool is_tall format "\n"; //CB is a Check box
+};
+CInput inp;
+PopUpForm(&inp);
+"%s is %d years old\n",inp.name,inp.age;
+if(inp.is_tall)
+  "Tall!\n";
+$BD$$HL,0$
+
+  Yeah time for some reference section ehh:
+
+$TR-C,"TX"$
+$ID,2$
+Text
+$ID,-2$
+$TR-C,"CR"$
+$ID,2$
+Newline
+$ID,-2$
+$TR-C,"CU"$
+$ID,2$
+Cursor pos,normally a ASCII #5
+$ID,-2$
+$TR-C,"TB"$
+$ID,2$
+Tab
+$ID,-2$
+$TR-C,"CL"$
+$ID,2$
+Clears all elements without the "+H" flag
+$ID,-2$
+$TR-C,"PB"$
+$ID,2$
+Page break
+$ID,-2$
+$TR-C,"PL"$
+$ID,2$
+Page length
+$ID,-2$
+$TR-C,"LM"$
+$ID,2$
+Left margin
+$ID,-2$
+$TR-C,"RM"$
+$ID,2$
+Right margin
+$ID,-2$
+$TR-C,"HD"$
+$ID,2$
+Header margin
+$ID,-2$
+$TR-C,"FO"$
+$ID,2$
+Footer margin
+$ID,-2$
+$TR-C,"ID"$
+$ID,2$
+Indent,use wit tree elements,and use with a negative number to un-indent
+$ID,-2$
+$TR-C,"FD"$
+$ID,2$
+Forground default color
+$ID,-2$
+$TR-C,"BD"$
+$ID,2$
+Background default color
+$ID,-2$
+$TR-C,"PT"$
+$ID,2$
+Command Line Prompt
+$ID,-2$
+$TR-C,"WW"$
+$ID,2$
+Use 1 to enable word wrap,use 0 to disable
+$ID,-2$
+$TR-C,"UL"$
+$ID,2$
+Use 1/0 to enable/disable underline
+$ID,-2$
+$TR-C,"IV"$
+$ID,2$
+Disable/enable Inverting of colors
+$ID,-2$
+$TR-C,"BK"$
+$ID,2$
+Burger Kind,just kidding,it's actually for blinking
+$ID,-2$
+$TR-C,"SX"$
+$ID,2$
+Shift the text by a amount of pixels
+$ID,-2$
+$TR-C,"SY"$
+$ID,2$
+Shift the text up/down by an amount of pixels
+$ID,-2$
+$TR-C,"CB"$
+$ID,2$
+Checkbox
+$ID,-2$
+$TR-C,"LS"$
+$ID,2$
+$FG,4$Major Lit Alert$FD$
+Use with the "D" argument to make a list(from a $HL,1$DefineListLoad$HL,0$),do this $$LS,"potato",D="ST_BIBLE_BOOKS"$$
+Clicking on this will make a menu to pick an item from the list
+$ID,-2$
+$TR-C,"MA"$
+$ID,2$
+A macro,clicking on this will insert LM into the command line prompt
+$ID,-2$
+$TR-C,"TR"$
+$ID,2$
+A Tree wigdet,use this with ID to nest the tree's
+$ID,-2$
+$TR-C,"HL"$
+$ID,2$
+Turn HolyC syntax highting on/off
+$ID,-2$
+
+ Here is a reference section for the flags,they can be added/removed with +/-(For example you can do $HL,1$ "$$TX+CX+H,\"I have CX and H flags.\"$$\n";$HL,0$)
+
+$TR-C,"H"$
+$ID,2$
+Hold,this will prevent CL from deleting this element
+$ID,-2$
+$TR-C,"L"$
+$ID,2$
+This will make the element act as a link
+$ID,-2$
+$TR-C,"TR"$
+$ID,2$
+This will make the element act as a tree
+$ID,-2$
+$TR-C,"LS"$
+$ID,2$
+This will make the element act as a list
+$ID,-2$
+$TR-C,"PU"$
+$ID,2$
+This will make a macro run in a popup window
+$ID,-2$
+$TR-C,"C"$
+$ID,2$
+This will collapse a tree,use -C to uncollapse the tree
+$ID,-2$
+$TR-C,"X"$
+$ID,2$
+This will save and Exit after the macro is done
+$ID,-2$
+$TR-C,"UD"$
+$ID,2$
+Update data on typing
+$ID,-2$
+
+Here is a reference section for the argument codes,use them like $HL,1$"$$TX,T=\"123\"$$"$HL,0$
+
+$TR-C,"T"$
+$ID,2$
+Tag text,this is the text that gets displayed.
+$ID,-2$
+$TR-C,"LEN"$
+$ID,2$
+Sets the length of the DA element.
+$ID,-2$
+$TR-C,"A"$
+$ID,2$
+Sets the link location
+$ID,-2$
+$TR-C,"LE"$
+$ID,2$
+Left expression,runs an expression on left click
+$ID,-2$
+$TR-C,"RE"$
+$ID,2$
+Right expression,runs an expression on right click
+$ID,-2$
+$TR-C,"LM"$
+$ID,2$
+Left macro,runs text on left click
+$ID,-2$
+$TR-C,"RM"$
+$ID,2$
+Right macro,runs text on right click
+$ID,-2$
+$TR-C,"RT"$
+$ID,2$
+Raw type of DA
+$ID,-2$
+$TR-C,"U"$
+$ID,2$
+User data
+$ID,-2$
+$TR-C,"SCX"$
+$ID,2$
+Scroll x columns $FG,4$Makes a amazing scrolling effect$FD$
+$ID,-2$
+$TR-C,"SX"$
+$ID,2$
+Scroll x pixels
+$ID,-2$
+$TR-C,"SY"$
+$ID,2$
+Scroll y pixels
+$ID,-2$
+
+  Making links is easy,to do this we use $HL,1$"$$LK,\"text\",A=\"BF:Acts,2:3\"$$";$HL,0$ Here is a reference for the link codes:
+
+$TR-C,"FI"$
+$ID,2$
+File index,FI="file" or  FI="file,line"
+$ID,-2$
+$TR-C,"FF"$
+$ID,2$
+File Find,FF="file,text"
+$ID,-2$
+$TR-C,"BF"$
+$ID,2$
+Bible Find,BF="book,text". "text" can be a chapter/verse
+$ID,-2$
+$TR-C,"HI"$
+$ID,2$
+Help Index,HI="Help Index". Make help indexes via $HL,1$#help_index$HL,0$
+$ID,-2$
+$TR-C,"A"$
+$ID,2$
+Symbol address, takes a pointer A="0x11223344"
+$ID,-2$
+
+  Now a function reference:
+
+$TR-C,"DocBottom"$
+$ID,2$
+Move to the bottom of the document
+$ID,-2$
+$TR-C,"DocCenter"$
+$ID,2$
+Make ->cur_entry be in the viewport
+$ID,-2$
+$TR-C,"DocClear"$
+$ID,2$
+Clear all elements except those with the +H flag
+$ID,-2$
+$TR-C,"DocCollapse(collapsed,doc)"$
+$ID,2$
+Collapse or un-collapse all trees in the document
+$ID,-2$
+$TR-C,"DocDel"$
+$ID,2$
+Delete a documents memory
+$ID,-2$
+$TR-C,"DocEntryDel(doc,elem)"$
+$ID,2$
+Deletes a document entry
+$ID,-2$
+$TR-C,"DocEntryCopy(doc,elem)"$
+$ID,2$
+Copy an element
+$ID,-2$
+$TR-C,"DocInsDoc(to,from)"$
+$ID,2$
+Insert a document into an other document
+$ID,-2$
+$TR-C,"DocLock"$
+$ID,2$
+Lock a document
+$ID,-2$
+$TR-C,"DocUnlock"$
+$ID,2$
+Unlock a document
+$ID,-2$
+$TR-C,"DocRst"$
+$ID,2$
+Reset the document
+$ID,-2$
+$TR-C,"DocTop"$
+$ID,2$
+Go to the top of the document
+$ID,-2$
+$TR-C,"DocLineRead(filename,line)"$
+$ID,2$
+Read a line from a file
+$ID,-2$
+$TR-C,"DocLineWrite(filename,line,text)"$
+$ID,2$
+Write a line into a file
+$ID,-2$
+$TR-C,"DocRead(filename)"$
+$ID,2$
+Read a document from  a file
+$ID,-2$
+$TR-C,"DocLoad(into_doc,ptr,len)"$
+$ID,2$
+Read a document from memory into a docuemnt
+$ID,-2$
+$TR-C,"DocSave(doc,len_ptr)"$
+$ID,2$
+Save a document into memory
+$ID,-2$
+$TR-C,"DocWrite(doc)"$
+$ID,2$
+Save a document to disk. $FG,4$Filename is detirmnined by DocNew("filename");$FD$
+$ID,-2$
+$TR-C,"DocMenu"$
+$ID,2$
+Interact with a document until a value is found
+$ID,-2$
+$TR-C,"DocForm"$
+$ID,2$
+Use a class's meta-data to make a form for you to fill out 
+$ID,-2$
+$TR-C,"DocNew(filename)"$
+$ID,2$
+Make a new document that will be saved to filename
+$ID,-2$
+$TR-C,"DocGR(doc,filename.GR)"$
+$ID,2$
+Insert a .GR file into a document
+$ID,-2$
+$TR-C,"DocPrint"$
+$ID,2$
+Print text into a document
+$ID,-2$
+$TR-C,"DocPut"$
+$ID,2$
+Get the current document for a task
+$ID,-2$
+$TR-C,"DocType(doc,filename)"$
+$ID,2$
+Type a file into a document

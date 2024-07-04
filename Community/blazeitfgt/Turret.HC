@@ -29,7 +29,7 @@ public U0 AddTurret(Vector *vec, I64 x, I64 y, Vector *grBuf) {
   t.health = 100;
   t.shoot_ttl = 0;
   VectorAdd(vec, &t);
-  VectorSetLen(grBuf, vec->len);
+  VectorSetLen(grBuf, vec->len);
 }
 
 public U0 DmgTur(Turret *t, F64 dmg, F64 rot) {

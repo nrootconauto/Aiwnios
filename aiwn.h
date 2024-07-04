@@ -1336,7 +1336,7 @@ int64_t ARM_addShiftRegX(int64_t d, int64_t n, int64_t m, int64_t sh);
 #elif defined(__x86_64__)
   #define PAUSE asm("pause ");
 #else
-  #define PAUSE ;
+  #define PAUSE asm (".4byte 0x100000f");
 #endif
 
 void AiwniosSetVolume(double v);

@@ -1,0 +1,63 @@
+$FG,5$$TX+CX,"Runtime Part 6: Data structures 2(HashTable)"$$FD$
+
+  Hash tables are like dictionary data structures and each task has one in $HL,1$Fs->hash_table$HL,0$. Each $HL,1$CHash$HL,0$ has a $FG,4$type$FD$ and a $FG,4$str$FD$.
+
+  When you look up a hash from a hash-table you will need the type. For example,if we want to grab a define($HL,1$HTT_DEFINE_STR$HL,0$) from our current task,we do:
+$HL,1$
+$BG,7$#define FOO 123
+CHashDefineStr *def=HashFind("FOO",Fs->hash_table,HTT_DEFINE_STR);
+if(def)
+  "%s\n",def->data;
+$HL,0$
+  We looked up foo with type $HL,1$HTT_DEFINE_STR$HL,0$. Sometimes we want to add things to a $HL,1$CHashTable$HL,0$. To do this we need to use $HL,1$HashAdd$HL,0$.
+$HL,1$
+$BG,7$CHashDefineStr *d=CAlloc(sizeof(CHashDefineStr));
+d->str=StrNew("Hello"); //Must allocate string on heap
+d->type=HTT_DEFINE_STR;
+d->data=StrNew("10");
+HashAdd(d,Fs->hash_table);
+//We added the macro Hello into the hash table
+"%d\n",Hello;
+$BD$$HL,0$
+
+  Sometimes you want to make your own hashtables. You can do this via $HL,1$HashTableNew(size)$HL,0$. $FG,4$size MUST BE A POWER OF 2$FD$.
+
+  Any generic data in the hashtable should use type $HL,1$HTT_FRAME_PTR$HL,0$ as $HL,1$HashTableDel$HL,0$ doesnt try to make assuptions on how to free the data
+
+Perhaps an example will help:
+$HL,1$
+$BG,7$CHashTable *ht=HashTableNew(0x100);
+CHashGeneric *ent=CAlloc(sizeof CHashGeneric);
+ent->user_data0=1;
+ent->user_data1=2;
+ent->user_data2=3;
+ent->type=HTT_FRAME_PTR;
+ent->str=StrNew("look");
+HashAdd(ent,ht);
+CHashGeneric *g=HashFind("look",ht,HTT_FRAME_PTR);
+"%d,%d,%d\n",g->user_data0,g->user_data1,g->user_data2;
+HashTableDel(ht);
+$BD$$HL,0$
+
+Here is a reference of hash table functions
+
+$TR-C,"HashAdd(item,table)"$ 
+$ID,2$
+Adds an item to the hash table
+$ID,-2$
+$TR-C,"HashRemDel(item,table)"$ 
+$ID,2$
+Delete an item from the hash table
+$ID,-2$
+$TR-C,"HashFind(str,table,type)"$ 
+$ID,2$
+Find an item in the table
+$ID,-2$
+$TR-C,"HashSingleTableFind(str,table)"$ 
+$ID,2$
+Find an item in the table,but dont check parent task's thing
+$ID,-2$
+$TR-C,"HashTableNew(sz)"$ 
+$ID,2$
+Make new hashtable,$FG,4$sz must be a power of 2$FD$
+$ID,-2$

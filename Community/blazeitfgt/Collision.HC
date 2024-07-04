@@ -83,7 +83,7 @@ public Bool CheckCollisionPoint(Vec4 *aabb, CD2 *p) {
   return !(d0 | d1 | d2 | d3);
 }
 
-public Bool CheckICollisionPoint(I64 x1, I64 y1, I64 x2, I64 y2, I64 px, I64 py) {
+public Bool CheckICollisionPoint(I64 x1, I64 y1, I64 x2, I64 y2, I64 px, I64 py) {
   Bool d0 = px < x1;
   Bool d1 = py < y1;
   Bool d2 = px > x2;
