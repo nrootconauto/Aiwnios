@@ -305,7 +305,8 @@ if(WIN32)
   set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'")
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'\r\n"
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '-n' '$INSTDIR\\\\logo.ico' 'New Boot Enviroment'")
   set(CPACK_NSIS_DELETE_ICONS_EXTRA
     "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk'" )
 endif()
@@ -317,6 +318,7 @@ set(
   AfterEgypt
   Doc
   Apps
+  AiwniosHelp
   Src
   Vocab.DD
   PersonalMenu.DD

@@ -1696,10 +1696,10 @@ int main(int argc, char **argv) {
                  "Build a new binary with the \"slim\" compiler of aiwnios."),
     arg_asan_enable =
         arg_lit0("a", "address-sanitize", "Enable bounds checking."),
-#if !defined(WIN32) && !defined(_WIN32)
     arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
+#if !defined(WIN32) && !defined(_WIN32)
     arg_fork =
         arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
 #endif
@@ -1778,8 +1778,8 @@ int main(int argc, char **argv) {
   strcpy(home_dir,"");
   SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
   sprintf(home_dir+strlen(home_dir),"/.local/share/aiwnios/T");
-  if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive, 1);
+  if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count)
+    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count);
 #endif
   if(arg_new_boot_dir->count) exit(EXIT_SUCCESS);
   InitSound();
