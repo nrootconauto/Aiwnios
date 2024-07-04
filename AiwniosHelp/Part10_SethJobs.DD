@@ -1,0 +1,35 @@
+$FG,5$$TX+CX,"Runtime Part 9: "$Jobs$FD$
+
+  In TempleOS,each core has a seth_task. This task does lit stuff like run Jobs which can be created via $HL,1$TaskExe$HL,0$ and you get the results via $HL,1$JobResGet$HL,0$ 
+
+$HL,1$
+$BG,7$CJob *job=TaskExe(Gs->seth_task,Fs,"1+1;;;",0);
+res=JobResGet(job);
+Kill(jobber);
+"I got %d\n",res;
+$BD$$HL,0$
+  With $HL,1$cpu_structs$HL,0$,you can spawn jobs on other cores
+
+$HL,1$
+$BG,7$CTask *parent_task=Fs;
+I64 core=0;
+//mp_cnt is the number of cpus 
+CJob *jobs[mp_cnt];
+for(core=0;core!=mp_cnt;core++) {
+  jobs[core]=TaskExe(cpu_structs[core].seth_task,Fs,
+     "Sleep(RandI64%1000);"
+     "Gs->num;;", //Gs is the current CCPU for the core,->num is the cpu number
+  0);
+}
+for(core=0;core!=mp_cnt;core++) {
+  "Core %d return %d\n",core,JobResGet(jobs[core]);
+}
+$BD$$HL,0$
+
+  If you want to have the parent task wait while a job runs,you can use the $HL,1$JOBf_WAKE_MASTER$HL,0$ flag.
+
+$HL,1$
+$BG,7$CTask *parent_task=Fs;
+//Things ending in a lowecase f as bits(and need to be shifted to be flags)
+TaskExe(Gs->seth_task,parent_task,"Play(\"EGBDF\");",(1<<JOBf_WAKE_MASTER));
+$BD$$HL,0$

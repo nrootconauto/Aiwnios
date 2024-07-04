@@ -1,0 +1,25 @@
+$WW,1$$FG,5$$TX+CX,"Aiwnios User Guide"$$FD$
+
+  Welcome to the Sexiest HolyC compiler that runs almost anywhere (X86 / AArch64 / RISC-V). I put togheter a little tutorial for new users. Be sure to type $HL,1$Man("Man") /* Man("Function name")*/$HL,0$; To get more information about how a function works.
+
+$FG,5$$TX+CX,"Quick Start"$$FD$
+$TR-C,"Tutorial Series"$
+$ID,2$
+  You may want to make sure to read The Circular Queues part if you want to do anything fancy(TempleOS uses it alot). These tutorials are good for a quick reference and already assume you know HolyC.
+
+$LK,"Part 1:Graphics",A="FI:Part1_Graphics.DD"$
+$LK,"Part 2:Sounds and Music",A="FI:Part2_Sound.DD"$
+$LK,"Part 3:Reflection",A="FI:Part3_Reflection.DD"$
+$LK,"Part 4:FileSystem",A="FI:Part4_FileSystem.DD"$
+$LK,"Part 5:Circular Queue",A="FI:Part5_CQue.DD"$
+$LK,"Part 6:Hash Table Dictionaries",A="FI:Part6_CHashTable.DD"$
+$LK,"Part 7:Fifo Data Structure",A="FI:Part7_Fifo.DD"$
+$LK,"Part 8:User Input",A="FI:Part8_Input.DD"$
+$LK,"Part 9:MultiThreading",A="FI:Part9_MultThreading.DD"$
+$LK,"Part 10:Jobs",A="FI:Part10_SethJobs.DD"$
+$LK,"Part 11:DolDoc Text Engine",A="FI:Part11_DolDoc.DD"$
+$ID,-2$
+
+$FG,5$$TX+CX,"Contributing"$$FD$
+
+ Aiwnios still needs Android support,but it already runs on AArch64 but I dont know much about phones. You can also help by porting it to run on more architectures too. Contact $FG,2$nrootconauto@gmail.com$FD$ for help.

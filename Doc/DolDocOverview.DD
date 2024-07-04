@@ -286,4 +286,3 @@ The following may be changed to modes instead of attr with flags.
 $TX+CX,"This is centered"$
 
 $TX+RX,"This is right justified"$
-

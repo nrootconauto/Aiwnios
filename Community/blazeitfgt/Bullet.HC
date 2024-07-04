@@ -34,7 +34,7 @@ public U0 AddBullet(F64 x, F64 y, F64 tx, F64 ty, Vector* vec, F64 vel) {
   b.vel.y = ty / mag * vel;
   b.ry = Arg(x+tx-b.pos.x, y+ty-b.pos.y);
   b.ttl = 0.0;
-  VectorAdd(vec, &b);
+  VectorAdd(vec, &b);
 }
 
 public U0 GenMatBullets(I64 cnt, Bullet* b, Vector *vecGr, Cam *cam, F64 time) {

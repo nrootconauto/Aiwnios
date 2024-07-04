@@ -1,0 +1,62 @@
+$FG,5$$TX+CX,"Runtime Part 2: Making Noises"$$FD$
+
+  TempleOS makes sounds that will bring you back to the days of Atari games. The simplest way to make a tone is $HL,1$Snd(23);$HL,0$(This higher the number the higher the pitch). $FG,4$Call "Snd;" to cancel the sound$FD$.
+
+  If you want to go the extra mile and make a bodacious explosioon sound,use  $HL,1$Noise(milliseconds,min_pitch,max_pitch);$HL,0$. Or if you want a jumping sound,use $HL,1$Sweep$HL,0$.
+
+$HL,1$
+$BG,7$Sweep(500,20,70); /* sploosh sound for 500 milliseconds */
+Noise(500,20,70); /* Explosion sound */
+$BD$$HL,0$
+
+
+$FG,5$$TX+CX,"Runtime Part 2.5: Making Music"$$FD$
+
+  TempleOS let's you make some epic jams. To do this,we use the $HL,1$Music$HL,0$
+
+A simple song looks like this:
+$HL,1$
+$BG,7$ Play("wChDqEeFwGwAwB");
+$BD$$HL,0$
+
+  There are special charactors that change the duration/properties of the notes,so without further ado,here is a list
+$TR-C,"#"$
+$ID,2$
+Make a note sharp($UL,1$comes after the note$UL,0$)
+$ID,-2$
+$TR-C,"w"$
+$ID,2$
+When before a note,it makes it a whole note
+$ID,-2$
+$TR-C,"h"$
+$ID,2$
+Makes a half note
+$ID,-2$
+$TR-C,"q"$
+$ID,2$
+Makes a 1/4 note
+$ID,-2$
+$TR-C,"e"$
+$ID,2$
+Makes a tiny eigth note
+$ID,-2$
+
+  You can change the tempo of the music via the global vairable $HL,1$music.tempo$HL,0$(Be sure to reset the music's settings via $HL,1$MusicSettingsRst$HL,0$)
+
+Try this:
+
+$HL,1$
+$BG,7$music.tempo=8;
+Play(
+    "hEhEwEhChEwGqG"
+    "wCqGqEqAqBqA#qAqGhEhGwAhFhGwEhChDqB"
+   "wCqGqEqAqBqA#qAqGhEhGwAhFhGwEhChDqB"
+     "hGhF#hFhD#wEqG#qAhCqAhChD"
+    "hGhF#hFhD#wE.wC.wC.wC"
+    "hGhF#hFhD#wEqG#qAhCqAhChDwD#wDwC"
+    "hGhF#hFhD#wEqG#qAhCqAhChD"
+    "hGhF#hFhD#wE.wC.wC.wC"
+    "hGhF#hFhD#wEqG#qAhCqAhChDwD#wDwC"
+);
+MusicSettingsRst;
+$BD$$HL,0$
