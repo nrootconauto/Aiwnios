@@ -536,6 +536,8 @@ int CreateTemplateBootDrv(char *to, char *template) {
     return 0;
   }
   if (__FExists(to)) {
+	  if(__FIsNewer(to,template))
+		return 1;
     int64_t _try;
     for (_try = 0; _try != 0x10000; _try++) {
       sprintf(buffer, "%s_BAKCUP.%ld", to, _try);
@@ -602,6 +604,9 @@ const char *ResolveBootDir(char *use, int make_new_dir) {
   }
   if (__FExists("T/HCRT2.BIN")) {
     return "T";
+  }
+  if(__FExists(use)&&!make_new_dir) {
+	  return strdup(use);
   }
   //CreateTemplateBootDrv will return existing boot dir if missing
 #if !defined(_WIN32) && !defined(WIN32)

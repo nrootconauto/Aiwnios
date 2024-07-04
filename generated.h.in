@@ -1,0 +1,2 @@
+#pragma once
+#define AIWNIOS_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@"

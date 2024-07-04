@@ -3,6 +3,7 @@
   #define _WIN32 1
   #define WIN32
 #endif
+#include "generated.h" //See CMakeLists.txt
 #include <SDL.h>
 #include <assert.h>
 #include <signal.h>
@@ -886,7 +887,7 @@ enum {
   #define AIWNIOS_TEMPLATE_DIR "TODO"
 #else
   #define AIWNIOS_OSTREAM      stderr
-  #define AIWNIOS_TEMPLATE_DIR "/usr/local/share/aiwnios"
+  #define AIWNIOS_TEMPLATE_DIR AIWNIOS_INSTALL_DIR "/share/aiwnios"
 #endif
 
 #define try                                                                    \
