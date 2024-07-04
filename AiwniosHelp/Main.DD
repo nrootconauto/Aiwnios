@@ -1,6 +1,6 @@
 $WW,1$$FG,5$$TX+CX,"Aiwnios User Guide"$$FD$
 
-  Welcome to the Sexiest HolyC compiler that runs almost anywhere (X86 / AArch64 / RISC-V). I put togheter a little tutorial for new users. Be sure to type $HL,1$Man("Man") /* Man("Function name")*/$HL,0$; To get more information about how a function works.
+  Welcome to the sexiest HolyC compiler that runs almost anywhere (X86 / AArch64 / RISC-V). I put togheter a little tutorial for new users. Be sure to type $HL,1$Man("Man") /* Man("Function name")*/$HL,0$; To get more information about how a function works. Its probably the best way to learn TempleOS.
 
 $FG,5$$TX+CX,"Quick Start"$$FD$
 $TR-C,"Tutorial Series"$

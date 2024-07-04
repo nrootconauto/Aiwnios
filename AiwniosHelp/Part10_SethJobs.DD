@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 9: "$Jobs$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 9: "$Jobs$FD$
 
   In TempleOS,each core has a seth_task. This task does lit stuff like run Jobs which can be created via $HL,1$TaskExe$HL,0$ and you get the results via $HL,1$JobResGet$HL,0$ 
 

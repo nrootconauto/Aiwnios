@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 2: Making Noises"$$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 2: Making Noises"$$FD$
 
   TempleOS makes sounds that will bring you back to the days of Atari games. The simplest way to make a tone is $HL,1$Snd(23);$HL,0$(This higher the number the higher the pitch). $FG,4$Call "Snd;" to cancel the sound$FD$.
 
