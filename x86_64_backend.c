@@ -325,7 +325,7 @@ static int64_t X86CMovsRegReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86Leave(char *to, int64_t) {
+int64_t X86Leave(char *to, int64_t ul) {
   int64_t len = 0;
   char buf[16];
   if (!to)

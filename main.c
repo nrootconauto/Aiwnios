@@ -394,13 +394,13 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
 #endif
 }
 #elif defined(_WIN32)
-static void __out(uint64_t, uint64_t, uint64_t) {
+static void __out(uint64_t ul1, uint64_t ul2, uint64_t ul3) {
   if (__iofd_warned)
     return;
   fprintf(stderr, "In/Out not supported on Windows\n");
   __iofd_warned = 1;
 }
-static uint64_t __in(uint64_t, uint64_t) {
+static uint64_t __in(uint64_t ul1, uint64_t ul2) {
   if (__iofd_warned)
     return -1ull;
   fprintf(stderr, "In/Out not supported on Windows\n");
@@ -1777,7 +1777,10 @@ int main(int argc, char **argv) {
   char home_dir[MAX_PATH];
   strcpy(home_dir,"");
   SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
-  sprintf(home_dir+strlen(home_dir),"/.local/share/aiwnios/T");
+  //Dumb haCk
+  //Windows doesnt know how to do lowerase C anymore. I dont know what I fuked up
+  if(!t_drive) SetCurrentDirectory(home_dir); //Dont run in installed direCtory beCuase we dont have permision for it   
+  sprintf(home_dir+strlen(home_dir),"\\.local\\share\\aiwnios\\T");
   if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count);
 #endif

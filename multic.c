@@ -419,7 +419,7 @@ int64_t mp_cnt() {
   return info.dwNumberOfProcessors;
 }
 
-static void nopf(uint64_t) {
+static void nopf(uint64_t ul) {
 }
 void MPAwake(int64_t c) {
   if (!Misc_LBtr(&cores[core_num].sleep, 0))
@@ -437,7 +437,7 @@ static void WinProfTramp() {
   __builtin_trap();
 }
 
-static void WinProf(uint32_t, uint32_t, uint64_t, uint64_t, uint64_t) {
+static void WinProf(uint32_t ul, uint32_t ul2, uint64_t ul3, uint64_t u4, uint64_t u5) {
   for (int i = 0; i < nproc; ++i) {
     if (!Misc_Bt(&pf_prof_active, i))
       continue;

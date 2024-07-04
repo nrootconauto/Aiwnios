@@ -536,8 +536,6 @@ int CreateTemplateBootDrv(char *to, char *template) {
     return 0;
   }
   if (__FExists(to)) {
-	  if(__FIsNewer(to,template))
-		return 1;
     int64_t _try;
     for (_try = 0; _try != 0x10000; _try++) {
       sprintf(buffer, "%s_BAKCUP.%ld", to, _try);
