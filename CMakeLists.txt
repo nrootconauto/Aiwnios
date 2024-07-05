@@ -276,8 +276,11 @@ set_target_properties(aiwnios PROPERTIES
 #
 # Install section
 #
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-  
+if(NOT WIN32)
+  #Nroot here,CMAKE_INSTALL_PREFIX on windows has a C:/..... (So it gets combined with cwd to somethinf like)
+  #  C:/dsdasd/C:/foofie
+  set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+endif()
 
 set (AIWNIOS_VERSION "0.0.1")
 
@@ -305,9 +308,12 @@ if(WIN32)
   set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'")
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico' \n \
+    CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\AiwniosFreshEnviroment.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '-n' 	'$INSTDIR\\\\logo.ico'"
+  )
   set(CPACK_NSIS_DELETE_ICONS_EXTRA
-    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk'" )
+    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk' \n \
+    Delete '$SMPROGRAMS\\\\$START_MENU\\\\AiwniosFreshEnviroment.lnk'")
 endif()
 include (CPack)
 
@@ -317,6 +323,7 @@ set(
   AfterEgypt
   Doc
   Apps
+  AiwniosHelp
   Src
   Vocab.DD
   PersonalMenu.DD
