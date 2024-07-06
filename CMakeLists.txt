@@ -160,6 +160,8 @@ elseif (ARCH STREQUAL x86_64)
   endif()
 endif ()
 
+target_include_directories(aiwnios PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
     OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
