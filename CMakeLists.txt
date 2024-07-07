@@ -260,8 +260,14 @@ if (BUILD_HCRT)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  add_custom_target(Registry.HC.Z
+    ALL
+    COMMAND aiwnios -c FreshOnce.HC
+    DEPENDS HCRT2.BIN aiwnios
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
   add_custom_command(
-    TARGET HCRT2.BIN
+    TARGET HCRT2.BIN Registry.HC.Z
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!"
   )
