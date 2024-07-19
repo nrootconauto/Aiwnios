@@ -21,7 +21,7 @@
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
-struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
+struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -1700,8 +1700,8 @@ int main(int argc, char **argv) {
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
 #if !defined(WIN32) && !defined(_WIN32)
-    arg_fork =
-        arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+    arg_fork = arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+    arg_pidfile = arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
 #endif
     arg_grab = arg_lit0(
         "g", "grab-focus",
@@ -1752,6 +1752,17 @@ int main(int argc, char **argv) {
     assert(pid >= 0);
     if (pid > 0)
       return 0; // parent(child of previous parent, we want the grandchild)
+    if (arg_pidfile->count) {
+      int fd = open(arg_pidfile->filename[0], O_RDWR | O_CREAT, 0666);
+      if (-1 == fd)
+        goto nowrite;
+      ftruncate(fd, 0);
+      char buf[0x20];
+      int written = snprintf(buf, sizeof buf, "%jd", getpid());
+      write(fd, buf, written);
+      close(fd);
+    }
+nowrite:
     umask(0);
   }
 #endif
