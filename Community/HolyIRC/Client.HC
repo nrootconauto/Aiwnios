@@ -28,7 +28,7 @@ class CClient {
   CDoc *user_list_doc2;
   CDoc *channel_list_doc;
   CDoc *channel_list_doc2;
-  Bool first_run,disconnected;
+  Bool first_run,disconnected,is_op;
   U8 *send_filename;
   U8 *send_filename_full;
 };
@@ -298,6 +298,7 @@ U0 ServerReadCb(I64 s,U8 *text,I64 len,U8 *user_data) {
   U8 dummy[STR_LEN],*dp=dummy;
   U8 topic[STR_LEN],*tp=topic;
   I64 users,flen,ptr,sock,cnt;
+  Bool is_op=FALSE;
 //
   // Server stuff has this format
   // ':',servername,'!',nick,' ',params \r\n
@@ -452,6 +453,25 @@ U0 ServerReadCb(I64 s,U8 *text,I64 len,U8 *user_data) {
     tmp2=txt=DblDollars(txt);
     while(*txt&&Bt(char_bmp_white_space,*txt))
       txt++;
+//First pass,check if we are a operator for channel
+    while(*txt) {
+      dummy[0]=0;
+      while(*txt&&!Bt(char_bmp_white_space,*txt))
+        CatPrint(dummy,"%c",*txt++);
+      while(*txt&&Bt(char_bmp_white_space,*txt))
+        txt++;
+      tmp=dummy;
+      is_op=FALSE;
+      if(*tmp=='@') tmp++,is_op=TRUE;
+      else if(*tmp=='+') tmp++;
+      else if(*tmp=='%') tmp++,is_op=TRUE;
+      if(!StrCmp(cl->name,tmp))
+	cl->is_op=is_op;
+    }
+    //2nd pass,make macros
+    txt=tmp2;
+    while(*txt&&Bt(char_bmp_white_space,*txt))
+      txt++;
     while(*txt) {
       dummy[0]=0;
       while(*txt&&!Bt(char_bmp_white_space,*txt))
@@ -470,6 +490,21 @@ U0 ServerReadCb(I64 s,U8 *text,I64 len,U8 *user_data) {
       tmp3=MStrPrint("/SEND %Q",tmp);
       DocTreeAppend(cl->user_list_doc2,tmp,FALSE,"$$RED$$$$MU,\"Send File To\",LE=%d$$\n$$FD$$",StrNew(tmp3,cl->win_task));
       Free(tmp3);
+      if(cl->is_op&&cl->channel[0]=='#') {
+        //Add operator constrols
+        tmp3=MStrPrint("/MODE %Q -v %Q",cl->channel,tmp);
+        DocTreeAppend(cl->user_list_doc2,tmp,FALSE,"$$RED$$$$MU,\"Mute\",LE=%d$$\n$$FD$$",StrNew(tmp3,cl->win_task));
+        Free(tmp3);
+        tmp3=MStrPrint("/MODE %Q +v %Q",cl->channel,tmp);
+        DocTreeAppend(cl->user_list_doc2,tmp,FALSE,"$$RED$$$$MU,\"Unmute\",LE=%d$$\n$$FD$$",StrNew(tmp3,cl->win_task));
+        Free(tmp3);
+        tmp3=MStrPrint("/MODE %Q +o %Q",cl->channel,tmp);
+        DocTreeAppend(cl->user_list_doc2,tmp,FALSE,"$$RED$$$$MU,\"Op\",LE=%d$$\n$$FD$$",StrNew(tmp3,cl->win_task));
+        Free(tmp3);
+        tmp3=MStrPrint("/MODE %Q -o %Q",cl->channel,tmp);
+        DocTreeAppend(cl->user_list_doc2,tmp,FALSE,"$$RED$$$$MU,\"Remove Op\",LE=%d$$\n$$FD$$",StrNew(tmp3,cl->win_task));
+        Free(tmp3);
+      }
     }
     Free(tmp2);
     cl->user_list_doc->flags|=DOCF_NO_CURSOR;
@@ -480,7 +515,7 @@ U0 ServerReadCb(I64 s,U8 *text,I64 len,U8 *user_data) {
   usr=DblDollars(usr);
   cmd=DblDollars(cmd);
   txt=DblDollars(txt);
-//  ClientPrint(cl,"(%s)>>> %s (%s): %s\n",usr,cmd,par,txt);
+  ClientPrint(cl,"(%s)>>> %s (%s): %s\n",usr,cmd,par,txt);
   Free(txt);
   Free(cmd);
   Free(usr);
@@ -567,7 +602,7 @@ CClient *ClientNew(U8 *server="irc.libera.chat",I64 port=6667,U8 *name="Terry",U
       } else {
         if(!StrNICmp(s+1,"PASS",4)) {
 	  StrUtil(s+4+1,SUF_REM_LEADING|SUF_REM_TRAILING);
-	  ServerWrite(cl,"PASS : %s",s+4+1);
+	  ServerWrite(cl,"PASS %s",s+4+1);
 	} else if(!StrNICmp(s+1,"NAMES",5)) {
 	  ServerWrite(cl,"NAMES : %s",cl->channel);
 	} else if(!StrNICmp(s+1,"JOIN",4)) {
@@ -638,6 +673,8 @@ CClient *ClientNew(U8 *server="irc.libera.chat",I64 port=6667,U8 *name="Terry",U
 	  MsgChannel(cl,who,msg);
         } else if(!StrNICmp(s+1,"PING",4)) {
 	  ServerWrite(cl,"PING %s",cl->channel);
+	} else if(!StrNICmp(s+1,"MODE",4)) {
+	  ServerWrite(cl,"%s",s+1);
 	} else if(!StrNICmp(s+1,"SEND",4)) {
 	  StrCpy(who,s+5);
 	  StrUtil(who,SUF_REM_LEADING|SUF_REM_TRAILING);
@@ -685,6 +722,7 @@ downfail:
 	} else  {
 	  ClientPrint(cl,"/DCCRECV --- Download from a DCC socket.\n");
 	  ClientPrint(cl,"/SEND --- SendFile.\n");
+	  ClientPrint(cl,"/MODE --- Mode command.\n");
 	  ClientPrint(cl,"/PRIVMSG --- Private message a user.\n");
 	  ClientPrint(cl,"/PART --- Leave a channel.\n");
 	  ClientPrint(cl,"/PASS --- Set a password.\n");
