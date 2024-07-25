@@ -1396,7 +1396,16 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     }
     Free(mv);
   } else {
+    #ifdef TARGET_X86
     __HC_ICAdd_SetFrameSize(cc2,0);
+    #endif
+    #ifdef TARGET_AARCH64
+    __HC_ICAdd_SetFrameSize(cc2,16);
+    #endif
+    #ifdef TARGET_RISCV
+    __HC_ICAdd_SetFrameSize(cc2,16);
+    #endif
+    
   }
   //
   //
