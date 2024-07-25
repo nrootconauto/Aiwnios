@@ -1361,7 +1361,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   // Step 1.5,Assign the variables from the arguments
   //
   if(cc->htc.fun) {
-    __HC_ICAdd_SetFrameSize(cc2,cc->htc.fun->size+16);
+    __HC_ICAdd_SetFrameSize(cc2,cc->htc.fun->size);
     mlst=cc->htc.fun->member_lst_and_root;
     argc=cc->htc.fun->arg_cnt;
    if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT))
@@ -1396,10 +1396,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     }
     Free(mv);
   } else {
-    //
-    // Add MANDITORY room for FP/LR pair
-    //
-    __HC_ICAdd_SetFrameSize(cc2,16);
+    __HC_ICAdd_SetFrameSize(cc2,0);
   }
   //
   //

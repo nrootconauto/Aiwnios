@@ -1,165 +1,74 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR) #For sauce I have come,and to sauce I shall return
+#-*- vi: set et ft=cmake ts=2 sts=2 sw=2 fenc=utf-8            :vi -*-┐
+#─────────────────────────────────────────────────────────────────────┘
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+
+option(BUILD_HCRT "Build kernel" ON)
+
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+  message(FATAL_ERROR "MAY NOT BUILD FROM ROOT")
+endif ()
+
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   set(CMAKE_INSTALL_PREFIX "/usr/local")
-elseif(NOT WIN32)
+elseif (NOT WIN32)
   set(CMAKE_INSTALL_PREFIX "/usr")
 endif ()
 
-configure_file(generated.h.in generated.h @ONLY)
-configure_file(aiwnios.desktop.in aiwnios.desktop @ONLY)
-
-include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
-project(AIWNIOS
-  LANGUAGES C CXX ASM
-)
-option(BUILD_HCRT "Build HCRT" YES)
 set(default_build_type "Release")
-
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if ((NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE MATCHES "None")
+    AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}"
-    CACHE STRING "Choose the type of build." FORCE
-  )
+    CACHE STRING "Choose the type of build." FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE
     PROPERTY
-      STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo"
-  )
+      STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+project(aiwnios
+  LANGUAGES C ASM
+  DESCRIPTION "HolyC compiler")
+
+include (DetectArch)
 target_architecture(ARCH)
-message("PROCESSOR ARCHITECTURE IS ${ARCH}")
-if (ARCH STREQUAL "riscv64")
-  set(
-    C_SOURCES
-    riscv_asm.c
-    riscv_backend.c
-    bungis.c
-    cque.c
-    except.c
-    fs.c
-    hash.c
-    lex.c
-    main.c
-    mem.c
-    misc.c
-    optpass.c
-    parser.c
-    loader.c
-    windows.c
-    sound.c
-    dbg.c
-    multic.c
-    ffi_gen.c
-    argtable3.c
-    socket.c
-  )
-  set(ASM_SOURCES
-      miscRISCV.s
-      swapctxRISCV.s
-      ffi_call_tos_RISCV.s
-    )
-elseif ("${ARCH}" STREQUAL "x86_64")
-  if (WIN32)
-    set(ASM_SOURCES
-      miscWIN.s
-      swapctxWIN.s
-      ffi_call_tos_WIN.s
-      miscTOSX86.s
-    )
-  else ()
-    set(ASM_SOURCES
-      miscX86.s
-      swapctxX86.s
-      ffi_call_tos.s
-      miscTOSX86.s
-    )
-  endif ()
-  set(
-    C_SOURCES
-    x86_64_backend.c 
-    bungis.c
-    cque.c
-    except.c
-    fs.c
-    hash.c
-    lex.c
-    main.c
-    mem.c
-    misc.c
-    optpass.c
-    parser.c
-    loader.c
-    windows.c
-    sound.c
-    dbg.c
-    multic.c
-    ffi_gen.c
-     argtable3.c
-    socket.c
-  )
-elseif ("${ARCH}" STREQUAL "arm64")
-  #For SDL2 cmake modules
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
 
-  set(ASM_SOURCES
-    miscAARCH64.s
-    swapctxAARCH64.s
-    ffi_call_tos_aarch64.s
-    miscTOSaarch64.s
-  )
-  set(C_SOURCES
-    arm64_asm.c 
-    arm_backend.c
-    bungis.c
-    cque.c
-    except.c
-    fs.c
-    hash.c
-    lex.c
-    main.c
-    mem.c
-    misc.c
-    optpass.c
-    parser.c
-    loader.c
-    windows.c
-    sound.c
-    dbg.c
-    multic.c
-    ffi_gen.c
-    argtable3.c
-    socket.c
-  )
-endif()
-if (NOT WIN32)
-  list(APPEND C_SOURCES cli_vendor/bestline.c)
-else ()
-  set(CXX_SOURCES cli_vendor/linenoise.cpp
-                  cli_vendor/wcwidth.cpp
-                  cli_vendor/ConvertUTF.cpp)
-endif ()
-add_executable(
-  aiwnios
-  ${C_SOURCES}
-  ${CXX_SOURCES})
+add_subdirectory(c)
+add_subdirectory(asm)
+
+set_target_properties(aiwnios
+  PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    C_VISIBILITY_PRESET hidden
+    C_STANDARD 11
+    C_STANDARD_REQUIRED YES
+    C_EXTENSIONS YES)
+
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
 find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
 endif ()
 target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
+
 if (ARCH STREQUAL arm64)
-    target_link_directories(aiwnios PUBLIC /usr/local/lib)
-    target_link_libraries(aiwnios PRIVATE SDL2)
+  target_link_directories(aiwnios PUBLIC /usr/local/lib)
+  target_link_libraries(aiwnios PRIVATE SDL2)
 elseif (ARCH STREQUAL x86_64)
-  if(NOT WIN32)
+  if (NOT WIN32)
+    if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+      target_link_directories(aiwnios PUBLIC /usr/local/lib)
+    endif ()
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
-  else()
-    #Try packaging SDL2 for cpack,please dont change this
+  else ()
+    #please dont change this
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
-  endif()
+  endif ()
 endif ()
 
-target_include_directories(aiwnios PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_subdirectory(vendor)
 
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
     OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
@@ -183,12 +92,7 @@ endif ()
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   target_link_libraries(aiwnios PRIVATE procstat)
 endif ()
-target_compile_options(aiwnios PRIVATE -w)
-
-add_library(FFI STATIC ${ASM_SOURCES})
-target_compile_options(FFI PRIVATE -w)
-set_target_properties(FFI PROPERTIES LINKER_LANGUAGE C)
-target_link_libraries(aiwnios PRIVATE FFI m)
+target_link_libraries(aiwnios PRIVATE m)
 
 if (WIN32)
   target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 ntdll -static)
@@ -199,55 +103,10 @@ else()
   endif ()
 endif()
 
-
-set(COMP_OPTS
-  -Wno-all
-  -Wno-incompatible-function-pointer-types
-  -Wno-incompatible-pointer-types
-  -fno-math-errno
-  -fno-trapping-math
-  -fno-exceptions
-  -fno-omit-frame-pointer
-  -fno-signaling-nans
-  -fno-stack-protector
-  -fno-unwind-tables
-  -fno-asynchronous-unwind-tables
-  -fcf-protection=none
-)
-target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
-if (ARCH STREQUAL "x86_64")
-  list(APPEND COMP_OPTS -mno-shstk -fno-plt)
-endif ()
-set_source_files_properties(${C_SOURCES}
-  PROPERTIES
-    LANGUAGE C
-    COMPILE_FLAGS "-Wno-int-conversion"
-)
-target_compile_options(aiwnios
-  PRIVATE
-    ${COMP_OPTS}
-)
-
-set_target_properties(aiwnios
-  PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    INTERPROCEDURAL_OPTIMIZATION $<IF:$<CONFIG:Debug>,OFF,ON>
-    CXX_VISIBILITY_PRESET hidden
-    C_VISIBILITY_PRESET hidden
-    C_STANDARD 11
-    C_STANDARD_REQUIRED YES
-    C_EXTENSIONS YES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS YES
-)
-
 if (BUILD_HCRT)
-  set (USE_WINE NO)
-  if (NOT CMAKE_SYSTEM MATCHES Windows)
-    if (WIN32)
-      set(USE_WINE YES)
-    endif ()
+  set(USE_WINE NO)
+  if ((NOT CMAKE_SYSTEM MATCHES Windows) AND WIN32)
+    set(USE_WINE YES)
   endif ()
 
   set(BUILD_CMD aiwnios -b)
@@ -266,20 +125,14 @@ if (BUILD_HCRT)
     DEPENDS HCRT2.BIN aiwnios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  # for dumb people
   add_custom_command(
     TARGET HCRT2.BIN Registry.HC.Z
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!"
-  )
+    COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!")
 endif ()
 
-#
-# Gay section
-#
-set_target_properties(aiwnios PROPERTIES
-  MACOSX_BUNDLE TRUE
-  MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
-)
+add_subdirectory(misc)
 
 #
 # Install section

@@ -1,0 +1,11 @@
+* text=auto
+*.HH linguist-language=HolyC
+*.HC linguist-language=HolyC
+*.s linguist-language=Assembly
+*.h linguist-language=C
+*.C linguist-language=C
+*.c linguist-language=C
+vendor/** linguist-vendored
+cmake/** linguist-vendored
+Community/** linguist-vendored
+Demo/** linguist-vendored
