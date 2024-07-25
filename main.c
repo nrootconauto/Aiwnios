@@ -21,7 +21,7 @@
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
-struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files;
+struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -394,13 +394,13 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
 #endif
 }
 #elif defined(_WIN32)
-static void __out(uint64_t, uint64_t, uint64_t) {
+static void __out(uint64_t ul1, uint64_t ul2, uint64_t ul3) {
   if (__iofd_warned)
     return;
   fprintf(stderr, "In/Out not supported on Windows\n");
   __iofd_warned = 1;
 }
-static uint64_t __in(uint64_t, uint64_t) {
+static uint64_t __in(uint64_t ul1, uint64_t ul2) {
   if (__iofd_warned)
     return -1ull;
   fprintf(stderr, "In/Out not supported on Windows\n");
@@ -838,6 +838,10 @@ static int64_t STK___HC_ICAdd_Max_U64(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Min_U64(int64_t *stk) {
   return __HC_ICAdd_Min_U64(stk[0]);
 }
+static int64_t STK_SetCaptureMouse(int64_t *stk) {
+  SetCaptureMouse(stk[0]);
+  return 0;
+}
 static int64_t STK___HC_ICAdd_Max_F64(int64_t *stk) {
   return __HC_ICAdd_Max_F64(stk[0]);
 }
@@ -1104,26 +1108,20 @@ static int64_t STK_VFsFileWrite(int64_t *stk) {
 static int64_t STK_VFsDel(int64_t *stk) {
   return VFsDel(stk[0]);
 }
-static int64_t STK_VFsDir(int64_t *stk) {
-  return (int64_t)VFsDir(stk[0]);
-}
 static int64_t STK_VFsDirMk(int64_t *stk) {
   return VFsDirMk(stk[0]);
 }
 static int64_t STK_VFsBlkRead(int64_t *stk) {
-  return VFsFBlkRead(stk[0], stk[1], stk[2], stk[3]);
+  return VFsFBlkRead(stk[0], stk[1]*stk[2], stk[3]);
 }
 static int64_t STK_VFsBlkWrite(int64_t *stk) {
-  return VFsFBlkWrite(stk[0], stk[1], stk[2], stk[3]);
+  return VFsFBlkWrite(stk[0], stk[1]* stk[2], stk[3]);
 }
-static int64_t STK_VFsFOpenW(int64_t *stk) {
-  return VFsFOpenW(stk[0]);
+static int64_t STK_VFsFOpen(int64_t *stk) {
+  return VFsFOpen(stk[0], stk[1]);
 }
-static int64_t STK_VFsFOpenR(int64_t *stk) {
-  return VFsFOpenR(stk[0]);
-}
-static int64_t STK_VFsFClose(int64_t *stk) {
-  return VFsFClose(stk[0]);
+static void STK_VFsFClose(int64_t *stk) {
+  VFsFClose(stk[0]);
 }
 static int64_t STK_VFsFSeek(int64_t *stk) {
   return VFsFSeek(stk[0], stk[1]);
@@ -1405,8 +1403,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Fs", GetHolyFs, 0);
     PrsAddSymbol("WriteProtectMemCpy", WriteProtectMemCpy, 3);
     PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
-#if defined(__x86_64__)
-#if defined(__linux__) || defined(__FreeBSD__)
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
@@ -1415,32 +1411,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("__Gs", NULL, 0);
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
-#else
-    // Pass function pointer(not the result)
-    PrsAddSymbol("__Fs", GetHolyFsPtr, 0);
-    PrsAddSymbol("__Gs", GetHolyGsPtr, 0);
-#endif
-#endif
-#if defined(_M_ARM64) || defined(__aarch64__)
-    //__Fs is special
-    //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs", NULL, 0);
-    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs", NULL, 0);
-    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyGsPtr();
-#endif
-#if defined(__riscv__) || defined(__riscv)
-    //__Fs is special
-    //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs", NULL, 0);
-    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs", NULL, 0);
-    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyGsPtr();
-#endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
@@ -1566,12 +1536,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("VFsFRead", STK_VFsFileRead, 2);
     PrsAddSymbol("VFsFWrite", STK_VFsFileWrite, 3);
     PrsAddSymbol("VFsDel", STK_VFsDel, 1);
-    PrsAddSymbol("VFsDir", STK_VFsDir, 0);
+    PrsAddSymbol("VFsDir", VFsDir, 0);
     PrsAddSymbol("VFsDirMk", STK_VFsDirMk, 1);
     PrsAddSymbol("VFsFBlkRead", STK_VFsBlkRead, 4);
     PrsAddSymbol("VFsFBlkWrite", STK_VFsBlkWrite, 4);
-    PrsAddSymbol("VFsFOpenW", STK_VFsFOpenW, 1);
-    PrsAddSymbol("VFsFOpenR", STK_VFsFOpenR, 1);
+    PrsAddSymbol("VFsFOpen", STK_VFsFOpen, 2);
     PrsAddSymbol("VFsFClose", STK_VFsFClose, 1);
     PrsAddSymbol("VFsFSeek", STK_VFsFSeek, 2);
     PrsAddSymbol("VFsSetDrv", STK_VFsSetDrv, 1);
@@ -1607,6 +1576,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
+    PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
   }
   CmpCtrlDel(ccmp);
   LexerDel(lex);
@@ -1675,7 +1645,7 @@ static void ExitAiwnios(int64_t *stk) {
   exit(stk[0]);
 }
 #if defined (WIN32) || defined(_WIN32)
-#include <Shlobj.h>
+#include <shlobj.h>
 #else
 #include <sys/types.h>
 #include <pwd.h>
@@ -1696,12 +1666,12 @@ int main(int argc, char **argv) {
                  "Build a new binary with the \"slim\" compiler of aiwnios."),
     arg_asan_enable =
         arg_lit0("a", "address-sanitize", "Enable bounds checking."),
-#if !defined(WIN32) && !defined(_WIN32)
     arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
-    arg_fork =
-        arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+#if !defined(WIN32) && !defined(_WIN32)
+    arg_fork = arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+    arg_pidfile = arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
 #endif
     arg_grab = arg_lit0(
         "g", "grab-focus",
@@ -1752,6 +1722,17 @@ int main(int argc, char **argv) {
     assert(pid >= 0);
     if (pid > 0)
       return 0; // parent(child of previous parent, we want the grandchild)
+    if (arg_pidfile->count) {
+      int fd = open(arg_pidfile->filename[0], O_RDWR | O_CREAT, 0666);
+      if (-1 == fd)
+        goto nowrite;
+      ftruncate(fd, 0);
+      char buf[0x20];
+      int written = snprintf(buf, sizeof buf, "%jd", getpid());
+      write(fd, buf, written);
+      close(fd);
+    }
+nowrite:
     umask(0);
   }
 #endif
@@ -1772,14 +1753,52 @@ int main(int argc, char **argv) {
   strcat(template_dir,dft);
   if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count ) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ?  template_dir: t_drive,
-                             arg_new_boot_dir->count);
+                             arg_new_boot_dir->count,AIWNIOS_TEMPLATE_DIR);
 #else
+  int64_t has_installed=0;
+  char installed_at[MAX_PATH];
+  installed_at[0]=0;
+  long reg_size=0;
+  RegGetValueA(
+	HKEY_LOCAL_MACHINE,
+	"SOFTWARE\\Aiwnios",
+	"InstallAt",
+	RRF_RT_REG_MULTI_SZ,
+	NULL,
+	NULL,
+	&reg_size);
+  if(reg_size>0) {
+		char inst_dir[reg_size+1];
+		RegGetValueA(
+	HKEY_LOCAL_MACHINE,
+	"SOFTWARE\\Aiwnios",
+	"InstallAt",
+	RRF_RT_REG_MULTI_SZ,
+	NULL,
+	inst_dir,
+	&reg_size);
+	has_installed=1;
+  }
   char home_dir[MAX_PATH];
   strcpy(home_dir,"");
   SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
-  sprintf(home_dir+strlen(home_dir),"/.local/share/aiwnios/T");
-  if ((!arg_t_dir->count || arg_overwrite->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive, 1);
+  //Dumb haCk
+  //Windows doesnt know how to do lowerase C anymore. I dont know what I fuked up
+  sprintf(home_dir+strlen(home_dir),"\\.local\\share\\aiwnios\\T");
+  if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count) {
+    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count,installed_at);
+    //Dont use system wide directory we are installed in(the place we start running aiwnios in when installed on windows)
+    if(has_installed&&t_drive) {
+		char poo1[MAX_PATH];
+		char poo2[MAX_PATH];
+		GetFullPathNameA(installed_at,MAX_PATH,poo1,NULL);
+		GetFullPathNameA(t_drive,MAX_PATH,poo2,NULL);
+		if(!strcmp(poo1,poo2)) {
+			//Same file
+			t_drive = ResolveBootDir(home_dir,1,installed_at);
+		}
+	}
+  }
 #endif
   if(arg_new_boot_dir->count) exit(EXIT_SUCCESS);
   InitSound();

@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Part.1 Graphics"$$FD$
+$WW,1$$FG,5$$TX+CX,"Part.1 Graphics"$$FD$
 
   Use the $HL,1$Fs->draw_it$HL,0$ callback to draw something to the current window
 

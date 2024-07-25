@@ -77,7 +77,7 @@ typedef struct CFuckup {
   union __riscv_fp_state fp;
   #endif
 } CFuckup;
-#elif defined(WIN32) || defined(_WIN32)
+#elif defined(_WIN64)
   #include <winnt.h>
 typedef struct CFuckup {
   struct CQue base;
@@ -256,7 +256,9 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
     close(debugger_pipe[0]);
     close(debugger_pipe[1]);
     ptrace(PT_DETACH, pid, 0, 0);
-    exit(WEXITSTATUS(code));
+    if(WIFEXITED(code))
+      exit(WEXITSTATUS(code));
+    exit(WSTOPSIG(code));
     return 0;
   } else if (WIFSIGNALED(code) || WIFSTOPPED(code) || WIFCONTINUED(code)) {
     if (WIFSIGNALED(code)) {
@@ -345,6 +347,7 @@ void DebuggerBegin() {
   if (!tid) {
 #if !(defined(_WIN32) || defined(WIN32))
     ptrace(PTRACE_TRACEME, tid, NULL, NULL);
+    raise(SIGSTOP);
 #else
     CreateThread(NULL, 0, &DebuggerBegin, NULL, 0, NULL);
 #endif
@@ -353,8 +356,7 @@ void DebuggerBegin() {
     return;
   } else {
 #if !(defined(_WIN32) || defined(WIN32))
-    ptrace(PT_ATTACH, tid, NULL, NULL);
-    wait(NULL);
+    wait(tid);
     ptrace(PT_CONTINUE, tid, 1, NULL);
 #endif
     while (1) {

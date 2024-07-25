@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 8: User Input"$$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 8: User Input"$$FD$
 
   TempleOS lets you do lit stuff like click on things and use the keyboard. These events are passed through messages. We use $HL,1$GetMsg$HL,0$ to get the messages,along with a message mask.
 $HL,1$ 

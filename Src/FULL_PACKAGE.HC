@@ -385,6 +385,7 @@ if(!IsCmdLineMode) {
   if (_SixtyFPS)
     SetFPS(60.);
   ACInit("T:/Src/*.HC*;*.HH*");
+  OnceExe;
 }
 CoreAPSethTask;
 #endif;

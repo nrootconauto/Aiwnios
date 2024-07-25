@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 11: "$DolDoc$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 11: "$DolDoc$FD$
 
   Most of the text you see on screen is from the DolDoc layout engine. It uses a series of dollar signs to set things like the text color and make elements. The are stored as a circular queue of $HL,1$CDocEntry$HL,0$'s. The easyiest way to make a DolDoc element is to use $HL,1$DocPrint$HL,0$,use $HL,1$DocPut$HL,0$ to get the current task's document.
 

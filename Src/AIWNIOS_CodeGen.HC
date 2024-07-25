@@ -645,7 +645,7 @@ skip:;
   I64SetDel(stack);
   return TRUE;
 }
-I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off) {
+I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off,CMemberLst **who=NULL) {
   I64 mc;
   CMemberLst *nth=NthMember(cc,from_member),*new;
   new=CAlloc(sizeof CMemberLst);
@@ -655,6 +655,7 @@ I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off) {
   new->use_cnt=1; //Avoid "unused" var warnings
   new->offset=tmp_off;
   MemberAdd(cc,new,cc->htc.fun,PRS1B_LOCAL_VAR);
+  if(who) *who=new;
   new=cc->htc.fun->member_lst_and_root;
   mc=0;
   while(new) {
@@ -681,7 +682,7 @@ U0 DumpLive(CCmpCtrl *cc) {
 CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
   I64 new_foff=*foff,cnt=0,idx;
   CRPN *head=&cc->coc.coc_head,*cur;
-  CMemberLst *mlst=NthMember(cc,member);
+  CMemberLst *mlst=NthMember(cc,member),*who;
   CVarRenumbers *ret=CAlloc(sizeof CVarRenumbers);
   CVarRenumber *renum;
   CI64Set *visited=I64SetNew,*tset;
@@ -695,7 +696,7 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
       *foff-=8;
       
       renum=CAlloc(sizeof CVarRenumber);
-      renum->idx=MakeNumberedMember(cc,member,cnt++,*foff);
+      renum->idx=MakeNumberedMember(cc,member,cnt++,*foff,&who);
       renum->nodes=I64SetNew;
       renum->new_foffset=*foff;
       I64SetAddAll(renum->nodes,tset);
@@ -715,6 +716,7 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
 
         while(next2!=cur2) {
 	  if(cur2->type==IC_FRAME&&cur2->ic_data==ret->foffset) {
+	    who->use_cnt++;
 	    cur2->ic_data=renum->new_foffset;
 	  }
 	  cur2=cur2->next;
@@ -753,11 +755,11 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
   CGraphColoring *coloring=CAlloc(sizeof CGraphColoring);
   CRPN *rpn,*head=&cc->coc.coc_head;
   I64 bit,tmp,bit2,tmp2,mcnt=0,color;
-  I64 reg_cnt,nth_best;
+  I64 reg_cnt,nth_best,penalty,best_penalty;
   CMemberLst *lst=cc->htc.fun->member_lst_and_root,**flat;
   COptMemberVar *mv; 
-  I64 foff=cc->htc.fun->size;
-  CI64Set *renumbers=I64SetNew;
+  I64 foff=cc->htc.fun->size,run,adj_score;
+  CI64Set *renumbers=I64SetNew,*adjacent;
   U8 *canidates;
   while(lst) {
     mcnt++;
@@ -769,6 +771,38 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
     mv[tmp].m=lst;
     lst=lst->next;
   }
+  tmp2=mcnt;
+  for(tmp=0;tmp!=mcnt;tmp++) {
+    lst=mv[tmp].m;
+    if(!IsFunArg(cc->htc.fun,lst)) {
+      if(!(lst->reg==REG_NONE||0<=lst->reg<REG_REGS_NUM)) {
+        if(lst->member_class->raw_type==RT_F64&&!ireg) {
+re_number:;
+	  I64SetAdd(renumbers,GenerateRenumbersForVar(cc,tmp,&foff));
+        } else if(lst->member_class->raw_type!=RT_F64&&ireg) {
+	  goto re_number;
+        }
+      }
+    }
+  }
+  Free(mv);
+  //Recompute with the splits
+  lst=cc->htc.fun->member_lst_and_root;
+  mcnt=0;
+  while(lst) {
+    mcnt++;
+    lst=lst->next;
+  }
+  flat=CAlloc(8*mcnt);
+  mv=CAlloc(sizeof(COptMemberVar)*mcnt);
+  lst=cc->htc.fun->member_lst_and_root;
+  for(tmp=0;tmp!=mcnt;tmp++) {
+    flat[tmp]=lst;
+    mv[tmp].m=lst;
+    mv[tmp].score=lst->use_cnt;
+    lst=lst->next;
+  }
+
   for(rpn=head->next;rpn!=head;rpn=rpn->next) {
     if(rpn->type==IC_FRAME) {
       for(tmp=0;tmp!=mcnt;tmp++) {
@@ -783,40 +817,11 @@ CGraphColoring *GraphColor(CCmpCtrl *cc,Bool ireg=TRUE) {
 	  } else if(!mv[tmp].addrof_cnt)
 	    mv[tmp].score++;
         }
-
       }
     }
   }
-  tmp2=mcnt;
-  for(tmp=0;tmp!=mcnt;tmp++) {
-    lst=mv[tmp].m;
-    if(!IsFunArg(cc->htc.fun,lst))
-      if(!mv[tmp].addrof_cnt&&lst->reg==REG_ALLOC||lst->reg==REG_UNDEF) {
-        if(lst->member_class->raw_type==RT_F64&&!ireg) {
-re_number:;
-	  I64SetAdd(renumbers,GenerateRenumbersForVar(cc,tmp,&foff));
-        } else if(lst->member_class->raw_type!=RT_F64&&ireg) {
-	  goto re_number;
-        }
-      }
-  }
-  Free(mv);
 
-  //Recompute with the splits
-  lst=cc->htc.fun->member_lst_and_root;
-  mcnt=0;
-  while(lst) {
-    mcnt++;
-    lst=lst->next;
-  }
-  flat=CAlloc(8*mcnt);
-  mv=CAlloc(sizeof(COptMemberVar)*mcnt);
-  lst=cc->htc.fun->member_lst_and_root;
-  for(tmp=0;tmp!=mcnt;tmp++) {
-    flat[tmp]=lst;
-    mv[tmp].m=lst;
-    lst=lst->next;
-  }
+
   coloring->colors=CAlloc(8*mcnt);
   canidates=MAlloc(mcnt+64);
   graph->connects=CAlloc(8*mcnt);
@@ -857,43 +862,106 @@ re_number:;
       coloring->colors[tmp]=mv[tmp].m->reg;
     }
   }
-  for(nth_best=mcnt-1;nth_best>=0;nth_best--) {
-    for(tmp=0;tmp!=mcnt;tmp++) {
-      if(mv[nth_best].m==flat[tmp]) {//Unused var?
-        if(!graph->connects[tmp]->cnt) {
-	  coloring->colors[tmp]=-1;
-	  break;
-        }
-        MemSet(canidates,TRUE,mcnt);
-        for(tmp2=0;tmp2!=mcnt;tmp2++) {
-	  if(I64SetHas(graph->connects[tmp],tmp2)) {
-	    if(tmp!=tmp2) {
-	      color=coloring->colors[tmp2];
-	      canidates[color]=FALSE;
+
+  best_penalty=I64_MAX;
+  I64 *best_colors=CAlloc(8*mcnt);
+
+  MemSetI64(coloring->colors,-1,mcnt);
+  for(run=2;run>=0;--run) {
+    for(nth_best=mcnt-1;nth_best>=0;nth_best--) {
+      for(tmp=0;tmp!=mcnt;tmp++) {
+        if(mv[nth_best].m==flat[tmp]) {//Unused var?
+          if(!graph->connects[tmp]->cnt) {
+	    coloring->colors[tmp]=-1;
+	    break;
+          }
+          MemSet(canidates,TRUE,reg_cnt);
+          for(tmp2=0;tmp2!=mcnt;tmp2++) {
+	    if(I64SetHas(graph->connects[tmp],tmp2)) {
+	      if(tmp!=tmp2) {
+	        color=coloring->colors[tmp2];
+	        canidates[color]=FALSE;
+	      }
+	    }
+          }
+
+	  color=coloring->colors[tmp];
+	  if(color!=-1) {
+	    if(canidates[color]) {
+	      goto skip;
 	    }
 	  }
-        }
-        coloring->colors[tmp]=-1;
-        for(color=0;color!=reg_cnt;color++) {
-	  if(canidates[color]) {
-	    coloring->colors[tmp]=color;
-	    break;
-	  }
-        }
+          coloring->colors[tmp]=-1;
+          for(color=0;color!=reg_cnt;color++) {
+	    if(canidates[color]) {
+	      coloring->colors[tmp]=color;
+	      break;
+	    }
+          }
 #ifdef TARGET_X86
 //Right here our color points to R13(VarIRegToReg(color)==R13)
-	if(ireg&&canidates[color]) { 
+	  if(ireg&&canidates[color]) { 
 //Try register R13(has quircks with being used with SIBs)
 //https://wiki.osdev.org/X86-64_Instruction_Encoding
-          if(!IsPtrVar(cc,flat[tmp]->offset)) {
-	    coloring->colors[tmp]=color;
-	    break;
+            if(!IsPtrVar(cc,flat[tmp]->offset)) {
+	      coloring->colors[tmp]=color;
+	      break;
+	    }
 	  }
-	}
 #endif
+skip:;
+        }
       }
     }
+
+    penalty=0;
+    for(tmp=0;tmp!=mcnt;tmp++) {
+      if(coloring->colors[tmp]==-1&&flat[tmp]->reg!=REG_NONE) {
+        adjacent=graph->connects[tmp];
+	if(adjacent->cnt)
+          penalty+=flat[tmp]->use_cnt;
+      }
+    }
+    if(penalty<best_penalty) {
+      best_penalty=penalty;
+      MemCpy(best_colors,coloring->colors,8*mcnt);
+    }
+    if(!penalty)
+      break;
+
+//Make spilled registers unspilled to check if they are good.
+      for(tmp=0;tmp!=mcnt;tmp++) {
+        adjacent=graph->connects[tmp];
+	if(!adjacent->cnt)
+	  goto skip2;
+        if(flat[tmp]->reg!=REG_NONE&&coloring->colors[tmp]==-1)  {  //Not Predefined
+          MemSet(canidates,TRUE,reg_cnt);
+	  adj_score=I16_MAX;
+	  for(tmp2=0;tmp2!=adjacent->cnt;tmp2++) {
+	    color=coloring->colors[adjacent->body[tmp2]];
+	    if(color!=-1) {
+	      canidates[color]=FALSE;
+	      adj_score=MinI64(adj_score,flat[tmp2]->use_cnt);
+	    }
+          }
+	  for(tmp2=0;tmp2!=reg_cnt;tmp2++) {
+	    if(canidates[tmp2]) {
+	      coloring->colors[tmp]=tmp2;
+	      goto skip2;
+	    }
+	  }
+	  for(tmp2=0;tmp2!=adjacent->cnt;tmp2++) {
+	    if(adj_score==flat[tmp2]->use_cnt) {
+	      coloring->colors[tmp2]=-1;
+	      break;
+	    }
+	  }
+skip2:;
+        }
+      }
   }
+  MemCpy(coloring->colors,best_colors,8*mcnt);
+  Free(best_colors);
 
   for(tmp=0;tmp!=mcnt;tmp++) {
     if(!(flat[tmp]->member_class->raw_type==RT_F64^^!ireg))

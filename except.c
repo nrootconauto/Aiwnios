@@ -30,9 +30,9 @@ int64_t AIWNIOS_enter_try() {
 }
 
 void AIWNIOS_throw(uint64_t c) {
-  CHashExport *exp;
-  if (exp = HashFind("throw", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
-    FFI_CALL_TOS_1(exp->val, c);
-  }
+  static CHashExport *exp;
+  if (!exp)
+    exp = HashFind("throw", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1);
+  FFI_CALL_TOS_1(exp->val, c);
   __builtin_unreachable();
 }

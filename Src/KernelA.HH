@@ -2744,14 +2744,15 @@ public class CDirContext
 #define FF_NEEDS_WRITE		8
 #define FF_CONTIGUOUS		16
 #define FF_USE_OLD_DATETIME	32
+#define FF_VIRT			64
 
 public class CFile //See $LK,"::/Demo/Dsk/DataBase.HC"$.
 {
-  I64	flags;
+  I32	flags,fd;
   CDirEntry de;
   CDrv	*dv;
   I64	fblk_num,clus,file_clus_num,max_blk;
-  U8	*clus_buf,*_3days_virt;
+  U8	*clus_buf;
 };
 
 #define _CFG_HEAP_DBG FALSE
@@ -3823,6 +3824,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 AIWNIOS_SetCaptureMouse(I64);
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
 //This will cause the debugger to write the regs into reg_dump
 import U0 DebuggerClientStart(CTask*,U8 **reg_dump);
@@ -3928,8 +3930,7 @@ import U64 LBts(U8 *,I64);
 import U8 *Caller(I64 c=0);
 import I64 UnixNow();
 import U0 VFsFTrunc(U8i*,I64i);
-import U8i *VFsFOpenR(U8i*);
-import U8i *VFsFOpenW(U8i*);
+import U8i *VFsFOpen(U8i*,Bool);
 import U0 VFsFClose(U8i*);
 import I64 VFsFBlkRead(U8i*,I64i,I64i,U8i*);
 import I64 VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
@@ -3965,7 +3966,10 @@ import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
+import I64 GetRBP();
 #else
+extern U0 AIWNIOS_SetCaptureMouse(I64);
+extern I64 GetRBP();
 extern U0 WriteProtectMemCpy(U8*,U8*,I64);
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
@@ -4057,8 +4061,7 @@ extern U8 *Caller(I64 c=0);
 //EVIL things from AIWNIOS to be reworked
 extern I64 UnixNow();
 extern U0 VFsFTrunc(U8i*,I64i);
-extern U8i *VFsFOpenR(U8i*);
-extern U8i *VFsFOpenW(U8i*);
+extern U8i *VFsFOpen(U8i*,Bool);
 extern U0 VFsFClose(U8i*);
 extern I64 VFsFBlkRead(U8i*,I64i,I64i,U8i*);
 extern I64 VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
@@ -6862,7 +6865,9 @@ extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
 extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
 extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
 extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
-
+#ifdef TARGET_X86
+extern U8 SSE_ShuffleByte(I64 a,I64 b,I64 c,I64 d);
+#endif
 #define HDR_NUM	16
 #define REGISTRY_FILENAME "~/Registry.HC.Z"
 #define SE_NOISE	0
@@ -7138,7 +7143,6 @@ extern U0 Dm(U8 *addr,I64 cnt=0x80);
 extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
-extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
 extern U0 HeapWho();

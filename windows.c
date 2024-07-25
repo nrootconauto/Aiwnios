@@ -58,7 +58,7 @@ static void _DrawWindowNew() {
 static void UpdateViewPort() {
   int w, h, margin_x = 0, margin_y = 0, w2, h2;
   SDL_GetWindowSize(window, &w, &h);
-  double ratio = (double)640 / 480;
+  float ratio = 640. / 480;
   if (w > h * ratio) {
     h2       = h;
     w2       = ratio * h;
@@ -549,7 +549,13 @@ static int SDLCALL MSCallback(void *d, SDL_Event *e) {
       else
         y2 = (y - view_port.y) * 480. / view_port.h;
       SetWriteNP(1);
-      FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
+      if(SDL_GetRelativeMouseMode()) {
+		if(e->type!=SDL_MOUSEMOTION) //Wierd stuff happens
+		  FFI_CALL_TOS_4(ms_cb, 640/2, 480/2, z, state);
+		else
+		  FFI_CALL_TOS_4(ms_cb, e->motion.xrel+640/2, e->motion.yrel+480/2, z, state);
+      } else
+		FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
     }
   return 0;
 }
@@ -594,4 +600,8 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
 
 void WaitForSDLQuit() {
   SDL_WaitThread(sdl_main_thread, NULL);
+}
+//Your own your own(used for FPS games)
+void SetCaptureMouse(int64_t i) {
+	SDL_SetRelativeMouseMode(i);
 }

@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 6: Data structures 2(HashTable)"$$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 6: Data structures 2(HashTable)"$$FD$
 
   Hash tables are like dictionary data structures and each task has one in $HL,1$Fs->hash_table$HL,0$. Each $HL,1$CHash$HL,0$ has a $FG,4$type$FD$ and a $FG,4$str$FD$.
 

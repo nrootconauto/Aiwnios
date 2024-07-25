@@ -393,10 +393,9 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	      tmpg->data_addr=MAlloc(j,Fs);
 	    }
 	    tmpg->type=HTT_GLBL_VAR;
-	    /*if (tmpex && tmpex->type&HTT_GLBL_VAR && TODO ???
-		  tmpex->type&HTF_UNRESOLVED &&
-		  MHeapCtrl(tmpex)==MHeapCtrl(tmpg))
-	      has_alias=TRUE;*/
+	    if (tmpex && tmpex->type&HTT_GLBL_VAR &&
+		  tmpex->type&HTF_UNRESOLVED)
+	      has_alias=TRUE;
 	    //if (sys_var_init_flag) Tee hee
 	      MemSet(tmpg->data_addr,0,j);
 	  }

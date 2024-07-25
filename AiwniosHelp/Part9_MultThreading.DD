@@ -1,4 +1,4 @@
-$FG,5$$TX+CX,"Runtime Part 9: Multithreading"$$FD$
+$WW,1$$FG,5$$TX+CX,"Runtime Part 9: Multithreading"$$FD$
 
   TempleOS is non-premptive. This means each Task has to manually tell the computer when to context swap. $FG,4$The way to do this and prevent freezing is to $HL,1$Yield$HL,0$$FD$
 

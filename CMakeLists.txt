@@ -141,8 +141,7 @@ endif ()
 add_executable(
   aiwnios
   ${C_SOURCES}
-  ${CXX_SOURCES}
-)
+  ${CXX_SOURCES})
 find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
@@ -159,6 +158,8 @@ elseif (ARCH STREQUAL x86_64)
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
   endif()
 endif ()
+
+target_include_directories(aiwnios PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
     OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
@@ -213,8 +214,9 @@ set(COMP_OPTS
   -fno-asynchronous-unwind-tables
   -fcf-protection=none
 )
+target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
 if (ARCH STREQUAL "x86_64")
-  list(APPEND COMP_OPTS -mno-shstk)
+  list(APPEND COMP_OPTS -mno-shstk -fno-plt)
 endif ()
 set_source_files_properties(${C_SOURCES}
   PROPERTIES
@@ -258,8 +260,14 @@ if (BUILD_HCRT)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Src" aiwnios
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  add_custom_target(Registry.HC.Z
+    ALL
+    COMMAND aiwnios -c FreshOnce.HC
+    DEPENDS HCRT2.BIN aiwnios
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
   add_custom_command(
-    TARGET HCRT2.BIN
+    TARGET HCRT2.BIN Registry.HC.Z
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --green "BUILD SUCCESSFULLY COMPLETED!!!!!"
   )
@@ -276,8 +284,11 @@ set_target_properties(aiwnios PROPERTIES
 #
 # Install section
 #
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-  
+if(NOT WIN32)
+  #Nroot here,CMAKE_INSTALL_PREFIX on windows has a C:/..... (So it gets combined with cwd to somethinf like)
+  #  C:/dsdasd/C:/foofie
+  set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+endif()
 
 set (AIWNIOS_VERSION "0.0.1")
 
@@ -305,9 +316,18 @@ if(WIN32)
   set (CPACK_RESOURCE_FILE_LICENSE
      "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico'")
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Aiwnios.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '' '$INSTDIR\\\\logo.ico' \n \
+    CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\AiwniosFreshEnviroment.lnk' '$INSTDIR\\\\bin\\\\aiwnios.exe' '-n' 	'$INSTDIR\\\\logo.ico'"
+  )
   set(CPACK_NSIS_DELETE_ICONS_EXTRA
-    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk'" )
+    "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk' \n \
+    Delete '$SMPROGRAMS\\\\$START_MENU\\\\AiwniosFreshEnviroment.lnk'")
+ set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
+ WriteRegStr HKLM 'Software\\\\Aiwnios' 'InstallAt' '$INSTDIR\\\\T'
+                ")
+ set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS " 
+    DeleteRegKey HKLM 'Software\\\\Aiwnios'
+    ")
 endif()
 include (CPack)
 
@@ -317,6 +337,7 @@ set(
   AfterEgypt
   Doc
   Apps
+  AiwniosHelp
   Src
   Vocab.DD
   PersonalMenu.DD
@@ -330,7 +351,7 @@ set(
 
 if(NOT WIN32)
   install(PROGRAMS aiwnios TYPE BIN)
-  install(FILES aiwnios.png DESTINATION share/icons)
+  install(FILES img/aiwnios.png DESTINATION share/icons)
   install(FILES aiwnios.desktop DESTINATION share/applications)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
@@ -349,7 +370,7 @@ if(NOT WIN32)
   endforeach()
 else()
   install(PROGRAMS aiwnios.exe TYPE BIN)
-  install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/logo.ico" DESTINATION .)
+  install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/img/logo.ico" DESTINATION .)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
       install(

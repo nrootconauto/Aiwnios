@@ -167,9 +167,10 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     }
     Free(tmp);
   }
-  if(i==2)
-    R404(srv,NULL,"Not found!!!");
-  else {
+  if(i==2) {
+//Try like a normal file in HTML directory.
+    FileGet(srv,stream,url,req); //Fails for us.
+  }else {
     et=HashFileToETag(html_name);
     if(con->etag_text&&!StrCmp(et,con->etag_text)) {
       Free(et);

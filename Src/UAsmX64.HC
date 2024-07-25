@@ -53,6 +53,8 @@
 #define X86_OPERAND_MOFF8 45
 #define X86_OPERAND_MOFFx 47
 #define X86_OPERAND_RMMM64 48
+//TODO,Nroot is not implementeing vector types now.
+#define X86_OPERAND_M128 49
 
 class CX86Opcode:CHash {
   //-1 for absent
@@ -102,8 +104,9 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
   else
     at=po|(so<<8);
   for(idx=0;idx!=argc;) {
-    if(idx>argc)
+    if(idx>argc) {
       throw('UAsmInit');
+    }
     if(argv[idx]!=X86_OPERAND_EXT)
       opc->arity++;
     switch(argv[idx]) {
@@ -134,7 +137,7 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
     test=HashFind(LstSub(op,name),cmp.asm_hash,HTT_OPCODE);
     if(test) {
       if(test->arity!=opc->arity) {
-	"ARITYMISSAMATCH:%s\n",LstSub(op,name);
+	DbgPrint("ARITYMISSAMATCH:%s\n",LstSub(op,name));
 	throw('AsmItrn');
       }
     }
@@ -435,7 +438,7 @@ U8 *RegIdx2Str(I64 r,I64 sz=8,Bool rex=FALSE) {
 #define RS_XMM 2
 #define RS_X87 3
 #define RS_MM 4
-U0 PrintRMMode(CDoc *doc,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=RS_GP) {
+U0 PrintRMMode(CDoc *doc,U8 segment,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=RS_GP) {
   switch(sz) {
     case 1: DocPrint(doc,"U8 "); break;
     case 2: DocPrint(doc,"U16 "); break;
@@ -460,6 +463,15 @@ U0 PrintRMMode(CDoc *doc,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=
 	return;
     }
   }
+  switch(segment) {
+    case 0x2E: DocPrint(doc,"CS ");break;
+    case 0x36: DocPrint(doc,"SS ");break;
+    case 0x3E: DocPrint(doc,"DS ");break;
+    case 0x26: DocPrint(doc,"ES ");break;
+    case 0x64: DocPrint(doc,"FS ");break;
+    case 0x65: DocPrint(doc,"GS ");break;
+  }
+
   if(o!=INVALID_PTR&&i==-1&&b==-1) {
     DocPrint(doc,"[");
     DocPrint(doc,"%X",o);
@@ -507,6 +519,7 @@ U8 *DisasOpc(CDoc *doc_out,U8 *data) {
   I64 pf1=-1,cnt,cnt2;
   Bool _66=FALSE,_67=FALSE,_0f=FALSE;
   I64 rex=0,len;
+  U8 seg_prefix=0;
   Bool has_modrm=FALSE,wants_rexw=FALSE;
   CX86Opcode *cur,*head,*valid_opc=NULL;
   I64 imm_off=0;
@@ -529,16 +542,17 @@ prefix:
       switch(*data) {
         start:
 	  Bts(&prefix_groups,2);
-	  case 0x2e: DocPrint(doc,"CS "); break;
-	  case 0x36: DocPrint(doc,"SS "); break;
-	  case 0x3e: DocPrint(doc,"DS "); break;
-	  case 0x26: DocPrint(doc,"ES "); break;
-	  case 0x64: DocPrint(doc,"FS "); break;
-	  case 0x65: DocPrint(doc,"GS "); break;
+	  case 0x2e: break;
+	  case 0x36: break;
+	  case 0x3e: break;
+	  case 0x26: break;
+	  case 0x64: break;
+	  case 0x65: break;
 //AMD does have these,I am not checking for Branch instructions either
 	    //          case 0x2e: DocPrint(doc,"BranchNotTaken "); break;
 	    //          case 0x3e: DocPrint(doc,"BranchTaken "); break;
         end:
+	  seg_prefix=*data++;
 	  goto prefix;
       }
     }
@@ -567,7 +581,7 @@ prefix:
         Bts(&prefix_groups,6);
         _0f=TRUE;
         data++;
-	break;
+        break;
       }
     break;
   }
@@ -587,33 +601,33 @@ bad:
   od=data;
   imm_off=0;
   head=&asm_hash[opc];
-  //If one of our opcodes is promoted by X86_OPCF_REXW,require it if we have rex.W
+//If one of our opcodes is promoted by X86_OPCF_REXW,require it if we have rex.W
   if(rex&0b1000)
     for(cur=head->next;cur!=head;cur=cur->next) {
       cur=cur(U8*)-offset(CX86Opcode.asm_hash_que);
       if(cur->flags&X86_OPCF_REXW) {
-	wants_rexw=TRUE;
-	break;
+        wants_rexw=TRUE;
+        break;
       }
       cur=cur(U8*)+offset(CX86Opcode.asm_hash_que);
     }
   for(cur=head->next;cur!=head;cur=cur->next) {
     cur=cur(U8*)-offset(CX86Opcode.asm_hash_que);
     data=od;
-    //If our old valid opcode wants(and has) a rex.w,ignore "newer" canidates that lack the need for a rex.
+//If our old valid opcode wants(and has) a rex.w,ignore "newer" canidates that lack the need for a rex.
     if(valid_opc&&!(cur->flags&X86_OPCF_REXW))
       if(wants_rexw&&valid_opc->flags&X86_OPCF_REXW)
-	goto next;
-    //If our valid opcode uses _66,ensure _66 is used by our "newer" one 
+        goto next;
+//If our valid opcode uses _66,ensure _66 is used by our "newer" one 
     if(valid_opc)
       switch(valid_opc->pf) {
-	case -1:
+        case -1:
 	  break;
         case 0x66:
 	  if(cur->pf!=0x66)
 	    goto next;
-        break;
-	default:
+	  break;
+        default:
 	  if(cur->pf==-1)
 	    goto next;
       }
@@ -635,15 +649,15 @@ bad:
       goto next;
     if(cur->flags&X86_OPCF_REXW)
       if(!(rex&0b1000))
-	goto next;
+        goto next;
     if(cur->flags&X86_OPCF_MODRM) {
       DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL,&len);
       for(cnt=0;cnt!=4;cnt++)
-	if(cur->operands[cnt].u8[0]==X86_OPERAND_EXT)
+        if(cur->operands[cnt].u8[0]==X86_OPERAND_EXT)
 	  if(cur->operands[cnt].u8[1]!=ext&0x7)
 	    goto next;
       imm_off=len;
-      //If Opcode wants a MEMORY only ass motherfucker,make sure ModRM/SIB
+//If Opcode wants a MEMORY only ass motherfucker,make sure ModRM/SIB
       //points to a memory address,AND NOT A FUCKIN register
       for(cnt=0;cnt!=4;cnt++) {
         switch(cur->operands[cnt].u8[0]) {
@@ -652,10 +666,10 @@ bad:
 	  case X86_OPERAND_M16:
 	  case X86_OPERAND_M32:
 	  case X86_OPERAND_M64:
-	  //Returns TRUE if a fuckin register motherfucker
-	  if(DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
-	    goto next;
-	  break;
+//Returns TRUE if a fuckin register motherfucker
+	    if(DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
+	      goto next;
+	    break;
 	  case X86_OPERAND_Rx:
 	  case X86_OPERAND_R8:
 	  case X86_OPERAND_R16:
@@ -664,15 +678,15 @@ bad:
 	  case X86_OPERAND_STi:
 	  case X86_OPERAND_FR:
 	  case X86_OPERAND_SREG:
-	  //Check the converse Motherfucker ONLY if ext is used as the register
+//Check the converse Motherfucker ONLY if ext is used as the register
 	  //This will place our fucker at ModRM base field
-	  for(cnt2=0;cnt2!=4;cnt2++) {
-	    if(cur->operands[cnt2].u8[0]==X86_OPERAND_EXT) {
-	      if(!DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
-		goto next;
+	    for(cnt2=0;cnt2!=4;cnt2++) {
+	      if(cur->operands[cnt2].u8[0]==X86_OPERAND_EXT) {
+	        if(!DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
+		  goto next;
+	      }
 	    }
-	  }
-	}
+        }
       }
     } else
       imm_off=0;
@@ -684,14 +698,14 @@ next:
     cur=valid_opc;
     switch(cur->pf) {
       case 0x66: //If 0x66 is part of the opcode,it may be an SSE prefix,so ignore it?
-      _66=FALSE;
-      break;
+        _66=FALSE;
+        break;
       case 0xf0:
       case 0xf1:
       case 0xf2:
       case 0xf3:
       case 0x9b:
-	Btr(&prefix_groups,1);
+        Btr(&prefix_groups,1);
     }
     if(Bt(&prefix_groups,1))
       switch(pf1) {
@@ -718,25 +732,25 @@ next:
 	    DocPrint(doc,"U8 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),1));
 	    break;
 	  case X86_OPERAND_RM8:
-	    PrintRMMode(doc,rex,data,1,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,1,_67);
 	    break;
 	  case X86_OPERAND_R16:
 	    DocPrint(doc,"U16 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),2));
 	    break;
 	  case X86_OPERAND_RM16:
-	    PrintRMMode(doc,rex,data,2,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    break;
 	  case X86_OPERAND_R32:
 	    DocPrint(doc,"U32 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),4));
 	    break;
 	  case X86_OPERAND_RM32:
-	    PrintRMMode(doc,rex,data,4,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    break;
 	  case X86_OPERAND_R64:
 	    DocPrint(doc,"U64 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),8));
 	    break;
 	  case X86_OPERAND_RM64:
-	    PrintRMMode(doc,rex,data,8,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_IMM8:
 	    DocPrint(doc,"I8 %d ",data(U8*)[imm_off]);
@@ -768,11 +782,11 @@ next:
 	    break;
 	  case X86_OPERAND_RMx:
 	    if(_66) 
-	      PrintRMMode(doc,rex,data,2,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    else if(!(rex&0b1000))
-	      PrintRMMode(doc,rex,data,4,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    else
-	      PrintRMMode(doc,rex,data,8,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_Rx:
 	    if(_66) 
@@ -808,19 +822,19 @@ next:
 	    break;
 	  case X86_OPERAND_RMXMM:
 	  case X86_OPERAND_RMXMM128:
-	    PrintRMMode(doc,rex,data,16,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,16,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMXMM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMXMM32:
-	    PrintRMMode(doc,rex,data,4,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMM:
 	    DocPrint(doc,"U64 %s ",RegIdx2StrMm(GetOpcodeReg(cur,rex,data)));
 	    break;
 	  case X86_OPERAND_RMMM:
-	    PrintRMMode(doc,rex,data,8,_67,RS_MM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_MM);
 	    break;
 	  case X86_OPERAND_REL8:
 	    DocPrint(doc,"I8 %P ",(data+1)+(data+imm_off)(I8*)[0]);
@@ -831,16 +845,16 @@ next:
 	    imm_off+=4;
 	    break;
 	  case X86_OPERAND_M8:
-	    PrintRMMode(doc,rex,data,1,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,1,_67);
 	    break;
 	  case X86_OPERAND_M16:
-	    PrintRMMode(doc,rex,data,2,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    break;
 	  case X86_OPERAND_M32:
-	    PrintRMMode(doc,rex,data,4,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    break;
 	  case X86_OPERAND_M64:
-	    PrintRMMode(doc,rex,data,8,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_ST0:
 	    DocPrint(doc,"F64 ST0");
@@ -849,54 +863,66 @@ next:
 	    DocPrint(doc,"F64 ST%d",GetOpcodeReg(cur,rex,data));
 	    break;
 	  case X86_OPERAND_FRM32:
-	    PrintRMMode(doc,rex,data,4,_67,RS_X87);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67,RS_X87);
 	    break;
 	  case X86_OPERAND_FRM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_X87);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_X87);
+	    break;
+          case X86_OPERAND_M128:
+	    PrintRMMode(doc,seg_prefix,rex,data,16,_67,RS_X87);
 	    break;
 	  case X86_OPERAND_Mx:
 	    if(_66) 
-	      PrintRMMode(doc,rex,data,2,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    else if(!(rex&0b1000))
-	      PrintRMMode(doc,rex,data,4,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    else
-	      PrintRMMode(doc,rex,data,8,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_SREG:
-	  DocPrint(doc,"%s ",RegIdx2StrSReg(GetOpcodeReg(cur,rex,data)));
+	    DocPrint(doc,"%s ",RegIdx2StrSReg(GetOpcodeReg(cur,rex,data)));
 	    break;
-	  case X86_OPERAND_MOFF8:
-	    DocPrint(doc,"I8 [%P] ",(data+imm_off)(I64*)[0]);
-	    imm_off+=8;
-	    break;
-	  case X86_OPERAND_MOFFx:
-	    if(_66) 
-	      DocPrint(doc,"I16 [%P] ",(data+imm_off)(I64*)[0]);    
-	    else if(!(rex&0b1000))
-	      DocPrint(doc,"I32 [%P] ",(data+imm_off)(I64*)[0]);    
-	    else
-	      DocPrint(doc,"I64 [%P] ",(data+imm_off)(I64*)[0]);
-	    imm_off+=8;
+	  start:
+	    case X86_OPERAND_MOFF8:
+	      DocPrint(doc,"I8  ");
+	      imm_off+=8;
+	      break;
+	    case X86_OPERAND_MOFFx:
+	      if(_66) 
+	        DocPrint(doc,"I16 ");
+	      else if(!(rex&0b1000))
+	        DocPrint(doc,"I32 ");
+	      else
+	        DocPrint(doc,"I64 ");
+	      imm_off+=8;
+	      break;
+	  end:
+	    switch(seg_prefix) {
+	      case 0x2E: DocPrint(doc,"CS:");break;
+	      case 0x36: DocPrint(doc,"SS:");break;
+	      case 0x3E: DocPrint(doc,"DS:");break;
+	      case 0x26: DocPrint(doc,"ES:");break;
+	      case 0x64: DocPrint(doc,"FS:");break;
+	      case 0x65: DocPrint(doc,"GS:");break;
+	    }
+	    DocPrint(doc,"[%P] ",(data+imm_off)(I64*)[-1]);
 	    break;
 	  case X86_OPERAND_RMMM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_MM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_MM);
         end:
 	  break;
-	case X86_OPERAND_EXT:
-	    break;
+        case X86_OPERAND_EXT:
+	  break;
         case 0:
 	  break;
         default:
 	  throw("UAsmItrn");
       }
     }
-    DocPrint(doc,"\n");
-    DocPrint(doc_out,"%P\t\dFG,PURPLE\d",odata);
-    for (i=0;i<imm_off+1;++i)
-      DocPrint(doc_out,"%02X ",odata[i]);
-    DocPrint(doc_out,"\dFG\d\n\t\t");
+    DocPrint(doc_out,"%P\t\t",odata);
     DocInsDoc(doc_out,doc);
     DocDel(doc);
+    DocPrint(doc_out,"\n");
     return data+imm_off;
   }
 //wut
@@ -1122,8 +1148,8 @@ U0 UAsmInit() {
   AO("CMP",-1,-1,0x81,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,7,X86_OPERAND_IMMx);
   AO("CMP",-1,-1,0x83,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,7,X86_OPERAND_IMM8);
 
-//  AO("CMPPD",0x66,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
-//  AO("CMPPS",-1,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("CMPPD",0x66,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("CMPPS",-1,0xf,0xc2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
 
   AO("CMPSB",-1,-1,0xa6,-1,0);
   AO("CMPSW",0x66,-1,0xa7,-1,0);
@@ -1144,15 +1170,15 @@ U0 UAsmInit() {
   AO("CPUID",-1,0xf,0xa2,-1,0);
   AO("CRC32",0xf2,0xf,0x38,0xf0,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM8);
   AO("CRC32",0xf2,0xf,0x38,0xf1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
-//  AO("CVTDQ2PD",0xf3,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("CVTDQ2PS",-1,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPD2DQ",0xf2,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPD2PI",0x66,0xf,0x2d,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPD2PS",0x66,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTDQ2PD",0xf3,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTDQ2PS",-1,0xf,0x5b,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPD2DQ",0xf2,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPD2PI",0x66,0xf,0x2d,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM128);
+  AO("CVTPD2PS",0x66,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("CVTPI2PD",0x66,0xf,0x2a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("CVTPI2PS",-1,0xf,0x2a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
-//  AO("CVTPS2DQ",0x66,0xf,0x5b,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPS2PD",-1,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPS2DQ",0x66,0xf,0x5b,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPS2PD",-1,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("CVTPS2PI",-1,0xf,0x2d,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM64);
   AO("CVTSD2SI",0xf2,0xf,0x2d,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMXMM64);
   AO("CVTSD2SS",0xf2,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
@@ -1160,10 +1186,10 @@ U0 UAsmInit() {
   AO("CVTSI2SS",0xf3,0xf,0x2a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RM64);
   AO("CVTSS2SD",0xf3,0xf,0x5a,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("CVTSS2SI",0xf3,0xf,0x2d,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMXMM32);
-//  AO("CVTPD2DQ",0x66,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPD2PI",0x66,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM128);
-//  AO("CVTPS2DQ",0xf3,0xf,0x5b,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM128);
-  AO("CVTTPS2PI",-1,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMXMM64);
+  AO("CVTPD2DQ",0x66,0xf,0xe6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPD2PI",0x66,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTPS2DQ",0xf3,0xf,0x5b,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("CVTTPS2PI",-1,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("CVTTSD2SI",0xf2,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMXMM64);
   AO("CVTTSS2SI",0xf3,0xf,0x2c,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMXMM32);
   AO("CWD",0x66,-1,0x99,-1,0);
@@ -1173,13 +1199,13 @@ U0 UAsmInit() {
   AO("DEC",-1,-1,0xff,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,1);
   AO("DIV",-1,-1,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_EXT,6);
   AO("DIV",-1,-1,0xf7,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,6);
-//  AO("DIVPD",0x66,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("DIVPS",-1,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("DIVPD",0x66,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("DIVPS",-1,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("DIVSD",0xf2,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("DIVSS",0xf3,0xf,0x5e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("DPPD",0x66,0xf,0x3a,0x41,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
-//  AO("DPPSS",0x66,0xf,0x3a,0x40,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("DPPSS",0x66,0xf,0x3a,0x40,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("DPPSS",0x66,0xf,0x3a,0x40,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("DPPSS",0x66,0xf,0x3a,0x40,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("EMMX",-1,0xf,0x77,-1,0);
   AO("ENTER",-1,-1,0xc8,-1,0,X86_OPERAND_IMM16,X86_OPERAND_IMM8);
   AO("EXTRACTPS",0x66,0xf,0x3a,0x17,X86_OPCF_MODRM,X86_OPERAND_RM32,X86_OPERAND_RXMM,X86_OPERAND_IMM8);
@@ -1319,11 +1345,11 @@ U0 UAsmInit() {
   AO("FYL2XP1",-1,-1,0xd9,0xf9,0);
 
 
-//  AO("HADDPD",-1,0x66,0x0f,0x7c,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("HADDPS",-1,0xf2,0x0f,0x7c,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("HADDPD",0x66,0x0f,0x7c,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("HADDPS",0xf2,0x0f,0x7c,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("HLT",-1,-1,0xf4,-1,0);
-//  AO("HSUBPD",-1,0x66,0x0f,0x7d,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("HSUBPS",-1,0xf2,0x0f,0x7d,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("HSUBPD",0x66,0x0f,0x7d,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("HSUBPS",0xf2,0x0f,0x7d,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("IDIV",-1,-1,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_EXT,7);
   AO("IDIV",-1,-1,0xf7,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,7);
   AO("IMUL3",-1,-1,0x69,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx,X86_OPERAND_IMMx);
@@ -1419,13 +1445,13 @@ U0 UAsmInit() {
   AO("LSL",-1,0xf,0x3,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
   AO("LSS",-1,0xf,0xb2,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
   AO("LTR",-1,0xf,0xb2,-1,X86_OPCF_MODRM,X86_OPERAND_RM16,X86_OPERAND_EXT,3);
-//  AO("MAXPD",0x66,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MAXPS",-1,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MAXPD",0x66,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MAXPS",-1,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("MAXSD",0xf2,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MAXSS",0xf3,0xf,0x5f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("LFENCE",-1,0xf,0xae,0xe8,0);
-//  AO("MINPD",0x66,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MINPS",-1,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MINPD",0x66,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MINPS",-1,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("MINSD",0xf2,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MINSS",0xf3,0xf,0x5d,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("MONITOR",-1,0xf,0x1,0xc8,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,1);
@@ -1450,10 +1476,10 @@ U0 UAsmInit() {
 /*
   TODO move from debug registes
 */
-//  AO("MOVAPD",0x66,0xf,0x28,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MOVAPD",0x66,0xf,0x29,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
-//  AO("MOVAPS",-1,0xf,0x28,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MOVAPS",-1,0xf,0x29,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
+  AO("MOVAPD",0x66,0xf,0x28,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MOVAPD",0x66,0xf,0x29,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
+  AO("MOVAPS",-1,0xf,0x28,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MOVAPS",-1,0xf,0x29,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
   AO("MOVBE",-1,0xf,0x38,0xf0,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
   AO("MOVBE",-1,0xf,0x38,0xf1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_Rx);
   AO("MOVD",-1,0xf,0x6e,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RM32);
@@ -1474,10 +1500,10 @@ U0 UAsmInit() {
   AO("MOVSS",0xf3,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM32	,X86_OPERAND_RXMM);
   AO("MOVSD2",0xf2,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MOVSD2",0xf2,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM);
-//  AO("MOVDQA",0x66,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MOVDQA",0x66,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
+  AO("MOVDQA",0x66,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MOVDQA",0x66,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
   AO("MOVDQU",0xf3,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MOVDQU",0xf3,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
+  AO("MOVDQU",0xf3,0xf,0x7f,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
   AO("MOVHLPS",-1,0xf,0x12,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("MOVHPD",0x66,0xf,0x16,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_M64);
   AO("MOVHPD",0x66,0xf,0x17,-1,X86_OPCF_MODRM,X86_OPERAND_M64,X86_OPERAND_RXMM);
@@ -1490,11 +1516,11 @@ U0 UAsmInit() {
   AO("MOVLPS",-1,0xf,0x13,-1,X86_OPCF_MODRM,X86_OPERAND_M64,X86_OPERAND_RXMM);
   AO("MOVMSKPD",0x66,0xf,0x50,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RXMM);
   AO("MOVMSKPS",-1,0xf,0x50,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RXMM);
-//  AO("MOVNTDQ",0x66,0xf,0xe7,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
+  AO("MOVNTDQ",0x66,0xf,0xe7,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
   AO("MOVNTI",-1,0xf,0xc3,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_Rx);
   AO("MOVNTQ",-1,0xf,0xe7,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_RMM);
-//  AO("MOVNTPD",-1,0xf,0x2b,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
-//  AO("MOVNTPS",-1,0xf,0x2b,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
+  AO("MOVNTPD",-1,0xf,0x2b,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
+  AO("MOVNTPS",-1,0xf,0x2b,-1,X86_OPCF_MODRM,X86_OPERAND_M128,X86_OPERAND_RXMM);
   AO("MOVNTQ",-1,0xf,0xe7,-1,X86_OPCF_MODRM,X86_OPERAND_M64,X86_OPERAND_RMM);
   AO("MOVQ",-1,0xf,0x6f,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64);
   AO("MOVQ",0xf3,0xf,0x7e,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
@@ -1508,17 +1534,17 @@ U0 UAsmInit() {
   AO("MOVSX",-1,0xf,0xbe,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM8);
   AO("MOVSX",-1,0xf,0xbf,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM16);
   AO("MOVSXD",-1,-1,0x63,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM32);
-//  AO("MOVUPD",0x66,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MOVUPD",0x66,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
-//  AO("MOVUPS",-1,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM128,X86_OPERAND_RMXMM64);
-//  AO("MOVUPS",-1,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM64,X86_OPERAND_RXMM128);
+  AO("MOVUPD",0x66,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MOVUPD",0x66,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
+  AO("MOVUPS",-1,0xf,0x10,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
+  AO("MOVUPS",-1,0xf,0x11,-1,X86_OPCF_MODRM,X86_OPERAND_RMXMM128,X86_OPERAND_RXMM);
   AO("MOVZX",-1,0xf,0xb6,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM8);
   AO("MOVZX",-1,0xf,0xb7,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RM16);
-//  AO("MPSADBW",0x66,0xf,0x3a,0x42,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MPSADBW",0x66,0xf,0x3a,0x42,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("MUL",-1,-1,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_EXT,4);
   AO("MUL",-1,-1,0xf7,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,4);
-//  AO("MULPD",0x66,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("MULPD",-1,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MULPD",0x66,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("MULPS",-1,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("MULSD",0xf2,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("MULSS",0xf3,0xf,0x59,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   AO("MWAIT",-1,0xf,0xf7,0xc9,0);
@@ -1536,8 +1562,8 @@ U0 UAsmInit() {
   AO("OR",-1,-1,0x80,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_IMM8,X86_OPERAND_EXT,1);
   AO("OR",-1,-1,0x81,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMMx,X86_OPERAND_EXT,1);
   AO("OR",-1,-1,0x83,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMM8,X86_OPERAND_EXT,1);
-//  AO("ORPD",0x66,0xf,0x56,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("ORPS",-1,0xf,0x56,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("ORPD",0x66,0xf,0x56,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("ORPS",-1,0xf,0x56,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("OUT",-1,-1,0xe6,-1,0,X86_OPERAND_IMM8,X86_OPERAND_CONST_R8,REG_RAX);
   AO("OUT",-1,-1,0xe7,-1,0,X86_OPERAND_IMM8,X86_OPERAND_CONST_R32,REG_RAX);
   AO("OUT",-1,-1,0xee,-1,0,X86_OPERAND_CONST_R16,REG_RDX,X86_OPERAND_CONST_R8,REG_RAX);
@@ -1638,22 +1664,22 @@ U0 UAsmInit() {
   AO("POPCNT",0xf3,0xf,0xb8,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
   AO("POPF",-1,-1,0x9d,-1,0);
   AO("POR",-1,0xf,0xeb,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64);
-//  AO("POR",0x66,0xf,0xeb,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128);
-  AO("PREFETCHNTA",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,0);
-  AO("PREFETCHT0",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,1);
-  AO("PREFETCHT1",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,2);
-  AO("PREFETCHT2",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,3);
+  AO("POR",0x66,0xf,0xeb,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM);
+//  AO("PREFETCHNTA",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,0);
+//  AO("PREFETCHT0",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,1);
+//  AO("PREFETCHT1",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,2);
+//  AO("PREFETCHT2",-1,0xf,0x18,-1,X86_OPCF_MODRM,X86_OPERAND_M8,X86_OPERAND_EXT,3);
   AO("PSADBW",-1,0xf,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64);
-//  AO("PSADBW",0x66,0xf,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128);
-//  AO("PSHUFD",0x66,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128,X86_OPERAND_IMM8);
-//  AO("PSHUFHW",0xf3,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128,X86_OPERAND_IMM8);
-//  AO("PSHUFLW",0xf2,0xf,0xv,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128,X86_OPERAND_IMM8);
-//  AO("PSHUFW",0xf2,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128,X86_OPERAND_IMM8);
+  AO("PSADBW",0x66,0xf,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM);
+  AO("PSHUFD",0x66,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM,X86_OPERAND_IMM8);
+  AO("PSHUFHW",0xf3,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM,X86_OPERAND_IMM8);
+  AO("PSHUFLW",0xf2,0xf,070,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM,X86_OPERAND_IMM8);
+  AO("PSHUFW",0xf2,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM,X86_OPERAND_IMM8);
   AO("PSHUFW",-1,0xf,0x70,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64,X86_OPERAND_IMM8);
   AO("PSLLD",-1,0xf,0x72,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_IMM8,X86_OPERAND_EXT,6);
   AO("PSLLD",0x66,0xf,0x72,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_IMM8,X86_OPERAND_EXT,6);
   AO("PSLLD",-1,0xf,0xf2,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64);
-//  AO("PSLLD",0x66,0xf,0xf2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM128);
+//  AO("PSLLD",0x66,0xf,0xf2,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RXMM);
   AO("PSLLDQ",0x66,0xf,0x73,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_EXT,7);
   AO("PSLLQ",-1,0xf,0x73,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_IMM8,X86_OPERAND_EXT,6);
   AO("PSLLQ",0x66,0xf,0x73,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_IMM8,X86_OPERAND_EXT,6);
@@ -1722,7 +1748,7 @@ U0 UAsmInit() {
   AO("PUSHFQ,PUSHF",-1,-1,0x9c,-1,0);
 
   AO("PXOR",-1,0xf,0xef,-1,X86_OPCF_MODRM,X86_OPERAND_RMM,X86_OPERAND_RMMM64);
-//  AO("PXOR",0x66,0xf,0xef,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("PXOR",0x66,0xf,0xef,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
 
   AO("RCL",-1,-1,0xc0,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_IMM8,X86_OPERAND_EXT,2);
   AO("RCL",-1,-1,0xc1,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMM8,X86_OPERAND_EXT,2);
@@ -1764,14 +1790,14 @@ U0 UAsmInit() {
   AO("ROR",-1,-1,0xd2,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_CONST_R8,REG_RCX,X86_OPERAND_EXT,1);
   AO("ROR",-1,-1,0xd3,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_CONST_R8,REG_RCX,X86_OPERAND_EXT,1);
 
-//  A0("ROUNDPD",0x66,0xF,0x3A,0x9,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
-//  A0("ROUNDPS",0x66,0xF,0x3A,0x8,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("ROUNDPD",0x66,0xF,0x3A,0x9,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("ROUNDPS",0x66,0xF,0x3A,0x8,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
   AO("ROUNDSD",0x66,0xF,0x3A,0xa,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64,X86_OPERAND_IMM8);
   AO("ROUNDSS",0x66,0xF,0x3A,0xb,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32,X86_OPERAND_IMM8);
 
   AO("RSM",-1,0xf,0xaa,-1,0);
 
-//  AO("RSQRTPS",-1,0xf,0x52,-1,x86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("RSQRTPS",-1,0xf,0x52,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("RSQRTSS",0xf3,0xf,0x52,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
 
   AO("SAHF",-1,-1,0x9e,-1,0);
@@ -1843,15 +1869,14 @@ U0 UAsmInit() {
   AO("SHRD",-1,0xf,0xac,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_Rx,X86_OPERAND_IMM8);
   AO("SHRD",-1,0xf,0xad,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_Rx,X86_OPERAND_CONST_R8,REG_RCX);
 
-
-//  A0("SHUFPD",0x66,0xF,0xc6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
-//  A0("SHUFPS",-1,0xF,0xc6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("SHUFPD",0x66,0xF,0xc6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
+  AO("SHUFPS",-1,0xF,0xc6,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128,X86_OPERAND_IMM8);
 
 //SIDT
 //SLDT
 //SMSW
-//  A0("SQRTPD",0x66,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  A0("SQRTPS",-1,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("SQRTPD",0x66,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("SQRTPS",-1,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("SQRTSD",0xf2,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("SQRTSS",0xf3,0xF,0x51,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
   
@@ -1874,8 +1899,8 @@ U0 UAsmInit() {
   AO("SUB",-1,-1,0x81,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMMx,X86_OPERAND_EXT,5);
   AO("SUB",-1,-1,0x83,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_IMM8,X86_OPERAND_EXT,5);
 
-//  AO("SUBPD",0x66,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
-//  AO("SUBPS",-1,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("SUBPD",0x66,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
+  AO("SUBPS",-1,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM128);
   AO("SUBSD",0xf2,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM64);
   AO("SUBSS",0xf3,0xF,0x5c,-1,X86_OPCF_MODRM,X86_OPERAND_RXMM,X86_OPERAND_RMXMM32);
 
@@ -1933,6 +1958,11 @@ U0 UAsmInit() {
 //XSAVE
 //XSAVE
 //XSETBV
+}
+I8 SSE_ShuffleByte(I64 a,I64 b,I64 c,I64 d) {
+//I8 noreg  forces no promition
+  I8 noreg r=(a&3)|((b&3)<<2)|((c&3)<<4)|((d&3)<<6);
+  return r;
 }
 UAsmInit;
 #ifdef ASM_TEST
