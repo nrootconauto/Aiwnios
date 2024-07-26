@@ -41,7 +41,7 @@ elseif (ARCH STREQUAL "arm64")
 endif()
 
 add_executable(aiwnios ${C_SOURCES})
-target_compile_options(aiwnios PRIVATE -Wno-all)
+target_compile_options(aiwnios PRIVATE -Wno-all -Werror-implicit-function-declaration)
 set(COMP_OPTS
   -w
   -Wno-all

@@ -1,5 +1,7 @@
 #include "aiwn_windows.h"
 #include "aiwn_mem.h"
+#include "aiwn_asm.h"
+#include "aiwn_snd.h"
 #include "logo.c"
 #include <SDL.h>
 #include <SDL_pixels.h>

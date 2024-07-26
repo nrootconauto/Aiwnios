@@ -2,7 +2,10 @@
 #include "aiwn_que.h"
 #include "aiwn_hash.h"
 #include "aiwn_except.h"
+#include "aiwn_asm.h"
 #include <string.h>
+#include <stdio.h>
+#include "aiwn_fs.h"
 typedef struct _CHashImport {
   CHash base;
   char *module_base;

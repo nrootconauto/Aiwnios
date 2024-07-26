@@ -61,7 +61,13 @@ int64_t MSize(void *ptr);
 void __AIWNIOS_Free(void *ptr);
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
 
-
+int SetWriteNP(int);
 #ifndef __APPLE__
 #define SetWriteNP(n) (n)
 #endif
+extern int64_t bc_enable;
+// Returns good region if good,else NULL and after is set how many bytes OOB
+// Returns INVALID_PTR on error
+extern void *BoundsCheck(void *ptr, int64_t *after);
+int64_t IsValidPtr(char *chk);
+void InitBoundsChecker();

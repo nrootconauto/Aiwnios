@@ -1,4 +1,17 @@
-#include "aiwn.h"
+#include <stddef.h>
+#include <assert.h>
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
+#include "aiwn_arm.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "aiwn_lexparser.h"
+#include "aiwn_except.h"
+#if defined (__APPLE__)
+     #include <libkern/OSCacheControl.h>
+#endif
+extern void DoNothing();
 static int64_t SpillsTmpRegs(CRPN *rpn);
 static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
                      int64_t code_off);

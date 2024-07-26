@@ -21,3 +21,4 @@ extern int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len,
                               struct CInAddr **from);
 extern int64_t NetUDPSocketNew();
 extern struct CInAddr *NetUDPAddrNew(char *host, int64_t port);
+extern void NetUDPAddrDel(struct CInAddr *);

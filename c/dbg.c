@@ -5,6 +5,10 @@
 #include "aiwn_multic.h"
 #include "aiwn_que.h"
 #include "aiwn_mem.h"
+#include "aiwn_asm.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #define _XOPEN_SOURCE    1

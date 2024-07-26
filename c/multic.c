@@ -2,6 +2,7 @@
 #include "aiwn_hash.h"
 #include "aiwn_multic.h"
 #include "aiwn_asm.h"
+#include "aiwn_fs.h"
 #include <SDL.h>
 #include <inttypes.h>
 #include <signal.h>

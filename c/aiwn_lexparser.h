@@ -707,7 +707,7 @@ CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
                        char *sym, int64_t rt, int64_t ptrs);
 int64_t IsCmdLineMode();
 CCodeMisc *AddRelocMisc(CCmpCtrl *cctrl, char *name);
-CRPN *_SetWriteNP_HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
+CRPN *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
 void __HC_ICSetLine(CRPN *r, int64_t ln);
 CRPN *__HC_ICAdd_Switch(CCodeCtrl *cc, CCodeMisc *misc, CCodeMisc *dft);
 CRPN *__HC_ICAdd_Vargs(CCodeCtrl *cc, int64_t arity);
@@ -729,3 +729,10 @@ extern CCodeMiscRef *CodeMiscAddRef(CCodeMisc *misc, int32_t *addr);
 extern void __HC_CodeMiscInterateThroughRefs(
     CCodeMisc *cm, void (*fptr)(void *addr, void *user_data), void *user_data);
 
+extern void *GenFFIBinding(void *fptr, int64_t arity);
+extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
+extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
+extern void PrsBindCSymbol(char *name, void *ptr, int64_t arity);
+void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
+
+CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);

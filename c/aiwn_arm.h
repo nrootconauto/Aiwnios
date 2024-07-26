@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <stddef.h>
 #define ARM_ERR         -1
 #define ARM_ERR_INV_OFF -2
 #define ARM_ERR_INV_REG -3
@@ -214,3 +215,22 @@ int64_t ARM_andImmX(int64_t d, int64_t s, int64_t i);
 int64_t ARM_andsImmX(int64_t d, int64_t n, int64_t imm);
 int64_t ARM_udivX(int64_t d, int64_t n, int64_t m);
 int64_t ARM_umullX(int64_t d, int64_t n, int64_t m);
+int64_t ARM_subsRegX(int64_t d, int64_t n, int64_t m);
+int64_t ARM_subsImmX(int64_t d, int64_t n, int64_t m);
+int64_t ARM_addsImmX(int64_t d, int64_t n, int64_t m);
+int64_t ARM_subShiftRegXs(int64_t d, int64_t n, int64_t m, int64_t sh);
+int64_t ARM_addShiftRegXs(int64_t d, int64_t n, int64_t m, int64_t sh);
+
+int64_t ARM_ldrsbRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldrshRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldrswRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldrbRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldhbRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldrRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_ldrRegRegShiftF64(int64_t r, int64_t a, int64_t b);
+int64_t ARM_strsbRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_strhbRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_strRegRegShiftX(int64_t r, int64_t a, int64_t b);
+int64_t ARM_strRegRegShiftF64(int64_t r, int64_t a, int64_t b);
+int64_t ARM_stpImmF64(int64_t r, int64_t r2, int64_t b,int64_t o);
+int64_t ARM_ldpImmF64(int64_t r, int64_t r2, int64_t b,int64_t o);

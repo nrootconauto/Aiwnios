@@ -2,9 +2,11 @@
 #include "aiwn_except.h"
 #include "aiwn_que.h"
 #include "aiwn_mem.h"
+#include "aiwn_asm.h"
 #include <stdint.h>
 #include <setjmp.h>
 #include <stdlib.h>
+#include <string.h>
 // This doesn't 1:1 mirror TempleOS,when things get bootstaped , things may get
 // a bit
 // more likley

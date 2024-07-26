@@ -1,4 +1,6 @@
 #include <stddef.h>
+#include <math.h>
+#include <stdlib.h>
 #include "aiwn_mem.h"
 #include "aiwn_lexparser.h"
 #include "aiwn_hash.h"

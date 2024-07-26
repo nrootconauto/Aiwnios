@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 char *LexSrcLink(CLexer *lex, void *task) {
   char buf[STR_LEN];
   if (!lex->file)

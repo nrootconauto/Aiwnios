@@ -9,6 +9,8 @@
 #include "aiwn_fs.h"
 #include "aiwn_asm.h"
 #include "aiwn_sock.h"
+#include "aiwn_multic.h"
+#include "aiwn_snd.h"
 #include <SDL.h>
 #include <assert.h>
 #include "argtable3.h"
@@ -20,8 +22,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
+void InputLoop(void* ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
+#if defined (__APPLE__)
+     #include <libkern/OSCacheControl.h>
+#endif
 // clang-format off
 #ifdef __FreeBSD__ 
 #include <machine/sysarch.h>

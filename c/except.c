@@ -1,6 +1,8 @@
 #include "aiwn_except.h"
 #include "aiwn_hash.h"
 #include "aiwn_multic.h"
+#include <string.h>
+#include "aiwn_asm.h"
 #include <setjmp.h>
 #include "aiwn_que.h"
 #include "aiwn_mem.h"

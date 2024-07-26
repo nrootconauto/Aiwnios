@@ -1,9 +1,13 @@
 #include "aiwn_mem.h"
 #include "aiwn_asm.h"
 #include "aiwn_except.h"
+#include <stddef.h>
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 #define ERR                 0x7fFFffFFffFFffFF
 #define INVALID_PTR         ERR
 #ifdef _WIN64
@@ -47,6 +51,7 @@ void InvalidateCache() {
   }
 }
 
+#include <pthread.h>
 int SetWriteNP(int st) {
   int old = is_write_np;
   is_write_np = st;

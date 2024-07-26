@@ -1,8 +1,14 @@
+#include <stdlib.h>
 #include <stddef.h>
+#if defined (__APPLE__)
+     #include <libkern/OSCacheControl.h>
+#endif
 extern void DoNothing();
+#include <string.h>
 #include "aiwn_hash.h"
 #include "aiwn_mem.h"
 #include "aiwn_lexparser.h"
+#include "aiwn_asm.h"
 #include "aiwn_multic.h"
 #include "aiwn_except.h"
 #include <assert.h>

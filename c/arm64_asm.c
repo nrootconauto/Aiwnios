@@ -1,5 +1,6 @@
-#include "aiwn.h"
 #include <stdint.h>
+#include "aiwn_arm.h"
+#include "aiwn_except.h"
 #define MASKn(v, bits, off) (((v) & ((1ull << (bits)) - 1)) << (off))
 
 // https://math.stackexchange.com/questions/490813/range-twos-complement

@@ -31,3 +31,4 @@ int64_t VFsIsDir(char *name);
   #define AIWNIOS_OSTREAM      stderr
   #define AIWNIOS_TEMPLATE_DIR AIWNIOS_INSTALL_DIR "/share/aiwnios"
 #endif
+const char *ResolveBootDir(char *use, int make_new_dir,const char *t);

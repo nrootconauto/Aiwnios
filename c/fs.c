@@ -499,6 +499,8 @@ static int __FIsNewer(char *fn, char *fn2) {
 #endif
 }
 
+int64_t IsCmdLineMode();
+
 #define DUMB_MESSAGE(FMT, ...)                                                 \
   do {                                                                         \
     int64_t l = snprintf(NULL, 0, FMT, __VA_ARGS__);                           \

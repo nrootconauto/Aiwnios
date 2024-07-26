@@ -34,3 +34,5 @@ int64_t TempleOS_CallVaArgs(void (*fptr)(void), int64_t argc, int64_t *argv);
 #else
   #define PAUSE asm (".4byte 0x100000f");
 #endif
+int64_t Btr(void *, int64_t);
+int64_t Bts(void *, int64_t);

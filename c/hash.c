@@ -2,6 +2,7 @@
 #include "aiwn_hash.h"
 #include "aiwn_mem.h"
 #include <stdint.h>
+#include <string.h>
 int64_t HashStr(char *str) {
   int64_t res = 5381;
   while (*str)
