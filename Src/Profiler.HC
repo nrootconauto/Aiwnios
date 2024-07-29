@@ -11,6 +11,23 @@ I64 pf_prof_active=0;
 U0 ProfTimerInt(U8 *cur_rip)
 {//See $LK,"profiler_timer_irq",A="FF:::/Kernel/KInts.HC,profiler_timer_irq"$.
   I64 i,k;
+#ifdef TARGET_RISCV
+  I64 *bp=GetRBP;
+  if (Bt(&pf_prof_active,0))
+    for (k=0;k<=pf_depth;k++) {
+      if (k) {
+	if(!ChkOnStk(bp,Fs))
+	  break;
+	i=bp[-1];
+	bp=bp[-2];
+      } else
+        i=cur_rip;
+      if (pf_buf_in_ptr<PF_ARRAY_CNT) {
+	pf_array[pf_buf_in_ptr++]=i;
+	pf_jiffy_end=__GetTicks;
+      }
+    }
+#else
   CTask *task=Fs;
   if (Bt(&pf_prof_active,0))
     for (k=0;k<=pf_depth;k++) {
@@ -23,6 +40,7 @@ U0 ProfTimerInt(U8 *cur_rip)
 	pf_jiffy_end=__GetTicks;
       }
     }
+#endif
 }
 
 public U0 Prof(I64 depth=10,I64 cpu_num=0)

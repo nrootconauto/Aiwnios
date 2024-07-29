@@ -3965,7 +3965,9 @@ import U8 **CmdLineBootFiles(); //DONT FREE
 import I64 CmdLineBootFileCnt();
 import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
+import I64 GetRBP();
 #else
+extern I64 GetRBP();
 extern U0 WriteProtectMemCpy(U8*,U8*,I64);
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
@@ -7138,7 +7140,6 @@ extern U0 Dm(U8 *addr,I64 cnt=0x80);
 extern U0 Da(U8 **addr,I64 cnt=0x10);
 extern U0 DbgHelp();
 public extern CCntsGlbls cnts;
-extern I64 GetRBP();
 public extern CBGR48 gr_palette_gray[COLORS_NUM];
 public extern CBGR48 gr_palette_std[COLORS_NUM];
 extern U0 HeapWho();

@@ -1,10 +1,11 @@
 #include "aiwn.h"
 #include <SDL.h>
+#include <signal.h>
 #include <inttypes.h>
 #if defined(__linux__) && defined(__x86_64__)
 // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
 enum {
-  REG_R8 = 0,
+  REG_R8 = 0,C
   REG_R9,
   REG_R10,
   REG_R11,
@@ -161,6 +162,13 @@ static int64_t nproc;
 static _Thread_local core_num = 0;
 
 static void threadrt(CorePair *pair) {
+	#if !(defined(_WIN32)||defined(WIN32))
+	stack_t stk;
+	stk.ss_sp=calloc(1,SIGSTKSZ);
+	stk.ss_flags=0;
+	stk.ss_size=SIGSTKSZ;
+	sigaltstack(&stk,NULL);
+	#endif
   InstallDbgSignalsForThread();
   DebuggerClientWatchThisTID();
   Fs = calloc(sizeof(CTask), 1);
@@ -214,9 +222,10 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGPROF);
-  pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  if (!pthread_equal(pthread_self(), cores[c].pt))
+  if (!pthread_equal(pthread_self(), cores[c].pt)) {
+	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
     return;
+  }
   if (cores[c].profiler_int) {
   #if defined(__x86_64__)
     #if defined(__FreeBSD__)
@@ -228,9 +237,17 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
                            _ctx->uc_mcontext.gregs[REG_RIP]);
     #endif
   #endif
+  #if defined(__riscv) || defined(__riscv__)
+#if defined (__linux__)
+    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.__gregs[8],
+                           cores[c].profiler_int,
+                           _ctx->uc_mcontext.__gregs[1]);
+    #endif
+  #endif
     cores[c].profile_timer.it_value.tv_usec    = cores[c].profiler_freq;
     cores[c].profile_timer.it_interval.tv_usec = cores[c].profiler_freq;
   }
+	pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 }
 
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
@@ -257,7 +274,7 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   signal(SIGUSR2, ExitCoreRt);
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_handler   = SIG_IGN;
-  sa.sa_flags     = SA_SIGINFO;
+  sa.sa_flags     = SA_SIGINFO|SA_ONSTACK;
   sa.sa_sigaction = (void *)&ProfRt;
   sigaction(SIGPROF, &sa, NULL);
 }
