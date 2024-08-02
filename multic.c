@@ -5,7 +5,7 @@
 #if defined(__linux__) && defined(__x86_64__)
 // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
 enum {
-  REG_R8 = 0,C
+  REG_R8 = 0,
   REG_R9,
   REG_R10,
   REG_R11,
