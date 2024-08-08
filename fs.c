@@ -111,6 +111,7 @@ int VFsCd(char *to, int make) {
 }
 static void DelDir(char *p) {
   DIR *d = opendir(p);
+  if(!d) return;
   struct dirent *d2;
   char od[2048];
   while (d2 = readdir(d)) {
@@ -292,6 +293,10 @@ int64_t VFsFSize(char *name) {
     return -1;
   } else if (__FIsDir(fn)) {
     d = opendir(fn);
+    if(!d) {
+       A_FREE(fn);
+       return 0;
+    }
     cnt = 0;
     while (de = readdir(d))
       if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
@@ -459,6 +464,7 @@ static void CopyDir(char *dst, char *src) {
   sbuf[++sroot]              = 0;
 
   DIR *d = opendir(src);
+  if(!d) return;
   struct dirent *ent;
   while (ent = readdir(d)) {
     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
