@@ -212,10 +212,10 @@ int64_t VFsFSize(char *name) {
 char **VFsDir(char *name) {
   char *fn = __VFsFileNameAbs(""), **ret = NULL, *delim;
   if (!fn)
-    return 0;
+    return A_CALLOC(8); //Just an empty array
   if (!__FExists(fn) || !__FIsDir(fn)) {
     A_FREE(fn);
-    return 0;
+    return A_CALLOC(8); //Just an empty array
   }
   int64_t sz = VFsFSize("");
   if (sz) {
