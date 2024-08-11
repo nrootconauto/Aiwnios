@@ -212,10 +212,10 @@ int64_t VFsFSize(char *name) {
 char **VFsDir(char *name) {
   char *fn = __VFsFileNameAbs(""), **ret = NULL, *delim;
   if (!fn)
-    return A_CALLOC(8); //Just an empty array
+    return A_CALLOC(8,NULL); //Just an empty array
   if (!__FExists(fn) || !__FIsDir(fn)) {
     A_FREE(fn);
-    return A_CALLOC(8); //Just an empty array
+    return A_CALLOC(8,NULL); //Just an empty array
   }
   int64_t sz = VFsFSize("");
   if (sz) {
@@ -602,29 +602,18 @@ int CreateTemplateBootDrv(char *to, char *template) {
   return 0;
 }
 
-const char *ResolveBootDir(char *use, int make_new_dir) {
-  if (__FExists("HCRT2.BIN")) {
+const char *ResolveBootDir(char *use, int make_new_dir,const char *template_dir) {
+  if (!make_new_dir&&__FExists("HCRT2.BIN")) {
     return ".";
   }
-  if (__FExists("T/HCRT2.BIN")) {
+  if (!make_new_dir&&__FExists("T/HCRT2.BIN")) {
     return "T";
   }
   if(__FExists(use)&&!make_new_dir) {
 	  return strdup(use);
   }
   //CreateTemplateBootDrv will return existing boot dir if missing
-#if !defined(_WIN32) && !defined(WIN32)
-  if (!CreateTemplateBootDrv(use, AIWNIOS_TEMPLATE_DIR)) {
-#else
-  char exe_name[0x10000];
-  int64_t len;
-  GetModuleFileNameA(NULL, exe_name, sizeof(exe_name));
-  PathRemoveFileSpecA(exe_name); // Remove aiwnios.exe
-  PathRemoveFileSpecA(exe_name); // Remove /bin
-  len = strlen(exe_name);
-  sprintf(exe_name + len, "\\T");
-  if (!CreateTemplateBootDrv(use, exe_name)) {
-#endif
+  if (!CreateTemplateBootDrv(use, template_dir)) {
   fail:
     fprintf(AIWNIOS_OSTREAM, "I don't know where the HCRT2.BIN is!!!\n");
     fprintf(AIWNIOS_OSTREAM, "Use \"aiwnios -b\" in the root of the source "

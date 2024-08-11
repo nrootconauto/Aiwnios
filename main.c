@@ -1783,17 +1783,52 @@ nowrite:
   strcat(template_dir,dft);
   if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count ) && !arg_bootstrap_bin->count)
     t_drive = ResolveBootDir(!t_drive ?  template_dir: t_drive,
-                             arg_new_boot_dir->count);
+                             arg_new_boot_dir->count,AIWNIOS_TEMPLATE_DIR);
 #else
+  int64_t has_installed=0;
+  char installed_at[MAX_PATH];
+  installed_at[0]=0;
+  long reg_size=0;
+  RegGetValueA(
+	HKEY_LOCAL_MACHINE,
+	"SOFTWARE\\Aiwnios",
+	"InstallAt",
+	RRF_RT_REG_MULTI_SZ,
+	NULL,
+	NULL,
+	&reg_size);
+  if(reg_size>0) {
+		char inst_dir[reg_size+1];
+		RegGetValueA(
+	HKEY_LOCAL_MACHINE,
+	"SOFTWARE\\Aiwnios",
+	"InstallAt",
+	RRF_RT_REG_MULTI_SZ,
+	NULL,
+	inst_dir,
+	&reg_size);
+	has_installed=1;
+  }
   char home_dir[MAX_PATH];
   strcpy(home_dir,"");
   SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
   //Dumb haCk
   //Windows doesnt know how to do lowerase C anymore. I dont know what I fuked up
-  if(!t_drive) SetCurrentDirectory(home_dir); //Dont run in installed direCtory beCuase we dont have permision for it   
   sprintf(home_dir+strlen(home_dir),"\\.local\\share\\aiwnios\\T");
-  if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count);
+  if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count) {
+    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count,installed_at);
+    //Dont use system wide directory we are installed in(the place we start running aiwnios in when installed on windows)
+    if(has_installed&&t_drive) {
+		char poo1[MAX_PATH];
+		char poo2[MAX_PATH];
+		GetFullPathNameA(installed_at,MAX_PATH,poo1,NULL);
+		GetFullPathNameA(t_drive,MAX_PATH,poo2,NULL);
+		if(!strcmp(poo1,poo2)) {
+			//Same file
+			t_drive = ResolveBootDir(home_dir,1,installed_at);
+		}
+	}
+  }
 #endif
   if(arg_new_boot_dir->count) exit(EXIT_SUCCESS);
   InitSound();

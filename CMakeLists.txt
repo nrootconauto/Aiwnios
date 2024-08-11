@@ -322,6 +322,12 @@ if(WIN32)
   set(CPACK_NSIS_DELETE_ICONS_EXTRA
     "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk' \n \
     Delete '$SMPROGRAMS\\\\$START_MENU\\\\AiwniosFreshEnviroment.lnk'")
+ set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
+ WriteRegStr HKLM 'Software\\\\Aiwnios' 'InstallAt' '$INSTDIR\\\\T'
+                ")
+ set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS " 
+    DeleteRegKey HKLM 'Software\\\\Aiwnios'
+    ")
 endif()
 include (CPack)
 

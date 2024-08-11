@@ -1270,7 +1270,7 @@ extern void *GenFFIBinding(void *fptr, int64_t arity);
 extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
 extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
-const char *ResolveBootDir(char *use, int make_new_dir);
+const char *ResolveBootDir(char *use, int make_new_dir,const char *template_dir);
 
 // Uses TempleOS ABI
 int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
