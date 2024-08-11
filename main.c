@@ -838,6 +838,10 @@ static int64_t STK___HC_ICAdd_Max_U64(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Min_U64(int64_t *stk) {
   return __HC_ICAdd_Min_U64(stk[0]);
 }
+static int64_t STK_SetCaptureMouse(int64_t *stk) {
+  SetCaptureMouse(stk[0]);
+  return 0;
+}
 static int64_t STK___HC_ICAdd_Max_F64(int64_t *stk) {
   return __HC_ICAdd_Max_F64(stk[0]);
 }
@@ -1607,6 +1611,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
+    PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
   }
   CmpCtrlDel(ccmp);
   LexerDel(lex);

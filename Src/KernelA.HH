@@ -3823,6 +3823,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U0 AIWNIOS_SetCaptureMouse(I64);
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
 //This will cause the debugger to write the regs into reg_dump
 import U0 DebuggerClientStart(CTask*,U8 **reg_dump);
@@ -3967,6 +3968,7 @@ import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
 import I64 GetRBP();
 #else
+extern U0 AIWNIOS_SetCaptureMouse(I64);
 extern I64 GetRBP();
 extern U0 WriteProtectMemCpy(U8*,U8*,I64);
 extern F64 GetVolume();

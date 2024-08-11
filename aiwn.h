@@ -1435,3 +1435,4 @@ int64_t RISCV_R(int64_t f7, int64_t s2, int64_t s1, int64_t f3, int64_t d,
 int64_t ScreenUpdateInProgress();
 
 int64_t DoNothing();
+void SetCaptureMouse(int64_t);
