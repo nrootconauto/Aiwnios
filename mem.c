@@ -423,7 +423,7 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
   if (low32) {
     MEMORY_BASIC_INFORMATION mbi;
     uint64_t region = cur;
-    while (region <= max && VirtualQuery((void *)region, &mbi, sizeof mbi)) {
+    while (region <= max && VirtualQuery(0x10000, &mbi, sizeof mbi)) {
       region = (uint64_t)mbi.BaseAddress + mbi.RegionSize;
       uint64_t addr = ALIGNNUM((uint64_t)mbi.BaseAddress, ag);
       if (mbi.State & MEM_FREE && sz <= region - addr) {
@@ -433,9 +433,9 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
         goto ret;
       }
     }
-    ret = NULL;
-  } else /* VirtualAlloc will return NULL on failure */
-    ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown, PAGE_READWRITE);
+  }
+  /* Fallback if we cant grab a 32bit address */  
+  ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown, exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 ret:
   Misc_LBtr(&running, 0);
   return ret;
