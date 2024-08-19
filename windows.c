@@ -549,9 +549,12 @@ static int SDLCALL MSCallback(void *d, SDL_Event *e) {
       else
         y2 = (y - view_port.y) * 480. / view_port.h;
       SetWriteNP(1);
-      if(SDL_GetRelativeMouseMode())
-		FFI_CALL_TOS_4(ms_cb, e->motion.xrel+640/2, e->motion.yrel+480/2, z, state);
-      else
+      if(SDL_GetRelativeMouseMode()) {
+		if(e->type!=SDL_MOUSEMOTION) //Wierd stuff happens
+		  FFI_CALL_TOS_4(ms_cb, 640/2, 480/2, z, state);
+		else
+		  FFI_CALL_TOS_4(ms_cb, e->motion.xrel+640/2, e->motion.yrel+480/2, z, state);
+      } else
 		FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
     }
   return 0;
