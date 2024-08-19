@@ -141,8 +141,7 @@ endif ()
 add_executable(
   aiwnios
   ${C_SOURCES}
-  ${CXX_SOURCES}
-)
+  ${CXX_SOURCES})
 find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
@@ -215,8 +214,9 @@ set(COMP_OPTS
   -fno-asynchronous-unwind-tables
   -fcf-protection=none
 )
+target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
 if (ARCH STREQUAL "x86_64")
-  list(APPEND COMP_OPTS -mno-shstk)
+  list(APPEND COMP_OPTS -mno-shstk -fno-plt)
 endif ()
 set_source_files_properties(${C_SOURCES}
   PROPERTIES

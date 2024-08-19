@@ -1,13 +1,10 @@
 #pragma once
-#if defined(__MINGW64__)
-  #define _WIN32 1
-  #define WIN32
-#endif
 #include "generated.h" //See CMakeLists.txt
 #include <SDL.h>
 #include <assert.h>
 #include <signal.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -802,7 +799,6 @@ extern int64_t Misc_LBts(void *ptr, int64_t);
 extern void *Misc_BP();
 extern int64_t Bsr(int64_t v);
 extern int64_t Bsf(int64_t v);
-extern void *Misc_TLS_Base();
 
 void *Misc_Caller(int64_t c);
 uint64_t ToUpper(uint64_t ch);
@@ -1187,30 +1183,25 @@ CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr);
 // TODO remove
 char *FileRead(char *fn, int64_t *sz);
-void FileWrite(char *fn, char *data, int64_t sz);
 
 void VFsThrdInit();
 void VFsSetDrv(char d);
-int VFsCd(char *to, int flags);
 int64_t VFsDel(char *p);
-char *__VFsFileNameAbs(char *name);
 int64_t VFsUnixTime(char *name);
 int64_t VFsFSize(char *name);
 int64_t VFsFileWrite(char *name, char *data, int64_t len);
 int64_t VFsFileRead(char *name, int64_t *len);
 int VFsFileExists(char *path);
 int VFsMountDrive(char let, char *path);
-FILE *VFsFOpen(char *path, char *m);
-int64_t VFsFClose(FILE *f);
+int VFsFOpen(char *path, bool b);
+void VFsFClose(int fd);
 int64_t VFsTrunc(char *fn, int64_t sz);
-int64_t VFsFBlkRead(void *d, int64_t n, int64_t sz, FILE *f);
-int64_t VFsFBlkWrite(void *d, int64_t n, int64_t sz, FILE *f);
-int64_t VFsFSeek(int64_t off, FILE *f);
-FILE *VFsFOpenW(char *f);
-FILE *VFsFOpenR(char *f);
+int64_t VFsFBlkRead(void *d, int64_t sz, int fd);
+int64_t VFsFBlkWrite(void *d, int64_t sz, int fd);
+int64_t VFsFSeek(int64_t off, int fd);
 void VFsSetPwd(char *pwd);
 int64_t VFsDirMk(char *f);
-char **VFsDir(char *fn);
+char **VFsDir(void);
 int64_t VFsIsDir(char *name);
 
 void DrawWindowNew();

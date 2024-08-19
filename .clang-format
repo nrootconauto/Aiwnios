@@ -5,7 +5,7 @@ UseTab: Never
 Language: Cpp
 AllowShortFunctionsOnASingleLine: false
 AlignConsecutiveMacros: Consecutive
-AlignConsecutiveAssignments: Consecutive
+IndentPPDirectives: AfterHash
 IncludeCategories: [
   {Regex: '<winsock.*\.h>', Priority: -3},
   {Regex: '<windows\.h>', Priority: -2},

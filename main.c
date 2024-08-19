@@ -1108,26 +1108,20 @@ static int64_t STK_VFsFileWrite(int64_t *stk) {
 static int64_t STK_VFsDel(int64_t *stk) {
   return VFsDel(stk[0]);
 }
-static int64_t STK_VFsDir(int64_t *stk) {
-  return (int64_t)VFsDir(stk[0]);
-}
 static int64_t STK_VFsDirMk(int64_t *stk) {
   return VFsDirMk(stk[0]);
 }
 static int64_t STK_VFsBlkRead(int64_t *stk) {
-  return VFsFBlkRead(stk[0], stk[1], stk[2], stk[3]);
+  return VFsFBlkRead(stk[0], stk[1]*stk[2], stk[3]);
 }
 static int64_t STK_VFsBlkWrite(int64_t *stk) {
-  return VFsFBlkWrite(stk[0], stk[1], stk[2], stk[3]);
+  return VFsFBlkWrite(stk[0], stk[1]* stk[2], stk[3]);
 }
-static int64_t STK_VFsFOpenW(int64_t *stk) {
-  return VFsFOpenW(stk[0]);
+static int64_t STK_VFsFOpen(int64_t *stk) {
+  return VFsFOpen(stk[0], stk[1]);
 }
-static int64_t STK_VFsFOpenR(int64_t *stk) {
-  return VFsFOpenR(stk[0]);
-}
-static int64_t STK_VFsFClose(int64_t *stk) {
-  return VFsFClose(stk[0]);
+static void STK_VFsFClose(int64_t *stk) {
+  VFsFClose(stk[0]);
 }
 static int64_t STK_VFsFSeek(int64_t *stk) {
   return VFsFSeek(stk[0], stk[1]);
@@ -1409,8 +1403,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Fs", GetHolyFs, 0);
     PrsAddSymbol("WriteProtectMemCpy", WriteProtectMemCpy, 3);
     PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
-#if defined(__x86_64__)
-#if defined(__linux__) || defined(__FreeBSD__)
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
@@ -1419,32 +1411,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbolNaked("__Gs", NULL, 0);
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
-#else
-    // Pass function pointer(not the result)
-    PrsAddSymbol("__Fs", GetHolyFsPtr, 0);
-    PrsAddSymbol("__Gs", GetHolyGsPtr, 0);
-#endif
-#endif
-#if defined(_M_ARM64) || defined(__aarch64__)
-    //__Fs is special
-    //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs", NULL, 0);
-    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs", NULL, 0);
-    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyGsPtr();
-#endif
-#if defined(__riscv__) || defined(__riscv)
-    //__Fs is special
-    //__Gs is special then so add the RESULT OF THE function
-    PrsAddSymbolNaked("__Fs", NULL, 0);
-    ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyFsPtr();
-    PrsAddSymbolNaked("__Gs", NULL, 0);
-    ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
-        ->val = GetHolyGsPtr();
-#endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
@@ -1570,12 +1536,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("VFsFRead", STK_VFsFileRead, 2);
     PrsAddSymbol("VFsFWrite", STK_VFsFileWrite, 3);
     PrsAddSymbol("VFsDel", STK_VFsDel, 1);
-    PrsAddSymbol("VFsDir", STK_VFsDir, 0);
+    PrsAddSymbol("VFsDir", VFsDir, 0);
     PrsAddSymbol("VFsDirMk", STK_VFsDirMk, 1);
     PrsAddSymbol("VFsFBlkRead", STK_VFsBlkRead, 4);
     PrsAddSymbol("VFsFBlkWrite", STK_VFsBlkWrite, 4);
-    PrsAddSymbol("VFsFOpenW", STK_VFsFOpenW, 1);
-    PrsAddSymbol("VFsFOpenR", STK_VFsFOpenR, 1);
+    PrsAddSymbol("VFsFOpen", STK_VFsFOpen, 2);
     PrsAddSymbol("VFsFClose", STK_VFsFClose, 1);
     PrsAddSymbol("VFsFSeek", STK_VFsFSeek, 2);
     PrsAddSymbol("VFsSetDrv", STK_VFsSetDrv, 1);
@@ -1680,7 +1645,7 @@ static void ExitAiwnios(int64_t *stk) {
   exit(stk[0]);
 }
 #if defined (WIN32) || defined(_WIN32)
-#include <Shlobj.h>
+#include <shlobj.h>
 #else
 #include <sys/types.h>
 #include <pwd.h>

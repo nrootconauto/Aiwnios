@@ -1,5 +1,5 @@
 #include "aiwn.h"
-#if !defined(_WIN32) && !defined(WIN32)
+#ifndef _WIN64
   #include <arpa/inet.h>
   #include <netdb.h>
   #include <netinet/in.h>
@@ -37,7 +37,7 @@ typedef struct CNetAddr {
 } CNetAddr;
 int64_t NetSocketNew() {
 
-#if defined(_WIN32) || defined(WIN32)
+#ifdef _WIN32
   if (!was_init)
     InitWS2();
 #else
@@ -54,7 +54,7 @@ int64_t NetSocketNew() {
 }
 
 CNetAddr *NetAddrNew(char *host, int64_t port) {
-#if defined(_WIN32) || defined(WIN32)
+#ifdef _WIN32
   if (!was_init)
     InitWS2();
 #else

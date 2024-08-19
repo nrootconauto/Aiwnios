@@ -1,7 +1,6 @@
-#pragma once
 #include "aiwn.h"
 #include <stdint.h>
-#define INTERFACE 0
+
 void QueInit(CQue *i) {
   i->next = i, i->last = i;
 }

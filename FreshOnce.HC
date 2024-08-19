@@ -1,2 +1,3 @@
-Once("PopUpEd(\"/AiwniosHelp/Main.DD\");\n");
+if (!RegCnt("Once/User"))
+  Once("PopUpEd(\"/AiwniosHelp/Main.DD\");\nOnceFlush;\n");
 ExitAiwnios;

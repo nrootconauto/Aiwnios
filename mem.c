@@ -1,21 +1,20 @@
 #pragma once
 #include "aiwn.h"
 #include <stdint.h>
-#if defined(_WIN32) || defined(WIN32)
-  #include <memoryapi.h>
-  #include <sysinfoapi.h>
+#ifdef _WIN64
+#  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
+#  include <windows.h>
+#  include <memoryapi.h>
+#  include <sysinfoapi.h>
 #else
-  #include <fcntl.h>
-  #include <sys/mman.h>
-  #include <unistd.h>
+#  include <fcntl.h>
+#  include <sys/mman.h>
+#  include <unistd.h>
 #endif
 //
 // Dec 8, I volenterreed today
 // Jun 29,Im staying up all night
 //
-struct CTask;
-struct CMemBlk;
-struct CMemUnused;
 
 // Bounds checker works like this.
 // All allocations will be in first 32bits
@@ -25,11 +24,12 @@ struct CMemUnused;
 //
 int64_t bc_enable = 0;
 static char *bc_good_bitmap;
+
 #if defined(__APPLE__)
-static CQue code_pages   = {NULL, NULL};
-__thread int is_write_np = 123;
+static CQue code_pages = {0};
+_Thread_local int is_write_np = 123;
+
 void InvalidateCache() {
-  return;
   CMemBlk *blk;
   CQue *head, *cur, cnt;
   // Mac exclusive! CLEAR THE CODE PAGES
@@ -41,8 +41,9 @@ void InvalidateCache() {
     }
   }
 }
+
 int SetWriteNP(int st) {
-  int old     = is_write_np;
+  int old = is_write_np;
   is_write_np = st;
   if (st != old) {
     pthread_jit_write_protect_np(st);
@@ -52,21 +53,23 @@ int SetWriteNP(int st) {
   return old;
 }
 #endif
+
 void InitBoundsChecker() {
-  int64_t want   = (1ll << 31) / 8;
+  int64_t want = (1ull << 31) / 8;
   bc_good_bitmap = calloc(want, 1);
-  bc_enable      = 1;
+  bc_enable = 1;
 }
+
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   QueRem(blk);
   hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
-#if defined(_WIN32) || defined(WIN32)
+#ifdef _WIN64
   VirtualFree(blk, 0, MEM_RELEASE);
 #else
-  #if defined(__APPLE__)
+#  if defined(__APPLE__)
   if (blk->base2.next)
     QueRem(&blk->base2);
-  #endif
+#  endif
   static int64_t ps;
   int64_t b;
   if (!ps)
@@ -76,63 +79,68 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
 #endif
 }
 
+#ifndef _WIN32
 static void *GetAvailRegion32(int64_t b);
+#else
+static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec);
+#endif
 
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
   void *at = NULL;
-#if defined(_WIN32) || defined(WIN32)
-  CMemBlk *ret = NULL;
-  static int64_t dwAllocationGranularity;
-  if (!dwAllocationGranularity) {
+#ifdef _WIN64
+  static bool init;
+  static uint64_t ag;
+  if (!init) {
     SYSTEM_INFO si;
+    HANDLE proc;
     GetSystemInfo(&si);
-    dwAllocationGranularity = si.dwAllocationGranularity;
+    ag = si.dwAllocationGranularity;
+    proc = GetCurrentProcess();
+    PROCESS_MITIGATION_DYNAMIC_CODE_POLICY wxallowed;
+    /* Disable ACG */
+    GetProcessMitigationPolicy(proc, ProcessDynamicCodePolicy, &wxallowed,
+                               sizeof wxallowed);
+    wxallowed.ProhibitDynamicCode = 0;
+    SetProcessMitigationPolicy(ProcessDynamicCodePolicy, &wxallowed,
+                               sizeof wxallowed);
+    init = true;
   }
-  int64_t b = (pags * MEM_PAG_SIZE) / dwAllocationGranularity *
-              dwAllocationGranularity,
-          _try, addr;
-  if ((pags * MEM_PAG_SIZE) % dwAllocationGranularity)
-    b += dwAllocationGranularity;
-  if (bc_enable) {
-    ret = VirtualAlloc(GetAvailRegion32(b), b, MEM_COMMIT | MEM_RESERVE,
-                       hc->is_code_heap ? PAGE_EXECUTE_READWRITE
-                                        : PAGE_READWRITE);
-  } else
-    ret = VirtualAlloc(hc->is_code_heap ? GetAvailRegion32(b) : NULL,
-		       b, MEM_COMMIT | MEM_RESERVE,
-                       hc->is_code_heap ? PAGE_EXECUTE_READWRITE
-                                        : PAGE_READWRITE);
+  int64_t b = (pags * MEM_PAG_SIZE) / ag * ag, _try, addr;
+  CMemBlk *ret = NULL;
+  if ((pags * MEM_PAG_SIZE) % ag)
+    b += ag;
+  ret = NewVirtualChunk(b, bc_enable || hc->is_code_heap, hc->is_code_heap);
   if (!ret)
     return NULL;
 #else
-  #if defined(__x86_64__)
+#  ifdef __x86_64__
   int64_t add_flags = bc_enable || hc->is_code_heap ? MAP_32BIT : 0;
-  #else
+#  else
   int64_t add_flags = 0;
-  #endif
+#  endif
   static int64_t ps;
   int64_t b;
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
-  #if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(__APPLE__)
+#  if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(__APPLE__)
   if (bc_enable)
     at = GetAvailRegion32(b);
-  #endif
-  #if defined(__APPLE__)
+#  endif
+#  if defined(__APPLE__)
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : PROT_READ) | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags |
                (hc->is_code_heap ? MAP_JIT | MAP_NOCACHE : 0),
            -1, 0);
-  #else
+#  else
   CMemBlk *ret =
       mmap(at, b, (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
            MAP_PRIVATE | MAP_ANONYMOUS | add_flags, -1, 0);
-  #endif
-  #if defined(__x86_64__)
+#  endif
+#  if defined(__x86_64__)
   if (ret == MAP_FAILED && (add_flags & MAP_32BIT))
     ret = mmap(GetAvailRegion32(b), b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
@@ -143,7 +151,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ret = mmap(NULL, b,
                (hc->is_code_heap ? PROT_EXEC : 0) | PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | (add_flags & ~MAP_32BIT), -1, 0);
-  #endif
+#  endif
   if (ret == MAP_FAILED)
     return NULL;
 #endif
@@ -157,8 +165,8 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     unm = &hc->malloc_free_lst;
     while (tmp = *unm) {
       if (tmp->sz < threshold) {
-        *unm                       = tmp->next;
-        tmp->next                  = hc->heap_hash[tmp->sz / 8];
+        *unm = tmp->next;
+        tmp->next = hc->heap_hash[tmp->sz / 8];
         hc->heap_hash[tmp->sz / 8] = tmp;
       } else {
         cnt++;
@@ -176,9 +184,6 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   return ret;
 }
 
-void *GetFs() {
-  return Fs;
-}
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!cnt)
     return NULL;
@@ -186,7 +191,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!t)
     t = Fs->heap;
   int64_t orig = cnt;
-  if(bc_enable) cnt += 16;
+  if (bc_enable)
+    cnt += 16;
   CHeapCtrl *hc = t;
   int64_t pags;
   CMemUnused *ret;
@@ -205,7 +211,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
   if (hc->heap_hash[cnt / 8]) {
-    ret                    = hc->heap_hash[cnt / 8];
+    ret = hc->heap_hash[cnt / 8];
     hc->heap_hash[cnt / 8] = ret->next;
     goto almost_done;
   } else
@@ -220,8 +226,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
       SetWriteNP(old_wnp);
       return NULL;
     }
-    ret                 = (char *)ret + sizeof(CMemBlk);
-    ret->sz             = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
+    ret = (char *)ret + sizeof(CMemBlk);
+    ret->sz = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     hc->malloc_free_lst = ret;
   }
   // Chip off
@@ -229,9 +235,9 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // We must make sure there is room for another CMemUnused
   //
   if ((int64_t)(ret->sz - sizeof(CMemUnused)) >= cnt) {
-    hc->malloc_free_lst     = (char *)ret + cnt;
+    hc->malloc_free_lst = (char *)ret + cnt;
     hc->malloc_free_lst->sz = ret->sz - cnt;
-    ret->sz                 = cnt;
+    ret->sz = cnt;
     goto almost_done;
   } else
     goto new_lunk;
@@ -242,7 +248,7 @@ big:
     SetWriteNP(old_wnp);
     return NULL;
   }
-  ret     = (char *)ret + sizeof(CMemBlk);
+  ret = (char *)ret + sizeof(CMemBlk);
   ret->sz = cnt;
   goto almost_done;
 almost_done:
@@ -257,7 +263,8 @@ almost_done:
       orig = 8 + orig & ~7ll;
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
-  if(ret-1!=NULL) QueIns(&ret[-1].next,hc->used_mem.last);
+  if (ret - 1 != NULL)
+    QueIns(&ret[-1].next, hc->used_mem.last);
   Misc_LBtr(&hc->locked_flags, 1);
   SetWriteNP(old_wnp);
   return ret;
@@ -285,14 +292,14 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
-  QueRem(&un->next); //Remove from used mem
-  un->last=NULL;
+  QueRem(&un->next); // Remove from used mem
+  un->last = NULL;
   hc->used_u8s -= un->sz;
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
-    hash                      = hc->heap_hash[un->sz / 8];
-    un->next                  = hash;
+    hash = hc->heap_hash[un->sz / 8];
+    un->next = hash;
     hc->heap_hash[un->sz / 8] = un;
-    un->hc                    = NULL;
+    un->hc = NULL;
   } else {
     // CMemUnused
     // CMemBlk
@@ -321,7 +328,7 @@ int64_t MSize(void *ptr) {
 }
 
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t) {
-  void *ret  = __AIWNIOS_MAlloc(cnt, t);
+  void *ret = __AIWNIOS_MAlloc(cnt, t);
   int oldwnp = SetWriteNP(0);
   memset(ret, 0, cnt);
   SetWriteNP(oldwnp);
@@ -333,9 +340,9 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
     ct = calloc(sizeof(CHeapCtrl), 1);
   if (!task)
     task = Fs;
-  ct->is_code_heap    = is_code_heap;
-  ct->hc_signature    = 'H';
-  ct->mem_task        = task;
+  ct->is_code_heap = is_code_heap;
+  ct->hc_signature = 'H';
+  ct->mem_task = task;
   ct->malloc_free_lst = NULL;
   QueInit(&ct->mem_blks);
   QueInit(&ct->used_mem);
@@ -370,58 +377,69 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   if (!str)
     return NULL;
   int64_t cnt = strlen(str);
-  char *ret   = A_MALLOC(cnt + 1, t);
+  char *ret = A_MALLOC(cnt + 1, t);
   memcpy(ret, str, cnt + 1);
   return ret;
 }
-#if defined(_WIN32) || defined(WIN32)
+
+#ifdef _WIN64
+
 int64_t IsValidPtr(char *chk) {
   MEMORY_BASIC_INFORMATION mbi;
-  memset(&mbi, 0, sizeof mbi);
-  if (VirtualQuery(chk, &mbi, sizeof mbi)) {
-    // https://stackoverflow.com/questions/496034/most-efficient-replacement-for-isbadreadptr
-    DWORD mask =
-        (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
-         PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
-    int64_t b = !!(mbi.Protect & mask);
-    return b;
-  }
-  return 0;
+  if (!VirtualQuery(chk, &mbi, sizeof mbi))
+    return 0;
+  // https://stackoverflow.com/questions/496034/most-efficient-replacement-for-isbadreadptr
+  DWORD mask =
+      (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
+       PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
+  return !!(mbi.Protect & mask);
 }
 
-static void *GetAvailRegion32(int64_t len) {
-  static int64_t dwAllocationGranularity;
-  static void *try_page  = 0x100000;
-  void *start_page       = try_page;
-  int64_t wrapped_around = 0, sz;
-  if (!dwAllocationGranularity) {
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    dwAllocationGranularity = si.dwAllocationGranularity;
-  }
+#  define MEM MEM_RESERVE | MEM_COMMIT
+#  define VALLOC(addr, sz, memflags, pagflags)                                 \
+    VirtualAlloc((void *)addr, sz, memflags, pagflags)
+// requirement: popcnt(to) == 1
+#  define ALIGNNUM(x, to) ((x + to - 1) & ~(to - 1))
 
-  MEMORY_BASIC_INFORMATION mbi;
-  while (!(!wrapped_around && start_page > try_page)) {
-    memset(&mbi, 0, sizeof mbi);
-    if (sz = VirtualQuery(try_page, &mbi, sizeof(mbi))) {
-      if (mbi.State & MEM_FREE && mbi.RegionSize > len) {
-        return try_page;
-      }
-    next:
-      if (mbi.State & MEM_FREE)
-        try_page += mbi.RegionSize;
-      else
-        try_page = (char *)mbi.BaseAddress + mbi.RegionSize;
-      if (try_page > (void *)(1ll << 31)) {
-        try_page       = 0x100000;
-        wrapped_around = 1;
-      }
-    } else
-      return NULL;
+static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
+  static bool running, init, topdown;
+  static uint64_t ag, cur = 0x10000, max = (1ull << 31) - 1;
+  if (!init) {
+    HANDLE proc = GetCurrentProcess();
+    PROCESS_MITIGATION_ASLR_POLICY aslr;
+    /* If DEP is disabled, don't let RW pages pile on RWX pages to avoid OOM */
+    GetProcessMitigationPolicy(proc, ProcessASLRPolicy, &aslr, sizeof aslr);
+    if (!aslr.EnableBottomUpRandomization)
+      topdown = true;
+    init = true;
   }
-  return NULL;
+  void *ret;
+  while (Misc_LBts(&running, 0))
+    while (Misc_Bt(&running, 0))
+      __builtin_ia32_pause();
+  if (low32) {
+    MEMORY_BASIC_INFORMATION mbi;
+    uint64_t region = cur;
+    while (region <= max && VirtualQuery((void *)region, &mbi, sizeof mbi)) {
+      region = (uint64_t)mbi.BaseAddress + mbi.RegionSize;
+      uint64_t addr = ALIGNNUM((uint64_t)mbi.BaseAddress, ag);
+      if (mbi.State & MEM_FREE && sz <= region - addr) {
+        ret = VALLOC(addr, sz, MEM,
+                     exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+        cur = (uint64_t)ret + sz;
+        goto ret;
+      }
+    }
+    ret = NULL;
+  } else /* VirtualAlloc will return NULL on failure */
+    ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown, PAGE_READWRITE);
+ret:
+  Misc_LBtr(&running, 0);
+  return ret;
 }
+
 #else
+
 static void *Str2Ptr(char *ptr, char **end) {
   int64_t v = 0;
   char c;
@@ -441,15 +459,16 @@ static void *Str2Ptr(char *ptr, char **end) {
     *end = ptr;
   return (void *)v;
 }
-  #if defined(__FreeBSD__)
-    #include <sys/param.h>
-    #include <sys/queue.h>
-    #include <sys/socket.h>
-    #include <libprocstat.h>
-    #include <kvm.h>
-    #include <sys/sysctl.h>
-    #include <sys/user.h>
-    #include <sys/user.h>
+#  ifdef __FreeBSD__
+// clang-format off
+#include <sys/param.h>
+#include <sys/queue.h>
+#include <sys/socket.h>
+#include <libprocstat.h>
+#include <kvm.h>
+#include <sys/sysctl.h>
+#include <sys/user.h>
+// clang-format on
 typedef struct CRange {
   uint64_t s;
   uint64_t e;
@@ -474,8 +493,8 @@ static void *GetAvailRegion32(int64_t len) {
     ranges[i].e = vments[i].kve_end;
   }
   // Start range
-  ranges[vm_cnt].s     = 0x10000;
-  ranges[vm_cnt].e     = 0x10000;
+  ranges[vm_cnt].s = 0x10000;
+  ranges[vm_cnt].e = 0x10000;
   ranges[vm_cnt + 1].s = 0x100000000ull / 2; // 32bits(31 forward,31 backwards)
   ranges[vm_cnt + 1].e = 0x100000000ull / 2;
   qsort(ranges, vm_cnt, sizeof(CRange), &RangeSort);
@@ -490,8 +509,7 @@ static void *GetAvailRegion32(int64_t len) {
   procstat_close(ps);
   return ret;
 }
-  #endif
-  #if defined(__linux__)
+#  elif defined(__linux__)
 static void *GetAvailRegion32(int64_t len) {
   static int64_t ps;
   if (!ps) {
@@ -500,7 +518,7 @@ static void *GetAvailRegion32(int64_t len) {
   void *last_gap_end = 0x10000;
   void *start;
   void *retv = NULL, *ptr;
-  int fd     = open("/proc/self/maps", O_RDONLY);
+  int fd = open("/proc/self/maps", O_RDONLY);
   if (fd == -1)
     return NULL;
   char buf[BUFSIZ];
@@ -509,7 +527,7 @@ static void *GetAvailRegion32(int64_t len) {
     ssize_t pos = 0;
     while (pos < n) {
       char *ptr = buf + pos;
-      start     = Str2Ptr(ptr, &ptr);
+      start = Str2Ptr(ptr, &ptr);
       if (last_gap_end && start - last_gap_end >= len) {
         retv = last_gap_end;
         goto ret;
@@ -525,8 +543,8 @@ ret:
   close(fd);
   return ((int64_t)retv + ps - 1) & ~(ps - 1);
 }
-  #endif
 
+#  endif // Linux
 int64_t IsValidPtr(char *chk) {
   static int64_t ps;
   int64_t mptr = chk;
@@ -536,16 +554,16 @@ int64_t IsValidPtr(char *chk) {
   // https://renatocunha.com/2015/12/msync-pointer-validity/
   return -1 != msync(mptr, ps, MS_ASYNC);
 }
+#endif   // Posix
 
-#endif
 // Returns good region if good,else NULL and after is set how many bytes OOB
 // Returns INVALID_PTR on error
 void *BoundsCheck(void *ptr, int64_t *after) {
   if (!bc_enable)
     return INVALID_PTR;
   int64_t waste = 0;
-  int64_t optr  = ptr;
-  ptr           = ((int64_t)ptr) & ~7ll;
+  int64_t optr = ptr;
+  ptr = ((int64_t)ptr) & ~7ll;
   if (after)
     *after = 0;
   // TOO big

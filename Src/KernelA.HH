@@ -2744,14 +2744,15 @@ public class CDirContext
 #define FF_NEEDS_WRITE		8
 #define FF_CONTIGUOUS		16
 #define FF_USE_OLD_DATETIME	32
+#define FF_VIRT			64
 
 public class CFile //See $LK,"::/Demo/Dsk/DataBase.HC"$.
 {
-  I64	flags;
+  I32	flags,fd;
   CDirEntry de;
   CDrv	*dv;
   I64	fblk_num,clus,file_clus_num,max_blk;
-  U8	*clus_buf,*_3days_virt;
+  U8	*clus_buf;
 };
 
 #define _CFG_HEAP_DBG FALSE
@@ -3929,8 +3930,7 @@ import U64 LBts(U8 *,I64);
 import U8 *Caller(I64 c=0);
 import I64 UnixNow();
 import U0 VFsFTrunc(U8i*,I64i);
-import U8i *VFsFOpenR(U8i*);
-import U8i *VFsFOpenW(U8i*);
+import U8i *VFsFOpen(U8i*,Bool);
 import U0 VFsFClose(U8i*);
 import I64 VFsFBlkRead(U8i*,I64i,I64i,U8i*);
 import I64 VFsFBlkWrite(U8i*,I64i,I64i,U8i*);
@@ -4061,8 +4061,7 @@ extern U8 *Caller(I64 c=0);
 //EVIL things from AIWNIOS to be reworked
 extern I64 UnixNow();
 extern U0 VFsFTrunc(U8i*,I64i);
-extern U8i *VFsFOpenR(U8i*);
-extern U8i *VFsFOpenW(U8i*);
+extern U8i *VFsFOpen(U8i*,Bool);
 extern U0 VFsFClose(U8i*);
 extern I64 VFsFBlkRead(U8i*,I64i,I64i,U8i*);
 extern I64 VFsFBlkWrite(U8i*,I64i,I64i,U8i*);

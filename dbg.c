@@ -77,7 +77,7 @@ typedef struct CFuckup {
   union __riscv_fp_state fp;
   #endif
 } CFuckup;
-#elif defined(WIN32) || defined(_WIN32)
+#elif defined(_WIN64)
   #include <winnt.h>
 typedef struct CFuckup {
   struct CQue base;

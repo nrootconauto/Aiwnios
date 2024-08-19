@@ -10,7 +10,6 @@
 .global Misc_LBtr
 .global Misc_LBts
 .global Misc_BP
-.global Misc_ThreadReg
 .global TempleOS_CallVaArgs
 # I dont know the psudeo ops,sorry profressionals
 Misc_Btc:
@@ -221,8 +220,4 @@ TempleOS_CallVaArgs:
 
 Misc_BP:
   mv a0,s0
-  ret
-
-Misc_ThreadReg:
-  mv a0,tp
   ret

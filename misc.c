@@ -1,31 +1,15 @@
 #pragma once
+
 #include "aiwn.h"
-#include <ctype.h>
-uint64_t ToUpper(uint64_t ch) {
-  char arr[8];
-  int64_t i;
-  memcpy(arr, &ch, 8);
-  for (i = 0; i != 8; i++)
-    arr[i] = toupper(arr[i]);
-  memcpy(&ch, arr, 8);
-  return ch;
-}
+
 int64_t Bsf(int64_t v) {
-#if defined(_WIN32) || defined(WIN32)
-  return __builtin_ffsll(v) - 1;
-#else
-  return __builtin_ffsl(v) - 1;
-#endif
+  return v ? __builtin_ctzll(v) : -1;
 }
+
 int64_t Bsr(int64_t v) {
-  if (!v)
-    return -1;
-#if defined(_WIN32) || defined(WIN32)
-  return 63 - __builtin_clzll(v);
-#else
-  return 63 - __builtin_clzl(v);
-#endif
+  return v ? __builtin_popcountll(-2) - __builtin_clzll(v) : -1;
 }
+
 char *WhichFun(char *fptr) {
   int64_t idx, best_dist = 0x1000000, dist;
   CHashFun *fun, *best   = NULL;

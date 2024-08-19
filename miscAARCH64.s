@@ -6,7 +6,6 @@
 .global Misc_Btr
 .global Misc_Btc
 .global Misc_Bts
-.global Misc_TLS_Base
 .global Misc_Caller
 .global Misc_BP
 # For MacOS
@@ -17,16 +16,11 @@
 .global _Misc_Btr
 .global _Misc_Btc
 .global _Misc_Bts
-.global _Misc_TLS_Base
 .global _Misc_Caller
 .global _Misc_BP
 _Misc_BP:
 Misc_BP:
   mov x0,x29
-  ret
-_Misc_TLS_Base:
-Misc_TLS_Base:
-  mrs x0, tpidr_el0
   ret
 _Misc_Bt:
 Misc_Bt:

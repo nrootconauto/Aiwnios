@@ -2,7 +2,7 @@
 #include <string.h>
 #ifdef __x86_64__
 #define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
-#if defined(_WIN32) || defined(WIN32)
+#ifdef _WIN64
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
   uint8_t *bin = NULL;

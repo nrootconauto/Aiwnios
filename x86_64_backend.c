@@ -164,10 +164,7 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
     ;
 
 static int64_t Is32Bit(int64_t num) {
-  if (num > -0x7fFFffFFll)
-    if (num < 0x7fFFffFFll)
-      return 1;
-  return 0;
+  return num < 0x7fFFffFFll && num > -0x7fFFffFFll;
 }
 static uint8_t MODRMRegReg(int64_t a, int64_t b) {
   return (0b11 << 6) | ((a & 0b111) << 3) | (b & 0b111);
@@ -363,6 +360,7 @@ int64_t X86MovImm(char *to, int64_t a, int64_t off) {
   if (((1ll << 32) - 1) / 2 >= off) {
     if (-((1ll << 32) - 1) / 2 <= off) {
       // Is Signed 32bit
+      // REX.W C7 /0 id
       ADD_U8(ErectREX(1, 0, 0, a));
       ADD_U8(0xc7);
       ADD_U8(MODRMRegReg(0, a));
@@ -370,6 +368,7 @@ int64_t X86MovImm(char *to, int64_t a, int64_t off) {
       return len;
     }
   }
+  // REX.W + B8+ tf io: movabs
   ADD_U8(ErectREX(1, a, 0, a));
   ADD_U8(0xB8 + (a & 0x7));
   ADD_U64(off);
@@ -573,14 +572,12 @@ static int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i,
   return len;
 }
 
-//
-
 int64_t X86SubImm32(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
   if (!to)
     to = buf;
-  ADD_U8(ErectREX(1, a, 0, a));
+  ADD_U8(ErectREX(1, 5, 0, a));
   ADD_U8(0x81);
   ADD_U8(MODRMRegReg(5, a));
   ADD_U32(b);
@@ -1330,7 +1327,8 @@ int64_t X86PushReg(char *to, int64_t reg) {
   char buf[16];
   if (!to)
     to = buf;
-  ADD_U8(ErectREX(1, reg, 0, reg));
+  if (reg >= R8)
+    ADD_U8(ErectREX(0, 0, 0, reg));
   ADD_U8(0x50 + (reg & 0x7));
   return len;
 }
@@ -1381,7 +1379,8 @@ int64_t X86PopReg(char *to, int64_t reg) {
   char buf[16];
   if (!to)
     to = buf;
-  ADD_U8(ErectREX(1, reg, 0, reg));
+  if (reg >= R8)
+    ADD_U8(ErectREX(0, 0, 0, reg));
   ADD_U8(0x58 + (reg & 0x7));
   return len;
 }
@@ -1475,7 +1474,8 @@ int64_t X86JmpReg(char *to, int64_t r) {
   char buf[16];
   if (!to)
     to = buf;
-  ADD_U8(ErectREX(1, 0, 0, r));
+  if (r >= R8)
+    ADD_U8(ErectREX(0, 4, 0, r));
   ADD_U8(0xff);
   ADD_U8(MODRMRegReg(4, r));
   return len;
@@ -2102,17 +2102,9 @@ static int64_t ConstVal(CRPN *rpn) {
 static int64_t SpillsTmpRegs(CRPN *rpn) {
   int64_t idx;
   switch (rpn->type) {
-    break;
-    // SEE NOTE IN multic.c
-#if defined(__FreeBSD__) || defined(__linux__)
   case IC_FS:
   case IC_GS:
     return 0;
-#else
-  case IC_FS:
-  case IC_GS:
-    return 1;
-#endif
   case __IC_CALL:
   case IC_CALL:
     return 1;
@@ -5898,7 +5890,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     goto ret;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
       ***range_fail_addrs;
-  if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass==2 &&
+  if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass == 2 &&
       rpn->ic_line) { // Final run
     if (MSize(cctrl->code_ctrl->dbg_info) / 8 >
         rpn->ic_line - cctrl->code_ctrl->min_ln) {
@@ -6062,10 +6054,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       abort();
     }
   segment:
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
     // IN LINUX/FreeBSD(?) FS is the thread local register,GS is a variabel
     // stored in ThreadGs(from FS)
     AIWNIOS_ADD_CODE(SEG_FS, 0);
+#else
+    AIWNIOS_ADD_CODE(SEG_GS, 0);
+#endif
     AIWNIOS_ADD_CODE(MovRAXMoffs32, 0);
     if (next->type == IC_I64) {
       if (bin)
@@ -6076,20 +6071,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.reg      = 0;
     tmp.raw_type = RT_I64i;
     code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-#else
-    AIWNIOS_ADD_CODE(X86MovImm, RAX, 0x1122334455ll); // Force 64 bit
-    if (next->type == IC_I64) {
-      if (bin)
-        *(void **)(bin + code_off - 8) = next->integer;
-    } else if (bin)
-      CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
-    AIWNIOS_ADD_CODE(X86CallReg, RAX);
-    tmp.mode     = MD_INDIR_REG;
-    tmp.reg      = 0;
-    tmp.off      = 0;
-    tmp.raw_type = RT_I64i;
-    code_off     = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-#endif
     break;
   ic_lock:
     cctrl->is_lock_expr = 1;

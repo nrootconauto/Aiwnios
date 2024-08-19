@@ -435,7 +435,7 @@ U8 *RegIdx2Str(I64 r,I64 sz=8,Bool rex=FALSE) {
 #define RS_XMM 2
 #define RS_X87 3
 #define RS_MM 4
-U0 PrintRMMode(CDoc *doc,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=RS_GP) {
+U0 PrintRMMode(CDoc *doc,U8 segment,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=RS_GP) {
   switch(sz) {
     case 1: DocPrint(doc,"U8 "); break;
     case 2: DocPrint(doc,"U16 "); break;
@@ -460,6 +460,15 @@ U0 PrintRMMode(CDoc *doc,I64 rex=0,U8 *data,I64 sz,Bool small=FALSE,I64 reg_set=
 	return;
     }
   }
+  switch(segment) {
+    case 0x2E: DocPrint(doc,"CS ");break;
+    case 0x36: DocPrint(doc,"SS ");break;
+    case 0x3E: DocPrint(doc,"DS ");break;
+    case 0x26: DocPrint(doc,"ES ");break;
+    case 0x64: DocPrint(doc,"FS ");break;
+    case 0x65: DocPrint(doc,"GS ");break;
+  }
+
   if(o!=INVALID_PTR&&i==-1&&b==-1) {
     DocPrint(doc,"[");
     DocPrint(doc,"%X",o);
@@ -507,6 +516,7 @@ U8 *DisasOpc(CDoc *doc_out,U8 *data) {
   I64 pf1=-1,cnt,cnt2;
   Bool _66=FALSE,_67=FALSE,_0f=FALSE;
   I64 rex=0,len;
+  U8 seg_prefix=0;
   Bool has_modrm=FALSE,wants_rexw=FALSE;
   CX86Opcode *cur,*head,*valid_opc=NULL;
   I64 imm_off=0;
@@ -529,16 +539,17 @@ prefix:
       switch(*data) {
         start:
 	  Bts(&prefix_groups,2);
-	  case 0x2e: DocPrint(doc,"CS "); break;
-	  case 0x36: DocPrint(doc,"SS "); break;
-	  case 0x3e: DocPrint(doc,"DS "); break;
-	  case 0x26: DocPrint(doc,"ES "); break;
-	  case 0x64: DocPrint(doc,"FS "); break;
-	  case 0x65: DocPrint(doc,"GS "); break;
+	  case 0x2e: break;
+	  case 0x36: break;
+	  case 0x3e: break;
+	  case 0x26: break;
+	  case 0x64: break;
+	  case 0x65: break;
 //AMD does have these,I am not checking for Branch instructions either
 	    //          case 0x2e: DocPrint(doc,"BranchNotTaken "); break;
 	    //          case 0x3e: DocPrint(doc,"BranchTaken "); break;
         end:
+	  seg_prefix=*data++;
 	  goto prefix;
       }
     }
@@ -567,7 +578,7 @@ prefix:
         Bts(&prefix_groups,6);
         _0f=TRUE;
         data++;
-	break;
+        break;
       }
     break;
   }
@@ -587,33 +598,33 @@ bad:
   od=data;
   imm_off=0;
   head=&asm_hash[opc];
-  //If one of our opcodes is promoted by X86_OPCF_REXW,require it if we have rex.W
+//If one of our opcodes is promoted by X86_OPCF_REXW,require it if we have rex.W
   if(rex&0b1000)
     for(cur=head->next;cur!=head;cur=cur->next) {
       cur=cur(U8*)-offset(CX86Opcode.asm_hash_que);
       if(cur->flags&X86_OPCF_REXW) {
-	wants_rexw=TRUE;
-	break;
+        wants_rexw=TRUE;
+        break;
       }
       cur=cur(U8*)+offset(CX86Opcode.asm_hash_que);
     }
   for(cur=head->next;cur!=head;cur=cur->next) {
     cur=cur(U8*)-offset(CX86Opcode.asm_hash_que);
     data=od;
-    //If our old valid opcode wants(and has) a rex.w,ignore "newer" canidates that lack the need for a rex.
+//If our old valid opcode wants(and has) a rex.w,ignore "newer" canidates that lack the need for a rex.
     if(valid_opc&&!(cur->flags&X86_OPCF_REXW))
       if(wants_rexw&&valid_opc->flags&X86_OPCF_REXW)
-	goto next;
-    //If our valid opcode uses _66,ensure _66 is used by our "newer" one 
+        goto next;
+//If our valid opcode uses _66,ensure _66 is used by our "newer" one 
     if(valid_opc)
       switch(valid_opc->pf) {
-	case -1:
+        case -1:
 	  break;
         case 0x66:
 	  if(cur->pf!=0x66)
 	    goto next;
-        break;
-	default:
+	  break;
+        default:
 	  if(cur->pf==-1)
 	    goto next;
       }
@@ -635,15 +646,15 @@ bad:
       goto next;
     if(cur->flags&X86_OPCF_REXW)
       if(!(rex&0b1000))
-	goto next;
+        goto next;
     if(cur->flags&X86_OPCF_MODRM) {
       DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL,&len);
       for(cnt=0;cnt!=4;cnt++)
-	if(cur->operands[cnt].u8[0]==X86_OPERAND_EXT)
+        if(cur->operands[cnt].u8[0]==X86_OPERAND_EXT)
 	  if(cur->operands[cnt].u8[1]!=ext&0x7)
 	    goto next;
       imm_off=len;
-      //If Opcode wants a MEMORY only ass motherfucker,make sure ModRM/SIB
+//If Opcode wants a MEMORY only ass motherfucker,make sure ModRM/SIB
       //points to a memory address,AND NOT A FUCKIN register
       for(cnt=0;cnt!=4;cnt++) {
         switch(cur->operands[cnt].u8[0]) {
@@ -652,10 +663,10 @@ bad:
 	  case X86_OPERAND_M16:
 	  case X86_OPERAND_M32:
 	  case X86_OPERAND_M64:
-	  //Returns TRUE if a fuckin register motherfucker
-	  if(DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
-	    goto next;
-	  break;
+//Returns TRUE if a fuckin register motherfucker
+	    if(DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
+	      goto next;
+	    break;
 	  case X86_OPERAND_Rx:
 	  case X86_OPERAND_R8:
 	  case X86_OPERAND_R16:
@@ -664,15 +675,15 @@ bad:
 	  case X86_OPERAND_STi:
 	  case X86_OPERAND_FR:
 	  case X86_OPERAND_SREG:
-	  //Check the converse Motherfucker ONLY if ext is used as the register
+//Check the converse Motherfucker ONLY if ext is used as the register
 	  //This will place our fucker at ModRM base field
-	  for(cnt2=0;cnt2!=4;cnt2++) {
-	    if(cur->operands[cnt2].u8[0]==X86_OPERAND_EXT) {
-	      if(!DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
-		goto next;
+	    for(cnt2=0;cnt2!=4;cnt2++) {
+	      if(cur->operands[cnt2].u8[0]==X86_OPERAND_EXT) {
+	        if(!DecodeSib(data,rex,&ext,NULL,NULL,NULL,NULL))
+		  goto next;
+	      }
 	    }
-	  }
-	}
+        }
       }
     } else
       imm_off=0;
@@ -684,14 +695,14 @@ next:
     cur=valid_opc;
     switch(cur->pf) {
       case 0x66: //If 0x66 is part of the opcode,it may be an SSE prefix,so ignore it?
-      _66=FALSE;
-      break;
+        _66=FALSE;
+        break;
       case 0xf0:
       case 0xf1:
       case 0xf2:
       case 0xf3:
       case 0x9b:
-	Btr(&prefix_groups,1);
+        Btr(&prefix_groups,1);
     }
     if(Bt(&prefix_groups,1))
       switch(pf1) {
@@ -718,25 +729,25 @@ next:
 	    DocPrint(doc,"U8 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),1));
 	    break;
 	  case X86_OPERAND_RM8:
-	    PrintRMMode(doc,rex,data,1,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,1,_67);
 	    break;
 	  case X86_OPERAND_R16:
 	    DocPrint(doc,"U16 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),2));
 	    break;
 	  case X86_OPERAND_RM16:
-	    PrintRMMode(doc,rex,data,2,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    break;
 	  case X86_OPERAND_R32:
 	    DocPrint(doc,"U32 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),4));
 	    break;
 	  case X86_OPERAND_RM32:
-	    PrintRMMode(doc,rex,data,4,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    break;
 	  case X86_OPERAND_R64:
 	    DocPrint(doc,"U64 %s ",RegIdx2Str(GetOpcodeReg(cur,rex,data),8));
 	    break;
 	  case X86_OPERAND_RM64:
-	    PrintRMMode(doc,rex,data,8,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_IMM8:
 	    DocPrint(doc,"I8 %d ",data(U8*)[imm_off]);
@@ -768,11 +779,11 @@ next:
 	    break;
 	  case X86_OPERAND_RMx:
 	    if(_66) 
-	      PrintRMMode(doc,rex,data,2,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    else if(!(rex&0b1000))
-	      PrintRMMode(doc,rex,data,4,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    else
-	      PrintRMMode(doc,rex,data,8,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_Rx:
 	    if(_66) 
@@ -808,19 +819,19 @@ next:
 	    break;
 	  case X86_OPERAND_RMXMM:
 	  case X86_OPERAND_RMXMM128:
-	    PrintRMMode(doc,rex,data,16,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,16,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMXMM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMXMM32:
-	    PrintRMMode(doc,rex,data,4,_67,RS_XMM);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67,RS_XMM);
 	    break;
 	  case X86_OPERAND_RMM:
 	    DocPrint(doc,"U64 %s ",RegIdx2StrMm(GetOpcodeReg(cur,rex,data)));
 	    break;
 	  case X86_OPERAND_RMMM:
-	    PrintRMMode(doc,rex,data,8,_67,RS_MM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_MM);
 	    break;
 	  case X86_OPERAND_REL8:
 	    DocPrint(doc,"I8 %P ",(data+1)+(data+imm_off)(I8*)[0]);
@@ -831,16 +842,16 @@ next:
 	    imm_off+=4;
 	    break;
 	  case X86_OPERAND_M8:
-	    PrintRMMode(doc,rex,data,1,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,1,_67);
 	    break;
 	  case X86_OPERAND_M16:
-	    PrintRMMode(doc,rex,data,2,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    break;
 	  case X86_OPERAND_M32:
-	    PrintRMMode(doc,rex,data,4,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    break;
 	  case X86_OPERAND_M64:
-	    PrintRMMode(doc,rex,data,8,_67);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_ST0:
 	    DocPrint(doc,"F64 ST0");
@@ -849,54 +860,63 @@ next:
 	    DocPrint(doc,"F64 ST%d",GetOpcodeReg(cur,rex,data));
 	    break;
 	  case X86_OPERAND_FRM32:
-	    PrintRMMode(doc,rex,data,4,_67,RS_X87);
+	    PrintRMMode(doc,seg_prefix,rex,data,4,_67,RS_X87);
 	    break;
 	  case X86_OPERAND_FRM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_X87);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_X87);
 	    break;
 	  case X86_OPERAND_Mx:
 	    if(_66) 
-	      PrintRMMode(doc,rex,data,2,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,2,_67);
 	    else if(!(rex&0b1000))
-	      PrintRMMode(doc,rex,data,4,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,4,_67);
 	    else
-	      PrintRMMode(doc,rex,data,8,_67);
+	      PrintRMMode(doc,seg_prefix,rex,data,8,_67);
 	    break;
 	  case X86_OPERAND_SREG:
-	  DocPrint(doc,"%s ",RegIdx2StrSReg(GetOpcodeReg(cur,rex,data)));
+	    DocPrint(doc,"%s ",RegIdx2StrSReg(GetOpcodeReg(cur,rex,data)));
 	    break;
-	  case X86_OPERAND_MOFF8:
-	    DocPrint(doc,"I8 [%P] ",(data+imm_off)(I64*)[0]);
-	    imm_off+=8;
-	    break;
-	  case X86_OPERAND_MOFFx:
-	    if(_66) 
-	      DocPrint(doc,"I16 [%P] ",(data+imm_off)(I64*)[0]);    
-	    else if(!(rex&0b1000))
-	      DocPrint(doc,"I32 [%P] ",(data+imm_off)(I64*)[0]);    
-	    else
-	      DocPrint(doc,"I64 [%P] ",(data+imm_off)(I64*)[0]);
-	    imm_off+=8;
+	  start:
+	    case X86_OPERAND_MOFF8:
+	      DocPrint(doc,"I8  ");
+	      imm_off+=8;
+	      break;
+	    case X86_OPERAND_MOFFx:
+	      if(_66) 
+	        DocPrint(doc,"I16 ");
+	      else if(!(rex&0b1000))
+	        DocPrint(doc,"I32 ");
+	      else
+	        DocPrint(doc,"I64 ");
+	      imm_off+=8;
+	      break;
+	  end:
+	    switch(seg_prefix) {
+	      case 0x2E: DocPrint(doc,"CS:");break;
+	      case 0x36: DocPrint(doc,"SS:");break;
+	      case 0x3E: DocPrint(doc,"DS:");break;
+	      case 0x26: DocPrint(doc,"ES:");break;
+	      case 0x64: DocPrint(doc,"FS:");break;
+	      case 0x65: DocPrint(doc,"GS:");break;
+	    }
+	    DocPrint(doc,"[%P] ",(data+imm_off)(I64*)[-1]);
 	    break;
 	  case X86_OPERAND_RMMM64:
-	    PrintRMMode(doc,rex,data,8,_67,RS_MM);
+	    PrintRMMode(doc,seg_prefix,rex,data,8,_67,RS_MM);
         end:
 	  break;
-	case X86_OPERAND_EXT:
-	    break;
+        case X86_OPERAND_EXT:
+	  break;
         case 0:
 	  break;
         default:
 	  throw("UAsmItrn");
       }
     }
-    DocPrint(doc,"\n");
-    DocPrint(doc_out,"%P\t\dFG,PURPLE\d",odata);
-    for (i=0;i<imm_off+1;++i)
-      DocPrint(doc_out,"%02X ",odata[i]);
-    DocPrint(doc_out,"\dFG\d\n\t\t");
+    DocPrint(doc_out,"%P\t\t",odata);
     DocInsDoc(doc_out,doc);
     DocDel(doc);
+    DocPrint(doc_out,"\n");
     return data+imm_off;
   }
 //wut

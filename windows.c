@@ -58,7 +58,7 @@ static void _DrawWindowNew() {
 static void UpdateViewPort() {
   int w, h, margin_x = 0, margin_y = 0, w2, h2;
   SDL_GetWindowSize(window, &w, &h);
-  double ratio = (double)640 / 480;
+  float ratio = 640. / 480;
   if (w > h * ratio) {
     h2       = h;
     w2       = ratio * h;
