@@ -7,16 +7,16 @@
 #if defined(__linux__) && defined(__x86_64__)
 #  include <ucontext.h>
 #endif
-
-#ifndef __SEG_FS
-#  ifdef __clang__
-#    define __seg_fs __attribute__((address_space(257)))
-#    define __seg_gs __attribute__((address_space(256)))
-#  else
-#    error Compiler too old (should never happen)
+#if defined(__x86_64__)
+#  ifndef __SEG_FS
+#    ifdef __clang__
+#      define __seg_fs __attribute__((address_space(257)))
+#      define __seg_gs __attribute__((address_space(256)))
+#    else
+#      error Compiler too old (should never happen)
+#    endif
 #  endif
 #endif
-
 #ifndef _WIN32
 _Thread_local void *ThreadGs;
 _Thread_local void *ThreadFs;
