@@ -405,6 +405,9 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
   static bool running, init, topdown;
   static uint64_t ag, cur = 0x10000, max = (1ull << 31) - 1;
   if (!init) {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    ag = si.dwAllocationGranularity;
     HANDLE proc = GetCurrentProcess();
     PROCESS_MITIGATION_ASLR_POLICY aslr;
     /* If DEP is disabled, don't let RW pages pile on RWX pages to avoid OOM */
