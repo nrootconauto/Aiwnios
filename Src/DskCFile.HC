@@ -109,7 +109,7 @@ U0 FClose(CFile *f)
     if (dirc=DirContextNew(f->de.full_name)) {
       VFsSetDrv(Fs->cur_dv->drv_let);
       VFsSetPwd(Fs->cur_dir); //+2 to ingore T:
-      VFsFTrunc(f->de.name,f->de.size);
+      VFsFTrunc(f->de.name,f->de.size);
       DirContextDel(dirc,FALSE);
     }
     goto en;

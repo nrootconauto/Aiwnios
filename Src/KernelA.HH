@@ -6865,7 +6865,9 @@ extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
 extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
 extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
 extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
-
+#ifdef TARGET_X86
+extern U8 SSE_ShuffleByte(I64 a,I64 b,I64 c,I64 d);
+#endif
 #define HDR_NUM	16
 #define REGISTRY_FILENAME "~/Registry.HC.Z"
 #define SE_NOISE	0
