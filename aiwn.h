@@ -460,6 +460,7 @@ typedef struct CCmpCtrl {
   // private for AARCH64 for use with IC_LOCK
   // I will use the ldxsr/stxr instructions in a loop
   int64_t aarch64_atomic_loop_start;
+  CRPN *cur_rpn;
 } CCmpCtrl;
 #define PRSF_CLASS    1
 #define PRSF_UNION    2
@@ -668,10 +669,11 @@ struct CRPN {
     CCodeMisc *break_to;
   };
   CCodeMisc *code_misc2, *code_misc3, *code_misc4;
-  CICArg res;
+  CICArg res,tmp_res;
   CRPN *tree1, *tree2, *ic_fwd;
   //Use with Misc_Bt,includes temporaries
-  int64_t changes_iregs,changes_fregs;
+  int32_t changes_iregs,changes_fregs;
+  int32_t changes_iregs2,changes_fregs2;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
