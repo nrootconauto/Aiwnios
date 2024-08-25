@@ -2401,10 +2401,10 @@ static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
   QueIns(misc, cctrl->code_ctrl->code_misc->last);
 found:
   if (bin && misc->addr && cctrl->code_ctrl->final_pass) {
-    AIWNIOS_ADD_CODE(X86MovF64RIP, MIR(cctrl,reg), 0);
+    AIWNIOS_ADD_CODE(X86MovF64RIP, MFR(cctrl,reg), 0);
     CodeMiscAddRef(misc, bin + code_off - 4);
   } else
-    AIWNIOS_ADD_CODE(X86MovF64RIP, MIR(cctrl,reg), 0);
+    AIWNIOS_ADD_CODE(X86MovF64RIP, MFR(cctrl,reg), 0);
   return code_off;
 }
 
@@ -4140,8 +4140,8 @@ static int64_t __SexyPreOp(
                               bin, code_off);
       tmp      = derefed; //==RT_F64
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 1, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 0);
+      code_off = __ICMoveF64(cctrl, 2, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 2);
       code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (rpn->integer != 1) {
@@ -4194,8 +4194,8 @@ static int64_t __SexyPreOp(
       tmp      = derefed; //==RT_F64
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type,
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 0);
+      code_off = __ICMoveF64(cctrl, 2, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 2);
       code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (rpn->integer != 1 && ModeIsDerefToSIB(next)) {
@@ -5419,19 +5419,10 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     }
   }
   // ALIGN TO 8
-  if (fsz % 8)
-    fsz += 8 - fsz % 8;
-  int64_t to_push = (i2 = __FindPushedIRegs(cctrl, push_ireg)) * 8 +
-                    (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 +
-                    cctrl->backend_user_data0 + fsz + 16,
+  i2 = __FindPushedIRegs(cctrl, push_ireg);
+  i3 = __FindPushedFRegs(cctrl, push_freg);
+  int64_t to_push = cctrl->backend_user_data0 + fsz+16,
           old_regs_start;
-  if (i2 % 2)
-    to_push += 8; // We push a dummy register in a pair if not aligned to 2
-  if (i3 % 2)
-    to_push += 8; // Ditto
-
-  if (to_push % 16)
-    to_push += 8;
   cctrl->backend_user_data4 = fsz;
   old_regs_start            = fsz + cctrl->backend_user_data0;
 
@@ -5439,28 +5430,23 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   for (i = 0; i != 16; i++)
     if (push_ireg[i])
       ilist[i2++] = i;
-  if (i2 % 2)
-    ilist[i2++] = 1; // Dont use 0 as it is a reutrn register
   i3 = 0;
   for (i = 0; i != 16; i++)
     if (push_freg[i])
       flist[i3++] = i;
-  if (i3 % 2)
-    flist[i3++] = 1; // Dont use 0 as it is a reutrn register
-
   AIWNIOS_ADD_CODE(X86PushReg, RBP);
   AIWNIOS_ADD_CODE(X86MovRegReg, RBP, RSP);
   AIWNIOS_ADD_CODE(X86SubImm32, RSP, to_push);
   off = -old_regs_start;
   for (i = 0; i != i2; i++) {
-    AIWNIOS_ADD_CODE(X86MovIndirRegI64, ilist[i], -1, -1, RBP, off);
-    off -= 8;
+	AIWNIOS_ADD_CODE(X86PushReg,ilist[i]);
+    off -= 8;	
   }
-  for (i = 0; i != i3; i++) {
-    // System V doesnt save the fregs,so i use a save/restore leaf function
-    // instread
-    AIWNIOS_ADD_CODE(X86MovIndirRegF64, flist[i], -1, -1, RBP, off);
-    off -= 8;
+  if(i3) {
+    AIWNIOS_ADD_CODE(X86SubImm32,RSP,i3*8)
+    for (i = 0; i != i3; i++) {
+      AIWNIOS_ADD_CODE(X86MovIndirRegF64, flist[i], -1, -1, RSP, i*8);
+    }
   }
   stk_arg_cnt = ireg_arg_cnt = freg_arg_cnt = 0;
   if (cctrl->cur_fun) {
@@ -5562,45 +5548,37 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     }
   }
   // ALIGN TO 8
-  if (fsz % 8)
-    fsz += 8 - fsz % 8;
-  int64_t to_push = (i2 = __FindPushedIRegs(cctrl, push_ireg)) * 8 +
-                    (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 + fsz +
-                    cctrl->backend_user_data0,
+  i2 = __FindPushedIRegs(cctrl, push_ireg);
+  i3 = __FindPushedFRegs(cctrl, push_freg);
+  int64_t to_push = fsz +cctrl->backend_user_data0+16,
           old_regs_start; // old_FP,old_LR
-  if (i2 % 2)
-    to_push += 8; // We push a dummy register in a pair if not aligned to 2
-  if (i3 % 2)
-    to_push += 8; // Ditto
-  if (to_push % 16)
-    to_push += 8;
   old_regs_start = fsz + cctrl->backend_user_data0;
   i2             = 0;
   for (i = 0; i != 16; i++)
     if (push_ireg[i])
       ilist[i2++] = i;
-  if (i2 % 2)
-    ilist[i2++] = 1; // Dont use 0 as it is a reutrn register
   i3 = 0;
   for (i = 0; i != 16; i++)
     if (push_freg[i])
       flist[i3++] = i;
-  if (i3 % 2)
-    flist[i3++] = 1; // Dont use 0 as it is a reutrn register
   //<==== OLD SP
   // first saved reg pair<==-16
   // next saved reg pair<===-32
   //
-  off = -old_regs_start;
-  for (i = 0; i != i2; i++) {
-    AIWNIOS_ADD_CODE(X86MovRegIndirI64, ilist[i], -1, -1, RBP, off);
-    off -= 8;
-  }
-  fsave_area = off;
+  fsave_area = -old_regs_start-8*i2;
+  off=0;
   for (i = 0; i != i3; i++) {
-    AIWNIOS_ADD_CODE(X86MovRegIndirF64, flist[i], -1, -1, RBP, off);
-    off -= 8;
+    AIWNIOS_ADD_CODE(X86MovRegIndirF64, flist[i], -1, -1, RSP, off);
+    off+=8;
   }
+  if(off) {
+	  AIWNIOS_ADD_CODE(X86AddImm32,RSP,off);
+  }
+  for(i=i2-1;i>=0;i--) {
+	  AIWNIOS_ADD_CODE(X86PopReg, ilist[i]);
+  }
+  
+  off = -old_regs_start;
   AIWNIOS_ADD_CODE(X86Leave, 0);
   if (is_vargs) {
     AIWNIOS_ADD_CODE(X86Ret, 0);
@@ -5737,8 +5715,8 @@ static int64_t __SexyPostOp(
       tmp      = derefed; //==RT_F64
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 1, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 0);
+      code_off = __ICMoveF64(cctrl, 2, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 2);
       code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
     } else if (rpn->integer != 1) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
@@ -5791,8 +5769,8 @@ static int64_t __SexyPostOp(
       tmp      = derefed; //==RT_F64
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 1, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 0);
+      code_off = __ICMoveF64(cctrl, 2, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(freg, MFR(cctrl,tmp.reg), 2);
       code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
     } else if (rpn->integer != 1 && ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
@@ -6755,8 +6733,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp                   = rpn->res;
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &tmp, RT_F64, 1, bin, code_off);
-      code_off = __ICMoveF64(cctrl, 0, ul, bin, code_off);
-      AIWNIOS_ADD_CODE(X86XorPDReg, MFR(cctrl,tmp.reg), 0);
+      code_off = __ICMoveF64(cctrl, 2, ul, bin, code_off);
+      AIWNIOS_ADD_CODE(X86XorPDReg, MFR(cctrl,tmp.reg), 2);
       rpn->tmp_res=tmp;
       if (rpn->res.keep_in_tmp)
         rpn->res = tmp;
@@ -7663,8 +7641,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, 1, bin, code_off);
       static double ul;
       *(int64_t *)&ul = ~0ll;
-      code_off        = __ICMoveF64(cctrl, 0, ul, bin, code_off);
-      AIWNIOS_ADD_CODE(X86XorPDReg, MFR(cctrl,next->res.reg), 0);
+      code_off        = __ICMoveF64(cctrl, 2, ul, bin, code_off);
+      AIWNIOS_ADD_CODE(X86XorPDReg, MFR(cctrl,next->res.reg), 2);
       goto ret;
     }
     if (rpn->raw_type != RT_F64)
