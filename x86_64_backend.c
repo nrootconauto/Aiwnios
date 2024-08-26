@@ -47,8 +47,8 @@ static int64_t ModeIsDerefToSIB(CRPN *m) {
     // Temporary registers may get destroyed
     if (next->res.mode == MD_REG && IsSavedIReg(next->res.reg))
       return 1;
-  } else if (m->res.mode == MD_FRAME)
-    return 1;
+  } else if(m->type==IC_BASE_PTR) 
+	return 1;
   return 0;
 }
 
@@ -3353,8 +3353,10 @@ after_call:
     tmp.raw_type =
         rpn->raw_type == RT_F64 ? RT_F64 : RT_I64i; // Promote to 64bits
     rpn->tmp_res = tmp;
-    if (rpn->res.keep_in_tmp)
+    if (rpn->res.keep_in_tmp) {
       rpn->res = tmp;
+      rpn->res.keep_in_tmp = 1;
+    }
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
   }
   return code_off;
@@ -4047,10 +4049,14 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
                             int64_t base_reg_fallback, char *bin,
                             int64_t code_off) {
   if (rpn->res.mode == __MD_X86_64_SIB) {
-    if (rpn->res.__sib_base_rpn)
+    if (rpn->res.__sib_base_rpn) {
       code_off = __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
-    if (rpn->res.__sib_idx_rpn)
+      rpn->res.reg = rpn->res.__sib_base_rpn->res.reg;
+    }
+    if (rpn->res.__sib_idx_rpn) {
       code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
+      rpn->res.reg2 = rpn->res.__sib_idx_rpn->res.reg;
+    }
     *res = rpn->res;
     return code_off;
   }
@@ -5894,7 +5900,7 @@ static int64_t IsCompoundCompare(CRPN *r) {
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   uint64_t mask;
-  if (have->res.mode == MD_I64 || have->res.mode == MD_F64)
+  if (!(have->tmp_res.mode==MD_REG&&have->tmp_res.reg==0))
     return 0; // No need to stuff in tmp
   if (is_left_side) {
     if (other)
@@ -5912,7 +5918,8 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
   if (have->tmp_res.mode == __MD_X86_64_SIB)
-    if ((mask & (1ull << have->tmp_res.reg)) || (mask & (1ull << have->tmp_res.reg2)))
+    if ((mask & (1ull << have->tmp_res.reg)) ||
+        (mask & (1ull << have->tmp_res.reg2)))
       return 0;
   if (have->tmp_res.mode == __MD_X86_64_LEA_SIB) {
     if ((mask & (1ull << have->tmp_res.reg)) ||
@@ -6016,17 +6023,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_LT:
   case IC_GT:
   case IC_POW:
-    left = ICArgN(rpn, 1);
-    right = ICArgN(rpn, 0);
-    if (CanKeepInTmp(rpn, right, left, 0) && right->tmp_res.mode) {
-      right->res.keep_in_tmp = 1;
-      right->res = right->tmp_res;
-    } else if (CanKeepInTmp(rpn, left, right, 1) &&
-               left->tmp_res
-                   .mode) { // TODO check if both side's tmp can coexist
-      left->res.keep_in_tmp = 1;
-      left->res = left->tmp_res;
-    }
+  //Im not messing with these
     break;
   case IC_EQ:
   case IC_ADD_EQ:
@@ -6041,6 +6038,12 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_MOD_EQ:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
+    if (left->type == IC_IREG || left->type == IC_FREG||left->type==IC_BASE_PTR) {
+      if (right->tmp_res.mode) {
+        right->res = right->tmp_res;
+        right->res.keep_in_tmp = 1;
+      }
+    }
     break;
   }
 }
@@ -6814,11 +6817,15 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   ic_add:
     if (rpn->res.mode == __MD_X86_64_LEA_SIB) {
-      if (rpn->res.__sib_base_rpn)
+      if (rpn->res.__sib_base_rpn) {
         code_off =
             __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
-      if (rpn->res.__sib_idx_rpn)
+        rpn->res.reg = rpn->res.__sib_base_rpn->res.reg;
+      }
+      if (rpn->res.__sib_idx_rpn) {
         code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
+        rpn->res.reg2 = rpn->res.__sib_idx_rpn->res.reg;
+      }
       AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, rpn->res.fallback_reg),
                        rpn->res.__SIB_scale, rpn->res.reg2, rpn->res.reg,
                        rpn->res.off);
@@ -6861,7 +6868,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             !DstRegAffectsMode(&rpn->res, &derefed)) {                         \
           into_reg = rpn->res.reg;                                             \
         } else                                                                 \
-          into_reg = 0;                                                        \
+          into_reg = RDX;                                                        \
         tmp.mode = MD_REG;                                                     \
         tmp.raw_type = rpn->raw_type;                                          \
         tmp.reg = into_reg;                                                    \
@@ -6873,9 +6880,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           AIWNIOS_ADD_CODE(i_sib_op, MIR(cctrl, tmp.reg), derefed.__SIB_scale, \
                            derefed.reg2, derefed.reg, derefed.off);            \
         }                                                                      \
-        rpn->tmp_res = tmp;                                                    \
-        if (rpn->res.keep_in_tmp)                                              \
-          rpn->res = tmp;                                                      \
         if (rpn->res.mode != MD_NULL) {                                        \
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);             \
         }                                                                      \
@@ -6887,7 +6891,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           !DstRegAffectsMode(&rpn->res, &next->res)) {                         \
         into_reg = rpn->res.reg;                                               \
       } else                                                                   \
-        into_reg = 0;                                                          \
+        into_reg = RDX;                                                          \
       tmp.mode = MD_REG;                                                       \
       tmp.raw_type = rpn->raw_type;                                            \
       tmp.reg = into_reg;                                                      \
@@ -6908,7 +6912,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         !DstRegAffectsMode(&rpn->res, &next2->res)) {                          \
       into_reg = rpn->res.reg;                                                 \
     } else                                                                     \
-      into_reg = 0;                                                            \
+      into_reg = RDX;                                                            \
     tmp.mode = MD_REG;                                                         \
     tmp.raw_type = rpn->raw_type;                                              \
     tmp.reg = into_reg;                                                        \
@@ -6929,9 +6933,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     } else {                                                                   \
       AIWNIOS_ADD_CODE(i_op, MIR(cctrl, tmp.reg), next2->res.reg);             \
     }                                                                          \
-    rpn->tmp_res = tmp;                                                        \
-    if (rpn->res.keep_in_tmp)                                                  \
-      rpn->res = tmp;                                                          \
     if (rpn->res.mode != MD_NULL) {                                            \
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
     }                                                                          \
@@ -6941,15 +6942,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   next2 = ICArgN(rpn, 0);                                                      \
   if (rpn->raw_type != RT_F64 && IsConst(next2) && Is32Bit(ConstVal(next2)) && \
       next2->type != IC_F64 && next2->integer >= 0) {                          \
-    next->res.keep_in_tmp = 1;                                                 \
-    code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
+     code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
     tmp2 = next->res;                                                          \
     if (rpn->res.mode == MD_NULL)                                              \
       break;                                                                   \
     if (rpn->res.mode == MD_REG)                                               \
       into_reg = rpn->res.reg;                                                 \
     else                                                                       \
-      into_reg = 0;                                                            \
+      into_reg = RDX;                                                            \
     code_off =                                                                 \
         PutICArgIntoReg(cctrl, &tmp2, RT_I64i, into_reg, bin, code_off);       \
     if (Is32Bit(next2->integer)) {                                             \
@@ -6965,9 +6965,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);               \
       AIWNIOS_ADD_CODE(i_op, MIR(cctrl, into_reg), tmp.reg);                   \
     }                                                                          \
-    rpn->tmp_res = tmp;                                                        \
-    if (rpn->res.keep_in_tmp)                                                  \
-      rpn->res = tmp;                                                          \
     if (rpn->res.mode != MD_REG && rpn->res.mode != MD_NULL) {                 \
       tmp.raw_type = rpn->raw_type;                                            \
       tmp.reg = into_reg;                                                      \
@@ -7086,8 +7083,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                              __builtin_ffsll(next->integer) - 1);
             rpn->res.set_flags = 1;
             rpn->tmp_res = tmp;
-            if (rpn->res.keep_in_tmp)
+            if (rpn->res.keep_in_tmp) {
               rpn->res = tmp;
+              rpn->res.keep_in_tmp = 1;
+            }
             code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
             break;
           default:
@@ -7108,8 +7107,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             break;
           }
           rpn->tmp_res = tmp;
-          if (rpn->res.keep_in_tmp)
+          if (rpn->res.keep_in_tmp) {
             rpn->res = tmp;
+            rpn->res.keep_in_tmp = 1;
+          }
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
           break;
         }
@@ -7141,8 +7142,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                      derefed.off);                                             \
     tmp.reg = use_reg;                                                         \
     rpn->tmp_res = tmp;                                                        \
-    if (rpn->res.keep_in_tmp)                                                  \
+    if (rpn->res.keep_in_tmp) {                                                \
       rpn->res = tmp;                                                          \
+      rpn->res.keep_in_tmp = 1;                                                \
+    }                                                                          \
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                   \
     break;                                                                     \
   }                                                                            \
@@ -7163,8 +7166,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   AIWNIOS_ADD_CODE(op, next2->res.reg);                                        \
   tmp.reg = use_reg;                                                           \
   rpn->tmp_res = tmp;                                                          \
-  if (rpn->res.keep_in_tmp)                                                    \
+  if (rpn->res.keep_in_tmp) {                                                  \
     rpn->res = tmp;                                                            \
+    rpn->res.keep_in_tmp = 1;                                                  \
+  }                                                                            \
   code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       CQO_OP(RAX, X86DivReg, X86DivSIB64);
     } else if (rpn->raw_type != RT_F64) {
@@ -7194,8 +7199,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           AIWNIOS_ADD_CODE(X86ShlImm, MIR(cctrl, tmp.reg),
                            __builtin_ffsll(next->integer) - 1);
           rpn->tmp_res = tmp;
-          if (rpn->res.keep_in_tmp)
+          if (rpn->res.keep_in_tmp) {
             rpn->res = tmp;
+            rpn->res.keep_in_tmp = 1;
+          }
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
         }
         break;
@@ -7586,8 +7593,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg = 0;
       tmp.mode = MD_REG;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -7817,8 +7826,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg = 0;
       tmp.mode = MD_REG;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -7844,8 +7855,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg = 0;
       tmp.mode = MD_REG;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -7878,8 +7891,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->raw_type != RT_F64)
         rpn->res.set_flags = 1;
       rpn->tmp_res = tmp2;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp2;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
     } else {
       next = ICArgN(rpn, 1);
@@ -7902,8 +7917,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PopFromStack(cctrl, &next->res, bin, code_off);
       AIWNIOS_ADD_CODE(X86ShlImm, MIR(cctrl, tmp.reg), next2->res.integer);
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -7926,8 +7943,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->raw_type != RT_F64)
         rpn->res.set_flags = 1;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       break;
     }
@@ -7963,8 +7982,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->raw_type != RT_F64)
         rpn->res.set_flags = 1;
       rpn->tmp_res = tmp2;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp2;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
       break;
     default:
@@ -7992,8 +8013,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->raw_type != RT_F64)
         rpn->res.set_flags = 1;
       rpn->tmp_res = tmp2;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp2;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
     }
     break;
@@ -8157,11 +8180,15 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   b = ICArgN(rpn, 0);                                                          \
   if (IsConst(b) && ConstVal(b) <= 63) {                                       \
     if (a->res.mode == __MD_X86_64_LEA_SIB) {                                  \
-      if (a->res.__sib_base_rpn)                                               \
+      if (a->res.__sib_base_rpn) {                                             \
         code_off =                                                             \
             __OptPassFinal(cctrl, a->res.__sib_base_rpn, bin, code_off);       \
-      if (a->res.__sib_idx_rpn)                                                \
+        a->res.reg = a->res.__sib_base_rpn->res.reg;                           \
+      }                                                                        \
+      if (a->res.__sib_idx_rpn) {                                              \
         code_off = __OptPassFinal(cctrl, a->res.__sib_idx_rpn, bin, code_off); \
+        a->res.reg2 = a->res.__sib_idx_rpn->res.reg;                           \
+      }                                                                        \
       if (lock)                                                                \
         AIWNIOS_ADD_CODE(X86Lock, 0);                                          \
       AIWNIOS_ADD_CODE(f_imm_sib, ConstVal(b), a->res.__SIB_scale,             \
@@ -8178,17 +8205,22 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   } else {                                                                     \
     code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
     if (a->res.mode == __MD_X86_64_LEA_SIB) {                                  \
-      if (a->res.__sib_base_rpn)                                               \
+      if (a->res.__sib_base_rpn) {                                             \
         code_off =                                                             \
             __OptPassFinal(cctrl, a->res.__sib_base_rpn, bin, code_off);       \
-      if (a->res.__sib_idx_rpn)                                                \
+        a->res.reg = a->res.__sib_base_rpn->res.reg;                           \
+      }                                                                        \
+      if (a->res.__sib_idx_rpn) {                                              \
         code_off = __OptPassFinal(cctrl, a->res.__sib_idx_rpn, bin, code_off); \
+        a->res.reg2 = a->res.__sib_idx_rpn->res.reg;                           \
+      }                                                                        \
       code_off = PutICArgIntoReg(cctrl, &b->res, RT_I64i,                      \
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);        \
       if (lock)                                                                \
         AIWNIOS_ADD_CODE(X86Lock, 0);                                          \
       AIWNIOS_ADD_CODE(f_sib, MFR(cctrl, b->res.reg), a->res.__SIB_scale,      \
-                       a->res.reg2, a->res.reg, a->res.off);                   \
+                       a->res.reg2,                         \
+                       a->res.reg, a->res.off);            \
     } else {                                                                   \
       code_off = __OptPassFinal(cctrl, a, bin, code_off);                      \
       code_off = PutICArgIntoReg(cctrl, &a->res, RT_I64i,                      \
