@@ -76,9 +76,6 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   } else {
     mask = me->changes_iregs;
   }
-  // Ok to trash result
-  if (me->res.mode == MD_REG && me->res.raw_type != RT_F64)
-    mask &= ~(1ull << me->res.reg);
 
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type != RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
@@ -92,9 +89,6 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   } else {
     mask = me->changes_fregs;
   }
-  // Ok to trash result
-  if (me->res.mode == MD_REG && me->res.raw_type == RT_F64)
-    mask &= ~(1ull << me->res.reg);
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type == RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
@@ -188,7 +182,7 @@ static void SetKeepTmps(CRPN *rpn) {
     goto binop;
     break;
   case IC_MOD:
-    goto binop;
+  //composuite operation
     break;
   case IC_OR:
     goto binop;
@@ -206,16 +200,14 @@ static void SetKeepTmps(CRPN *rpn) {
     goto unop;
     break;
   case IC_POST_INC:
-    goto binop;
+  //Need a temporary to store result so no
     break;
   case IC_POST_DEC:
-    goto binop;
+  //Need a temporary to store result so no
     break;
   case IC_PRE_INC:
-    goto binop;
     break;
   case IC_PRE_DEC:
-    goto binop;
     break;
   case IC_AND_AND:
     goto binop;
@@ -270,11 +262,9 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_XOR_EQ:
     goto abinop;
     break;
-  case IC_MOD_EQ:
   abinop:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-    if(0)
     if(left->type==IC_IREG||left->type==IC_FREG||left->type==IC_BASE_PTR) {
 		//Only act on accumulator for now in "safe" spots.	
 		if(right->tmp_res.mode==MD_REG&&right->tmp_res.reg==0) {
@@ -295,9 +285,9 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_TYPECAST:
     goto unop;
   }
-  return 0;
+  return;
 t:
-  return 1;
+  return;
 }
 
 static int64_t IsBranchableInst(CRPN *rpn) {
@@ -707,6 +697,7 @@ static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
       return;
     }
   }
+normal:
   if (raw_type != RT_F64) {
     if (cctrl->backend_user_data2 < AIWNIOS_TMP_IREG_CNT) {
       res->mode = MD_REG;
@@ -2086,13 +2077,13 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
           (tmp.mode == MD_INDIR_REG || tmp.mode == __MD_ARM_SHIFT)) {
         ATOMIC_LOAD(derefed);
         tmp.mode = MD_REG;
-        tmp.reg = 0;
-        code = i_imm_op(MIR(cctrl, 0), 0, rpn->integer);
+        tmp.reg = 1;
+        code = i_imm_op(MIR(cctrl, 1), 1, rpn->integer);
         if (code != ARM_ERR_INV_OFF) {
           AIWNIOS_ADD_CODE(code);
         } else {
           code_off = __ICMoveI64(cctrl, 2, rpn->integer, bin, code_off);
-          AIWNIOS_ADD_CODE(i_reg_op(MIR(cctrl, 0), 0, 2))
+          AIWNIOS_ADD_CODE(i_reg_op(MIR(cctrl, 1), 1, 2))
         }
         ATOMIC_STORE(derefed, 0);
         return code_off;
@@ -2377,7 +2368,7 @@ static int64_t __CompileMod(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       return code_off;
     }
-    into_reg = 0;
+    into_reg = 3;
     if (next->raw_type == RT_U64i) {
       AIWNIOS_ADD_CODE(
           ARM_udivX(MIR(cctrl, into_reg), tmp.reg, next2->res.reg));
@@ -2395,13 +2386,12 @@ static int64_t __CompileMod(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.mode = MD_REG;
     tmp.raw_type = RT_I64i;
     tmp.reg = into_reg;
-    tmp.off = 0;
     code_off = ICMov(cctrl, &orig_dst, &tmp, bin, code_off);
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     PopTmp(cctrl, next2);
     return code_off;
   }
-  PushTmp(cctrl, next, &rpn->res);
+  PushTmp(cctrl, next, NULL);
   code_off = __OptPassFinal(cctrl, next2, bin, code_off);
   code_off = __OptPassFinal(cctrl, next, bin, code_off);
   code_off =
@@ -2416,8 +2406,8 @@ static int64_t __CompileMod(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.raw_type = RT_F64;
     tmp.reg = 4;
   } else {
-    into_reg = 0;
-    tmp.reg = 0;
+    into_reg = 3;
+    tmp.reg = 3;
     tmp.raw_type = RT_I64i;
     tmp.mode = MD_REG;
     if (rpn->raw_type == RT_U64i) {
