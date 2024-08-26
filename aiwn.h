@@ -672,8 +672,8 @@ struct CRPN {
   CICArg res,tmp_res;
   CRPN *tree1, *tree2, *ic_fwd;
   //Use with Misc_Bt,includes temporaries
-  int32_t changes_iregs,changes_fregs;
-  int32_t changes_iregs2,changes_fregs2;
+  uint32_t changes_iregs,changes_fregs;
+  uint32_t changes_iregs2,changes_fregs2;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
