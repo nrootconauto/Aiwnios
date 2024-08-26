@@ -471,7 +471,7 @@ static int64_t PopFromStack(CCmpCtrl *cctrl, CICArg *arg, char *bin,
     tmp.reg = 0;
   }
   if (tmp.raw_type != RT_F64) {
-    AIWNIOS_ADD_CODE(ARM_ldrPostImmX(MFR(cctrl, tmp.reg), ARM_REG_SP, 16));
+    AIWNIOS_ADD_CODE(ARM_ldrPostImmX(MIR(cctrl, tmp.reg), ARM_REG_SP, 16));
   } else {
     AIWNIOS_ADD_CODE(ARM_ldrPostImmF64(MFR(cctrl, tmp.reg), ARM_REG_SP, 16));
   }
