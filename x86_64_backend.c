@@ -47,8 +47,8 @@ static int64_t ModeIsDerefToSIB(CRPN *m) {
     // Temporary registers may get destroyed
     if (next->res.mode == MD_REG && IsSavedIReg(next->res.reg))
       return 1;
-  } else if(m->type==IC_BASE_PTR) 
-	return 1;
+  } else if (m->type == IC_BASE_PTR)
+    return 1;
   return 0;
 }
 
@@ -2552,19 +2552,6 @@ static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
     res->off = rpn->integer;
     return;
     return;
-  }
-  if (inher_from) {
-    if (rpn->raw_type == RT_F64 && inher_from->raw_type == RT_F64 &&
-        inher_from->mode != MD_NULL) {
-      rpn->res = *inher_from;
-      rpn->flags |= ICF_TMP_NO_UNDO;
-      return;
-    } else if (rpn->raw_type != RT_F64 && inher_from->raw_type != RT_F64 &&
-               inher_from->mode != MD_NULL) {
-      rpn->res = *inher_from;
-      rpn->flags |= ICF_TMP_NO_UNDO;
-      return;
-    }
   }
 use_defacto:
   if (raw_type != RT_F64) {
@@ -5900,7 +5887,7 @@ static int64_t IsCompoundCompare(CRPN *r) {
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   uint64_t mask;
-  if (!(have->tmp_res.mode==MD_REG&&have->tmp_res.reg==0))
+  if (!(have->tmp_res.mode == MD_REG))
     return 0; // No need to stuff in tmp
   if (is_left_side) {
     if (other)
@@ -5910,10 +5897,6 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   } else {
     mask = me->changes_iregs;
   }
-  // Ok to trash result
-  if (me->res.mode == MD_REG && me->res.raw_type != RT_F64)
-    mask &= ~(1ull << me->res.reg);
-
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type != RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
@@ -5936,9 +5919,6 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   } else {
     mask = me->changes_fregs;
   }
-  // Ok to trash result
-  if (me->res.mode == MD_REG && me->res.raw_type == RT_F64)
-    mask &= ~(1ull << me->res.reg);
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type == RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
@@ -5989,6 +5969,12 @@ static void SetKeepTmps(CRPN *rpn) {
     if (right->tmp_res.mode)
       right->res.keep_in_tmp = 1;
     break;
+  case IC_POST_INC:
+  case IC_POST_DEC:
+  case IC_PRE_INC:
+  case IC_PRE_DEC:
+    // These are special
+    break;
   case IC_BT:
   case IC_BTS:
   case IC_BTR:
@@ -5997,17 +5983,11 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_LBTR:
   case IC_LBTC:
   case IC_STORE:
-  case IC_POST_INC:
-  case IC_POST_DEC:
-  case IC_PRE_INC:
-  case IC_PRE_DEC:
   case IC_AND_AND:
   case IC_OR_OR:
   case IC_XOR_XOR:
   case IC_EQ_EQ:
   case IC_NE:
-  case IC_LE:
-  case IC_GE:
   case IC_LSH:
   case IC_RSH:
   case IC_ADD:
@@ -6020,10 +6000,20 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_XOR:
   case IC_MOD:
   case IC_OR:
+  case IC_POW:
+    left = ICArgN(rpn, 1);
+    right = ICArgN(rpn, 0);
+    if (CanKeepInTmp(rpn, right, left, 0) && !SpillsTmpRegs(left) &&
+        right->tmp_res.mode) {
+      right->res = right->tmp_res;
+      right->res.keep_in_tmp = 1;
+      break;
+    }
+  // These get strange(compound compare)
+  case IC_LE:
+  case IC_GE:
   case IC_LT:
   case IC_GT:
-  case IC_POW:
-  //Im not messing with these
     break;
   case IC_EQ:
   case IC_ADD_EQ:
@@ -6038,7 +6028,8 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_MOD_EQ:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-    if (left->type == IC_IREG || left->type == IC_FREG||left->type==IC_BASE_PTR) {
+    if (left->type == IC_IREG || left->type == IC_FREG ||
+        left->type == IC_BASE_PTR) {
       if (right->tmp_res.mode) {
         right->res = right->tmp_res;
         right->res.keep_in_tmp = 1;
@@ -6590,8 +6581,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         tmp.reg = rpn->res.reg;
       AIWNIOS_ADD_CODE(X86MovQI64F64, MIR(cctrl, tmp.reg), next->res.reg);
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (next->raw_type != RT_F64 && rpn->raw_type == RT_F64) {
       next->res.keep_in_tmp = 1;
@@ -6605,8 +6598,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         tmp.reg = rpn->res.reg;
       AIWNIOS_ADD_CODE(X86MovQF64I64, MFR(cctrl, tmp.reg), next->res.reg);
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else if (next->type == IC_DEREF) {
       code_off = DerefToICArg(cctrl, &tmp, next, 1, bin, code_off);
@@ -6677,8 +6672,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   } else                                                                       \
     AIWNIOS_ADD_CODE(int_op, MFR(cctrl, into_reg));                            \
   rpn->tmp_res = tmp;                                                          \
-  if (rpn->res.keep_in_tmp)                                                    \
+  if (rpn->res.keep_in_tmp) {                                                  \
     rpn->res = tmp;                                                            \
+    rpn->res.keep_in_tmp = 1;                                                  \
+  }                                                                            \
   code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     if (rpn->raw_type == RT_F64) {
       next = ICArgN(rpn, 0);
@@ -6692,8 +6689,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = __ICMoveF64(cctrl, 2, ul, bin, code_off);
       AIWNIOS_ADD_CODE(X86XorPDReg, MFR(cctrl, tmp.reg), 2);
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     } else {
       BACKEND_UNOP(X86NegReg, X86NegReg);
@@ -6734,8 +6733,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg = 0;
       tmp.mode = MD_REG;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -6752,8 +6753,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.reg = 0;
       tmp.mode = MD_REG;
       rpn->tmp_res = tmp;
-      if (rpn->res.keep_in_tmp)
+      if (rpn->res.keep_in_tmp) {
         rpn->res = tmp;
+        rpn->res.keep_in_tmp = 1;
+      }
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     break;
@@ -6868,7 +6871,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             !DstRegAffectsMode(&rpn->res, &derefed)) {                         \
           into_reg = rpn->res.reg;                                             \
         } else                                                                 \
-          into_reg = RDX;                                                        \
+          into_reg = RDX;                                                      \
         tmp.mode = MD_REG;                                                     \
         tmp.raw_type = rpn->raw_type;                                          \
         tmp.reg = into_reg;                                                    \
@@ -6891,7 +6894,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           !DstRegAffectsMode(&rpn->res, &next->res)) {                         \
         into_reg = rpn->res.reg;                                               \
       } else                                                                   \
-        into_reg = RDX;                                                          \
+        into_reg = RDX;                                                        \
       tmp.mode = MD_REG;                                                       \
       tmp.raw_type = rpn->raw_type;                                            \
       tmp.reg = into_reg;                                                      \
@@ -6912,7 +6915,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         !DstRegAffectsMode(&rpn->res, &next2->res)) {                          \
       into_reg = rpn->res.reg;                                                 \
     } else                                                                     \
-      into_reg = RDX;                                                            \
+      into_reg = RDX;                                                          \
     tmp.mode = MD_REG;                                                         \
     tmp.raw_type = rpn->raw_type;                                              \
     tmp.reg = into_reg;                                                        \
@@ -6942,14 +6945,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   next2 = ICArgN(rpn, 0);                                                      \
   if (rpn->raw_type != RT_F64 && IsConst(next2) && Is32Bit(ConstVal(next2)) && \
       next2->type != IC_F64 && next2->integer >= 0) {                          \
-     code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
+    code_off = __OptPassFinal(cctrl, next, bin, code_off);                     \
     tmp2 = next->res;                                                          \
     if (rpn->res.mode == MD_NULL)                                              \
       break;                                                                   \
     if (rpn->res.mode == MD_REG)                                               \
       into_reg = rpn->res.reg;                                                 \
     else                                                                       \
-      into_reg = RDX;                                                            \
+      into_reg = RDX;                                                          \
     code_off =                                                                 \
         PutICArgIntoReg(cctrl, &tmp2, RT_I64i, into_reg, bin, code_off);       \
     if (Is32Bit(next2->integer)) {                                             \
@@ -8219,8 +8222,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (lock)                                                                \
         AIWNIOS_ADD_CODE(X86Lock, 0);                                          \
       AIWNIOS_ADD_CODE(f_sib, MFR(cctrl, b->res.reg), a->res.__SIB_scale,      \
-                       a->res.reg2,                         \
-                       a->res.reg, a->res.off);            \
+                       a->res.reg2, a->res.reg, a->res.off);                   \
     } else {                                                                   \
       code_off = __OptPassFinal(cctrl, a, bin, code_off);                      \
       code_off = PutICArgIntoReg(cctrl, &a->res, RT_I64i,                      \
