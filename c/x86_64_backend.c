@@ -1,6 +1,11 @@
 // X86_64 assembly generator
-#include "aiwn.h"
-
+#include <assert.h>
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
+#include "aiwn_arm.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_except.h"
+extern void DoNothing();
 // backend_user_data5 is the "fail" codemisc for IC_LT/GT etc
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
 // backend_user_data7 is the number of Fregs

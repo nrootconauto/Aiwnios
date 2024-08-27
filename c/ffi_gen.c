@@ -2,7 +2,11 @@
 #include "aiwn_multic.h"
 #include "aiwn_mem.h"
 #ifdef __x86_64__
-#include "aiwn_x86_64.h"
+#include "aiwn_lexparser.h" //For reigster names
+int64_t X86PushReg(char *to, int64_t reg);
+int64_t X86MovRegReg(char *to, int64_t reg,int64_t);
+int64_t X86AndImm(char *to, int64_t reg,int64_t);
+int64_t X86SubImm(char *to, int64_t reg,int64_t);
 #define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
 #ifdef _WIN64
 void *GenFFIBinding(void *fptr, int64_t arity) {

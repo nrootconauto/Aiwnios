@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <signal.h>
 void InputLoop(void* ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
