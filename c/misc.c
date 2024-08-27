@@ -1,5 +1,9 @@
-#include "aiwn.h"
-
+#include <stdint.h>
+#include "aiwn_asm.h"
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
+#include "aiwn_multic.h"
+#include <stddef.h>
 int64_t Bsf(int64_t v) {
   return v ? __builtin_ctzll(v) : -1;
 }

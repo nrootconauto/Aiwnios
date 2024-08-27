@@ -1,6 +1,8 @@
-#include "aiwn.h"
 #include <string.h>
+#include "aiwn_multic.h"
+#include "aiwn_mem.h"
 #ifdef __x86_64__
+#include "aiwn_x86_64.h"
 #define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
 #ifdef _WIN64
 void *GenFFIBinding(void *fptr, int64_t arity) {
@@ -95,6 +97,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
+#include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
   // 0:  stp x29,x30[sp,-16]!
   // 4:  add x0,sp,16
@@ -124,6 +127,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 }
 #endif
 #if defined(__riscv__) || defined(__riscv)
+#include "aiwn_riscv.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int32_t *blob = A_MALLOC(8 * 20, Fs->code_heap);
   blob[0] = RISCV_ADDI(10, 2, 0); // 2 is stack pointer,10 is 1st argument

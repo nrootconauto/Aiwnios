@@ -1,6 +1,16 @@
 #define AIWN_BOOTSTRAP
 #define AIWNIOS_TESTS
-#include "aiwn.h"
+#include "aiwn_mem.h"
+#include "aiwn_que.h"
+#include "aiwn_except.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_windows.h"
+#include "aiwn_multic.h"
+#include "aiwn_fs.h"
+#include "aiwn_asm.h"
+#include "aiwn_sock.h"
+#include <SDL.h>
+#include <assert.h>
 #include "argtable3.h"
 #include "isocline.h"
 #include <errno.h>
@@ -10,6 +20,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+extern CHashTable *glbl_table;
+extern int64_t user_ev_num;
 // clang-format off
 #ifdef __FreeBSD__ 
 #include <machine/sysarch.h>

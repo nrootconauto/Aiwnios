@@ -1,5 +1,11 @@
-#include "aiwn.h"
+#include "aiwn_mem.h"
+#include "aiwn_asm.h"
+#include "aiwn_except.h"
+#include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
+#define ERR                 0x7fFFffFFffFFffFF
+#define INVALID_PTR         ERR
 #ifdef _WIN64
 #  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
 #  include <windows.h>

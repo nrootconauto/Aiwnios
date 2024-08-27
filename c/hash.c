@@ -1,4 +1,6 @@
-#include "aiwn.h"
+#include <stddef.h>
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
 #include <stdint.h>
 int64_t HashStr(char *str) {
   int64_t res = 5381;

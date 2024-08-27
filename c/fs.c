@@ -1,6 +1,10 @@
-#include "aiwn.h"
+#include <stdbool.h>
+#include "aiwn_mem.h"
+#include "aiwn_fs.h"
+#include "aiwn_except.h"
 #include <dirent.h>
 #include <stdio.h>
+#include <SDL.h>
 // clang-format off
 #include <sys/types.h>
 #include <sys/stat.h>

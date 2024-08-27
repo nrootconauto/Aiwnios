@@ -1,4 +1,7 @@
-#include "aiwn.h"
+#include "aiwn_mem.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_fs.h"
+#include "aiwn_except.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>

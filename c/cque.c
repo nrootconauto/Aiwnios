@@ -1,4 +1,5 @@
-#include "aiwn.h"
+#include "aiwn_que.h"
+#include "aiwn_mem.h"
 #include <stdint.h>
 
 void QueInit(CQue *i) {

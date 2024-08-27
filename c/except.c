@@ -1,5 +1,9 @@
-#include "aiwn.h"
+#include "aiwn_except.h"
+#include "aiwn_hash.h"
+#include "aiwn_multic.h"
 #include <setjmp.h>
+#include "aiwn_que.h"
+#include "aiwn_mem.h"
 // See AIWNIOS_enter_try t in except_*.s
 jmp_buf *__enter_try() {
   CExcept *ex = A_MALLOC(sizeof(CExcept), Fs);

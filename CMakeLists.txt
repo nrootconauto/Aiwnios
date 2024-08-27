@@ -143,7 +143,7 @@ if(NOT WIN32)
   set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 endif()
 
-set (AIWNIOS_VERSION "0.0.1")
+set (AIWNIOS_VERSION "0.1.0")
 
 # FreeBSD
 set (CPACK_FREEBSD_PACKAGE_NAME "aiwnios")
@@ -197,9 +197,9 @@ set(
   HCRT2.BIN
   HCRT2.DBG.Z
   Demo
-  Bible.TXT.Z
-  ACDefs.DATA
-  ACWords.DATA
+  misc/Bible.TXT.Z
+  Src/ACDefs.DATA
+  Src/ACWords.DATA
 )
 
 if(NOT WIN32)

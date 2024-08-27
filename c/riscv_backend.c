@@ -1,13 +1,18 @@
 // RISCV assembly generator
-#include "aiwn.h"
-
-// backend_user_data5 is the "fail" codemisc for IC_LT/GT etc
+#include <stddef.h>
+#include <assert.h>
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
+#include "aiwn_riscv.h"
+#include "aiwn_lexparser.h"
+extern void DoNothing();
+// backendd_user_data5 is the "fail" codemisc for IC_LT/GT etc
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
 // backend_user_data7 is the number of Fregs
 // backend_user_data9 is set if we were called from __SexyAssignOp
 //
 //
-//
+//a
 
 #define RISCV_IPOOP1          5
 #define RISCV_IPOOP2          6

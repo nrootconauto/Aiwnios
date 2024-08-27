@@ -1,4 +1,8 @@
-#include "aiwn.h"
+#include <stddef.h>
+#include "aiwn_mem.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_hash.h"
+
 static int64_t IsConst(CRPN *rpn) {
   switch (rpn->type) {
   case IC_CHR:

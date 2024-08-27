@@ -1,4 +1,8 @@
-#include "aiwn.h"
+#include "aiwn_hash.h"
+#include "aiwn_except.h"
+#include "aiwn_que.h"
+#include "aiwn_mem.h"
+#include <stdint.h>
 #include <setjmp.h>
 #include <stdlib.h>
 // This doesn't 1:1 mirror TempleOS,when things get bootstaped , things may get

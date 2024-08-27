@@ -1,4 +1,7 @@
-#include "aiwn.h"
+#include "aiwn_mem.h"
+#include "aiwn_que.h"
+#include "aiwn_hash.h"
+#include "aiwn_except.h"
 #include <string.h>
 typedef struct _CHashImport {
   CHash base;

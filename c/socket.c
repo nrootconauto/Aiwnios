@@ -1,4 +1,5 @@
-#include "aiwn.h"
+#include "aiwn_sock.h"
+#include "aiwn_mem.h"
 #ifndef _WIN64
   #include <arpa/inet.h>
   #include <netdb.h>

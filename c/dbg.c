@@ -1,5 +1,10 @@
-#include "aiwn.h"
+#include <stdint.h>
 #include <signal.h>
+#include <stdarg.h>
+#include "aiwn_hash.h"
+#include "aiwn_multic.h"
+#include "aiwn_que.h"
+#include "aiwn_mem.h"
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #define _XOPEN_SOURCE    1
