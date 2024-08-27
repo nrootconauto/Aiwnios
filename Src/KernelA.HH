@@ -4985,7 +4985,7 @@ class CFind
 #define PEF_NO_COMMA 0x20
 
 extern CMsStateGlbls	ms,ms_last,old_ms;
-#define BIBLE_FILENAME	"::/Bible.TXT.Z"
+#define BIBLE_FILENAME	"::/misc/Bible.TXT.Z"
 
 
 class CMusicGlbls

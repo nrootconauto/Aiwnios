@@ -30,7 +30,7 @@ public class CDolDocGlbls
 MemSet(&doldoc,0,sizeof(CDolDocGlbls));
 
 #help_index "God"
-#define BIBLE_FILENAME	"::/Bible.TXT.Z"
+#define BIBLE_FILENAME	"::/misc/Bible.TXT.Z"
 
 #include "DocExt.HC"
 #include "DocBin.HC"
