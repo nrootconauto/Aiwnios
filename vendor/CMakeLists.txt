@@ -18,8 +18,9 @@ target_compile_options(c_opts
     -fno-unwind-tables
     -fno-asynchronous-unwind-tables
     -fno-stack-protector
-    -mno-shstk
-    -mno-red-zone
+# Nrootconauto here,RISCV doesnt have these. I dont want to polute things too much so I will comment them out
+#    -mno-shstk
+#    -mno-red-zone
     -fcf-protection=none)
 
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
