@@ -351,7 +351,7 @@ set(
 
 if(NOT WIN32)
   install(PROGRAMS aiwnios TYPE BIN)
-  install(FILES aiwnios.png DESTINATION share/icons)
+  install(FILES img/aiwnios.png DESTINATION share/icons)
   install(FILES aiwnios.desktop DESTINATION share/applications)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
@@ -370,7 +370,7 @@ if(NOT WIN32)
   endforeach()
 else()
   install(PROGRAMS aiwnios.exe TYPE BIN)
-  install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/logo.ico" DESTINATION .)
+  install (FILES "${CMAKE_CURRENT_SOURCE_DIR}/img/logo.ico" DESTINATION .)
   foreach(F IN LISTS TEMPLATE_FILES)
     if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${F}")
       install(
