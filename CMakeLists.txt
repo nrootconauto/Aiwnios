@@ -8,7 +8,7 @@ endif ()
 configure_file(generated.h.in generated.h @ONLY)
 configure_file(aiwnios.desktop.in aiwnios.desktop @ONLY)
 
-include("${CMAKE_CURRENT_LIST_DIR}/DetectArch.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/DetectArch.cmake")
 project(AIWNIOS
   LANGUAGES C CXX ASM
 )
@@ -50,7 +50,7 @@ if (ARCH STREQUAL "riscv64")
     dbg.c
     multic.c
     ffi_gen.c
-    argtable3.c
+    vendor/argtable3.c
     socket.c
   )
   set(ASM_SOURCES
@@ -94,7 +94,7 @@ elseif ("${ARCH}" STREQUAL "x86_64")
     dbg.c
     multic.c
     ffi_gen.c
-     argtable3.c
+     vendor/argtable3.c
     socket.c
   )
 elseif ("${ARCH}" STREQUAL "arm64")
@@ -127,16 +127,16 @@ elseif ("${ARCH}" STREQUAL "arm64")
     dbg.c
     multic.c
     ffi_gen.c
-    argtable3.c
+    vendor/argtable3.c
     socket.c
   )
 endif()
 if (NOT WIN32)
-  list(APPEND C_SOURCES cli_vendor/bestline.c)
+  list(APPEND C_SOURCES vendor/bestline.c)
 else ()
-  set(CXX_SOURCES cli_vendor/linenoise.cpp
-                  cli_vendor/wcwidth.cpp
-                  cli_vendor/ConvertUTF.cpp)
+  set(CXX_SOURCES vendor/linenoise.cpp
+                  vendor/wcwidth.cpp
+                  vendor/ConvertUTF.cpp)
 endif ()
 add_executable(
   aiwnios
