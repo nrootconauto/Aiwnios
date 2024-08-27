@@ -4,10 +4,10 @@
 #include <inttypes.h>
 #include <signal.h>
 
-#if defined(__linux__) && defined(__x86_64__)
-#  include <ucontext.h>
-#endif
-#if defined(__x86_64__)
+#ifdef __x86_64__
+#  ifdef __linux__
+#    include <ucontext.h>
+#  endif
 #  ifndef __SEG_FS
 #    ifdef __clang__
 #      define __seg_fs __attribute__((address_space(257)))

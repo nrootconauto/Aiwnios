@@ -1,7 +1,7 @@
 #define AIWN_BOOTSTRAP
 #define AIWNIOS_TESTS
 #include "aiwn.h"
-#include "argtable3.h"
+#include "vendor/argtable3.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
@@ -1252,9 +1252,9 @@ int64_t IsCmdLineMode() {
 }
 
 #ifndef _WIN32
-#include "cli_vendor/bestline.h"
+#include "vendor/bestline.h"
 #else
-#include "cli_vendor/linenoise.h"
+#include "vendor/linenoise.h"
 #endif
 
 static void _freestr(char **p) {

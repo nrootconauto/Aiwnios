@@ -125,11 +125,14 @@ static HANDLE active_threads[HARD_CORE_CNT];
 static CONTEXT thread_use_ctx[HARD_CORE_CNT];
 static int64_t fault_codes[HARD_CORE_CNT];
 static int64_t something_happened = 0;
-static void WriteMsg(char *buf) {
+static void WriteMsg(char const *fmt, ...) {
   WaitForSingleObject(debugger_mtx, INFINITE);
+  va_list l;
+  va_start(l, fmt);
   _CDbgMsgQue *msg = malloc(sizeof(_CDbgMsgQue));
   QueIns(msg, debugger_msgs.last);
-  strcpy(msg->msg, buf);
+  vsnprintf(msg->msg, 0x100, fmt, l);
+  va_end(l);
   ReleaseMutex(debugger_mtx);
 }
 static int64_t MsgPoll() {
@@ -181,12 +184,17 @@ found:;
 #else
 static int debugger_pipe[2];
 static void ReadMsg(char *buf) {
-  if (debugger_pipe[0])
-    read(debugger_pipe[0], buf, 0x100);
+  if (!debugger_pipe[0])
+    return;
+  buf[read(debugger_pipe[0], buf, 0x100)] = 0;
 }
-static void WriteMsg(char *buf) {
-  if (debugger_pipe[1])
-    write(debugger_pipe[1], buf, 0x100);
+static void WriteMsg(char const *fmt, ...) {
+  if (!debugger_pipe[1])
+    return;
+  va_list l;
+  va_start(l, fmt);
+  vdprintf(debugger_pipe[1], fmt, l);
+  va_end(l);
 }
 static int64_t MsgPoll() {
   struct pollfd poll_for;
@@ -218,9 +226,7 @@ void DebuggerClientWatchThisTID() {
   ReleaseMutex(debugger_mtx);
 #else
   int64_t tid = gettid();
-  char buf[256];
-  sprintf(buf, DBG_MSG_WATCH_TID, tid);
-  WriteMsg(buf);
+  WriteMsg(DBG_MSG_WATCH_TID, tid);
 #endif
 }
 #if defined(_WIN32) || defined(WIN32)
@@ -351,8 +357,7 @@ void DebuggerBegin() {
 #else
     CreateThread(NULL, 0, &DebuggerBegin, NULL, 0, NULL);
 #endif
-    strcpy(buf, DBG_MSG_OK);
-    WriteMsg(buf);
+    WriteMsg(DBG_MSG_OK);
     return;
   } else {
 #if !(defined(_WIN32) || defined(WIN32))
@@ -906,20 +911,14 @@ void InstallDbgSignalsForThread() {
 }
 // This happens when after we call DebuggerClientEnd
 void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
-  char buf[256];
-  sprintf(buf, DBG_MSG_SET_GREG, task, gettid(), which, v);
-  WriteMsg(buf);
+  WriteMsg(DBG_MSG_SET_GREG, task, gettid(), which, v);
   GrabDebugger(SIGCONT);
 }
 void DebuggerClientStart(void *task, void **write_regs_to) {
-  char buf[256], *ptr;
-  sprintf(buf, DBG_MSG_START, task, gettid(), write_regs_to);
-  WriteMsg(buf);
+  WriteMsg(DBG_MSG_START, task, gettid(), write_regs_to);
   GrabDebugger(SIGCONT);
 }
 void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
-  char buf[256];
-  sprintf(buf, DBG_MSG_RESUME, task, gettid(), wants_singlestep);
-  WriteMsg(buf);
+  WriteMsg(DBG_MSG_RESUME, task, gettid(), wants_singlestep);
   GrabDebugger(SIGCONT);
 }
