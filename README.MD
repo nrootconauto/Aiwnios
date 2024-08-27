@@ -8,7 +8,7 @@ machines,although other aritchecures are planned for the future. This project is
 | Architecture | OS |
 |--|--|
 | x86_64 | Windows, Linux and FreeBSD |
-| aarch64 | Linux, FreeBSD and **MacOS*** |
+| aarch64 | Linux, FreeBSD and ***MacOS*** |
 | rv64 (RISC-V 64) | Linux |
 
 ## Screenshot

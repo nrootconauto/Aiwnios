@@ -1478,9 +1478,9 @@ public class CAutoCompleteGlbls
   CHashAC *fillin_matches[AC_FILLINS_NUM+1];
 };
 
-#define ACD_WORD_FILENAME	"/ACWords.DATA"
-#define ACD_DEF_FILENAME	"/ACDefs.DATA"
-#define ACD_DEF_FILENAME_Z	"/ACDefs.DATA"
+#define ACD_WORD_FILENAME	"/Src/ACWords.DATA"
+#define ACD_DEF_FILENAME	"/Src/ACDefs.DATA"
+#define ACD_DEF_FILENAME_Z	"/Src/ACDefs.DATA"
 
 #define ACD_H1			0
 #define ACD_H1_END		1

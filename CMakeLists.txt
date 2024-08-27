@@ -54,24 +54,24 @@ if (ARCH STREQUAL "riscv64")
     socket.c
   )
   set(ASM_SOURCES
-      miscRISCV.s
-      swapctxRISCV.s
-      ffi_call_tos_RISCV.s
+      asm/miscRISCV.s
+      asm/swapctxRISCV.s
+      asm/ffi_call_tos_RISCV.s
     )
 elseif ("${ARCH}" STREQUAL "x86_64")
   if (WIN32)
     set(ASM_SOURCES
-      miscWIN.s
-      swapctxWIN.s
-      ffi_call_tos_WIN.s
-      miscTOSX86.s
+      asm/miscWIN.s
+      asm/swapctxWIN.s
+      asm/ffi_call_tos_WIN.s
+      asm/miscTOSX86.s
     )
   else ()
     set(ASM_SOURCES
-      miscX86.s
-      swapctxX86.s
-      ffi_call_tos.s
-      miscTOSX86.s
+      asm/miscX86.s
+      asm/swapctxX86.s
+      asm/ffi_call_tos.s
+      asm/miscTOSX86.s
     )
   endif ()
   set(
@@ -102,10 +102,10 @@ elseif ("${ARCH}" STREQUAL "arm64")
   list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
 
   set(ASM_SOURCES
-    miscAARCH64.s
-    swapctxAARCH64.s
-    ffi_call_tos_aarch64.s
-    miscTOSaarch64.s
+    asm/miscAARCH64.s
+    asm/swapctxAARCH64.s
+    asm/ffi_call_tos_aarch64.s
+    asm/miscTOSaarch64.s
   )
   set(C_SOURCES
     arm64_asm.c 
