@@ -2495,21 +2495,7 @@ int64_t TmpRegToReg(int64_t r) {
   }
 }
 
-//
-// Takes an argument called inher. We can use the parent's destination
-// as a temporary. I'll give an example
-//
-// DO: -~!a;
-// - dst=0
-//  ~ dst=0
-//   ! dst=0
-//
-// DON'T: -~!a
-// - dst=0
-//  ~ dst=1
-//   ! dst=2
-
-static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
+static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn) {
   int64_t raw_type = rpn->raw_type;
   CICArg *res = &rpn->res;
   if (rpn->flags & ICF_PRECOMPUTED)
@@ -2757,7 +2743,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_FS:
   case IC_GS:
     if (!spilled)
-      PushTmp(cctrl, r, NULL);
+      PushTmp(cctrl, r);
     else
       PushSpilledTmp(cctrl, r);
     return 1;
@@ -3116,7 +3102,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     //  reigster
     arg = ICArgN(r, 0);
     if (!spilled)
-      PushTmp(cctrl, r, NULL);
+      PushTmp(cctrl, r);
     else
       PushSpilledTmp(cctrl, r);
     PushTmpDepthFirst(cctrl, arg, 0);
@@ -3176,7 +3162,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       if (SpillsTmpRegs(arg2))
         PushSpilledTmp(cctrl, arg);
       else
-        PushTmp(cctrl, arg, NULL);
+        PushTmp(cctrl, arg);
       PushTmpDepthFirst(cctrl, arg->base.next, SpillsTmpRegs(arg2));
     } else
       PushTmpDepthFirst(cctrl, arg, SpillsTmpRegs(arg2));
@@ -3230,7 +3216,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     break;
   case __IC_VARGS:
     if (!spilled)
-      PushTmp(cctrl, r, NULL);
+      PushTmp(cctrl, r);
     else
       PushSpilledTmp(cctrl, r);
     for (a = 0; a != r->length; a++) {
@@ -3247,7 +3233,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     return 0;
   fin:
     if (!spilled)
-      PushTmp(cctrl, r, NULL);
+      PushTmp(cctrl, r);
     else
       PushSpilledTmp(cctrl, r);
   }
@@ -5512,14 +5498,14 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
             (arg = ICArgN(rpn, 0))->raw_type == RT_F64 ? RT_F64 : RT_I64i;
         fun_arg.reg = RBP;
         fun_arg.off = 16 + stk_arg_cnt++ * 8;
-        PushTmp(cctrl, arg, NULL);
+        PushTmp(cctrl, arg);
         PopTmp(cctrl, arg);
         if (fun_arg.off == -arg->res.off && arg->res.mode == MD_FRAME)
           continue;
         code_off = ICMov(cctrl, &arg->res, &fun_arg, bin, code_off);
       } else if (rpn->type == IC_GET_VARGS_PTR) {
         arg = ICArgN(rpn, 0);
-        PushTmp(cctrl, arg, NULL);
+        PushTmp(cctrl, arg);
         PopTmp(cctrl, arg);
         if (arg->res.mode == MD_REG) {
           AIWNIOS_ADD_CODE(X86LeaSIB, arg->res.reg, -1, -1, RBP,
