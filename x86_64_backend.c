@@ -5432,7 +5432,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   // ALIGN TO 8
   i2 = __FindPushedIRegs(cctrl, push_ireg);
   i3 = __FindPushedFRegs(cctrl, push_freg);
-  int64_t to_push = cctrl->backend_user_data0 + fsz + 16, old_regs_start;
+  int64_t to_push = cctrl->backend_user_data0 + fsz, old_regs_start;
   cctrl->backend_user_data4 = fsz;
   old_regs_start = fsz + cctrl->backend_user_data0;
 
@@ -5446,7 +5446,8 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       flist[i3++] = i;
   AIWNIOS_ADD_CODE(X86PushReg, RBP);
   AIWNIOS_ADD_CODE(X86MovRegReg, RBP, RSP);
-  AIWNIOS_ADD_CODE(X86SubImm32, RSP, to_push);
+  if (to_push - 16 > 0)
+    AIWNIOS_ADD_CODE(X86SubImm32, RSP, to_push);
   off = -old_regs_start;
   for (i = 0; i != i2; i++) {
     AIWNIOS_ADD_CODE(X86PushReg, ilist[i]);
