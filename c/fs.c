@@ -4,7 +4,8 @@
 #include "aiwn_except.h"
 #include <dirent.h>
 #include <stdio.h>
-#include <SDL.h>
+#include <SDL_messagebox.h>
+#include <time.h>
 // clang-format off
 #include <sys/types.h>
 #include <sys/stat.h>

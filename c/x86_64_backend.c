@@ -1,8 +1,12 @@
 // X86_64 assembly generator
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "aiwn_hash.h"
 #include "aiwn_mem.h"
 #include "aiwn_arm.h"
+#include "aiwn_asm.h"
 #include "aiwn_lexparser.h"
 #include "aiwn_except.h"
 extern void DoNothing();

@@ -7,6 +7,8 @@ int64_t X86PushReg(char *to, int64_t reg);
 int64_t X86MovRegReg(char *to, int64_t reg,int64_t);
 int64_t X86AndImm(char *to, int64_t reg,int64_t);
 int64_t X86SubImm(char *to, int64_t reg,int64_t);
+int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off);
+int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off);
 #define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
 #ifdef _WIN64
 void *GenFFIBinding(void *fptr, int64_t arity) {

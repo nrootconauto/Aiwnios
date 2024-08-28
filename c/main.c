@@ -1716,6 +1716,7 @@ int main(int argc, char **argv) {
     __iofd_errno = errno;
 #endif
 #ifndef __APPLE__
+  void DebuggerBegin(void);
   if (!arg_no_debug->count)
     DebuggerBegin();
 #endif
