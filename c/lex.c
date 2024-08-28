@@ -37,9 +37,9 @@ enter:;
     lex->file->pos++;
     if (ret == 5 || ret == '\r') // TempleOS cursor charactor
       goto enter;
-    if (ret == '\n')
+    if (ret == '\n') {
       lex->file->ln++, lex->file->col = 0;
-    else
+    } else
       lex->file->col++;
     return lex->cur_char = ret;
   } else {
@@ -263,7 +263,6 @@ re_enter:;
   CLexFile *new_file, *actual_file;
   char *dir;
   switch (chr1) {
-    break;
   case '`':
     return lex->cur_tok = '`';
     break;
@@ -279,6 +278,10 @@ re_enter:;
   case ' ':
   case '\t':
   case '\n':
+    if((lex->flags&LEXF_UNTIL_NEWLINE)&&chr1=='\n') {
+      lex->flags&=~LEXF_UNTIL_NEWLINE;
+      return lex->cur_tok = '\n';
+    } 
     goto re_enter;
     break;
   case '0' ... '9':
@@ -638,7 +641,26 @@ re_enter:;
         LexWarn(lex, "AIWN ignore's #assert's and other JIT shennangins");
         goto re_enter;
       } else if (!strcmp(lex->string, "if")) {
-        LexWarn(lex, "AIWN does not handle #if's(will treat it as a 0).");
+		lex->flags|=LEXF_UNTIL_NEWLINE;
+		CCmpCtrl *cc=CmpCtrlNew(lex);
+		char *code;
+		int64_t ret=0;
+		CodeCtrlPush(cc);
+		Lex(lex);
+		if(ParseExpr(cc,0)) {
+		   CRPN *rtrn = A_CALLOC(sizeof(CRPN), 0);
+           rtrn->type = IC_RET;
+           QueIns(rtrn,cc->code_ctrl->ir_code);
+		    if(code=Compile(cc,NULL,NULL,NULL)) {
+				ret=FFI_CALL_TOS_0(code);
+			}
+			A_FREE(code);
+		}
+		CodeCtrlPop(cc);
+		CmpCtrlDel(cc);
+		if(ret)
+          goto if_pass;
+        
         goto if_fail;
       } else if (!strcmp(lex->string, "ifaot")) {
         // AIWN will only AOT compile for you,the JIT will be

@@ -1127,6 +1127,8 @@ int64_t ParseExpr(CCmpCtrl *ccmp, int64_t flags) {
 next:
   while (tok = ccmp->lex->cur_tok) {
     switch (tok) {
+    case '\n':
+      goto fin;
       break;
     case TK_KW_OFFSET:
     offo:

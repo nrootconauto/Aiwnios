@@ -33,6 +33,7 @@ typedef struct CLexer {
 #define LEXF_USE_LAST_CHAR 1
 #define LEXF_ERROR         2
 #define LEXF_NO_EXPAND     4 // Don't expand macros
+#define LEXF_UNTIL_NEWLINE     8
   int64_t flags, cur_char;
   int64_t cur_tok;
   struct CHeapCtrl *hc;
