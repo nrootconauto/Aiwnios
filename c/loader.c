@@ -1,11 +1,11 @@
+#include "aiwn_asm.h"
+#include "aiwn_except.h"
+#include "aiwn_fs.h"
+#include "aiwn_hash.h"
 #include "aiwn_mem.h"
 #include "aiwn_que.h"
-#include "aiwn_hash.h"
-#include "aiwn_except.h"
-#include "aiwn_asm.h"
-#include <string.h>
 #include <stdio.h>
-#include "aiwn_fs.h"
+#include <string.h>
 typedef struct _CHashImport {
   CHash base;
   char *module_base;
@@ -44,9 +44,9 @@ static int64_t Is12Bit(int64_t i) {
 
 static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   char *src = *_src, *ptr2, *st_ptr;
-  int64_t i, etype,offset;
+  int64_t i, etype, offset;
   CHashExport *tmpex = NULL;
-  int64_t first      = 1;
+  int64_t first = 1;
   // GNU extension, copied from TINE(https://github.com/eb-lan/TINE)
   // it compiles down to a mov call anyway so it doesn't hurt speed
 #define READ_NUM(x, T)                                                         \
@@ -58,13 +58,14 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
-    switch(etype) {
-		case IET_REL_I0 ... IET_REL_RISCV:
-		offset=READ_NUM(src,int32_t);
-		src+=4;
-		break;
-		default: offset=0;
-	}
+    switch (etype) {
+    case IET_REL_I0 ... IET_REL_RISCV:
+      offset = READ_NUM(src, int32_t);
+      src += 4;
+      break;
+    default:
+      offset = 0;
+    }
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     if (*st_ptr) {
@@ -81,11 +82,11 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
           *(tmpiss = A_MALLOC(sizeof(_CHashImport), NULL)) = (_CHashImport){
               .base =
                   {
-                      .str  = A_STRDUP(st_ptr, NULL),
+                      .str = A_STRDUP(st_ptr, NULL),
                       .type = HTT_IMPORT_SYS_SYM2,
                   },
               .module_header_entry = st_ptr - 9,
-              .module_base         = module_base,
+              .module_base = module_base,
           };
           HashAdd(tmpiss, Fs->hash_table);
         }
@@ -112,7 +113,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         i = ((CHashGlblVar *)tmpex)->data_addr;
       else
         i = tmpex->val;
-      i+=offset;
+      i += offset;
       switch (etype) {
       case IET_REL_I8:
         REL(char);
@@ -133,13 +134,13 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         IMM(int16_t);
         break;
       case IET_IMM_U32:
-      IMM(uint32_t);
+        IMM(uint32_t);
         break;
       case IET_IMM_I64:
-      IMM(int64_t);
+        IMM(int64_t);
         break;
       case IET_REL_RISCV: {
-        int64_t idx   = (char *)i - (char *)ptr2;
+        int64_t idx = (char *)i - (char *)ptr2;
         int64_t low12 = idx - (idx & ~((1 << 12) - 1));
         if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
           *(int32_t *)(ptr2) |= (idx >> 12) << 12;
@@ -178,11 +179,11 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
-    switch(etype) {
-      case IET_REL_I0 ... IET_REL_RISCV :
-		src+=4;
-		break;
-	}
+    switch (etype) {
+    case IET_REL_I0 ... IET_REL_RISCV:
+      src += 4;
+      break;
+    }
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
@@ -195,7 +196,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       *(tmpex = A_MALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
           .base =
               {
-                  .str  = A_STRDUP(st_ptr, NULL),
+                  .str = A_STRDUP(st_ptr, NULL),
                   .type = HTT_EXPORT_SYS_SYM,
               },
           .val = i,
@@ -228,7 +229,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         *(tmpex = A_MALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
             .base =
                 {
-                    .str  = A_STRDUP(st_ptr, NULL),
+                    .str = A_STRDUP(st_ptr, NULL),
                     .type = HTT_EXPORT_SYS_SYM,
                 },
             .val = ptr3,
@@ -247,7 +248,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       break;
     case IET_DATA_HEAP:
     case IET_ZEROED_DATA_HEAP:
-      cnt  = READ_NUM(src, int64_t);
+      cnt = READ_NUM(src, int64_t);
       ptr3 = A_CALLOC(cnt, NULL);
       src += 8;
       memcpy(ptr3, src, cnt);
@@ -264,11 +265,11 @@ static void LoadPass2(char *src, char *module_base) {
   while (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
-    switch(etype) {
-      case IET_REL_I0 ... IET_REL_RISCV:
-		//Special has form [BINOFF,OFFSET]
-		src+=4;
-	}
+    switch (etype) {
+    case IET_REL_I0 ... IET_REL_RISCV:
+      // Special has form [BINOFF,OFFSET]
+      src += 4;
+    }
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
@@ -325,7 +326,7 @@ char *Load(char *filename) { // Load a .BIN file module into memory.
   }
   SetWriteNP(0);
   fbuf = (CBinFile *)bfh;
-  bfh  = A_MALLOC(size, hc);
+  bfh = A_MALLOC(size, hc);
   memcpy(bfh, fbuf, size);
   A_FREE(fbuf);
 
@@ -351,8 +352,8 @@ void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
     for (h = Fs->hash_table->body[idx]; h; h = h->base.next) {
       if (h->base.type & HTT_EXPORT_SYS_SYM) {
         FFI_CALL_TOS_2(cb, h->base.str, h->val);
-      } else if(h->base.type&HTT_FUN) {
-	    FFI_CALL_TOS_2(cb, h->base.str, ((CHashFun*)h)->fun_ptr);
+      } else if (h->base.type & HTT_FUN) {
+        FFI_CALL_TOS_2(cb, h->base.str, ((CHashFun *)h)->fun_ptr);
       }
     }
   }

@@ -1,7 +1,7 @@
-#pragma once 
+#pragma once
+#include "aiwn_que.h"
 #include <setjmp.h>
 #include <stdint.h>
-#include "aiwn_que.h"
 typedef struct CExceptPad {
   int64_t gp[30 - 18 + 1];
   double fp[15 - 8 + 1];
@@ -14,7 +14,7 @@ typedef struct CExcept {
 #define try                                                                    \
   {                                                                            \
     if (AIWNIOS_enter_try()) {
-#define catch(body)                                                            \
+#define catch (body)                                                           \
   }                                                                            \
   else {                                                                       \
     body;                                                                      \

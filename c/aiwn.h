@@ -3,8 +3,8 @@
 #include <SDL.h>
 #include <assert.h>
 #include <signal.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +19,6 @@ struct CTask;
 
 // See -g or --grab-focus
 extern int64_t sdl_window_grab_enable;
-
-
 
 struct CCmpCtrl;
 struct CRPN;
@@ -42,9 +40,7 @@ void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
 
 extern void *GetHolyFs();
 
-
 extern void Misc_ForceYield();
-
 
 void *GetHolyGs();
 void *GetHolyFs();
@@ -52,9 +48,5 @@ void *GetHolyGsPtr();
 void *GetHolyFsPtr();
 void SetHolyFs(void *);
 void SetHolyGs(void *);
-
-
-
-
 
 int64_t DoNothing();

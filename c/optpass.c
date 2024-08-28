@@ -1,9 +1,9 @@
-#include <stddef.h>
-#include <math.h>
-#include <stdlib.h>
-#include "aiwn_mem.h"
-#include "aiwn_lexparser.h"
 #include "aiwn_hash.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_mem.h"
+#include <math.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 static int64_t IsConst(CRPN *rpn) {
   switch (rpn->type) {
@@ -36,9 +36,9 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
     rpn2 = ICFwd(rpn2);
   AssignRawTypeToNode(cctrl, rpn2);
   ic_fun = rpn2->ic_fun;
-  rpn2   = rpn->base.next;
-  arg    = ic_fun->base.members_lst;
-  cnt2   = ic_fun->argc;
+  rpn2 = rpn->base.next;
+  arg = ic_fun->base.members_lst;
+  cnt2 = ic_fun->argc;
   if (ic_fun->base.flags & CLSF_VARGS)
     cnt2 -= 2;
   for (cnt = 0; cnt != rpn->length; cnt++) {
@@ -48,10 +48,10 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
     if (rpn2->type == IC_NOP) {
       if (arg->member_class->raw_type == RT_F64) {
         rpn2->type = IC_F64;
-        rpn2->flt  = ((double *)&arg->dft_val)[0];
+        rpn2->flt = ((double *)&arg->dft_val)[0];
         AssignRawTypeToNode(cctrl, rpn2);
       } else {
-        rpn2->type    = IC_I64;
+        rpn2->type = IC_I64;
         rpn2->integer = arg->dft_val;
         AssignRawTypeToNode(cctrl, rpn2);
       }
@@ -61,12 +61,12 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
       if ((arg->member_class->raw_type == RT_F64) ^ // Check for difference
           (AssignRawTypeToNode(cctrl, rpn2) == RT_F64)) {
         if (arg->member_class->raw_type == RT_F64) {
-          ic       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
           ic->type = IC_TO_F64;
           QueIns(ic, rpn2->base.last);
           AssignRawTypeToNode(cctrl, ic);
         } else {
-          ic       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
           ic->type = IC_TO_I64;
           AssignRawTypeToNode(cctrl, ic);
           QueIns(ic, rpn2->base.last);
@@ -80,10 +80,10 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
     rpn->length++;
     if (arg->member_class->raw_type == RT_F64) {
       ic->type = IC_F64;
-      ic->flt  = ((double *)&arg->dft_val)[0];
+      ic->flt = ((double *)&arg->dft_val)[0];
       AssignRawTypeToNode(cctrl, ic);
     } else {
-      ic->type    = IC_I64;
+      ic->type = IC_I64;
       ic->integer = arg->dft_val;
       AssignRawTypeToNode(cctrl, ic);
     }
@@ -91,18 +91,18 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
     arg = arg->next;
   }
   if (ic_fun->base.flags & CLSF_VARGS) {
-    rpn2  = ICArgN(rpn, rpn->length - cnt2 - 1 + 1);
-    last  = rpn;
+    rpn2 = ICArgN(rpn, rpn->length - cnt2 - 1 + 1);
+    last = rpn;
     vargc = rpn->length - cnt2;
     // Pass argv
-    ic           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-    ic->type     = __IC_VARGS;
-    ic->length   = vargc;
+    ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
+    ic->type = __IC_VARGS;
+    ic->length = vargc;
     ic->raw_type = RT_I64i;
     QueIns(ic, last);
     // Pass argc
-    ic          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-    ic->type    = IC_I64;
+    ic = A_CALLOC(sizeof(CRPN), cctrl->hc);
+    ic->type = IC_I64;
     ic->integer = vargc;
     AssignRawTypeToNode(cctrl, ic);
     QueIns(ic, ICFwd(last->base.next)->base.last);
@@ -154,7 +154,7 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
     }
   }
   list = A_CALLOC(sizeof(CRPN *) * cnt, cctrl->hc);
-  cnt  = 0;
+  cnt = 0;
   for (rpn = cctrl->code_ctrl->ir_code->next; rpn != cctrl->code_ctrl->ir_code;
        rpn = rpn->base.next) {
     switch (rpn->type) {
@@ -187,20 +187,20 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
       a = ICFwd(b);
       if (a->ic_class->ptr_star_cnt || a->ic_dim) {
         if (b->ic_class->ptr_star_cnt || b->ic_dim) {
-          new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          new = A_CALLOC(sizeof(CRPN), cctrl->hc);
           new->type = IC_DIV;
           QueIns(new, rpn->base.last);
-          lit          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-          lit->type    = IC_I64;
+          lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          lit->type = IC_I64;
           lit->integer = PtrWidthOfRPN(a);
           QueIns(lit, new);
           AssignRawTypeToNode(cctrl, new);
         } else {
-          new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          new = A_CALLOC(sizeof(CRPN), cctrl->hc);
           new->type = IC_MUL;
           QueIns(new, b->base.last);
-          lit          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-          lit->type    = IC_I64;
+          lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+          lit->type = IC_I64;
           lit->integer = PtrWidthOfRPN(a);
           QueIns(lit, new);
           AssignRawTypeToNode(cctrl, new);
@@ -212,57 +212,57 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
       b = rpn->base.next;
       a = ICFwd(b);
       if (a->ic_class->ptr_star_cnt || a->ic_dim) {
-        new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new = A_CALLOC(sizeof(CRPN), cctrl->hc);
         new->type = IC_MUL;
         QueIns(new, b->base.last);
-        lit          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-        lit->type    = IC_I64;
+        lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        lit->type = IC_I64;
         lit->integer = PtrWidthOfRPN(a);
         QueIns(lit, new);
         AssignRawTypeToNode(cctrl, new);
       } else if ((b->ic_class->ptr_star_cnt || b->ic_dim) &&
                  rpn->type != IC_ADD_EQ) {
-        new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new = A_CALLOC(sizeof(CRPN), cctrl->hc);
         new->type = IC_MUL;
         QueIns(new, a->base.last);
-        lit          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-        lit->type    = IC_I64;
+        lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        lit->type = IC_I64;
         lit->integer = PtrWidthOfRPN(b);
         QueIns(lit, new);
         AssignRawTypeToNode(cctrl, new);
       }
       break;
     case IC_ARRAY_ACC:
-      b   = rpn->base.next;
-      a   = ICFwd(b);
+      b = rpn->base.next;
+      a = ICFwd(b);
       dim = rpn->ic_dim;
       if (!dim)
         goto aderef;
       if (dim->next) {
-        new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-        new->type     = IC_MUL;
+        new = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new->type = IC_MUL;
         new->raw_type = RT_I64i;
         new->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
         QueIns(new, rpn);
-        lit           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-        lit->type     = IC_I64;
+        lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        lit->type = IC_I64;
         lit->raw_type = new->raw_type;
         lit->ic_class = new->ic_class;
-        lit->integer  = PtrWidthOfRPN(a);
+        lit->integer = PtrWidthOfRPN(a);
         QueIns(lit, new);
         AssignRawTypeToNode(cctrl, new);
-        dim       = dim->next;
+        dim = dim->next;
         rpn->type = IC_ADD;
       } else {
       aderef:
-        new2       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
         new2->type = IC_ADD;
         QueIns(new2, rpn);
-        new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new = A_CALLOC(sizeof(CRPN), cctrl->hc);
         new->type = IC_MUL;
         QueIns(new, new2);
-        lit          = A_CALLOC(sizeof(CRPN), cctrl->hc);
-        lit->type    = IC_I64;
+        lit = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        lit->type = IC_I64;
         lit->integer = PtrWidthOfRPN(a);
         QueIns(lit, new);
         rpn->type = IC_DEREF;
@@ -279,7 +279,7 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
         }
       }
       if (rpn->local_mem->dim.next) {
-        new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+        new = A_CALLOC(sizeof(CRPN), cctrl->hc);
         new->type = IC_ADDR_OF;
         QueIns(new, rpn->base.last);
         AssignRawTypeToNode(cctrl, new);
@@ -302,7 +302,7 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
           //
           b = rpn->base.last;
           if (b->type != IC_ADDR_OF) {
-            new       = A_CALLOC(sizeof(CRPN), cctrl->hc);
+            new = A_CALLOC(sizeof(CRPN), cctrl->hc);
             new->type = IC_ADDR_OF;
             QueIns(new, rpn->base.last);
             AssignRawTypeToNode(cctrl, new);
@@ -318,44 +318,44 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
     switch (rpn->type) {
       break;
     case IC_DOT:
-      raw_type  = rpn->raw_type;
-      a         = rpn->base.next;
+      raw_type = rpn->raw_type;
+      a = rpn->base.next;
       total_off = rpn->local_mem->off;
       for (; a->type == IC_DOT; a = b) {
-        b        = a->base.next;
+        b = a->base.next;
         raw_type = a->raw_type;
         total_off += a->local_mem->off;
         ICFree(a);
       }
-      new           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-      new->type     = IC_ADDR_OF;
+      new = A_CALLOC(sizeof(CRPN), cctrl->hc);
+      new->type = IC_ADDR_OF;
       new->raw_type = RT_PTR;
       QueIns(new, a->base.last);
-      new2           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-      new2->type     = IC_ADD;
+      new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
+      new2->type = IC_ADD;
       new2->raw_type = RT_PTR;
       QueIns(new2, rpn);
-      new3           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-      new3->type     = IC_I64;
-      new3->integer  = total_off;
+      new3 = A_CALLOC(sizeof(CRPN), cctrl->hc);
+      new3->type = IC_I64;
+      new3->integer = total_off;
       new3->raw_type = RT_I64i;
       QueIns(new3, new2);
-      rpn->type     = IC_DEREF;
+      rpn->type = IC_DEREF;
       rpn->raw_type = raw_type;
       break;
     case IC_ARROW:
-      new            = A_CALLOC(sizeof(CRPN), cctrl->hc);
-      new->type      = IC_DEREF;
-      new->raw_type  = rpn->raw_type;
-      new->ic_fun    = rpn->ic_fun;
-      new->ic_dim    = rpn->ic_dim;
-      new2           = A_CALLOC(sizeof(CRPN), cctrl->hc);
-      new2->type     = IC_I64;
-      new2->integer  = rpn->local_mem->off;
+      new = A_CALLOC(sizeof(CRPN), cctrl->hc);
+      new->type = IC_DEREF;
+      new->raw_type = rpn->raw_type;
+      new->ic_fun = rpn->ic_fun;
+      new->ic_dim = rpn->ic_dim;
+      new2 = A_CALLOC(sizeof(CRPN), cctrl->hc);
+      new2->type = IC_I64;
+      new2->integer = rpn->local_mem->off;
       new2->raw_type = RT_I64i;
       QueIns(new2, rpn);
       QueIns(new, rpn->base.last);
-      rpn->type     = IC_ADD;
+      rpn->type = IC_ADD;
       rpn->raw_type = RT_PTR;
     }
   }
@@ -383,7 +383,7 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
     if (rpn->type != operator)                                                 \
       return cur;                                                              \
     CRPN *b = rpn->base.next, *a;                                              \
-    a       = ICFwd(b);                                                        \
+    a = ICFwd(b);                                                              \
     if (IsConst(a) && !first && !only_rightside) {                             \
       if (a->type != IC_F64)                                                   \
         cur oper a->integer;                                                   \
@@ -411,9 +411,9 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
         cur = name(cctrl, b, operator, cur, 0);                                \
         if (!is_i64) {                                                         \
           a->type = IC_F64;                                                    \
-          a->flt  = cur;                                                       \
+          a->flt = cur;                                                        \
         } else {                                                               \
-          a->type    = IC_I64;                                                 \
+          a->type = IC_I64;                                                    \
           a->integer = cur;                                                    \
         }                                                                      \
       } else if (IsConst(b)) {                                                 \
@@ -424,9 +424,9 @@ void OptPassExpandPtrs(CCmpCtrl *cctrl) {
         cur = name(cctrl, a, operator, cur, 0);                                \
         if (!is_i64) {                                                         \
           b->type = IC_F64;                                                    \
-          b->flt  = cur;                                                       \
+          b->flt = cur;                                                        \
         } else {                                                               \
-          b->type    = IC_I64;                                                 \
+          b->type = IC_I64;                                                    \
           b->integer = cur;                                                    \
         }                                                                      \
       }                                                                        \
@@ -514,9 +514,9 @@ loop:
           a2 = next->flt;
         else
           a2 = next->integer;
-        rpn->integer  = !!a2;
+        rpn->integer = !!a2;
         rpn->raw_type = RT_I64i;
-        rpn->type     = IC_I64;
+        rpn->type = IC_I64;
         ICFree(next);
         changed = 1;
       } else
@@ -577,11 +577,11 @@ loop:
         rpn->ic_class = next->ic_class;
         if (next->type == IC_F64) {
           rpn->type = IC_F64;
-          rpn->flt  = -next->flt;
+          rpn->flt = -next->flt;
           ICFree(next);
           changed = 1;
         } else {
-          rpn->type    = next->type;
+          rpn->type = next->type;
           rpn->integer = -next->integer;
           ICFree(next);
           changed = 1;
@@ -595,11 +595,11 @@ loop:
         rpn->ic_class = next->ic_class;
         if (next->type == IC_F64) {
           rpn->type = IC_F64;
-          rpn->flt  = +next->flt;
+          rpn->flt = +next->flt;
           ICFree(next);
           changed = 1;
         } else {
-          rpn->type    = next->type;
+          rpn->type = next->type;
           rpn->integer = +next->integer;
           ICFree(next);
           changed = 1;
@@ -621,24 +621,24 @@ loop:
       if (IsConst(next = rpn->base.next) && IsConst(ICFwd(rpn->base.next))) {
         SET_AB;
         rpn->type = IC_F64;
-        rpn->flt  = pow(a, b);
+        rpn->flt = pow(a, b);
       } else
         goto next1;
     binop_next:
       ICFree(ICFwd(rpn->base.next));
       ICFree(rpn->base.next);
       changed = 1;
-      rpn     = rpn->base.next;
+      rpn = rpn->base.next;
       break;
     case IC_ADD:
       if (IsConst(next = rpn->base.next) && IsConst(ICFwd(rpn->base.next))) {
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a + b;
+          rpn->flt = a + b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 + b2;
         }
       } else
@@ -653,10 +653,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a - b;
+          rpn->flt = a - b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 - b2;
         }
       } else
@@ -689,10 +689,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a * b;
+          rpn->flt = a * b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 * b2;
         }
       } else
@@ -707,10 +707,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = ((int64_t *)&a)[0] & ((int64_t *)&b)[0];
+          rpn->flt = ((int64_t *)&a)[0] & ((int64_t *)&b)[0];
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 & b2;
         }
       } else
@@ -725,10 +725,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = ((int64_t *)&a)[0] ^ ((int64_t *)&b)[0];
+          rpn->flt = ((int64_t *)&a)[0] ^ ((int64_t *)&b)[0];
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 ^ b2;
         }
       } else
@@ -742,12 +742,12 @@ loop:
           if (!b)
             goto next1;
           rpn->type = IC_F64;
-          rpn->flt  = fmod(a, b);
+          rpn->flt = fmod(a, b);
         } else {
           SET_A2B2;
           if (!b2)
             goto next1;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 % b2;
         }
       } else
@@ -759,10 +759,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = ((int64_t *)&a)[0] | ((int64_t *)&b)[0];
+          rpn->flt = ((int64_t *)&a)[0] | ((int64_t *)&b)[0];
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 | b2;
         }
       } else
@@ -774,10 +774,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a < b;
+          rpn->flt = a < b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 < b2;
         }
       } else
@@ -789,10 +789,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a > b;
+          rpn->flt = a > b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 > b2;
         }
       } else
@@ -846,7 +846,7 @@ loop:
           a2 = !!next->flt;
         else
           a2 = next->integer;
-        rpn->type    = IC_I64;
+        rpn->type = IC_I64;
         rpn->integer = a2 && b2;
         goto binop_next;
       } else
@@ -863,7 +863,7 @@ loop:
           a2 = !!next->flt;
         else
           a2 = next->integer;
-        rpn->type    = IC_I64;
+        rpn->type = IC_I64;
         rpn->integer = a2 || b2;
         goto binop_next;
       } else
@@ -880,7 +880,7 @@ loop:
           a2 = !!next->flt;
         else
           a2 = next->integer;
-        rpn->type    = IC_I64;
+        rpn->type = IC_I64;
         rpn->integer = !!a2 ^ !!b2;
         goto binop_next;
       } else
@@ -891,10 +891,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a == b;
+          rpn->flt = a == b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 == b2;
         }
       } else
@@ -906,10 +906,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a != b;
+          rpn->flt = a != b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 != b2;
         }
       } else
@@ -921,10 +921,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a <= b;
+          rpn->flt = a <= b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 <= b2;
         }
       } else
@@ -936,10 +936,10 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt  = a >= b;
+          rpn->flt = a >= b;
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 >= b2;
         }
       } else
@@ -950,12 +950,12 @@ loop:
       if (IsConst(next = rpn->base.next) && IsConst(ICFwd(rpn->base.next))) {
         if (rpn->raw_type == RT_F64) {
           SET_AB;
-          rpn->type    = IC_F64;
+          rpn->type = IC_F64;
           rpn->integer = ((int64_t *)&a)[0]
                          << ((int64_t *)&b)[0]; // Type punning
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 << b2;
         }
       } else
@@ -971,7 +971,7 @@ loop:
               ((int64_t *)&a)[0] >> ((int64_t *)&b)[0]; // Type punning
         } else {
           SET_A2B2;
-          rpn->type    = IC_I64;
+          rpn->type = IC_I64;
           rpn->integer = a2 >> b2; // TODO arithmetic or logical
         }
       } else
@@ -1057,7 +1057,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
   if (!cctrl->cur_fun)
     return;
   mv = A_CALLOC(sizeof(COptMemberVar) * cctrl->cur_fun->base.member_cnt, NULL);
-  i  = 0;
+  i = 0;
   for (tmpm = cctrl->cur_fun->base.members_lst; tmpm; tmpm = tmpm->next) {
     mv[i].m = tmpm;
     if (tmpm->flags & MLF_STATIC)
@@ -1137,7 +1137,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       if (next->type == IC_LOCAL) {
         for (i = 0; i != cctrl->cur_fun->base.member_cnt; i++) {
           if (mv[i].m == next->local_mem) {
-            mv[i].score  = 0;
+            mv[i].score = 0;
             mv[i].m->reg = REG_NONE;
             break;
           }
@@ -1388,15 +1388,15 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
   }
   // Time to assign the rest of the function members to the base pointer
   qsort(mv, cnt, sizeof(COptMemberVar), (void *)&OptMemberVarSortSz);
-  #if defined(__riscv__) || defined(__riscv)
-  //In RiscV
-  // s0    -> TOP
-  // s0-8  -> return_address
-  // s0-16 -> old s0
-  off=16;
-  #else
+#if defined(__riscv__) || defined(__riscv)
+  // In RiscV
+  //  s0    -> TOP
+  //  s0-8  -> return_address
+  //  s0-16 -> old s0
+  off = 16;
+#else
   off = 0;
-  #endif
+#endif
   for (i = 0; i != cnt; i++) {
     if (mv[i].m->reg == REG_NONE && !(mv[i].m->flags & MLF_STATIC)) {
       switch (mv[i].m->member_class->raw_type) {
@@ -1448,7 +1448,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
        rpn = rpn->base.next) {
     if (rpn->type == IC_LOCAL) {
       if (rpn->local_mem->flags & MLF_STATIC) {
-        rpn->type    = IC_STATIC;
+        rpn->type = IC_STATIC;
         rpn->integer = rpn->local_mem->static_bytes;
       } else if (rpn->local_mem->reg != REG_NONE) {
         i = rpn->local_mem->reg;
@@ -1458,8 +1458,8 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
           rpn->type = IC_IREG;
         rpn->integer = i;
       } else {
-        i            = rpn->local_mem->off;
-        rpn->type    = IC_BASE_PTR;
+        i = rpn->local_mem->off;
+        rpn->type = IC_BASE_PTR;
         rpn->integer = i;
       }
     }

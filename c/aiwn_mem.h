@@ -1,8 +1,8 @@
 #pragma once
-#include <stdint.h>
-#include <setjmp.h>
-#include "aiwn_que.h"
 #include "aiwn_multic.h"
+#include "aiwn_que.h"
+#include <setjmp.h>
+#include <stdint.h>
 typedef struct CTask {
   int64_t task_signature;
   struct CQue *except; // CExcept
@@ -12,7 +12,7 @@ typedef struct CTask {
   void *stack;
   char ctx[2048];
   jmp_buf throw_pad;
-  struct CHeapCtrl *heap,*code_heap;
+  struct CHeapCtrl *heap, *code_heap;
 } CTask;
 
 struct CHashTable;
@@ -37,10 +37,10 @@ typedef struct CMemBlk {
 typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
   struct CMemUnused *next;
-  struct CMemUnused *last; //Used for used memory only
+  struct CMemUnused *last; // Used for used memory only
   CHeapCtrl *hc;
-  void *caller1,*caller2; //Used for used memory only
-  int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
+  void *caller1, *caller2; // Used for used memory only
+  int64_t sz;              // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 
 #define A_FREE              __AIWNIOS_Free
@@ -52,7 +52,6 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
 void __AIWNIOS_Free(void *ptr);
 char *__AIWNIOS_StrDup(char *str, void *t);
 
-
 char *__AIWNIOS_StrDup(char *str, void *t);
 void HeapCtrlDel(CHeapCtrl *ct);
 CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t code_heap);
@@ -63,7 +62,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t);
 
 int SetWriteNP(int);
 #ifndef __APPLE__
-#define SetWriteNP(n) (n)
+#  define SetWriteNP(n) (n)
 #endif
 extern int64_t bc_enable;
 // Returns good region if good,else NULL and after is set how many bytes OOB

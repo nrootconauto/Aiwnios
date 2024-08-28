@@ -1,7 +1,7 @@
 #pragma once
-#include <stdint.h>
+#include "aiwn_que.h"
 #include <setjmp.h>
-#include "aiwn_que.h" 
+#include <stdint.h>
 
 typedef struct CArrayDim {
   struct CArrayDim *next;

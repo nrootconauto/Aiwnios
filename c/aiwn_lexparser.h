@@ -1,8 +1,10 @@
 #pragma once
-#define ERR                 0x7fFFffFFffFFffFF
-#define INVALID_PTR         ERR
+#define ERR         0x7fFFffFFffFFffFF
+#define INVALID_PTR ERR
 typedef struct CRPN CRPN;
+#include <stdint.h>
 #include "aiwn_hash.h"
+struct CTask;
 // This represents a peice of text being lexed(it could be a file macro, or
 // such)
 typedef struct CLexFile {
@@ -33,7 +35,7 @@ typedef struct CLexer {
 #define LEXF_USE_LAST_CHAR 1
 #define LEXF_ERROR         2
 #define LEXF_NO_EXPAND     4 // Don't expand macros
-#define LEXF_UNTIL_NEWLINE     8
+#define LEXF_UNTIL_NEWLINE 8
   int64_t flags, cur_char;
   int64_t cur_tok;
   struct CHeapCtrl *hc;
@@ -383,18 +385,18 @@ typedef struct CICArg {
   CRPN *__sib_base_rpn, *__sib_idx_rpn;
 } CICArg;
 enum {
-  ICF_SPILLED     = 1, // See PushSpilledTmp in XXX_backend.c
-  ICF_DEAD_CODE   = 2,
+  ICF_SPILLED = 1, // See PushSpilledTmp in XXX_backend.c
+  ICF_DEAD_CODE = 2,
   ICF_TMP_NO_UNDO = 4,
   ICF_PRECOMPUTED =
-      8, // Doesnt re-compile a node,useful for putting in "dummy" values
-  ICF_SIB          = 16, // Has 2 registers (base and idnex)
-  ICF_INDIR_REG    = 32, // Has 1 registers (idnex)
+      8,        // Doesnt re-compile a node,useful for putting in "dummy" values
+  ICF_SIB = 16, // Has 2 registers (base and idnex)
+  ICF_INDIR_REG = 32,    // Has 1 registers (idnex)
   ICF_STUFF_IN_REG = 64, // Will stuff the result into a register(.stuff_in_reg)
                          // once result is computed
   ICF_LOCK_EXPR = 128,   // Used with lock {}
-  ICF_IS_BOOL   = 256,
-  ICF_NO_JUMP=512, //Used for eliminating jumps to next instruction
+  ICF_IS_BOOL = 256,
+  ICF_NO_JUMP = 512, // Used for eliminating jumps to next instruction
 };
 struct CRPN {
   CQue base;
@@ -414,11 +416,11 @@ struct CRPN {
     CCodeMisc *break_to;
   };
   CCodeMisc *code_misc2, *code_misc3, *code_misc4;
-  CICArg res,tmp_res;
+  CICArg res, tmp_res;
   CRPN *tree1, *tree2, *ic_fwd;
-  //Use with Misc_Bt,includes temporaries
-  uint32_t changes_iregs,changes_fregs;
-  uint32_t changes_iregs2,changes_fregs2;
+  // Use with Misc_Bt,includes temporaries
+  uint32_t changes_iregs, changes_fregs;
+  uint32_t changes_iregs2, changes_fregs2;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
   char stuff_in_reg;
 };
@@ -483,15 +485,15 @@ CHashClass *PrsType(CCmpCtrl *ccmp, CHashClass *base, char **name,
                     CHashFun **fun, CArrayDim *dim);
 void PrsTests();
 
-void TaskInit(CTask *task, void *addr, int64_t stk_sz);
-struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct, CTask *task,
+void TaskInit(struct CTask *task, void *addr, int64_t stk_sz);
+struct CHeapCtrl *HeapCtrlInit(struct CHeapCtrl *ct, struct CTask *task,
                                int64_t is_code_heap);
 void TaskExit();
 extern _Thread_local struct CTask *HolyFs;
 extern _Thread_local struct CTask *Fs;
 
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
-                   CHeapCtrl *heap);
+                   struct CHeapCtrl *heap);
 
 void LexTests();
 void LexerDump(CLexer *lex);
@@ -517,8 +519,8 @@ enum {
   RBP = 5,
   RSI = 6,
   RDI = 7,
-  R8  = 8,
-  R9  = 9,
+  R8 = 8,
+  R9 = 9,
   R10 = 10,
   R11 = 11,
   R12 = 12,
@@ -527,58 +529,56 @@ enum {
   R15 = 15,
   RIP = 16
 };
-  #define AIWNIOS_IREG_START 10
-  #define AIWNIOS_IREG_CNT                                                     \
+#  define AIWNIOS_IREG_START 10
+#  define AIWNIOS_IREG_CNT                                                     \
     (15 - AIWNIOS_IREG_START + 1 - 1 +                                         \
      2) //-1 for R13 as it is wierd,+2 for RSI/RDI
-  #define AIWNIOS_REG_FP         RBP
-  #define AIWNIOS_REG_SP         RSP
-  #define AIWNIOS_TMP_IREG_POOP  R8
-  #define AIWNIOS_TMP_IREG_POOP2 RCX
-  #define AIWNIOS_TMP_IREG_START 0
-  #define AIWNIOS_TMP_IREG_CNT   2
-  #define AIWNIOS_FREG_START     6
-  #define AIWNIOS_TMP_FREG_START 3
-  #define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
-  #define AIWNIOS_FREG_CNT       (15-6+1)
+#  define AIWNIOS_REG_FP         RBP
+#  define AIWNIOS_REG_SP         RSP
+#  define AIWNIOS_TMP_IREG_POOP  R8
+#  define AIWNIOS_TMP_IREG_POOP2 RCX
+#  define AIWNIOS_TMP_IREG_START 0
+#  define AIWNIOS_TMP_IREG_CNT   2
+#  define AIWNIOS_FREG_START     6
+#  define AIWNIOS_TMP_FREG_START 3
+#  define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
+#  define AIWNIOS_FREG_CNT       (15 - 6 + 1)
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))
-  #define AIWNIOS_IREG_START     19
-  #define AIWNIOS_IREG_CNT       (28 - 19 + 1)
-  #define AIWNIOS_REG_FP         ARM_REG_FP
-  #define AIWNIOS_REG_SP         ARM_REG_SP
-  #define AIWNIOS_TMP_IREG_POOP  18 // Platform register,I use it as a poo poo
-  #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
-  #define AIWNIOS_TMP_IREG_START 8
-  #define AIWNIOS_TMP_IREG_CNT   (16 - 8 + 1)
-  #define AIWNIOS_FREG_START     8
-  #define AIWNIOS_FREG_CNT       (15 - 8 + 1)
-  #define AIWNIOS_TMP_FREG_START 16
-  #define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
+#  define AIWNIOS_IREG_START     19
+#  define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+#  define AIWNIOS_REG_FP         ARM_REG_FP
+#  define AIWNIOS_REG_SP         ARM_REG_SP
+#  define AIWNIOS_TMP_IREG_POOP  18 // Platform register,I use it as a poo poo
+#  define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
+#  define AIWNIOS_TMP_IREG_START 8
+#  define AIWNIOS_TMP_IREG_CNT   (16 - 8 + 1)
+#  define AIWNIOS_FREG_START     8
+#  define AIWNIOS_FREG_CNT       (15 - 8 + 1)
+#  define AIWNIOS_TMP_FREG_START 16
+#  define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
 #elif defined(__APPLE__) && (defined(_M_ARM64) || defined(__aarch64__))
-  #define AIWNIOS_IREG_START     19
-  #define AIWNIOS_IREG_CNT       (28 - 19 + 1)
-  #define AIWNIOS_REG_FP         ARM_REG_FP
-  #define AIWNIOS_REG_SP         ARM_REG_SP
-  #define AIWNIOS_TMP_IREG_POOP  16
-  #define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
-  #define AIWNIOS_TMP_IREG_START 8
-  #define AIWNIOS_TMP_IREG_CNT   (15 - 8 + 1)
-  #define AIWNIOS_FREG_START     8
-  #define AIWNIOS_FREG_CNT       (15 - 8 + 1)
-  #define AIWNIOS_TMP_FREG_START 16
-  #define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
+#  define AIWNIOS_IREG_START     19
+#  define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+#  define AIWNIOS_REG_FP         ARM_REG_FP
+#  define AIWNIOS_REG_SP         ARM_REG_SP
+#  define AIWNIOS_TMP_IREG_POOP  16
+#  define AIWNIOS_TMP_IREG_POOP2 17 // I use it as a second poo poo ALWAYS
+#  define AIWNIOS_TMP_IREG_START 8
+#  define AIWNIOS_TMP_IREG_CNT   (15 - 8 + 1)
+#  define AIWNIOS_FREG_START     8
+#  define AIWNIOS_FREG_CNT       (15 - 8 + 1)
+#  define AIWNIOS_TMP_FREG_START 16
+#  define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
 #endif
 #if defined(__riscv__) || defined(__riscv)
-  #define AIWNIOS_IREG_START   0
-  #define AIWNIOS_FREG_START   0
-  #define AIWNIOS_TMP_IREG_CNT 5
-  #define AIWNIOS_TMP_FREG_CNT 13
-  #define AIWNIOS_IREG_CNT     (27 - 18 + 1 + 1)
-  #define AIWNIOS_FREG_CNT     (27 - 18 + 1 + 2)
+#  define AIWNIOS_IREG_START   0
+#  define AIWNIOS_FREG_START   0
+#  define AIWNIOS_TMP_IREG_CNT 5
+#  define AIWNIOS_TMP_FREG_CNT 13
+#  define AIWNIOS_IREG_CNT     (27 - 18 + 1 + 1)
+#  define AIWNIOS_FREG_CNT     (27 - 18 + 1 + 2)
 #endif
-
-
 
 int64_t X86PushReg(char *to, int64_t reg);
 int64_t X86MovRegReg(char *to, int64_t a, int64_t b);
@@ -586,14 +586,13 @@ int64_t X86AndImm(char *to, int64_t a, int64_t b);
 int64_t X86SubImm32(char *to, int64_t a, int64_t b);
 int64_t X86MovImm(char *to, int64_t a, int64_t off);
 int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
-                         int64_t off);
+                  int64_t off);
 int64_t X86CallReg(char *to, int64_t reg);
 int64_t X86AddImm32(char *to, int64_t a, int64_t b);
 int64_t X86PopReg(char *to, int64_t reg);
 int64_t X86Ret(char *to, int64_t ul);
 int64_t X86Leave(char *to, int64_t ul);
 int64_t X86JmpReg(char *to, int64_t r);
-
 
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp);
 void CodeCtrlDel(CCodeCtrl *ctrl);
@@ -697,7 +696,7 @@ CCmpCtrl *__HC_CmpCtrlNew();
 CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp);
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp);
 char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info,
-                   CHeapCtrl *heap);
+                   struct CHeapCtrl *heap);
 CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm);
@@ -720,9 +719,10 @@ CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl *cc, int64_t len);
 char *Load(char *filename);
 CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr);
-                           
+
 void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr));
-CCmpCtrl *CmpCtrlDel(CCmpCtrl *d);;
+CCmpCtrl *CmpCtrlDel(CCmpCtrl *d);
+;
 
 void __HC_SetAOTRelocBeforeRIP(CRPN *r, int64_t off);
 int64_t __HC_CodeMiscIsUsed(CCodeMisc *cm);

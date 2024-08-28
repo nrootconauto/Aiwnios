@@ -1,6 +1,6 @@
-#include <stddef.h>
 #include "aiwn_hash.h"
 #include "aiwn_mem.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 int64_t HashStr(char *str) {
@@ -21,10 +21,10 @@ void HashDel(CHash *h) {
 }
 
 CHashTable *HashTableNew(int64_t sz, void *task) {
-  CHash **body    = A_CALLOC(sz * sizeof(CHash *), task);
+  CHash **body = A_CALLOC(sz * sizeof(CHash *), task);
   CHashTable *ret = A_MALLOC(sizeof(CHashTable), task);
-  ret->body       = body;
-  ret->mask       = sz - 1;
+  ret->body = body;
+  ret->mask = sz - 1;
   return ret;
 }
 
@@ -61,12 +61,12 @@ CHash **HashBucketFind(char *str, CHashTable *table) {
 
 void HashAdd(CHash *h, CHashTable *table) {
   CHash **b = HashBucketFind(h->str, table);
-  h->next   = *b;
-  *b        = h;
+  h->next = *b;
+  *b = h;
 }
 
 static int64_t _HashDelStr(char *str, CHashTable *table, int64_t inst) {
-  CHash **b   = HashBucketFind(str, table), *h2;
+  CHash **b = HashBucketFind(str, table), *h2;
   CHash *prev = NULL;
   for (h2 = *b; h2; h2 = h2->next) {
     if (!strcmp(h2->str, str)) {

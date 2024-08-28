@@ -1,14 +1,14 @@
-#include <stdint.h>
-#include <signal.h>
-#include <stdarg.h>
+#include "aiwn_asm.h"
 #include "aiwn_hash.h"
+#include "aiwn_mem.h"
 #include "aiwn_multic.h"
 #include "aiwn_que.h"
-#include "aiwn_mem.h"
-#include "aiwn_asm.h"
+#include <signal.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #define _XOPEN_SOURCE    1
@@ -20,25 +20,25 @@
                       // the important TIDs(cores))
 #define DBG_MSG_OK "OK"
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-  #include <poll.h>
-  #include <sys/ptrace.h>
-  #include <sys/types.h>
-  #include <sys/wait.h>
-  #include <ucontext.h>
-  #include <unistd.h>
-  #if defined(__FreeBSD__)
-    #include <machine/reg.h>
-  #endif
-  #if defined(__linux__)
-    #include <linux/elf.h> //Why do I need this for NT_PRSTATUS
-    #include <sys/uio.h>
-    #include <sys/user.h>
-  #endif
+#  include <poll.h>
+#  include <sys/ptrace.h>
+#  include <sys/types.h>
+#  include <sys/wait.h>
+#  include <ucontext.h>
+#  include <unistd.h>
+#  if defined(__FreeBSD__)
+#    include <machine/reg.h>
+#  endif
+#  if defined(__linux__)
+#    include <linux/elf.h> //Why do I need this for NT_PRSTATUS
+#    include <sys/uio.h>
+#    include <sys/user.h>
+#  endif
 #else
-  #include <windows.h>
-  #include <errhandlingapi.h>
-  #include <handleapi.h>
-  #include <processthreadsapi.h>
+#  include <windows.h>
+#  include <errhandlingapi.h>
+#  include <handleapi.h>
+#  include <processthreadsapi.h>
 #endif
 #if defined(__APPLE__)
 typedef struct CFuckup {
@@ -47,8 +47,8 @@ typedef struct CFuckup {
   pid_t pid;
   void *task;
 } CFuckup;
-  #define PTRACE_TRACEME PT_TRACE_ME
-  #define gettid         getpid
+#  define PTRACE_TRACEME PT_TRACE_ME
+#  define gettid         getpid
 #endif
 #if defined(__FreeBSD__)
 typedef struct CFuckup {
@@ -59,35 +59,35 @@ typedef struct CFuckup {
   struct reg regs;
   struct fpreg fp;
 } CFuckup;
-  #define PTRACE_TRACEME   PT_TRACE_ME
-  #define PTRACE_ATTACH    PT_ATTACH
-  #define PTRACE_SETREGS   PT_SETREGS
-  #define PTRACE_GETREGS   PT_GETREGS
-  #define PTRACE_SETFPREGS PT_SETFPREGS
-  #define PTRACE_GETFPREGS PT_GETFPREGS
-  #define gettid           getpid
+#  define PTRACE_TRACEME   PT_TRACE_ME
+#  define PTRACE_ATTACH    PT_ATTACH
+#  define PTRACE_SETREGS   PT_SETREGS
+#  define PTRACE_GETREGS   PT_GETREGS
+#  define PTRACE_SETFPREGS PT_SETFPREGS
+#  define PTRACE_GETFPREGS PT_GETFPREGS
+#  define gettid           getpid
 #endif
 #if defined(__linux__)
-  #include <asm/ptrace.h>
-  #include <sys/user.h>
+#  include <asm/ptrace.h>
+#  include <sys/user.h>
 typedef struct CFuckup {
   struct CQue base;
   int64_t signal;
   pid_t pid;
   void *task;
-  #if defined(_M_ARM64) || defined(__aarch64__)
+#  if defined(_M_ARM64) || defined(__aarch64__)
   struct user_pt_regs regs;
   struct user_fpsimd_struct fp;
-  #elif defined(__x86_64__)
+#  elif defined(__x86_64__)
   struct user_fpregs_struct fp;
   struct user_regs_struct regs;
-  #elif defined(__riscv__) || defined(__riscv)
+#  elif defined(__riscv__) || defined(__riscv)
   struct user_regs_struct regs;
   union __riscv_fp_state fp;
-  #endif
+#  endif
 } CFuckup;
 #elif defined(_WIN64)
-  #include <winnt.h>
+#  include <winnt.h>
 typedef struct CFuckup {
   struct CQue base;
   int64_t signal;
@@ -95,9 +95,9 @@ typedef struct CFuckup {
   void *task;
   CONTEXT *_regs; // regs may be alligned
 } CFuckup;
-  #ifndef SIGCONT
-    #define SIGCONT 0x101
-  #endif
+#  ifndef SIGCONT
+#    define SIGCONT 0x101
+#  endif
 #endif
 CFuckup *GetFuckupByTask(CQue *head, void *t) {
   CFuckup *fu;
@@ -129,7 +129,7 @@ typedef struct _CDbgMsgQue {
 } _CDbgMsgQue;
 static CQue debugger_msgs;
 static HANDLE debugger_mtx;
-  #define HARD_CORE_CNT 64
+#  define HARD_CORE_CNT 64
 static HANDLE active_threads[HARD_CORE_CNT];
 static CONTEXT thread_use_ctx[HARD_CORE_CNT];
 static int64_t fault_codes[HARD_CORE_CNT];
@@ -208,18 +208,18 @@ static void WriteMsg(char const *fmt, ...) {
 static int64_t MsgPoll() {
   struct pollfd poll_for;
   memset(&poll_for, 0, sizeof(struct pollfd));
-  poll_for.fd     = debugger_pipe[0];
+  poll_for.fd = debugger_pipe[0];
   poll_for.events = POLL_IN;
   if (poll(&poll_for, 1, 2))
     return 1;
   return 0;
 }
 static void GrabDebugger(int64_t code) {
-  #if defined(__APPLE__)
-  // Tee hee
-  #else
+#  if defined(__APPLE__)
+// Tee hee
+#  else
   raise(code);
-  #endif
+#  endif
 }
 #endif
 
@@ -250,7 +250,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
       else {
         abort();
       }
-      fu->signal     = fault_codes[s];
+      fu->signal = fault_codes[s];
       fault_codes[s] = 0;
       if (got)
         *got = tid;
@@ -271,7 +271,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
     close(debugger_pipe[0]);
     close(debugger_pipe[1]);
     ptrace(PT_DETACH, pid, 0, 0);
-    if(WIFEXITED(code))
+    if (WIFEXITED(code))
       exit(WEXITSTATUS(code));
     exit(WSTOPSIG(code));
     return 0;
@@ -297,21 +297,21 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
     case SIGSTOP:
       break;
     default:
-  #if defined(__x86_64__)
+#  if defined(__x86_64__)
       // IF you are blessed you are running on a platform that has these
       // Here's the deal Linux takes it in data/freebsd takes it in
       // addr(only 1 is used my homie)
       ptrace(PTRACE_GETREGS, pid, &fu->regs, &fu->regs);
       ptrace(PTRACE_GETFPREGS, pid, &fu->fp, &fu->fp);
-  #elif defined(PTRACE_GETREGSET)
+#  elif defined(PTRACE_GETREGSET)
       struct iovec poop;
-      poop.iov_len  = sizeof(fu->regs);
+      poop.iov_len = sizeof(fu->regs);
       poop.iov_base = &fu->regs;
       ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &poop);
-      poop.iov_len  = sizeof(fu->fp);
+      poop.iov_len = sizeof(fu->fp);
       poop.iov_base = &fu->fp;
       ptrace(PTRACE_GETREGSET, pid, NT_PRFPREG, &poop);
-  #endif
+#  endif
     }
     if (got)
       *got = pid;
@@ -325,7 +325,7 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
   *(void **)to = (void *)v;
 #endif
 #if defined(__linux__)
-  #if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__) ||      \
+#  if defined(_M_ARM64) || defined(__aarch64__) || defined(__x86_64__) ||      \
       defined(__riscv) || defined(__riscv__)
   for (s = 0; s != 8 / 2; s++) {
     if (!s)
@@ -333,7 +333,7 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
     else
       ptrace(PTRACE_POKETEXT, tid, to + s * 2, (v >> (s * 16ul)) & 0xfffful);
   }
-  #endif
+#  endif
 #elif defined(__FreeBSD__)
   for (s = 0; s != 8 / 4; s++)
     ptrace(PT_WRITE_D, tid, to + s * 4, (v >> (s * 32ul)) & 0xffffFFFFul);
@@ -343,7 +343,7 @@ void DebuggerBegin() {
   pid_t tid = 0;
 #if defined(_WIN32) || defined(WIN32)
   static int64_t init = 0;
-  tid                 = init; // SIMULATE fork sort of
+  tid = init; // SIMULATE fork sort of
   if (!init) {
     memset(active_threads, 0, 8 * HARD_CORE_CNT);
     memset(fault_codes, 0, 8 * HARD_CORE_CNT);
@@ -391,7 +391,7 @@ void DebuggerBegin() {
     while (1) {
       if (MsgPoll()) {
         ReadMsg(buf);
-        ptr  = buf;
+        ptr = buf;
         task = NULL;
         while (1) {
           if (*ptr == ':') {
@@ -541,7 +541,7 @@ void DebuggerBegin() {
                 if (fu = GetFuckupByPid(&fuckups, tid)) {
                   if (fu->signal == SIGCONT) {
                     fu->signal = 0;
-                    fu->task   = task;
+                    fu->task = task;
                     break;
                   }
                 }
@@ -551,28 +551,28 @@ void DebuggerBegin() {
               else {
 // See your swapctx for your arch(swapctxAARCH64/swapctxX86)
 #if defined(__x86_64__)
-  #if defined(__linux__)
+#  if defined(__linux__)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.rip);
                 PTWriteAPtr(tid, &write_regs_to[1], fu->regs.rsp);
                 PTWriteAPtr(tid, &write_regs_to[2], fu->regs.rbp);
-  #elif defined(__FreeBSD__)
+#  elif defined(__FreeBSD__)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.r_rip);
                 PTWriteAPtr(tid, &write_regs_to[1], fu->regs.r_rsp);
                 PTWriteAPtr(tid, &write_regs_to[2], fu->regs.r_rbp);
-  #elif defined(_WIN32) || defined(WIN32)
+#  elif defined(_WIN32) || defined(WIN32)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->_regs->Rip);
                 PTWriteAPtr(tid, &write_regs_to[1], fu->_regs->Rsp);
                 PTWriteAPtr(tid, &write_regs_to[2], fu->_regs->Rbp);
-  #endif
+#  endif
 #endif
 
 #if defined(_M_ARM64) || defined(__aarch64__)
-  #if defined(__linux__)
+#  if defined(__linux__)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
                 PTWriteAPtr(tid, &write_regs_to[21], fu->regs.sp);
                 PTWriteAPtr(tid, &write_regs_to[11], fu->regs.regs[29]);
-  #elif defined(__FreeBSD__)
-  #endif
+#  elif defined(__FreeBSD__)
+#  endif
 #endif
 #if (defined(__riscv) || defined(__riscv__)) && defined(__linux__)
                 PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
@@ -621,20 +621,20 @@ void DebuggerBegin() {
                 break;
               }
 #if !(defined(_WIN32) || defined(WIN32))
-  #if defined(__x86_64__)
+#  if defined(__x86_64__)
               // IF you are blessed you are running on a platform that has
               // these Here's the deal Linux takes it in data/freebsd takes it
               // in addr(only 1 is used my homie)
               ptrace(PTRACE_SETREGS, tid, &fu->regs, &fu->regs);
               ptrace(PTRACE_SETFPREGS, tid, &fu->fp, &fu->fp);
-  #elif defined(__linux__)
-              poop.iov_len  = sizeof(fu->regs);
+#  elif defined(__linux__)
+              poop.iov_len = sizeof(fu->regs);
               poop.iov_base = &fu->regs;
               ptrace(PTRACE_SETREGSET, tid, NT_PRSTATUS, &poop);
-              poop.iov_len  = sizeof(fu->fp);
+              poop.iov_len = sizeof(fu->fp);
               poop.iov_base = &fu->fp;
               ptrace(PTRACE_SETREGSET, tid, NT_PRFPREG, &poop);
-  #endif
+#  endif
 #else
               // See thread_use_ctx
               int64_t tr;
@@ -660,11 +660,11 @@ void DebuggerBegin() {
 #if defined(_WI32) || defined(WIN32)
                 AllowNext(tid);
 #else
-  #if defined(__x86_64__)
+#  if defined(__x86_64__)
                 ptrace(PT_CONTINUE, tid, 1, 0);
-  #else
+#  else
                 ptrace(PT_CONTINUE, tid, 0, 0);
-  #endif
+#  endif
 #endif
                 QueRem(fu);
                 free(fu);
@@ -702,12 +702,12 @@ static void UnblockSignals() {
 #endif
 }
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-  #if defined(__APPLE__)
-    #include <arm/_mcontext.h>
-  #endif
+#  if defined(__APPLE__)
+#    include <arm/_mcontext.h>
+#  endif
 static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
-  #if defined(__x86_64__)
-    #if defined(__linux__)
+#  if defined(__x86_64__)
+#    if defined(__linux__)
   // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
   enum {
     REG_R8 = 0,
@@ -747,7 +747,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   } else
     abort();
   setcontext(_ctx);
-    #elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];
@@ -767,8 +767,8 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   } else
     abort();
   setcontext(_ctx);
-    #endif
-  #elif defined(__aarch64__) || defined(_M_ARM64)
+#    endif
+#  elif defined(__aarch64__) || defined(_M_ARM64)
   mcontext_t *ctx = &_ctx->uc_mcontext;
   CHashExport *exp;
   int64_t is_single_step;
@@ -782,16 +782,16 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   UnblockSignals();
   for (i = 18; i <= 30; i++)
     if (i - 18 != 12) // the 12th one is the return register
-    #if defined(__linux__)
+#    if defined(__linux__)
       actx[i - 18] = ctx->regs[i];
-    #elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
       actx[i - 18] = ctx->mc_gpregs.gp_x[i];
-    #elif defined(__APPLE__)
-    // See the
-    // /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
-    // file actx[i-18]=ctx->__ss.__x[i];
-    #endif
-    #if defined(__linux__)
+#    elif defined(__APPLE__)
+// See the
+// /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
+// file actx[i-18]=ctx->__ss.__x[i];
+#    endif
+#    if defined(__linux__)
   // We will look for FPSIMD_MAGIC(0x46508001)
   // From
   // https://github.com/torvalds/linux/blob/master/arch/arm64/include/uapi/asm/sigcontext.h
@@ -809,25 +809,25 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     else
       i += sz;
   }
-    #elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
   for (i2 = 8; i2 <= 15; i2++)
     actx[(30 - 18 + 1) + i2 - 8] = *(int64_t *)(&ctx->mc_fpregs.fp_q[16 * i2]);
-    #endif
-    #if defined(__linux__)
+#    endif
+#    if defined(__linux__)
   actx[21] = ctx->sp;
-    #elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
   actx[21] = ctx->mc_gpregs.gp_sp;
-    #elif defined(__APPLE__)
-    // See the
-    // /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
-    // file actx[21]=ctx->__ss.__sp;
-    #endif
+#    elif defined(__APPLE__)
+// See the
+// /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/mach/arm/_structs.h
+// file actx[21]=ctx->__ss.__sp;
+#    endif
   // AiwniosDbgCB will return 1 for singlestep
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     fp = exp->val;
     if (FFI_CALL_TOS_2(fp, sig, actx)) { // Returns 1 for single step
-    #if defined(__x86_64__)
-      #if defined(__FreeBSD__)
+#    if defined(__x86_64__)
+#      if defined(__FreeBSD__)
       ctx->mc_rip = actx[0];
       ctx->mc_rsp = actx[1];
       ctx->mc_rbp = actx[2];
@@ -837,7 +837,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
       ctx->mc_r14 = actx[6];
       ctx->mc_r15 = actx[7];
       ctx->mc_eflags |= 1 << 8;
-      #elif defined(__linux__)
+#      elif defined(__linux__)
       ctx->gregs[REG_RIP] = actx[0];
       ctx->gregs[REG_RSP] = actx[1];
       ctx->gregs[REG_RBP] = actx[2];
@@ -846,8 +846,8 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
       ctx->gregs[REG_R13] = actx[5];
       ctx->gregs[REG_R14] = actx[6];
       ctx->gregs[REG_R15] = actx[7];
-      #endif
-    #endif
+#      endif
+#    endif
     }
   } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
   call_exit:
@@ -855,8 +855,8 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     FFI_CALL_TOS_0(fp2);
   } else
     abort();
-  #endif
-  #if (defined(__riscv__) || defined(__riscv)) && defined(__linux__)
+#  endif
+#  if (defined(__riscv__) || defined(__riscv)) && defined(__linux__)
   UnblockSignals();
   CHashExport *exp;
   void *fp;
@@ -871,16 +871,16 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     FFI_CALL_TOS_0(fp);
   } else
     abort();
-  #endif
+#  endif
 }
 #endif
 #if defined(WIN32) || defined(_WIN32)
 static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
   CONTEXT *ctx = einfo->ContextRecord;
-  CFuckup *fu  = calloc(1, sizeof(CFuckup));
-  int64_t sig  = 0;
+  CFuckup *fu = calloc(1, sizeof(CFuckup));
+  int64_t sig = 0;
   QueIns(fu, &fuckups);
-  fu->pid   = GetCurrentThreadId();
+  fu->pid = GetCurrentThreadId();
   fu->_regs = ctx;
   int64_t actx[23];
   actx[0] = ctx->Rip;
@@ -906,8 +906,8 @@ void InstallDbgSignalsForThread() {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler   = SIG_IGN;
-  sa.sa_flags     = SA_SIGINFO;
+  sa.sa_handler = SIG_IGN;
+  sa.sa_flags = SA_SIGINFO;
   sa.sa_sigaction = (void *)&SigHandler;
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGBUS, &sa, NULL);

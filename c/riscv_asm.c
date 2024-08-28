@@ -27,11 +27,11 @@ int64_t RISCV_U(int64_t imm3112, int64_t d, int64_t opc) {
   return MASKn(imm3112, 12, 20) | MASKn(d, 7, 5) | MASKn(opc, 0, 7);
 }
 int64_t RISCV_J(int64_t imm_wtf, int64_t d, int64_t opc) {
-  int64_t b20    = (imm_wtf >> 20) & 1;
-  int64_t b10_1  = MASKn(imm_wtf >> 1, 0, 10);
-  int64_t b11    = MASKn(imm_wtf >> 11, 0, 1);
+  int64_t b20 = (imm_wtf >> 20) & 1;
+  int64_t b10_1 = MASKn(imm_wtf >> 1, 0, 10);
+  int64_t b11 = MASKn(imm_wtf >> 11, 0, 1);
   int64_t b19_12 = MASKn(imm_wtf >> 12, 0, 19 - 12 + 1);
-  imm_wtf        = (b20 << 30) | (b10_1 << 21) | (b11 << (20)) | (b19_12 << 12);
+  imm_wtf = (b20 << 30) | (b10_1 << 21) | (b11 << (20)) | (b19_12 << 12);
   return imm_wtf | MASKn(d, 7, 5) | MASKn(opc, 0, 7);
 }
 

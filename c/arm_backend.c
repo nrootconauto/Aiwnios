@@ -1,15 +1,15 @@
-#include <stddef.h>
-#include <assert.h>
-#include "aiwn_hash.h"
-#include "aiwn_mem.h"
 #include "aiwn_arm.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "aiwn_lexparser.h"
 #include "aiwn_except.h"
-#if defined (__APPLE__)
-     #include <libkern/OSCacheControl.h>
+#include "aiwn_hash.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_mem.h"
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#if defined(__APPLE__)
+#  include <libkern/OSCacheControl.h>
 #endif
 extern void DoNothing();
 static int64_t SpillsTmpRegs(CRPN *rpn);
@@ -72,11 +72,11 @@ static int64_t MFR(CCmpCtrl *cc, int64_t r) {
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   int64_t mask;
-  if(have->res.mode==MD_REG) {
-	  //Dont reuse TMP regs as "temporaries"
-	  if(AIWNIOS_TMP_IREG_START<=have->tmp_res.reg)
-	    if(have->tmp_res.reg-AIWNIOS_TMP_IREG_START<AIWNIOS_TMP_IREG_CNT)
-		  return 0;
+  if (have->res.mode == MD_REG) {
+    // Dont reuse TMP regs as "temporaries"
+    if (AIWNIOS_TMP_IREG_START <= have->tmp_res.reg)
+      if (have->tmp_res.reg - AIWNIOS_TMP_IREG_START < AIWNIOS_TMP_IREG_CNT)
+        return 0;
   }
   if (have->res.mode == MD_I64 || have->res.mode == MD_F64)
     return 0; // No need to stuff in tmp
@@ -156,15 +156,17 @@ static void SetKeepTmps(CRPN *rpn) {
   binop:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-    //In AArch64,I do left last,safe to  do stuff with it as ICArgN(rpn,0) wont mutate regs
-    if (CanKeepInTmp(rpn, left,right, 1) && left->tmp_res.mode) {
-	//Only act on accumulator for now in "safe" zones
-      if(left->tmp_res.mode==MD_REG&&left->tmp_res.reg==0&&left->type==IC_CALL) {
-      left->res = left->tmp_res;
-      left->res.keep_in_tmp = 1;
-      break;
-	}
-    }    
+    // In AArch64,I do left last,safe to  do stuff with it as ICArgN(rpn,0) wont
+    // mutate regs
+    if (CanKeepInTmp(rpn, left, right, 1) && left->tmp_res.mode) {
+      // Only act on accumulator for now in "safe" zones
+      if (left->tmp_res.mode == MD_REG && left->tmp_res.reg == 0 &&
+          left->type == IC_CALL) {
+        left->res = left->tmp_res;
+        left->res.keep_in_tmp = 1;
+        break;
+      }
+    }
     break;
   case IC_ADD:
     goto binop;
@@ -194,7 +196,7 @@ static void SetKeepTmps(CRPN *rpn) {
     goto binop;
     break;
   case IC_MOD:
-  //composuite operation
+    // composuite operation
     break;
   case IC_OR:
     goto binop;
@@ -212,10 +214,10 @@ static void SetKeepTmps(CRPN *rpn) {
     goto unop;
     break;
   case IC_POST_INC:
-  //Need a temporary to store result so no
+    // Need a temporary to store result so no
     break;
   case IC_POST_DEC:
-  //Need a temporary to store result so no
+    // Need a temporary to store result so no
     break;
   case IC_PRE_INC:
     break;
@@ -277,13 +279,14 @@ static void SetKeepTmps(CRPN *rpn) {
   abinop:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-    if(left->type==IC_IREG||left->type==IC_FREG||left->type==IC_BASE_PTR) {
-		//Only act on accumulator for now in "safe" spots.	
-		if(right->tmp_res.mode==MD_REG&&right->tmp_res.reg==0) {
-			right->res = right->tmp_res;
-			right->res.keep_in_tmp=1;
-		}
-	}
+    if (left->type == IC_IREG || left->type == IC_FREG ||
+        left->type == IC_BASE_PTR) {
+      // Only act on accumulator for now in "safe" spots.
+      if (right->tmp_res.mode == MD_REG && right->tmp_res.reg == 0) {
+        right->res = right->tmp_res;
+        right->res.keep_in_tmp = 1;
+      }
+    }
     break;
   case IC_BT:
   case IC_BTS:
@@ -572,10 +575,10 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
   int64_t raw_type = rpn->raw_type;
   CICArg *res = &rpn->res;
   // These have no need to be put into a temporay
-  if(res->keep_in_tmp) {
-	  rpn->res=rpn->tmp_res;
-	  rpn->flags |= ICF_TMP_NO_UNDO;
-	  return;
+  if (res->keep_in_tmp) {
+    rpn->res = rpn->tmp_res;
+    rpn->flags |= ICF_TMP_NO_UNDO;
+    return;
   }
   switch (rpn->type) {
     break;
@@ -648,10 +651,10 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
 static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
   int64_t raw_type = rpn->raw_type;
   CICArg *res = &rpn->res;
-  if(res->keep_in_tmp) {
-	  rpn->res=rpn->tmp_res;
-	  rpn->flags |= ICF_TMP_NO_UNDO;
-	  return;
+  if (res->keep_in_tmp) {
+    rpn->res = rpn->tmp_res;
+    rpn->flags |= ICF_TMP_NO_UNDO;
+    return;
   }
   // These have no need to be put into a temporay
   switch (rpn->type) {
@@ -948,7 +951,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       varg->res.off = vargs_len + base;
       varg->res.reg = ARM_REG_SP;
       varg->res.raw_type = (varg->raw_type == RT_F64) ? RT_F64 : RT_I64i;
-      varg->res.keep_in_tmp=0; //Make sure we write to the poo poo sauce
+      varg->res.keep_in_tmp = 0; // Make sure we write to the poo poo sauce
       code_off = __OptPassFinal(cctrl, varg, bin, code_off);
     }
     // Put argv at top of argument "stack"(exluding vargs)
@@ -976,7 +979,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     rpn2->res.off = (rpn->length - i - 1) * 8;
     rpn2->res.reg = ARM_REG_SP;
     rpn2->res.raw_type = rpn2->raw_type == RT_F64 ? RT_F64 : RT_I64i;
-    rpn2->res.keep_in_tmp=0; //Make sure we write to the poo poo sauce
+    rpn2->res.keep_in_tmp = 0; // Make sure we write to the poo poo sauce
     code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
   }
   rpn2 = ICArgN(rpn, rpn->length);
@@ -4617,7 +4620,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.raw_type = next->raw_type;
     tmp.reg = 0; // 0 is return register
     tmp.mode = MD_REG;
-    next->res=tmp;
+    next->res = tmp;
     code_off = __OptPassFinal(cctrl, next, bin, code_off);
     // TempleOS will always store F64 result in RAX(integer register)
     // Let's merge the two togheter

@@ -16,8 +16,8 @@ static void AudioCB(void *ul, int8_t *out, int64_t len) {
   unsigned int i, i2;
   int64_t fpb = len / have.channels;
   for (i = 0; i < fpb; i++) {
-    double t      = (double)++sample / have.freq;
-    double amp    = -1.0 + 2.0 * round(fmod(2.0 * t * freq, 1.0));
+    double t = (double)++sample / have.freq;
+    double amp = -1.0 + 2.0 * round(fmod(2.0 * t * freq, 1.0));
     int64_t maxed = (amp > 0) ? 127 : -127;
     maxed *= vol;
     if (!freq)
@@ -36,13 +36,13 @@ void InitSound() {
     return;
   }
   memset(&want, 0, sizeof(SDL_AudioSpec));
-  want.freq     = 24000;
-  want.format   = AUDIO_S8;
+  want.freq = 24000;
+  want.format = AUDIO_S8;
   want.channels = 2;
-  want.samples  = 64;
+  want.samples = 64;
   want.callback = (void *)&AudioCB;
-  output        = SDL_OpenAudioDevice(NULL, 0, &want, &have,
-                                      SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
-                                          SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
+  output = SDL_OpenAudioDevice(NULL, 0, &want, &have,
+                               SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
+                                   SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
   SDL_PauseAudioDevice(output, 0);
 }

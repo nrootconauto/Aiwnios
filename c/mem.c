@@ -1,15 +1,15 @@
-#include "aiwn_mem.h"
 #include "aiwn_asm.h"
 #include "aiwn_except.h"
-#include <stddef.h>
+#include "aiwn_mem.h"
 #include <assert.h>
+#include <ctype.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
-#define ERR                 0x7fFFffFFffFFffFF
-#define INVALID_PTR         ERR
+#include <string.h>
+#define ERR         0x7fFFffFFffFFffFF
+#define INVALID_PTR ERR
 #ifdef _WIN64
 #  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
 #  include <windows.h>
@@ -51,7 +51,7 @@ void InvalidateCache() {
   }
 }
 
-#include <pthread.h>
+#  include <pthread.h>
 int SetWriteNP(int st) {
   int old = is_write_np;
   is_write_np = st;
@@ -444,8 +444,9 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
       }
     }
   }
-  /* Fallback if we cant grab a 32bit address */  
-  ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown, exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  /* Fallback if we cant grab a 32bit address */
+  ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown,
+               exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 ret:
   Misc_LBtr(&running, 0);
   return ret;

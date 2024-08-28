@@ -1,34 +1,33 @@
 #define AIWN_BOOTSTRAP
 #define AIWNIOS_TESTS
-#include "aiwn_mem.h"
-#include "aiwn_que.h"
-#include "aiwn_except.h"
-#include "aiwn_lexparser.h"
-#include "aiwn_windows.h"
-#include "aiwn_multic.h"
-#include "aiwn_fs.h"
 #include "aiwn_asm.h"
-#include "aiwn_sock.h"
+#include "aiwn_except.h"
+#include "aiwn_fs.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_mem.h"
 #include "aiwn_multic.h"
+#include "aiwn_que.h"
 #include "aiwn_snd.h"
-#include <SDL.h>
-#include <assert.h>
+#include "aiwn_sock.h"
+#include "aiwn_windows.h"
 #include "argtable3.h"
 #include "isocline.h"
+#include <SDL.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <signal.h>
-void InputLoop(void* ul);
+void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
-#if defined (__APPLE__)
-     #include <libkern/OSCacheControl.h>
+#if defined(__APPLE__)
+#  include <libkern/OSCacheControl.h>
 #endif
 // clang-format off
 #ifdef __FreeBSD__ 
@@ -131,7 +130,7 @@ static void FuzzTest1() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex    = LexerNew("None", buf);
+  CLexer *lex = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -141,7 +140,7 @@ static void FuzzTest1() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintI", &STK_PrintI, 2);
-  ccmp->cur_fun      = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop5)() = ccmp->cur_fun->fun_ptr;
   SetWriteNP(0);
   FFI_CALL_TOS_0(poop5);
@@ -164,7 +163,7 @@ static void FuzzTest2() {
       "rb", "nb", "*pnb", "Fb", "6.",
   };
   char *bopers[] = {"+", "-", "*", "%", "/", "==", "!=", ">", "<", ">=", "<="};
-  char *assignOps[]  = {"=", "+=", "-=", "*=", "%=", "/="};
+  char *assignOps[] = {"=", "+=", "-=", "*=", "%=", "/="};
   char *assignUOps[] = {"++", "--"};
   fprintf(f, "U0 Fuzz() {\n");
   fprintf(f, "    F64 ra,rb,na,nb,*pna,*pnb;\n");
@@ -202,7 +201,7 @@ static void FuzzTest2() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex    = LexerNew("None", buf);
+  CLexer *lex = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -212,7 +211,7 @@ static void FuzzTest2() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintF", &STK_PrintF, 2);
-  ccmp->cur_fun      = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poopf)() = ccmp->cur_fun->fun_ptr;
   FFI_CALL_TOS_0(poopf);
 }
@@ -233,8 +232,8 @@ static void FuzzTest3() {
   char *operandsB[] = {
       "rb", "nb", "*pnb", "Fb", "2",
   };
-  char *bopers[]     = {"+", "-"};
-  char *assignOps[]  = {"=", "+=", "-="};
+  char *bopers[] = {"+", "-"};
+  char *assignOps[] = {"=", "+=", "-="};
   char *assignUOps[] = {"++", "--"};
   fprintf(f, "U0 Fuzz() {\n");
   fprintf(f, "    I32i *ra,*na,**pna;\n");
@@ -279,7 +278,7 @@ static void FuzzTest3() {
   fprintf(f, "}\n");
   fclose(f);
   sprintf(buf, "#include \"%s\";\n", tf);
-  CLexer *lex    = LexerNew("None", buf);
+  CLexer *lex = LexerNew("None", buf);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   CodeCtrlPush(ccmp);
   Lex(lex);
@@ -289,7 +288,7 @@ static void FuzzTest3() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsAddSymbol("PrintPtr", &STK_PrintPtr, 2);
-  ccmp->cur_fun         = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
+  ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop_ptr)() = ccmp->cur_fun->fun_ptr;
   FFI_CALL_TOS_0(poop_ptr);
 }
@@ -336,7 +335,7 @@ static int64_t __GetTicksHP() {
 #else
   struct timespec ts;
   static int64_t initial = 0;
-  int64_t theTick        = 0U;
+  int64_t theTick = 0U;
   if (!initial) {
     clock_gettime(CLOCK_REALTIME, &ts);
     theTick = ts.tv_nsec / 1000;
@@ -358,7 +357,7 @@ static void __SleepHP(int64_t us) {
 }
 #if defined(__x86_64__)
 static int __iofd_warned;
-#if defined(__FreeBSD__) || defined(__linux__)
+#  if defined(__FreeBSD__) || defined(__linux__)
 static int __iofd = -1, __iofd_errno = -1, __iofd_cur_port = -1;
 static char const *__iofd_str;
 static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
@@ -370,19 +369,19 @@ static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
     __iofd_warned = 1;
     return;
   }
-#ifdef __linux__
+#    ifdef __linux__
   if (port != __iofd_cur_port)
     lseek(__iofd, port, SEEK_SET);
   write(__iofd, &wut, sz);
-#elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
   ioctl(__iofd, IODEV_PIO,
         &(struct iodev_pio_req){
             .access = IODEV_PIO_WRITE,
-            .port   = port,
-            .width  = sz,
-            .val    = wut,
+            .port = port,
+            .width = sz,
+            .val = wut,
         });
-#endif
+#    endif
 }
 static uint64_t __in(uint64_t port, uint64_t sz) {
   if (-1 == __iofd) {
@@ -393,13 +392,13 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
     __iofd_warned = 1;
     return -1ul;
   }
-#ifdef __linux__
+#    ifdef __linux__
   uint64_t res = 0;
   if (port != __iofd_cur_port)
     lseek(__iofd, port, SEEK_SET);
   read(__iofd, &res, sz);
   return res;
-#elif defined(__FreeBSD__)
+#    elif defined(__FreeBSD__)
   // IODEV_PIO_READ
   //     The operation is an "in" type.  A value will be read
   //     from the specified port (retrieved from the port member)
@@ -407,14 +406,14 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
   //  --man 4 io
   struct iodev_pio_req req = {
       .access = IODEV_PIO_READ,
-      .port   = port,
-      .width  = sz,
+      .port = port,
+      .width = sz,
   };
   ioctl(__iofd, IODEV_PIO, &req);
   return req.val;
-#endif
+#    endif
 }
-#elif defined(_WIN32)
+#  elif defined(_WIN32)
 static void __out(uint64_t ul1, uint64_t ul2, uint64_t ul3) {
   if (__iofd_warned)
     return;
@@ -428,7 +427,7 @@ static uint64_t __in(uint64_t ul1, uint64_t ul2) {
   __iofd_warned = 1;
   return -1ull;
 }
-#endif
+#  endif
 static void STK_OutU8(uint64_t *stk) {
   __out(stk[1], stk[0], 1);
 }
@@ -447,35 +446,37 @@ static uint64_t STK_InU16(uint64_t *stk) {
 static uint64_t STK_InU32(uint64_t *stk) {
   return __in(stk[0], 4);
 }
-#ifdef _WIN32
-#define RepIn(n)                                                               \
-  static void STK_RepInU##n(uint64_t *) __attribute__((alias("STK_InU32")))
-#define RepOut(n)                                                              \
-  static void STK_RepOutU##n(uint64_t *) __attribute__((alias("STK_InU32")))
-#else
-#define RepIn(n)                                                               \
-  static void STK_RepInU##n(uint64_t *stk) {                                   \
-    uint64_t port = stk[2], cnt = stk[1];                                      \
-    uint##n##_t *buf = stk[0];                                                 \
-    for (uint64_t i = 0; i < cnt; i++)                                         \
-      buf[i] = __in(port, n / 8) & ((1ull << n) - 1);                          \
-  }
-#define RepOut(n)                                                              \
-  static void STK_RepOutU##n(uint64_t *stk) {                                  \
-    uint64_t port = stk[2], cnt = stk[1];                                      \
-    uint##n##_t *buf = stk[0];                                                 \
-    for (uint64_t i = 0; i < cnt; i++)                                         \
-      __out(buf[i] & ((1ull << n) - 1), port, n / 8);                          \
-  }
-#endif
+#  ifdef _WIN32
+#    define RepIn(n)                                                           \
+      static void STK_RepInU##n(uint64_t *) __attribute__((alias("STK_"        \
+                                                                 "InU32")))
+#    define RepOut(n)                                                          \
+      static void STK_RepOutU##n(uint64_t *) __attribute__((alias("STK_"       \
+                                                                  "InU32")))
+#  else
+#    define RepIn(n)                                                           \
+      static void STK_RepInU##n(uint64_t *stk) {                               \
+        uint64_t port = stk[2], cnt = stk[1];                                  \
+        uint##n##_t *buf = stk[0];                                             \
+        for (uint64_t i = 0; i < cnt; i++)                                     \
+          buf[i] = __in(port, n / 8) & ((1ull << n) - 1);                      \
+      }
+#    define RepOut(n)                                                          \
+      static void STK_RepOutU##n(uint64_t *stk) {                              \
+        uint64_t port = stk[2], cnt = stk[1];                                  \
+        uint##n##_t *buf = stk[0];                                             \
+        for (uint64_t i = 0; i < cnt; i++)                                     \
+          __out(buf[i] & ((1ull << n) - 1), port, n / 8);                      \
+      }
+#  endif
 RepIn(8);
 RepIn(16);
 RepIn(32);
 RepOut(8);
 RepOut(16);
 RepOut(32);
-#undef RepIn
-#undef RepOut
+#  undef RepIn
+#  undef RepOut
 #endif
 static int64_t MemCmp(char *a, char *b, int64_t s) {
   return memcmp(a, b, s);
@@ -1133,10 +1134,10 @@ static int64_t STK_VFsDirMk(int64_t *stk) {
   return VFsDirMk(stk[0]);
 }
 static int64_t STK_VFsBlkRead(int64_t *stk) {
-  return VFsFBlkRead(stk[0], stk[1]*stk[2], stk[3]);
+  return VFsFBlkRead(stk[0], stk[1] * stk[2], stk[3]);
 }
 static int64_t STK_VFsBlkWrite(int64_t *stk) {
-  return VFsFBlkWrite(stk[0], stk[1]* stk[2], stk[3]);
+  return VFsFBlkWrite(stk[0], stk[1] * stk[2], stk[3]);
 }
 static int64_t STK_VFsFOpen(int64_t *stk) {
   return VFsFOpen(stk[0], stk[1]);
@@ -1291,7 +1292,7 @@ static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
 static int64_t WriteProtectMemCpy(int64_t *stk) {
-  int old   = SetWriteNP(0);
+  int old = SetWriteNP(0);
   int64_t r = (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
   SetWriteNP(old);
 #if defined(__APPLE__)
@@ -1304,7 +1305,7 @@ static int64_t WriteProtectMemCpy(int64_t *stk) {
 }
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
-  CLexer *lex    = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
+  CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
   CCmpCtrl *ccmp = CmpCtrlNew(lex);
   void (*to_run)();
   int old;
@@ -1314,7 +1315,7 @@ static void BootAiwnios(char *bootstrap_text) {
   Lex(lex);
   while (PrsStmt(ccmp)) {
     to_run = Compile(ccmp, NULL, NULL, NULL);
-    old    = SetWriteNP(1);
+    old = SetWriteNP(1);
     FFI_CALL_TOS_0(to_run);
     SetWriteNP(old);
     A_FREE(to_run);
@@ -1616,30 +1617,30 @@ static void Boot() {
   "#define HOST_ABI '%s'\n"                                                    \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
-#if defined(__APPLE__)
+#  if defined(__APPLE__)
     host_abi = "Apple";
-#else
+#  else
     host_abi = "SysV";
-#endif
+#  endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64", host_abi);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi);
 #elif defined(__x86_64__)
-#if defined(_WIN32) || defined(WIN32)
+#  if defined(_WIN32) || defined(WIN32)
     host_abi = "Win";
-#else
+#  else
     host_abi = "SysV";
-#endif
+#  endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "X86", host_abi);
 #elif defined(__riscv) || defined(__riscv__)
     host_abi = "SysV";
-    len      = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV", host_abi);
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV", host_abi);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "RISCV", host_abi);
 #else
-#error "Arch not supported"
+#  error "Arch not supported"
 #endif
     BootAiwnios(buf);
   } else
@@ -1654,14 +1655,14 @@ static void ExitAiwnios(int64_t *stk) {
   quit = 1;
   exit(stk[0]);
 }
-#if defined (WIN32) || defined(_WIN32)
-#include <shlobj.h>
+#if defined(WIN32) || defined(_WIN32)
+#  include <shlobj.h>
 #else
-#include <sys/types.h>
-#include <pwd.h>
+#  include <pwd.h>
+#  include <sys/types.h>
 #endif
 #ifdef main
-#undef main
+#  undef main
 #endif
 int main(int argc, char **argv) {
   void *argtable[] = {
@@ -1680,8 +1681,10 @@ int main(int argc, char **argv) {
                                 "Create a new boot directory(backs up old "
                                 "boot directory if present)."),
 #if !defined(WIN32) && !defined(_WIN32)
-    arg_fork = arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
-    arg_pidfile = arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
+    arg_fork =
+        arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+    arg_pidfile =
+        arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
 #endif
     arg_grab = arg_lit0(
         "g", "grab-focus",
@@ -1689,11 +1692,11 @@ int main(int argc, char **argv) {
     arg_no_debug = arg_lit0(
         "d", "user-debugger",
         "Faults will be handled by an external debugger(such as gdb)."),
-    sixty_fps      = arg_lit0("6", "60fps", "Run in 60 fps mode."),
-    arg_cmd_line   = arg_lit0("c", NULL, "Run in command line mode."),
+    sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+    arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode."),
     arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                                "Files to run on  boot in command line mode."),
-    _arg_end       = arg_end(20),
+    _arg_end = arg_end(20),
   };
   int64_t errors, idx;
   errors = arg_parse(argc, argv, argtable);
@@ -1707,11 +1710,11 @@ int main(int argc, char **argv) {
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
 #if defined(__x86_64__) && (defined(__FreeBSD__) || defined(__linux__))
-#ifdef __linux__
+#  ifdef __linux__
   __iofd = open(__iofd_str = "/dev/port", O_RDWR);
-#elif defined(__FreeBSD__)
+#  elif defined(__FreeBSD__)
   __iofd = open(__iofd_str = "/dev/io", O_RDWR);
-#endif
+#  endif
   if (-1 == __iofd)
     __iofd_errno = errno;
 #endif
@@ -1743,7 +1746,7 @@ int main(int argc, char **argv) {
       write(fd, buf, written);
       close(fd);
     }
-nowrite:
+  nowrite:
     umask(0);
   }
 #endif
@@ -1755,63 +1758,58 @@ nowrite:
   else if (arg_bootstrap_bin->count)
     t_drive = "."; // Bootstrap in current directory
 #if !defined(WIN32) && !defined(_WIN32)
-  struct passwd *pwd=getpwuid(getuid());
-  const char *dft="/.local/share/aiwnios/T";
-  char *home=".";
-  if(pwd) home=pwd->pw_dir;
-  char template_dir[strlen(dft)+strlen(home)+1];
-  strcpy(template_dir,home);
-  strcat(template_dir,dft);
-  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count ) && !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ?  template_dir: t_drive,
-                             arg_new_boot_dir->count,AIWNIOS_TEMPLATE_DIR);
+  struct passwd *pwd = getpwuid(getuid());
+  const char *dft = "/.local/share/aiwnios/T";
+  char *home = ".";
+  if (pwd)
+    home = pwd->pw_dir;
+  char template_dir[strlen(dft) + strlen(home) + 1];
+  strcpy(template_dir, home);
+  strcat(template_dir, dft);
+  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count) &&
+      !arg_bootstrap_bin->count)
+    t_drive = ResolveBootDir(!t_drive ? template_dir : t_drive,
+                             arg_new_boot_dir->count, AIWNIOS_TEMPLATE_DIR);
 #else
-  int64_t has_installed=0;
+  int64_t has_installed = 0;
   char installed_at[MAX_PATH];
-  installed_at[0]=0;
-  long reg_size=0;
-  RegGetValueA(
-	HKEY_LOCAL_MACHINE,
-	"SOFTWARE\\Aiwnios",
-	"InstallAt",
-	RRF_RT_REG_MULTI_SZ,
-	NULL,
-	NULL,
-	&reg_size);
-  if(reg_size>0) {
-		char inst_dir[reg_size+1];
-		RegGetValueA(
-	HKEY_LOCAL_MACHINE,
-	"SOFTWARE\\Aiwnios",
-	"InstallAt",
-	RRF_RT_REG_MULTI_SZ,
-	NULL,
-	inst_dir,
-	&reg_size);
-	has_installed=1;
+  installed_at[0] = 0;
+  long reg_size = 0;
+  RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
+               RRF_RT_REG_MULTI_SZ, NULL, NULL, &reg_size);
+  if (reg_size > 0) {
+    char inst_dir[reg_size + 1];
+    RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
+                 RRF_RT_REG_MULTI_SZ, NULL, inst_dir, &reg_size);
+    has_installed = 1;
   }
   char home_dir[MAX_PATH];
-  strcpy(home_dir,"");
+  strcpy(home_dir, "");
   SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
-  //Dumb haCk
-  //Windows doesnt know how to do lowerase C anymore. I dont know what I fuked up
-  sprintf(home_dir+strlen(home_dir),"\\.local\\share\\aiwnios\\T");
-  if ((!arg_t_dir->count || arg_overwrite->count|| arg_new_boot_dir->count) && !arg_bootstrap_bin->count) {
-    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,arg_new_boot_dir->count,installed_at);
-    //Dont use system wide directory we are installed in(the place we start running aiwnios in when installed on windows)
-    if(has_installed&&t_drive) {
-		char poo1[MAX_PATH];
-		char poo2[MAX_PATH];
-		GetFullPathNameA(installed_at,MAX_PATH,poo1,NULL);
-		GetFullPathNameA(t_drive,MAX_PATH,poo2,NULL);
-		if(!strcmp(poo1,poo2)) {
-			//Same file
-			t_drive = ResolveBootDir(home_dir,1,installed_at);
-		}
-	}
+  // Dumb haCk
+  // Windows doesnt know how to do lowerase C anymore. I dont know what I fuked
+  // up
+  sprintf(home_dir + strlen(home_dir), "\\.local\\share\\aiwnios\\T");
+  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count) &&
+      !arg_bootstrap_bin->count) {
+    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,
+                             arg_new_boot_dir->count, installed_at);
+    // Dont use system wide directory we are installed in(the place we start
+    // running aiwnios in when installed on windows)
+    if (has_installed && t_drive) {
+      char poo1[MAX_PATH];
+      char poo2[MAX_PATH];
+      GetFullPathNameA(installed_at, MAX_PATH, poo1, NULL);
+      GetFullPathNameA(t_drive, MAX_PATH, poo2, NULL);
+      if (!strcmp(poo1, poo2)) {
+        // Same file
+        t_drive = ResolveBootDir(home_dir, 1, installed_at);
+      }
+    }
   }
 #endif
-  if(arg_new_boot_dir->count) exit(EXIT_SUCCESS);
+  if (arg_new_boot_dir->count)
+    exit(EXIT_SUCCESS);
   InitSound();
   if (!arg_cmd_line->count) {
     SDL_Init(SDL_INIT_TIMER);

@@ -1,10 +1,10 @@
-#include "aiwn_hash.h"
-#include "aiwn_except.h"
-#include "aiwn_que.h"
-#include "aiwn_mem.h"
 #include "aiwn_asm.h"
-#include <stdint.h>
+#include "aiwn_except.h"
+#include "aiwn_hash.h"
+#include "aiwn_mem.h"
+#include "aiwn_que.h"
 #include <setjmp.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 // This doesn't 1:1 mirror TempleOS,when things get bootstaped , things may get
@@ -27,10 +27,10 @@ void TaskInit(CTask *task, void *addr, int64_t stk_sz) {
     stk_sz = 512 * (1 << 9);
   CExcept *except;
   memset(task, 0, sizeof(CTask));
-  task->heap   = HeapCtrlInit(NULL, task, 0);
-  task->code_heap   = HeapCtrlInit(NULL, task, 1);
+  task->heap = HeapCtrlInit(NULL, task, 0);
+  task->code_heap = HeapCtrlInit(NULL, task, 1);
   task->except = A_MALLOC(sizeof(CQue), task);
-  task->stack  = A_MALLOC(stk_sz, task);
+  task->stack = A_MALLOC(stk_sz, task);
   QueInit(task->except);
   except = A_MALLOC(sizeof(CExcept), task);
   AIWNIOS_makecontext(

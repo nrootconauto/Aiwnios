@@ -1,10 +1,10 @@
-#include <stdbool.h>
-#include "aiwn_mem.h"
-#include "aiwn_fs.h"
 #include "aiwn_except.h"
-#include <dirent.h>
-#include <stdio.h>
+#include "aiwn_fs.h"
+#include "aiwn_mem.h"
 #include <SDL_messagebox.h>
+#include <dirent.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <time.h>
 // clang-format off
 #include <sys/types.h>
@@ -13,22 +13,22 @@
 #include <fcntl.h>
 #include <unistd.h>
 #ifndef _WIN64
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
+#  ifndef O_BINARY
+#    define O_BINARY 0
+#  endif
 #else
-#include <windows.h>
-#include <direct.h>
-#include <io.h>
-#include <libloaderapi.h>
-#include <processthreadsapi.h>
-#include <synchapi.h>
+#  include <windows.h>
+#  include <direct.h>
+#  include <io.h>
+#  include <libloaderapi.h>
+#  include <processthreadsapi.h>
+#  include <synchapi.h>
 
-#define open(a...)  _open(a)
-#define close(a...) _close(a)
-#define write(a...) _write(a)
-#define mkdir(a, b) _mkdir(a)
-#define lseek(a...) _lseeki64(a)
+#  define open(a...)  _open(a)
+#  define close(a...) _close(a)
+#  define write(a...) _write(a)
+#  define mkdir(a, b) _mkdir(a)
+#  define lseek(a...) _lseeki64(a)
 
 static void MakePathSane(char *ptr) {
   char *ptr2 = ptr;
@@ -144,7 +144,7 @@ static void DelDir(char *p) {
     if (!strcmp(".", d2->d_name) || !strcmp("..", d2->d_name))
       continue;
     char *p = stpcpy2(od, p);
-    *p++    = '/';
+    *p++ = '/';
     strcpy(p, d2->d_name);
     if (__FIsDir(od)) {
       DelDir(od);
@@ -158,7 +158,7 @@ static void DelDir(char *p) {
 
 int VFsFOpen(char *f, bool b) {
   char *path = __VFsFileNameAbs(f);
-  int fd     = open(path, O_BINARY | (b ? O_RDWR | O_CREAT : O_RDONLY), 0666);
+  int fd = open(path, O_BINARY | (b ? O_RDWR | O_CREAT : O_RDONLY), 0666);
   free(path);
   return fd;
 }
@@ -213,7 +213,7 @@ int64_t VFsFSize(char *name) {
     while (delim = strchr(buffer, '/'))
       *delim = '\\';
     s64 = 0;
-    dh  = FindFirstFileA(buffer, &data);
+    dh = FindFirstFileA(buffer, &data);
     do
       s64++;
     while (FindNextFileA(dh, &data));
@@ -225,7 +225,7 @@ int64_t VFsFSize(char *name) {
   }
   HANDLE fh = CreateFileA(fn, GENERIC_READ, 0, NULL, OPEN_EXISTING,
                           FILE_FLAG_BACKUP_SEMANTICS, NULL);
-  s64       = GetFileSize(fh, &h32);
+  s64 = GetFileSize(fh, &h32);
   s64 |= (int64_t)h32 << 32;
   free(fn);
   CloseHandle(fh);
@@ -242,12 +242,12 @@ char **VFsDir(void) {
   }
   int64_t sz = VFsFSize("");
   if (sz) {
-#ifdef _WIN64
+#  ifdef _WIN64
     //+1 for "."
     ret = A_CALLOC((sz + 1 + 1) * 8, NULL);
-#else
+#  else
     ret = A_CALLOC((sz + 1) * 8, NULL);
-#endif
+#  endif
     WIN32_FIND_DATAA data;
     HANDLE dh;
     char buffer[strlen(fn) + 4];
@@ -257,15 +257,15 @@ char **VFsDir(void) {
     while (delim = strchr(buffer, '/'))
       *delim = '\\';
     int64_t s64 = 0;
-    dh          = FindFirstFileA(buffer, &data);
+    dh = FindFirstFileA(buffer, &data);
     while (FindNextFileA(dh, &data)) {
       // CDIR_FILENAME_LEN  is 38(includes nul terminator)
       if (strlen(data.cFileName) <= 37)
         ret[s64++] = A_STRDUP(data.cFileName, NULL);
     }
-#ifdef _WIN64
+#  ifdef _WIN64
     ret[s64++] = A_STRDUP(".", NULL);
-#endif
+#  endif
     free(fn);
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-findfirstfilea
     if (dh != INVALID_HANDLE_VALUE)
@@ -293,7 +293,7 @@ char **VFsDir(void) {
     sz++;
   rewinddir(dir);
   ret = A_MALLOC((sz + 1) * sizeof(char *), NULL);
-  sz  = 0;
+  sz = 0;
   while (ent = readdir(dir)) {
     // CDIR_FILENAME_LEN  is 38(includes nul terminator)
     if (strlen(ent->d_name) <= 37)
@@ -337,7 +337,7 @@ int64_t VFsFSize(char *name) {
 int64_t VFsFileWrite(char *name, char *data, int64_t len) {
   if (!name)
     return 0;
-  name   = __VFsFileNameAbs(name);
+  name = __VFsFileNameAbs(name);
   int fd = open(name, O_BINARY | O_CREAT | O_WRONLY, 0644), res;
   free(name);
   if (-1 != fd) {
@@ -377,7 +377,7 @@ int64_t VFsFileRead(char *name, int64_t *len) {
 int VFsFileExists(char *path) {
   if (!path)
     return 0;
-  path  = __VFsFileNameAbs(path);
+  path = __VFsFileNameAbs(path);
   int e = __FExists(path);
   free(path);
   return e;
@@ -437,11 +437,11 @@ static void CopyDir(char *dst, char *src) {
   int64_t root, sz, sroot, r;
   strcpy(buf, dst);
   buf[root = strlen(buf)] = delim;
-  buf[++root]             = 0;
+  buf[++root] = 0;
 
   strcpy(sbuf, src);
   sbuf[sroot = strlen(sbuf)] = delim;
-  sbuf[++sroot]              = 0;
+  sbuf[++sroot] = 0;
 
   DIR *d = opendir(src);
   if (!d)
@@ -450,7 +450,7 @@ static void CopyDir(char *dst, char *src) {
   while (ent = readdir(d)) {
     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
       continue;
-    buf[root]   = 0;
+    buf[root] = 0;
     sbuf[sroot] = 0;
     strcat(buf, ent->d_name);
     strcat(sbuf, ent->d_name);
@@ -481,14 +481,14 @@ static int __FIsNewer(char *fn, char *fn2) {
 #ifndef _WIN64
   struct stat s, s2;
   stat(fn, &s), stat(fn2, &s2);
-  int64_t r  = mktime(localtime(&s.st_ctime)),
+  int64_t r = mktime(localtime(&s.st_ctime)),
           r2 = mktime(localtime(&s2.st_ctime));
   return r > r2;
 #else
   uint64_t s64, s64_2;
   FILETIME t;
-  HANDLE fh  = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
+  HANDLE fh = CreateFileA(fn, GENERIC_READ, FILE_SHARE_READ, NULL,
+                          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL),
          fh2 = CreateFileA(fn2, GENERIC_READ, FILE_SHARE_READ, NULL,
                            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
   GetFileTime(fh, NULL, NULL, &t);
@@ -567,7 +567,7 @@ int CreateTemplateBootDrv(char *to, char *template) {
       *next = 0;
       mkdir(buffer, 0700);
       *next = delim;
-      old   = next + 1;
+      old = next + 1;
     }
     if (!__FExists(buffer)) {
       mkdir(buffer, 0700);

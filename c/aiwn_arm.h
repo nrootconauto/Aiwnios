@@ -1,5 +1,5 @@
-#pragma once 
-
+#pragma once
+#include <stdint.h>
 #include <stddef.h>
 #define ARM_ERR         -1
 #define ARM_ERR_INV_OFF -2
@@ -232,5 +232,5 @@ int64_t ARM_strsbRegRegShiftX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_strhbRegRegShiftX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_strRegRegShiftX(int64_t r, int64_t a, int64_t b);
 int64_t ARM_strRegRegShiftF64(int64_t r, int64_t a, int64_t b);
-int64_t ARM_stpImmF64(int64_t r, int64_t r2, int64_t b,int64_t o);
-int64_t ARM_ldpImmF64(int64_t r, int64_t r2, int64_t b,int64_t o);
+int64_t ARM_stpImmF64(int64_t r, int64_t r2, int64_t b, int64_t o);
+int64_t ARM_ldpImmF64(int64_t r, int64_t r2, int64_t b, int64_t o);

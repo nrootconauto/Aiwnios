@@ -1,6 +1,6 @@
-#include <stdint.h>
 #include "aiwn_arm.h"
 #include "aiwn_except.h"
+#include <stdint.h>
 #define MASKn(v, bits, off) (((v) & ((1ull << (bits)) - 1)) << (off))
 
 // https://math.stackexchange.com/questions/490813/range-twos-complement
@@ -58,7 +58,7 @@ static int64_t MvWideImmX(uint32_t opc, int64_t d, int64_t imm, int64_t shift) {
   if (imm & ~0xffff)
     return ARM_ERR_INV_OFF;
   ARM_FORCE_REG(d);
-  uint32_t hw    = (shift >> 4) & 0b11;
+  uint32_t hw = (shift >> 4) & 0b11;
   uint32_t imm16 = imm & 0xffff;
   return (1 << 31) | (opc << 29) | (0x25 << 23) | (hw << 21) | (imm16 << 5) | d;
 }
@@ -68,7 +68,7 @@ static int64_t DataProc2Src(uint32_t opcode, int64_t rd, int64_t rn,
   ARM_FORCE_REG(rm);
   ARM_FORCE_REG(rd);
   uint32_t sf = 1;
-  uint32_t S  = 0;
+  uint32_t S = 0;
   return (sf << 31) | (S << 29) | (0xd6 << 21) | (rm << 16) | (opcode << 10) |
          (rn << 5) | rd;
 }
@@ -91,7 +91,7 @@ static int64_t FpDataProc1Reg(uint32_t M, uint32_t S, uint32_t type,
 
 static int64_t LdStRegPairPostImm(int64_t opc, int64_t l, int64_t r, int64_t r2,
                                   CARMAdrPostImm *pre) {
-  int64_t imm   = pre->off;
+  int64_t imm = pre->off;
   int64_t times = (opc == 2) ? 2 : 1;
   ARM_FORCE_ALIGN(imm, 7, times + 1);
   int64_t imm7 = MASKn(imm >> (times + 1), 7, 15);
@@ -100,7 +100,7 @@ static int64_t LdStRegPairPostImm(int64_t opc, int64_t l, int64_t r, int64_t r2,
 }
 static int64_t LdStRegPairPre(int64_t opc, int64_t L, int64_t rt1, int64_t rt2,
                               CARMAdrPreImm *adr) {
-  int64_t imm   = adr->off;
+  int64_t imm = adr->off;
   int64_t times = (opc == 2) ? 2 : 1;
   ARM_FORCE_ALIGN(imm, 7, times + 1);
   uint32_t imm7 = MASKn(imm >> (times + 1), 7, 15);
@@ -218,8 +218,8 @@ static int64_t AddSubImm(int64_t op, int64_t s, int64_t d, int64_t n,
 }
 
 static int64_t TestBr(int64_t op, int64_t rt, int64_t imm, int64_t off) {
-  int64_t d5    = (imm >> 5) & 1;
-  int64_t d40   = MASKn(imm, 5, 0);
+  int64_t d5 = (imm >> 5) & 1;
+  int64_t d40 = MASKn(imm, 5, 0);
   int64_t imm14 = MASKn(off >> 2, 14, 5);
   ARM_FORCE_ALIGN(off, 14, 2);
   return (d5 << 31) | (0x1b << 25) | (op << 24) | (d40 << 19) | imm14 | rt;
@@ -345,10 +345,10 @@ static int64_t MvRegX(int64_t d, int64_t n) {
 
 int64_t LdStSimdFpRegRegShift(uint32_t opc, int64_t vt, int64_t rn,
                               int64_t rm) {
-  uint32_t size   = 3;
+  uint32_t size = 3;
   uint32_t option = 3;
-  uint32_t S      = 1;
-  uint32_t V      = 1;
+  uint32_t S = 1;
+  uint32_t V = 1;
   return (size << 30) | (0x7 << 27) | (V << 26) | (opc << 22) | (1 << 21) |
          (rm << 16) | (option << 13) | (S << 12) | (2 << 10) | (rn << 5) | vt;
 }
@@ -624,14 +624,14 @@ int64_t ARM_strbRegReg(int64_t r, int64_t a, int64_t b) {
 
 int64_t ARM_strbRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(0, 0, r, &adr);
 }
 
 int64_t ARM_ldrbRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(0, 1, r, &adr);
 }
@@ -646,7 +646,7 @@ int64_t ARM_strhRegReg(int64_t r, int64_t a, int64_t b) {
 
 int64_t ARM_strhRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(1, 0, r, &adr);
 }
@@ -657,14 +657,14 @@ int64_t ARM_ldrhRegReg(int64_t r, int64_t a, int64_t b) {
 
 int64_t ARM_ldrhRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(1, 1, r, &adr);
 }
 
 int64_t ARM_strRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(2, 0, r, &adr);
 }
@@ -679,21 +679,21 @@ int64_t ARM_ldrRegReg(int64_t r, int64_t a, int64_t b) {
 
 int64_t ARM_ldrRegImm(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(2, 1, r, &adr);
 }
 
 int64_t ARM_strRegImmX(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(3, 0, r, &adr);
 }
 
 int64_t ARM_ldrRegImmX(int64_t r, int64_t n, int64_t off) {
   CARMAdrRegImm adr;
-  adr.n   = n;
+  adr.n = n;
   adr.off = off;
   return LdStRegUnImm(3, 1, r, &adr);
 }
@@ -918,10 +918,10 @@ int64_t ARM_ldrPreImmF64(int64_t d, int64_t p, int64_t off) {
   return LdStSimdFpRegPreImm(1, d, p, off);
 }
 static int64_t LdStSimdFpReg(int64_t opc, int64_t d, int64_t n, int64_t m) {
-  uint32_t size   = 3;
+  uint32_t size = 3;
   uint32_t option = 3;
-  uint32_t S      = 0;
-  uint32_t V      = 1;
+  uint32_t S = 0;
+  uint32_t V = 1;
   return (size << 30) | (0x7 << 27) | (V << 26) | (opc << 22) | (1 << 21) |
          (m << 16) | (option << 13) | (S << 12) | (2 << 10) | (n << 5) | d;
 }
@@ -1022,7 +1022,7 @@ static int64_t GenNImmSImmR(int64_t imm) {
   width = zero_gap + consec;
   switch (width) {
 #define MAKE_PATT                                                              \
-  x       = consec - 1;                                                        \
+  x = consec - 1;                                                              \
   pattern = 0;                                                                 \
   for (idx = 0; idx != 64 / width; idx++)                                      \
     if (!idx)                                                                  \

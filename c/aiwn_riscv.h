@@ -1,6 +1,5 @@
 #pragma once
 #include <stdint.h>
-#include <stdint.h>
 int64_t RISCV_FMV_D_X(int64_t d, int64_t a);
 int64_t RISCV_FMV_X_D(int64_t d, int64_t a);
 int64_t RISCV_FCVT_D_L(int64_t d, int64_t a);

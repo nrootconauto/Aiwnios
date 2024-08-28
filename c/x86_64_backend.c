@@ -1,14 +1,14 @@
 // X86_64 assembly generator
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "aiwn_hash.h"
-#include "aiwn_mem.h"
 #include "aiwn_arm.h"
 #include "aiwn_asm.h"
-#include "aiwn_lexparser.h"
 #include "aiwn_except.h"
+#include "aiwn_hash.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_mem.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 extern void DoNothing();
 // backend_user_data5 is the "fail" codemisc for IC_LT/GT etc
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc

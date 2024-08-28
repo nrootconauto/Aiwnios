@@ -1,7 +1,7 @@
-#include "aiwn_windows.h"
-#include "aiwn_mem.h"
 #include "aiwn_asm.h"
+#include "aiwn_mem.h"
 #include "aiwn_snd.h"
+#include "aiwn_windows.h"
 #include "logo.c"
 #include <SDL.h>
 #include <SDL_pixels.h>
@@ -41,7 +41,7 @@ static void _DrawWindowNew() {
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
-  screen_mutex  = SDL_CreateMutex();
+  screen_mutex = SDL_CreateMutex();
   screen_mutex2 = SDL_CreateMutex();
   SDL_LockMutex(screen_mutex);
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
@@ -63,12 +63,12 @@ static void UpdateViewPort() {
   SDL_GetWindowSize(window, &w, &h);
   float ratio = 640. / 480;
   if (w > h * ratio) {
-    h2       = h;
-    w2       = ratio * h;
+    h2 = h;
+    w2 = ratio * h;
     margin_x = (w - w2) / 2;
   } else {
-    h2       = w / ratio;
-    w2       = w;
+    h2 = w / ratio;
+    w2 = w;
     margin_y = (h - h2) / 2;
   }
   view_port.x = margin_x;
@@ -81,7 +81,7 @@ void DrawWindowNew() {
   SDL_Event event;
   memset(&event, 0, sizeof event);
   event.user.code = USER_CODE_DRAW_WIN_NEW;
-  event.type      = user_ev_num;
+  event.type = user_ev_num;
   SDL_PushEvent(&event);
   while (!Misc_Bt(&screen_ready, 0))
     SDL_Delay(1);
@@ -91,10 +91,10 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_Event event;
   Misc_LBts(&screen_update_in_progress, 0);
   memset(&event, 0, sizeof event);
-  event.user.code  = USER_CODE_UPDATE;
+  event.user.code = USER_CODE_UPDATE;
   event.user.data1 = px;
   event.user.data2 = w_internal;
-  event.type       = user_ev_num;
+  event.type = user_ev_num;
   SDL_LockMutex(screen_mutex);
   SDL_PushEvent(&event);
   SDL_UnlockMutex(screen_mutex);
@@ -131,9 +131,9 @@ void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
     struct {
       uint16_t b, g, r, pad
     };
-  } u       = {.i = bgr48};
+  } u = {.i = bgr48};
   uint8_t b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
-          r   = u.r / (double)0xffff * 0xff;
+          r = u.r / (double)0xffff * 0xff;
   SDL_Color c = {r, g, b, 0};
   SDL_LockSurface(screen);
   // I will repeat the color to simulate ignoring the upper 4 bits
@@ -552,13 +552,14 @@ static int SDLCALL MSCallback(void *d, SDL_Event *e) {
       else
         y2 = (y - view_port.y) * 480. / view_port.h;
       SetWriteNP(1);
-      if(SDL_GetRelativeMouseMode()) {
-		if(e->type!=SDL_MOUSEMOTION) //Wierd stuff happens
-		  FFI_CALL_TOS_4(ms_cb, 640/2, 480/2, z, state);
-		else
-		  FFI_CALL_TOS_4(ms_cb, e->motion.xrel+640/2, e->motion.yrel+480/2, z, state);
+      if (SDL_GetRelativeMouseMode()) {
+        if (e->type != SDL_MOUSEMOTION) // Wierd stuff happens
+          FFI_CALL_TOS_4(ms_cb, 640 / 2, 480 / 2, z, state);
+        else
+          FFI_CALL_TOS_4(ms_cb, e->motion.xrel + 640 / 2,
+                         e->motion.yrel + 480 / 2, z, state);
       } else
-		FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
+        FFI_CALL_TOS_4(ms_cb, x2, y2, z, state);
     }
   return 0;
 }
@@ -596,7 +597,7 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
   SDL_Init(SDL_INIT_EVERYTHING);
   InitSound();
   int64_t quit = 0;
-  user_ev_num  = SDL_RegisterEvents(1);
+  user_ev_num = SDL_RegisterEvents(1);
   SDL_CreateThread((void *)boot_ptr, "Boot thread", data);
   InputLoop(&quit);
 }
@@ -604,7 +605,7 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
 void WaitForSDLQuit() {
   SDL_WaitThread(sdl_main_thread, NULL);
 }
-//Your own your own(used for FPS games)
+// Your own your own(used for FPS games)
 void SetCaptureMouse(int64_t i) {
-	SDL_SetRelativeMouseMode(i);
+  SDL_SetRelativeMouseMode(i);
 }

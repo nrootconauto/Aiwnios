@@ -1,7 +1,7 @@
-#include "aiwn_mem.h"
-#include "aiwn_lexparser.h"
-#include "aiwn_fs.h"
 #include "aiwn_except.h"
+#include "aiwn_fs.h"
+#include "aiwn_lexparser.h"
+#include "aiwn_mem.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
@@ -213,7 +213,7 @@ static int64_t LexString(CLexer *lex, int64_t till) {
     }
   }
 fin:
-  lex->str_len       = idx;
+  lex->str_len = idx;
   lex->string[idx++] = 0;
   return 0;
 }
@@ -254,7 +254,7 @@ static int64_t LexInt(CLexer *lex, int64_t base) {
 }
 int64_t Lex(CLexer *lex) {
 re_enter:;
-  int64_t chr1     = LexAdvChr(lex), chr2;
+  int64_t chr1 = LexAdvChr(lex), chr2;
   int64_t has_base = 0, base = 10, integer = 0, decimal = 0, exponet = 0,
           zeros = 0, idx = 0, old_flags, in_else;
   FILE *f;
@@ -278,10 +278,10 @@ re_enter:;
   case ' ':
   case '\t':
   case '\n':
-    if((lex->flags&LEXF_UNTIL_NEWLINE)&&chr1=='\n') {
-      lex->flags&=~LEXF_UNTIL_NEWLINE;
+    if ((lex->flags & LEXF_UNTIL_NEWLINE) && chr1 == '\n') {
+      lex->flags &= ~LEXF_UNTIL_NEWLINE;
       return lex->cur_tok = '\n';
-    } 
+    }
     goto re_enter;
     break;
   case '0' ... '9':
@@ -322,7 +322,7 @@ re_enter:;
         }
       exponet:
         exponet = 0;
-        base    = 1; // This holds the multipler for the exponet
+        base = 1; // This holds the multipler for the exponet
         if ('+' == (chr1 = LexAdvChr(lex))) {
         } else if ('-' == chr1) {
           base = -1;
@@ -369,7 +369,7 @@ re_enter:;
         break;
       default:
         lex->flags |= LEXF_USE_LAST_CHAR;
-        lex->integer        = integer;
+        lex->integer = integer;
         return lex->cur_tok = TK_I64;
       }
     } else
@@ -573,7 +573,7 @@ re_enter:;
       LexErr(lex, "String constant too long!");
       return ERR;
     }
-    lex->integer        = *(uint64_t *)lex->string;
+    lex->integer = *(uint64_t *)lex->string;
     return lex->cur_tok = TK_CHR;
     break;
   case '_':
@@ -612,17 +612,17 @@ re_enter:;
             // We dont want to use the last charactor now that we are in a macro
             lex->flags &= ~LEXF_USE_LAST_CHAR;
             //
-            new_file           = A_MALLOC(sizeof(CLexFile), NULL);
-            new_file->dir      = NULL;
-            new_file->last     = lex->file;
+            new_file = A_MALLOC(sizeof(CLexFile), NULL);
+            new_file->dir = NULL;
+            new_file->last = lex->file;
             new_file->filename = A_STRDUP(define->base.str, NULL);
             new_file->pos = new_file->col = new_file->ln = 0;
             new_file->text = A_STRDUP(define->data, NULL);
-            lex->file      = new_file;
+            lex->file = new_file;
             goto re_enter;
           }
         }
-        lex->str_len        = idx;
+        lex->str_len = idx;
         return lex->cur_tok = TK_NAME;
       }
     }
@@ -641,24 +641,24 @@ re_enter:;
         LexWarn(lex, "AIWN ignore's #assert's and other JIT shennangins");
         goto re_enter;
       } else if (!strcmp(lex->string, "if")) {
-		lex->flags|=LEXF_UNTIL_NEWLINE;
-		CCmpCtrl *cc=CmpCtrlNew(lex);
-		char *code;
-		int64_t ret=0;
-		CodeCtrlPush(cc);
-		Lex(lex);
-		if(ParseExpr(cc,0)) {
-		   CRPN *rtrn = A_CALLOC(sizeof(CRPN), 0);
-           rtrn->type = IC_RET;
-           QueIns(rtrn,cc->code_ctrl->ir_code);
-		    if(code=Compile(cc,NULL,NULL,NULL)) {
-				ret=FFI_CALL_TOS_0(code);
-			}
-			A_FREE(code);
-		}
-		CodeCtrlPop(cc);
-		CmpCtrlDel(cc);
-        if(ret)
+        lex->flags |= LEXF_UNTIL_NEWLINE;
+        CCmpCtrl *cc = CmpCtrlNew(lex);
+        char *code;
+        int64_t ret = 0;
+        CodeCtrlPush(cc);
+        Lex(lex);
+        if (ParseExpr(cc, 0)) {
+          CRPN *rtrn = A_CALLOC(sizeof(CRPN), 0);
+          rtrn->type = IC_RET;
+          QueIns(rtrn, cc->code_ctrl->ir_code);
+          if (code = Compile(cc, NULL, NULL, NULL)) {
+            ret = FFI_CALL_TOS_0(code);
+          }
+          A_FREE(code);
+        }
+        CodeCtrlPop(cc);
+        CmpCtrlDel(cc);
+        if (ret)
           goto re_enter;
         goto if_fail;
       } else if (!strcmp(lex->string, "ifaot")) {
@@ -755,9 +755,9 @@ re_enter:;
                 snprintf(NULL, 0, "%s/%s", actual_file->dir, lex->string);
             char buf[len + 1];
             sprintf(buf, "%s/%s", actual_file->dir, lex->string);
-            dir                = __AIWNIOS_StrDup(buf, NULL);
+            dir = __AIWNIOS_StrDup(buf, NULL);
             *strrchr(dir, '/') = 0;
-            f                  = fopen(buf, "rb");
+            f = fopen(buf, "rb");
           } else
             goto normal;
         } else {
@@ -766,7 +766,7 @@ re_enter:;
           if (!strrchr(lex->string, '/')) {
             dir = __AIWNIOS_StrDup(".", NULL);
           } else {
-            dir                = __AIWNIOS_StrDup(lex->string, NULL);
+            dir = __AIWNIOS_StrDup(lex->string, NULL);
             *strrchr(dir, '/') = 0;
           }
         }
@@ -779,17 +779,17 @@ re_enter:;
         idx = ftell(f);
         fseek(f, 0, SEEK_SET);
         idx -= ftell(f);
-        new_file            = A_MALLOC(sizeof(CLexFile), NULL);
-        new_file->text      = A_MALLOC(idx + 1, NULL);
+        new_file = A_MALLOC(sizeof(CLexFile), NULL);
+        new_file->text = A_MALLOC(idx + 1, NULL);
         new_file->text[idx] = 0;
-        new_file->dir       = dir;
+        new_file->dir = dir;
         fread(new_file->text, 1, idx, f);
         fclose(f);
-        new_file->is_file  = 1;
-        new_file->last     = lex->file;
+        new_file->is_file = 1;
+        new_file->last = lex->file;
         new_file->filename = A_STRDUP(lex->string, NULL);
         new_file->pos = new_file->col = new_file->ln = 0;
-        lex->file                                    = new_file;
+        lex->file = new_file;
         goto re_enter;
       } else if (!strcmp(lex->string, "define")) {
         lex->flags |= LEXF_NO_EXPAND;
@@ -800,11 +800,11 @@ re_enter:;
         lex->flags &= ~LEXF_NO_EXPAND;
         strcpy(macro_name, lex->string);
         strcpy(lex->string, "");
-        define            = A_CALLOC(sizeof(CHashDefineStr), NULL);
-        define->base.str  = A_STRDUP(macro_name, NULL);
+        define = A_CALLOC(sizeof(CHashDefineStr), NULL);
+        define->base.str = A_STRDUP(macro_name, NULL);
         define->base.type = HTT_DEFINE_STR;
-        define->src_link  = LexSrcLink(lex, NULL);
-        idx               = 0;
+        define->src_link = LexSrcLink(lex, NULL);
+        idx = 0;
         while (chr1 = LexAdvChr(lex)) {
           switch (chr1) {
             break;
@@ -817,7 +817,7 @@ re_enter:;
               LexSkipTillNewLine(lex);
             add_macro:
               lex->string[idx++] = 0;
-              define->data       = A_STRDUP(lex->string, NULL);
+              define->data = A_STRDUP(lex->string, NULL);
               HashAdd(&define->base, Fs->hash_table);
               // Lex next item
               goto re_enter;
@@ -913,19 +913,19 @@ CLexer *LexerNew(char *filename, char *text) {
     int64_t i;
     CHashKeyword *kw;
     for (i = 0; i != sizeof(kws) / sizeof(*kws); i++) {
-      kw            = A_CALLOC(sizeof *kw, NULL);
+      kw = A_CALLOC(sizeof *kw, NULL);
       kw->base.type = HTT_KEYWORD;
-      kw->base.str  = A_STRDUP(kws[i].name, NULL);
-      kw->tk        = kws[i].tok;
+      kw->base.str = A_STRDUP(kws[i].name, NULL);
+      kw->tk = kws[i].tok;
       HashAdd(kw, Fs->hash_table);
     }
     init = 1;
   }
-  CLexer *new    = A_CALLOC(sizeof(CLexer), NULL);
-  new->hc        = HeapCtrlInit(NULL, Fs, 0);
+  CLexer *new = A_CALLOC(sizeof(CLexer), NULL);
+  new->hc = HeapCtrlInit(NULL, Fs, 0);
   CLexFile *file = new->file = A_CALLOC(sizeof(CLexFile), new->hc);
-  file->filename             = A_STRDUP(filename, new->hc);
-  file->text                 = A_STRDUP(text, new->hc);
+  file->filename = A_STRDUP(filename, new->hc);
+  file->text = A_STRDUP(text, new->hc);
   return new;
 }
 
@@ -1040,7 +1040,7 @@ void LexerDump(CLexer *lex) {
   }
 }
 #ifdef AIWNIOS_TESTS
-  #include <assert.h>
+#  include <assert.h>
 void LexTests() {
   char tmpf[TMP_MAX];
   tmpnam(tmpf);
@@ -1182,7 +1182,7 @@ void LexTests() {
   assert(lex->integer == 11111);
   assert(TK_I64 == Lex(lex));
   assert(lex->integer == 111111);
-  #define AROUND(v, n, off) (((v) >= (n) - (off)) && ((v) <= (n) + (off)))
+#  define AROUND(v, n, off) (((v) >= (n) - (off)) && ((v) <= (n) + (off)))
   assert(TK_F64 == Lex(lex));
   assert(AROUND(lex->flt, 123., 0.1));
   assert(TK_F64 == Lex(lex));

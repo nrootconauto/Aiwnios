@@ -1,5 +1,5 @@
-#include "aiwn_que.h"
 #include "aiwn_mem.h"
+#include "aiwn_que.h"
 #include <stdint.h>
 
 void QueInit(CQue *i) {
@@ -7,8 +7,8 @@ void QueInit(CQue *i) {
 }
 
 void QueIns(CQue *a, CQue *to) {
-  a->next       = to->next;
-  a->last       = to;
+  a->next = to->next;
+  a->last = to;
   a->last->next = a;
   a->next->last = a;
 }

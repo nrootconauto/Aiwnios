@@ -1,27 +1,27 @@
-#include "aiwn_sock.h"
 #include "aiwn_mem.h"
-#include <string.h>
-#include <stdlib.h>
+#include "aiwn_sock.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef _WIN64
-  #include <arpa/inet.h>
-  #include <netdb.h>
-  #include <netinet/in.h>
-  #include <poll.h>
-  #include <signal.h>
-  #include <sys/socket.h>
-  #include <sys/types.h>
-  #include <unistd.h>
+#  include <arpa/inet.h>
+#  include <netdb.h>
+#  include <netinet/in.h>
+#  include <poll.h>
+#  include <signal.h>
+#  include <sys/socket.h>
+#  include <sys/types.h>
+#  include <unistd.h>
 static void InitSock() {
   // These are not my freind
   signal(SIGPIPE, SIG_IGN);
 }
 #else
-  #define _WIN32_WINNT 0x603
-  #include <winsock2.h>
-  #include <windows.h>
-  #include <iphlpapi.h>
-  #include <ws2tcpip.h>
+#  define _WIN32_WINNT 0x603
+#  include <winsock2.h>
+#  include <windows.h>
+#  include <iphlpapi.h>
+#  include <ws2tcpip.h>
 static int64_t was_init = 0;
 WSADATA ws_data;
 
@@ -68,9 +68,9 @@ CNetAddr *NetAddrNew(char *host, int64_t port) {
   char buf[1024];
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family   = AF_UNSPEC;
+  hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = 0;
-  hints.ai_flags    = AI_PASSIVE;
+  hints.ai_flags = AI_PASSIVE;
   sprintf(buf, "%d", port);
   getaddrinfo(host, buf, &hints, &ret->ai);
   return ret;
@@ -94,7 +94,7 @@ void NetListen(int64_t socket, int64_t max) {
 int64_t NetAccept(int64_t socket, CNetAddr **addr) {
   struct sockaddr sa;
   socklen_t ul = sizeof(sa);
-  int64_t con  = accept(socket, &sa, &ul);
+  int64_t con = accept(socket, &sa, &ul);
   if (addr)
     *addr = NULL;
   /*	if(addr) {
@@ -131,8 +131,8 @@ static int64_t _PollFor(int64_t _for, int64_t argc, int64_t *argv) {
   struct pollfd poll_for[argc];
   int64_t idx;
   for (idx = 0; idx != argc; idx++) {
-    poll_for[idx].fd      = argv[0];
-    poll_for[idx].events  = _for;
+    poll_for[idx].fd = argv[0];
+    poll_for[idx].events = _for;
     poll_for[idx].revents = 0;
   }
 #if defined(_WIN32) || defined(WIN32)
@@ -183,7 +183,7 @@ int64_t NetUDPSocketNew() {
   int yes = 1;
   // https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
   struct timeval read_timeout;
-  read_timeout.tv_sec  = 0;
+  read_timeout.tv_sec = 0;
   read_timeout.tv_usec = 15000;
   setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
   // On FreeBSD the port will stay in use for awhile after death,so reuse the
@@ -195,7 +195,7 @@ int64_t NetUDPSocketNew() {
 
 int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
   CInAddr tmp;
-  int alen  = sizeof(tmp.sa);
+  int alen = sizeof(tmp.sa);
   int64_t r = recvfrom(s, buf, len, 0, &tmp.sa, &alen);
 #if defined(WIN32) || defined(_WIN32)
   char buf2[2048];
@@ -206,7 +206,7 @@ int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
 #endif
   tmp.port = ntohs(tmp.sa.sin_port);
   if (from) {
-    *from  = A_CALLOC(sizeof(CInAddr), NULL);
+    *from = A_CALLOC(sizeof(CInAddr), NULL);
     **from = tmp;
   } else
     A_FREE(tmp.address);
@@ -220,13 +220,13 @@ CInAddr *NetUDPAddrNew(char *host, int64_t port) {
 #else
   InitSock();
 #endif
-  CInAddr *ret          = A_CALLOC(sizeof(CInAddr), NULL);
+  CInAddr *ret = A_CALLOC(sizeof(CInAddr), NULL);
   struct hostent *hoste = gethostbyname(host);
-  ret->sa.sin_family    = AF_INET;
-  ret->sa.sin_port      = htons(port);
-  ret->sa.sin_addr      = *((struct in_addr *)hoste->h_addr);
-  ret->port             = port;
-  ret->address          = A_STRDUP(host, NULL);
+  ret->sa.sin_family = AF_INET;
+  ret->sa.sin_port = htons(port);
+  ret->sa.sin_addr = *((struct in_addr *)hoste->h_addr);
+  ret->port = port;
+  ret->address = A_STRDUP(host, NULL);
   memset(&ret->sa.sin_zero, 0, 8);
   return ret;
 }

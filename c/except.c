@@ -1,11 +1,11 @@
+#include "aiwn_asm.h"
 #include "aiwn_except.h"
 #include "aiwn_hash.h"
-#include "aiwn_multic.h"
-#include <string.h>
-#include "aiwn_asm.h"
-#include <setjmp.h>
-#include "aiwn_que.h"
 #include "aiwn_mem.h"
+#include "aiwn_multic.h"
+#include "aiwn_que.h"
+#include <setjmp.h>
+#include <string.h>
 // See AIWNIOS_enter_try t in except_*.s
 jmp_buf *__enter_try() {
   CExcept *ex = A_MALLOC(sizeof(CExcept), Fs);
@@ -17,7 +17,7 @@ jmp_buf *__throw(uint64_t code) {
   Fs->except_ch = code;
   CExcept *ex;
   Fs->catch_except = 0;
-  Fs->except_ch    = code;
+  Fs->except_ch = code;
   QueRem(ex = Fs->except->last);
   memcpy(Fs->throw_pad, ex->ctx, sizeof(ex->ctx));
   A_FREE(ex);

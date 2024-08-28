@@ -25,10 +25,10 @@ int64_t VFsIsDir(char *name);
 
 #include "generated.h" //AIWNIOS_INSTALL_DIRAIWNIOS_getcontext,
 #if defined(_WIN32) || defined(WIN32)
-  #define AIWNIOS_OSTREAM      stdout
-  #define AIWNIOS_TEMPLATE_DIR "TODO"
+#  define AIWNIOS_OSTREAM      stdout
+#  define AIWNIOS_TEMPLATE_DIR "TODO"
 #else
-  #define AIWNIOS_OSTREAM      stderr
-  #define AIWNIOS_TEMPLATE_DIR AIWNIOS_INSTALL_DIR "/share/aiwnios"
+#  define AIWNIOS_OSTREAM      stderr
+#  define AIWNIOS_TEMPLATE_DIR AIWNIOS_INSTALL_DIR "/share/aiwnios"
 #endif
-const char *ResolveBootDir(char *use, int make_new_dir,const char *t);
+const char *ResolveBootDir(char *use, int make_new_dir, const char *t);
