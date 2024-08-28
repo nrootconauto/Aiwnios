@@ -658,14 +658,13 @@ re_enter:;
 		}
 		CodeCtrlPop(cc);
 		CmpCtrlDel(cc);
-		if(ret)
-          goto if_pass;
-        
+        if(ret)
+          goto re_enter;
         goto if_fail;
       } else if (!strcmp(lex->string, "ifaot")) {
         // AIWN will only AOT compile for you,the JIT will be
         // handled by the newly compiled compiler
-        goto if_pass;
+        goto re_enter;
       } else if (!strcmp(lex->string, "ifjit")) {
         // AIWN will only AOT compile for you,the JIT will be
         // handled by the newly compiled compiler

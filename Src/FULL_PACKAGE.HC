@@ -6,10 +6,12 @@
 #include "KMisc.HC"
 #if 1 
 PrintI("pass",1);
+PrintI("wut",0);
 #endif
 #if 0 
 PrintI("fail",1);
 #endif
+
 CCPU cpu_structs[64];
 SetGs(&cpu_structs[0]);
 //AIWNIOS Boot stuff
