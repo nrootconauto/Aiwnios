@@ -695,14 +695,8 @@ U0 Serve(CServer *srv) {
     "Press a key to stop serving\n";
     PressAKey;
   } else {
-    if (core==-1) {
-      "Ctrl+C to quit serving\n"; /*I know this is stupid but
-       if there's only one there's no other way because
-       CmdLineGetStr() doesn't yield (of course not) and
-       Im not going to go through the effort of modifying linenoise to yield
-       force setting mp_cnt to 2 mininum didnt seem to work*/
-      while (TRUE) Sleep(10);
-    } else Free(CmdLineGetStr("Press enter to stop serving"));
+    "Ctrl+C to quit serving\n";
+    while (TRUE) Sleep(10);
   }
   Kill(srv_task);
 }
