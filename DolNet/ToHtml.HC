@@ -513,3 +513,71 @@ public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
   Free(in_name);
   Free(out_name);
 }
+U0 HtmlRawPrint(CDoc *d,U8 *fmt,...) {
+  fmt=StrPrintJoin(NULL,fmt,argc,argv);
+  DocPrint(d,"$$HC,\"%Q\"$$",fmt);
+PrintI(fmt,d);
+  Free(fmt);
+}
+public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",CDoc *header=NULL,CDoc *footer=NULL) {
+  CDoc *ret,*tmp;
+  CHashClass *cls=HashFind(cn,Fs->hash_table,HTT_CLASS);
+  CDocEntry *ent;
+  CMemberLst *mlst,*override;
+  U8 *fmt,*trimmed,*more=NULL;
+  if(!cls) throw('HTML');
+  tmp=DocNew;
+  if(header)
+    DocInsDoc(tmp,header);
+  mlst=cls->member_lst_and_root;
+  if(!StrICmp(method,"POST"))
+    more="enctype=\"multipart/form-data\"";
+  HtmlRawPrint(tmp,"<form action=\"%s\" method=\"%s\" %s>",action,method,more);
+  while(mlst) {
+    if(fmt=MemberMetaData("format",mlst)) {
+      if(ent=DocPrint(tmp,"%s",fmt)) {
+        switch(ent->type_u8) {
+	  start:
+	    if(ent->aux_str)
+ 	      trimmed=StrNew(ent->aux_str);
+	    else
+	      trimmed=MStrPrint("%s:",mlst->str);
+	    if(StrOcc(trimmed,':'))
+	      *StrFirstOcc(trimmed,":")=0;;
+	    override=MemberMetaData("html_input_type",mlst);
+	  case DOCT_DATA:
+	    if(!override)
+	      override="text";
+	    break;
+	  case DOCT_LST:
+	    DocEntryDel(tmp,ent);
+	    break;
+	  case DOCT_CHECK_BOX:
+	    if(!override)
+	      override="checkbox";
+	    break;
+	  end:
+	    HtmlRawPrint(tmp,"<label for=\"%s\">%s:</label><br>",mlst->str,trimmed);
+	    if(!StrCmp(override,"checkbox"))
+	      HtmlRawPrint(tmp,"<input type=\"%s\" id=\"%s\" name=\"%s\" value=\"%Q\"><br>",override,mlst->str,mlst->str,mlst->str);
+	    else if(StrCmp(override,"textarea"))
+	      HtmlRawPrint(tmp,"<input type=\"%s\" id=\"%s\" name=\"%s\"><br>",override,mlst->str,mlst->str);
+	    else
+	      HtmlRawPrint(tmp,"<textarea type=\"%s\" id=\"%s\" name=\"%s\"><br>",override,mlst->str,mlst->str);
+	    DocEntryDel(tmp,ent);
+	    Free(trimmed);
+	    break;
+        }
+      }
+     }
+    mlst=mlst->next;
+  }
+  HtmlRawPrint(tmp,"<input type=\"submit\" value=\"Submit\"><br>");
+  HtmlRawPrint(tmp,"</form>");
+  if(footer)
+    DocInsDoc(tmp,footer);
+  ret=Doc2Html(tmp,NULL,NULL,NULL,NULL,FALSE,&TOSLinkCvt1,FALSE);
+  DocDel(tmp);
+  return ret;
+
+}

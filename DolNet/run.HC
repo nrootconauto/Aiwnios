@@ -1,10 +1,12 @@
-Cd("T:/DolNet");; //We are not serving from RootFS
+Cd(__DIR__);;
+
 //if (IsCmdLineMode) Silent(ON);
-#define SERVER_HTML "../HTML"
-#define SERVER_WWW "../WWW"
+#define SERVER_HTML "/HTML"
+#define SERVER_WWW "/WWW"
 #define SERVER_PORT 8080
 #define SERVER_RAW_PREFIX "/raw/"
 #define SERVER_ISOC_PREFIX "/raw_dir/"
+#define MAX_UPLOAD 100*100000
 
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
@@ -97,6 +99,10 @@ fin:
 #include "FileBMP";
 #include "ToHtml.HC";
 #include "gen_html.HC";
+#if __CMD_LINE__
+Cd("T:/");; //We are not serving from RootFS
 CServer *srv=CreateServer(SERVER_PORT);
 srv->get=&Get;
+srv->post=&Post;
 Serve(srv);
+#endif 

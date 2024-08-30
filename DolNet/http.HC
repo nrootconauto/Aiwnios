@@ -87,8 +87,23 @@ loop:
 }
 CURL *ParseURL(U8 *url,CTask *mem_task) {
   CURL *ret=CAlloc(sizeof(CURL),mem_task);
+  U8 *translated=MAlloc(StrLen(url)+1);
+  U8 buf[3];
   U8 *r,*q,*p,chr;
-  I64 i,l;
+  I64 i,l,i2;
+  for(i2=i=0;url[i];) {
+    if(url[i]=='%') {
+       buf[0](U16)=url[i+1](U16);
+       buf[2]=0;
+       translated[i2++]=Str2I64(buf,16);
+       i+=3;
+    } else {
+      translated[i2++]=url[i++];
+    }
+      
+  }
+  translated[i2++]=0;
+  url=translated;
   if(!(url=StrFind("//",url)))
     goto fail;
   url+=2;
@@ -121,8 +136,10 @@ CURL *ParseURL(U8 *url,CTask *mem_task) {
   } else
     ret->query=StrNew("");
 retn:
+  Free(translated);
   return ret;
 fail:
+  Free(translated);
   Free(ret);
   return NULL;
 }
@@ -315,7 +332,7 @@ U0 ParseRequest(CConnection *con) {
     case HTTP_POST:
       if(con->server->post) {
         (*con->server->post)(con->server,stream,url,&req,con->post_data);
-        NetWrite(stream,"\x0d\n",2);
+//        NetWrite(stream,"\x0d\n",2);
       }
       break;
   }
@@ -511,6 +528,7 @@ cloop:;
         hash->user_data2=hash->user_data1+con->field_ptr+1;
         StrCpy(hash->user_data2,con->name);
         MemCpy(hash->user_data1,con->fbuffer,con->field_ptr);
+        hash->user_data1(U8*)[hash->user_data0]=0;
         hash->type=HTT_DICT_WORD;
         HashAdd(hash,con->post_data);
       }
@@ -532,6 +550,7 @@ cloop:;
         hash->user_data2=hash->user_data1+con->field_ptr+1;
         StrCpy(hash->user_data2,con->name);
         MemCpy(hash->user_data1,con->fbuffer,con->field_ptr);
+        hash->user_data1(U8*)[hash->user_data0]=0;
         hash->type=HTT_DICT_WORD;
         HashAdd(hash,con->post_data);
       }
@@ -573,10 +592,13 @@ loop:
     } else if(!Bt(&con->state,CONf_DATA)&&len==2) { //+2 for \x0d\n
       Bts(&con->state,CONf_DATA);
     } else if(Bt(&con->state,CONf_DATA)) {
+      if(len+con->field_ptr>=MAX_UPLOAD)
+	goto malformed;
       if(!con->fbuffer) {
-        con->fbuffer=MAlloc(len+1,con->hc);
+        con->fbuffer=MAlloc(len+10000000/4,con->hc);
       } else if(MSize(con->fbuffer)<=1+len+con->field_ptr) {
         t1=MAlloc(2*con->field_ptr+len+1,con->hc);
+	if(!t1) goto malformed;
         MemCpy(t1,con->fbuffer,con->field_ptr);
         Free(con->fbuffer);
         con->fbuffer=t1;
@@ -687,9 +709,7 @@ nxt:;
 }
 U0 Serve(CServer *srv) {
   CTask *srv_task;
-  I64 core;
-  if (mp_cnt==1) core=-1;
-  else core=RandU16%(mp_cnt-1)+1;
+  I64 core=0;
   srv_task=Spawn(&ServeTask,srv,"Server",core,Fs);
   if (!IsCmdLineMode) {
     "Press a key to stop serving\n";

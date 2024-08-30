@@ -234,7 +234,7 @@ public I64 DocTreeExe(CDoc *doc,U8 *path)
   return res;
 }
 
-public I64 DocTreeFExe(U8 *name,U8 *path)
+public I64 DocTreeFExe(U8 *name,U8 *path)
 {//Execute doc tree branch in file.
   I64 res;
   CDoc *doc=DocRead(name);
