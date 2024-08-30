@@ -99,6 +99,7 @@ fin:
 #include "FileBMP";
 #include "ToHtml.HC";
 #include "gen_html.HC";
+PrintI("cmd",__CMD_LINE__);
 #if __CMD_LINE__
 Cd("T:/");; //We are not serving from RootFS
 CServer *srv=CreateServer(SERVER_PORT);

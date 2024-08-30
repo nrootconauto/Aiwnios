@@ -7148,3 +7148,4 @@ public extern CBGR48 gr_palette_std[COLORS_NUM];
 extern U0 HeapWho();
 //For bootsrapping
 extern U0 ExeEmbedFile(U8 *fn);
+extern U0 CmdLineRunFiles();

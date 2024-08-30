@@ -361,7 +361,7 @@ public I64 DocSize(CDoc *doc)
 }
 
 #help_index "DolDoc"
-public CDoc *DocNew(U8 *filename=NULL,CTask *task=NULL)
+public CDoc *DocNew(U8 *filename=NULL,CTask *task=NULL)
 {//MAlloc new $LK,"DolDoc",A="FI:::/Doc/DolDocOverview.DD"$. (Begin a new doc.)
   CDoc *doc;
   if (!task) task=Fs;
