@@ -516,7 +516,6 @@ public U0 ToHtml(U8 *_in_name,U8 *_out_name=NULL,U8 *html_header=NULL,
 U0 HtmlRawPrint(CDoc *d,U8 *fmt,...) {
   fmt=StrPrintJoin(NULL,fmt,argc,argv);
   DocPrint(d,"$$HC,\"%Q\"$$",fmt);
-PrintI(fmt,d);
   Free(fmt);
 }
 public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",CDoc *header=NULL,CDoc *footer=NULL) {

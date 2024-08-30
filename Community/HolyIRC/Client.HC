@@ -1,4 +1,4 @@
-#exe {Cd(__DIR__);};;
+1#exe {Cd(__DIR__);};;
 #ifdef __AIWNIOS__
 #include "CrossNetShims/Aiwnios2.HC";
 #else
@@ -461,7 +461,7 @@ U0 ServerReadCb(I64 s,U8 *text,I64 len,U8 *user_data) {
       while(*txt&&Bt(char_bmp_white_space,*txt))
         txt++;
       tmp=dummy;
-      is_op=FALSE;
+      is_op=FALSE;
       if(*tmp=='@') tmp++,is_op=TRUE;
       else if(*tmp=='+') tmp++;
       else if(*tmp=='%') tmp++,is_op=TRUE;
@@ -752,5 +752,5 @@ next:
 
 
 CClient *cl=ClientNew("aiwnios.com",6667,NULL);
-        c          ßÿÿÿáÿÿÿ             €   åÿÿÿðÿÿÿ÷ÿÿÿÿÿÿÿøÿÿÿëÿÿÿ
+        c          ßÿÿÿáÿÿÿ             €   åÿÿÿðÿÿÿ÷ÿÿÿÿÿÿÿøÿÿÿëÿÿÿ
 ðÿÿÿóÿÿÿîÿÿÿâÿÿÿ	ÒÿÿÿÝÿÿÿIRC  

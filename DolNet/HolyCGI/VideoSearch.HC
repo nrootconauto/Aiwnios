@@ -21,15 +21,14 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     tmp_str=ChrootFile("/",SERVER_WWW"/Videos");
     as_txt=MStrPrint("%s*.DD",tmp_str);
     Free(tmp_str);
-    root=FilesFind(as_txt,FUF_FLATTEN_TREE|FUF_JUST_FILES);
+    root=FilesFind(as_txt,FUF_FLATTEN_TREE|FUF_JUST_FILES|FUF_RECURSE);
     Free(as_txt);
     for(ent=root;ent;ent=ent->next) {
       as_txt=FileRead(ent->full_name);
       if(StrIMatch(v,as_txt)) {
         if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-	  tmp_str+=StrLen("Videos/");
 	  cnt++;
-	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$",ent->name,tmp_str);
+	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$",ent->name,tmp_str+StrLen("Videos/"));
 	}
       }
       Free(as_txt);

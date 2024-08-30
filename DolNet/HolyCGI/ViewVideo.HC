@@ -86,13 +86,13 @@ use_props:
     tmp_str=ChrootFile("/",SERVER_WWW"/Videos");
     v=MStrPrint("%s/*.DD",tmp_str);
     Free(tmp_str);
-    root=FilesFind(v,FUF_FLATTEN_TREE|FUF_JUST_FILES);
+    root=FilesFind(v,FUF_FLATTEN_TREE|FUF_JUST_FILES|FUF_RECURSE);
 
     for(ent=root;ent;ent=ent->next) {
       v=MStrPrint("Videos/%Q",ent->name);
 //TODO encode strange names
       if(tmp_str=StrMatch("Videos/",ent->full_name))
-        DocTreeWrite(tmp_doc,v,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",ent->name,tmp_str+StrLen("/Videos"));
+        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",ent->name,tmp_str);
       Free(v);
     }
     DirEntryDel(root);
