@@ -92,7 +92,7 @@ use_props:
       v=MStrPrint("Videos/%Q",ent->name);
 //TODO encode strange names
       if(tmp_str=StrMatch("Videos/",ent->full_name))
-        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",ent->name,tmp_str);
+        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",ent->name,tmp_str+StrLen("Videos/"));
       Free(v);
     }
     DirEntryDel(root);
