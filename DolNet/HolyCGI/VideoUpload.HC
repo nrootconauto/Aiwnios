@@ -60,14 +60,16 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       tdesc[desc->user_data0]=0;
 
       tmp_str2=ChrootFile(ttitle,SERVER_WWW"/VideoProps");
+      StrUtil(tmp_str2,SUF_REM_SPACES);
       EnsurePathExists(tmp_str2);
       as_txt=MStrPrint("%s.DD",tmp_str2);
       props=DocNew(as_txt);
       Free(tmp_str2);
       if(disable=HashFind("video_disable_comments",post_data,HTT_DICT_WORD)) {
         DocTreeWrite(props,"Props/DisableComments",FALSE,"%d;",1);
-        DocWrite(props);
       }
+      DocTreeWrite(props,"Props/Description",FALSE,"StrNew(\"%Q\");\n",tdesc);
+      DocWrite(props);
       Free(as_txt);
       DocDel(props);
 

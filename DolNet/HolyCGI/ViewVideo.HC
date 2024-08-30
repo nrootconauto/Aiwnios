@@ -15,6 +15,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *as_txt;
   I64 len,views;
   Bool comments_enable=TRUE;
+  U8 *props_file,*desc;
   CDirEntry *ent,*root;
   CDoc *tmp_doc,*html,*comments,*props;
   if(v=GetQueryValue(url->query,"view")) {
@@ -25,6 +26,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 //Load Comments
       tmp_str2=ChrootFile(v,SERVER_WWW"/VideoComments");
       EnsurePathExists(tmp_str2);
+      StrUtil(tmp_str2,SUF_REM_SPACES);
       if(FileFind(tmp_str2)) {
         comments=DocRead(tmp_str2);
       } else
@@ -34,6 +36,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
       tmp_str2=ChrootFile(v,SERVER_WWW"/VideoProps");
       EnsurePathExists(tmp_str2);
+      StrUtil(tmp_str2,SUF_REM_SPACES);
       if(FileFind(tmp_str2)) {
 use_props:
 	if(DocTreeFExe(tmp_str2,"Props/DisableComments"))
@@ -90,10 +93,19 @@ use_props:
 
     for(ent=root;ent;ent=ent->next) {
       v=MStrPrint("Videos/%Q",ent->name);
+
+
 //TODO encode strange names
-      if(tmp_str=StrMatch("Videos/",ent->full_name))
-        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",ent->name,tmp_str+StrLen("Videos/"));
-      Free(v);
+      desc=NULL;
+      if(tmp_str=StrMatch("Videos/",ent->full_name)) {
+        props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_WWW"/VideoProps");
+        if(FileFind(props_file))
+          desc=DocTreeFExe(props_file,"/Props/Description");
+        Free(props_file);
+
+        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
+      }
+      Free(v),Free(desc);
     }
     DirEntryDel(root);
 

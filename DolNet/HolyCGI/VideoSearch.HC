@@ -11,6 +11,7 @@ class CVideoSearch {
 Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *v,*tmp_str;
   U8 *as_txt;
+  U8 *props_file,*desc;
   I64 len;
   I64 cnt=0;
   CDirEntry *ent,*root;
@@ -19,6 +20,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     tmp_doc=DocNew;
     DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Search results for \\\"%Q\\\":\"$$$$FD$$\n",v);
     tmp_str=ChrootFile("/",SERVER_WWW"/Videos");
+    StrUtil(tmp_str,SUF_REM_SPACES);
     as_txt=MStrPrint("%s*.DD",tmp_str);
     Free(tmp_str);
     root=FilesFind(as_txt,FUF_FLATTEN_TREE|FUF_JUST_FILES|FUF_RECURSE);
@@ -27,8 +29,15 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       as_txt=FileRead(ent->full_name);
       if(StrIMatch(v,as_txt)) {
         if(tmp_str=StrMatch("Videos/",ent->full_name)) {
+	  props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_WWW"/VideoProps");
+          StrUtil(props_file,SUF_REM_SPACES);
+	  desc=NULL;
+	  if(FileFind(props_file))
+	    desc=DocTreeFExe(props_file,"/Props/Description");
+	  Free(props_file);
 	  cnt++;
-	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$",ent->name,tmp_str+StrLen("Videos/"));
+	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
+	  Free(desc);
 	}
       }
       Free(as_txt);
