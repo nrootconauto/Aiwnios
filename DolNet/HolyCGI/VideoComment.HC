@@ -21,7 +21,7 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
   if(v=GetQueryValue(url->query,"for")) {
     tmp_doc=DocNew;
     props_file=ChrootFile(v,SERVER_WWW"/VideoProps");
-    StrUtil(tmp_str2,SUF_REM_SPACES);
+    StrUtil(props_file,SUF_REM_SPACES);
     if(DocTreeFExe(props_file,"Props/DisableComments")) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments are disabled for this video\"$$$$FD$$\n",v);
       DocPrint(tmp_doc,"\n fucking ass poodles.\n");
