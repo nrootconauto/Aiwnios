@@ -2,6 +2,7 @@ Cd(__DIR__);;
 
 //if (IsCmdLineMode) Silent(ON);
 #define SERVER_HTML "/HTML"
+#define SERVER_META "/WWW_Meta"
 #define SERVER_WWW "/WWW"
 #define SERVER_PORT 8080
 #define SERVER_RAW_PREFIX "/raw/"

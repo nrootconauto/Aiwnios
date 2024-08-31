@@ -282,6 +282,11 @@ U0 SendRequest(I64 s) {
         );
   NetWriteWErr(s,tmp,StrLen(tmp));
   Free(tmp);
+  if(con->session_cookie) {
+    tmp=MStrPrint("Set-Cookie: %s\x0d\n",con->session_cookie);
+    NetWriteWErr(s,tmp,StrLen(tmp));
+    Free(tmp);
+  }
   if(con->etag_text&&con->provided_etag_by_server) {
     tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
     NetWriteWErr(s,tmp,StrLen(tmp));

@@ -20,8 +20,8 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
     return FALSE;
   if(v=GetQueryValue(url->query,"for")) {
     tmp_doc=DocNew;
-    props_file=ChrootFile(v,SERVER_WWW"/VideoProps");
-    StrUtil(props_file,SUF_REM_SPACES);
+    props_file=ChrootFile(v,SERVER_META"/VideoProps");
+    StrUtil(props_file,SUF_REM_SPACES);
     if(DocTreeFExe(props_file,"Props/DisableComments")) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments are disabled for this video\"$$$$FD$$\n",v);
       DocPrint(tmp_doc,"\n fucking ass poodles.\n");
@@ -30,7 +30,7 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
 
     DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Commented on Video(\\\"%Q\\\")\"$$$$FD$$\n",v);
     DocPrint(tmp_doc,"\n 21 Savage Lit($$LK,\"Return to video\",HTML=\"/ViewVideo.HC?view=%Q\"$$)\n",v);
-    tmp_str=ChrootFile(v,SERVER_WWW"/VideoComments");
+    tmp_str=ChrootFile(v,SERVER_META"/VideoComments");
     EnsurePathExists(tmp_str);
     StrUtil(tmp_str,SUF_REM_SPACES);
     if(FileFind(tmp_str)) {

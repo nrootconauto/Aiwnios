@@ -8,9 +8,10 @@ extern U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req);
 extern U0 OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable*);
 
 class CVideoUpload {
-  U8 video_filename[32] format "$$DA-P,\"Video File:%s\"$$\n" html_input_type "file";
-  U8 video_title[STR_LEN] format "$$DA-P,\"Video Tile:%s\"$$\n";
-  U8 video_desc[STR_LEN] format "$$DA-P,\"Description:%s\"$$\n";
+  U8 video_filename[32] format "$$DA-P,A=\"Video File:%s\"$$\n" html_input_type "file";
+  U8 video_title[STR_LEN] format "$$DA-P,A=\"Video Tile:%s\"$$\n";
+  U8 video_desc[STR_LEN] format "$$DA-P,A=\"Description:%s\"$$\n" html_input_type "textarea";
+  U8 video_admin_password[STR_LEN] format "$$DA-P,A=\"Video Admin Panel Password:%s\"$$.\n"  html_input_type "password";
   Bool video_disable_comments format "$$CB,\"Disable Comments\"$$\n";
 };
 
@@ -22,6 +23,7 @@ U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con=Fs->user_data;
   DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"AiwniosTube Video Upload:\"$$$$FD$$\n");
   DocPrint(tmp,"\n  Upload a video to AiwniosTube. No illegal content.\n");
+  DocPrint(tmp,"\n  Each video has it's own video admin panel. No accounts are used here.\n");
   html=HtmlFormGen("CVideoUpload",action,"POST",tmp);
   as_txt=DocSave(html,&len);
   WriteNBytes(stream,NULL,as_txt,len);
@@ -36,16 +38,15 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
   CHashGeneric *file=HashFind("video_filename",post_data,HTT_DICT_WORD);
   CHashGeneric *title=HashFind("video_title",post_data,HTT_DICT_WORD);
   CHashGeneric *desc=HashFind("video_desc",post_data,HTT_DICT_WORD);
+  CHashGeneric *passwd=HashFind("video_admin_password",post_data,HTT_DICT_WORD);
   CHashGeneric *disable;
   CDoc *tmp=DocNew,*html,*props;
   CDoc *page=DocNew;
   I64 len;
-  U8 *as_txt,*tmp_str2;
+  U8 *as_txt,*tmp_str2,*tpasswd;
   U8 *filename,*tnam,*tdesc,*ttitle;
   CConnection *con=Fs->user_data;
   if(file&&title&&desc) {
-
-
     if(file->user_data0<MAX_UPLOAD) {
       if(tnam=FileExtDot(file->user_data2)) {
 	if(StrICmp(tnam,".mp4")) {
@@ -56,10 +57,14 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
 
       ttitle=title->user_data1;
       tdesc=desc->user_data1;
+      if(passwd)  {
+	tpasswd=passwd->user_data1;
+        tpasswd[passwd->user_data0]=0;
+      } else
+	tpasswd=NULL;
       ttitle[title->user_data0]=0;
       tdesc[desc->user_data0]=0;
-
-      tmp_str2=ChrootFile(ttitle,SERVER_WWW"/VideoProps");
+      tmp_str2=ChrootFile(ttitle,SERVER_META"/VideoProps");
       StrUtil(tmp_str2,SUF_REM_SPACES);
       EnsurePathExists(tmp_str2);
       as_txt=MStrPrint("%s.DD",tmp_str2);
@@ -68,7 +73,8 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       if(disable=HashFind("video_disable_comments",post_data,HTT_DICT_WORD)) {
         DocTreeWrite(props,"Props/DisableComments",FALSE,"%d;",1);
       }
-      DocTreeWrite(props,"Props/Description",FALSE,"StrNew(\"%Q\");\n",tdesc);
+      if(tpasswd)
+        DocTreeWrite(props,"Props/AdminHash",FALSE,"%d;\n",HashStr(tpasswd));
       DocWrite(props);
       Free(as_txt);
       DocDel(props);

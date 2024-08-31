@@ -29,14 +29,14 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       as_txt=FileRead(ent->full_name);
       if(StrIMatch(v,as_txt)) {
         if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-	  props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_WWW"/VideoProps");
+	  props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_META"/VideoProps");
           StrUtil(props_file,SUF_REM_SPACES);
 	  desc=NULL;
 	  if(FileFind(props_file))
 	    desc=DocTreeFExe(props_file,"/Props/Description");
 	  Free(props_file);
 	  cnt++;
-	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
+	  DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
 	  Free(desc);
 	}
       }

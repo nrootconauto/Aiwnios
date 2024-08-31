@@ -24,7 +24,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 //Predefined(maybe change this in the future)
       tmp_doc=DocRead(tmp_str);
 //Load Comments
-      tmp_str2=ChrootFile(v,SERVER_WWW"/VideoComments");
+      tmp_str2=ChrootFile(v,SERVER_META"/VideoComments");
       EnsurePathExists(tmp_str2);
       StrUtil(tmp_str2,SUF_REM_SPACES);
       if(FileFind(tmp_str2)) {
@@ -34,7 +34,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       Free(tmp_str2);
 
 
-      tmp_str2=ChrootFile(v,SERVER_WWW"/VideoProps");
+      tmp_str2=ChrootFile(v,SERVER_META"/VideoProps");
       EnsurePathExists(tmp_str2);
       StrUtil(tmp_str2,SUF_REM_SPACES);
       if(FileFind(tmp_str2)) {
@@ -51,6 +51,7 @@ use_props:
       tmp_str2=MStrPrint("/VideoComment.HC?for=%Q",v);
       DocPrint(tmp_doc,"$$GREEN$$This video has $$RED$$%d$$GREEN$$ views$$FD$$\n",views);
 
+      DocPrint(tmp_doc,"$$LK,\"Admin Panel\",HTML=\"/VideoAdmin.HC?video=%Q\"$$\n",v);
 
       if(comments_enable) {
         DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments\"$$$$FD$$");
@@ -98,12 +99,12 @@ use_props:
 //TODO encode strange names
       desc=NULL;
       if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-        props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_WWW"/VideoProps");
+        props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_META"/VideoProps");
         if(FileFind(props_file))
           desc=DocTreeFExe(props_file,"/Props/Description");
         Free(props_file);
 
-        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
+        DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
       }
       Free(v),Free(desc);
     }

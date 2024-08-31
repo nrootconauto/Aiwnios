@@ -562,7 +562,7 @@ public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",CDoc *header=NULL,C
 	    else if(StrCmp(override,"textarea"))
 	      HtmlRawPrint(tmp,"<input type=\"%s\" id=\"%s\" name=\"%s\"><br>",override,mlst->str,mlst->str);
 	    else
-	      HtmlRawPrint(tmp,"<textarea type=\"%s\" id=\"%s\" name=\"%s\"><br>",override,mlst->str,mlst->str);
+	      HtmlRawPrint(tmp,"<textarea type=\"%s\" id=\"%s\" name=\"%s\"></textarea><br>",override,mlst->str,mlst->str);
 	    DocEntryDel(tmp,ent);
 	    Free(trimmed);
 	    break;
