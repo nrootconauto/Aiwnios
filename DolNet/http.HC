@@ -444,7 +444,7 @@ loop:
      tmp=MAlloc(len2+1,con->hc);
      MemCpy(tmp,con->buffer_ptr,len2);
      tmp[len2]=0;
-     en=SReadLine(s,tmp,len2,ut);
+     en=SReadLine(s,tmp,len2,ut);
      Free(tmp);
      con->buffer_len-=len2;
      con->buffer_ptr+=len2;
@@ -754,10 +754,12 @@ again:;
 	    fds[idx]=-1;
 	  } else if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
 	    len=NetRead(fds[idx],buf,0x10000);
-	    buf[len]=0;
-	    SReadData(fds[idx],buf,len,&unique_tokens[idx]);
-	    Yield;
-	    goto again;
+	    if(len>0) {
+	      buf[len]=0;
+	      SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+	      Yield;
+	      goto again;
+	    }
         }
 nxt:;
       }
