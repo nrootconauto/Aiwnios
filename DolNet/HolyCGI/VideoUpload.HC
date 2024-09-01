@@ -81,7 +81,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       DocPrint(page,"%Q\n$$ID,-2$$\n",tdesc);
       
 //Save vidoe
-      filename=ChrootFile(ttitle,SERVER_WWW"/Videos");
+      filename=ChrootFile(file->user_data2,SERVER_WWW"/Videos");
       StrUtil(filename,SUF_REM_SPACES);
       FileWrite(filename,file->user_data1,file->user_data0);
       AiwniosTubeSetVideoPropStr(ttitle,"Props/VideoPath","%s",filename);
