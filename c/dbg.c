@@ -39,6 +39,7 @@
 #  include <errhandlingapi.h>
 #  include <handleapi.h>
 #  include <processthreadsapi.h>
+#  include <sys/types.h>
 #endif
 #if defined(__APPLE__)
 typedef struct CFuckup {

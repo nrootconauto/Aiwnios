@@ -26,6 +26,12 @@
 void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
+#if defined(WIN32) || defined(_WIN32)
+#  include <shlobj.h>
+#else
+#  include <pwd.h>
+#  include <sys/types.h>
+#endif
 #if defined(__APPLE__)
 #  include <libkern/OSCacheControl.h>
 #endif
@@ -38,6 +44,10 @@ extern int64_t user_ev_num;
 #include <machine/iodev.h>
 #endif
 // clang-format on
+#ifdef _WIN64
+#include <windows.h>
+#include <processthreadsapi.h>
+#endif
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
@@ -360,7 +370,7 @@ static int __iofd_warned;
 #  if defined(__FreeBSD__) || defined(__linux__)
 static int __iofd = -1, __iofd_errno = -1, __iofd_cur_port = -1;
 static char const *__iofd_str;
-static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
+static void __aiwn_out(uint64_t wut, uint64_t port, uint64_t sz) {
   if (-1 == __iofd) {
     if (__iofd_warned)
       return;
@@ -383,7 +393,7 @@ static void __out(uint64_t wut, uint64_t port, uint64_t sz) {
         });
 #    endif
 }
-static uint64_t __in(uint64_t port, uint64_t sz) {
+static uint64_t __aiwn_in(uint64_t port, uint64_t sz) {
   if (-1 == __iofd) {
     if (__iofd_warned)
       return -1ul;
@@ -414,13 +424,13 @@ static uint64_t __in(uint64_t port, uint64_t sz) {
 #    endif
 }
 #  elif defined(_WIN32)
-static void __out(uint64_t ul1, uint64_t ul2, uint64_t ul3) {
+static void __aiwn_out(uint64_t ul1, uint64_t ul2, uint64_t ul3) {
   if (__iofd_warned)
     return;
   fprintf(stderr, "In/Out not supported on Windows\n");
   __iofd_warned = 1;
 }
-static uint64_t __in(uint64_t ul1, uint64_t ul2) {
+static uint64_t __aiwn_in(uint64_t ul1, uint64_t ul2) {
   if (__iofd_warned)
     return -1ull;
   fprintf(stderr, "In/Out not supported on Windows\n");
@@ -429,22 +439,22 @@ static uint64_t __in(uint64_t ul1, uint64_t ul2) {
 }
 #  endif
 static void STK_OutU8(uint64_t *stk) {
-  __out(stk[1], stk[0], 1);
+  __aiwn_out(stk[1], stk[0], 1);
 }
 static void STK_OutU16(uint64_t *stk) {
-  __out(stk[1], stk[0], 2);
+  __aiwn_out(stk[1], stk[0], 2);
 }
 static void STK_OutU32(uint64_t *stk) {
-  __out(stk[1], stk[0], 4);
+  __aiwn_out(stk[1], stk[0], 4);
 }
 static uint64_t STK_InU8(uint64_t *stk) {
-  return __in(stk[0], 1);
+  return __aiwn_in(stk[0], 1);
 }
 static uint64_t STK_InU16(uint64_t *stk) {
-  return __in(stk[0], 2);
+  return __aiwn_in(stk[0], 2);
 }
 static uint64_t STK_InU32(uint64_t *stk) {
-  return __in(stk[0], 4);
+  return __aiwn_in(stk[0], 4);
 }
 #  ifdef _WIN32
 #    define RepIn(n)                                                           \
@@ -459,14 +469,14 @@ static uint64_t STK_InU32(uint64_t *stk) {
         uint64_t port = stk[2], cnt = stk[1];                                  \
         uint##n##_t *buf = stk[0];                                             \
         for (uint64_t i = 0; i < cnt; i++)                                     \
-          buf[i] = __in(port, n / 8) & ((1ull << n) - 1);                      \
+          buf[i] = __aiwn_in(port, n / 8) & ((1ull << n) - 1);                      \
       }
 #    define RepOut(n)                                                          \
       static void STK_RepOutU##n(uint64_t *stk) {                              \
         uint64_t port = stk[2], cnt = stk[1];                                  \
         uint##n##_t *buf = stk[0];                                             \
         for (uint64_t i = 0; i < cnt; i++)                                     \
-          __out(buf[i] & ((1ull << n) - 1), port, n / 8);                      \
+          __aiwn_out(buf[i] & ((1ull << n) - 1), port, n / 8);                      \
       }
 #  endif
 RepIn(8);
@@ -1656,14 +1666,13 @@ static int64_t quit = 0;
 
 static void ExitAiwnios(int64_t *stk) {
   quit = 1;
-  exit(stk[0]);
-}
-#if defined(WIN32) || defined(_WIN32)
-#  include <shlobj.h>
+#ifndef _WIN32
+  _Exit(stk[0]);
 #else
-#  include <pwd.h>
-#  include <sys/types.h>
+  while (1)
+    TerminateProcess(GetCurrentProcess(), stk[0]);
 #endif
+}
 #ifdef main
 #  undef main
 #endif
