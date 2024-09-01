@@ -34,6 +34,9 @@ class CConnection {
   I64 is_dead,response_length;
   U8 *session_cookie,*response_text;
   I64 response_code,cache_age;
+//Both are -1 or start
+  I64 want_range_start,want_range_end;
+  I64 accept_range_start,accept_range_end;
   Bool provided_etag_by_server;
   U8 response_mime[STR_LEN];
   U8 boundary[STR_LEN];
@@ -275,9 +278,15 @@ fail:;
 U0 SendRequest(I64 s) {
   U8 *tmp,*tmp2,*cookie;
   U8 *msg="200 OK";
+  I64 st,en;
   CConnection *con=Fs->user_data;
+  if(con->response_code==200) {
+    if(con->want_range_start>=0||con->want_range_end>=0)
+       con->response_code=206;
+    }
   switch(con->response_code) {
       break;case 200: msg="200 OK";
+      break;case 206: msg="206 Partial Content";
       break;case 404: msg="404 Not Found";
       break;case 304: msg="304 Not Modified";
 //If we have a 304(not-modefied)
@@ -287,7 +296,6 @@ U0 SendRequest(I64 s) {
   tmp=MStrPrint(
         "HTTP/1.1 %s\x0d\n"
         "Content-Type: %s\x0d\n"
-        "Content-Length: %d\x0d\n"
         ,msg,con->response_mime,con->response_length
         );
   NetWriteWErr(s,tmp,StrLen(tmp));
@@ -297,11 +305,40 @@ U0 SendRequest(I64 s) {
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
   }*/
+  if(con->want_range_start>=0&&con->want_range_end>=0) {
+    st=ClampI64(con->want_range_start,0,con->response_length);
+    en=ClampI64(con->want_range_end,0,con->response_length);
+range:
+    tmp=MStrPrint(
+	"Content-Range: bytes %d-%d/%d\x0d\n",st,en-1,con->response_length);
+    NetWriteWErr(s,tmp,StrLen(tmp));
+    Free(tmp);
+    NetWriteWErr(s,"\x0d\n",2);
+    NetWriteWErr(s,con->response_text+st,en-st);
+    return;
+  } else if(con->want_range_start>=0&&con->want_range_end<0) {
+    st=ClampI64(con->want_range_start,0,con->response_length);
+    en=con->response_length;
+    //Deliver in 256kb chunks
+    if(en-st>0x10000*4)
+       en=0x10000*4+st;
+    goto range;
+  } else if(con->want_range_start<0&&con->want_range_end>=0) {
+    en=con->response_length;
+    st=ClampI64(en-con->want_range_end,0,con->response_length);
+    //Deliver in 256kb chunks
+    if(en-st>0x10000*4)
+       en=0x10000*4+st;
+    goto range;
+  }
   if(con->etag_text&&con->provided_etag_by_server) {
     tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
   }
+  tmp=MStrPrint("Content-Length: %d\x0d\n",con->response_length);
+  NetWriteWErr(s,tmp,StrLen(tmp));
+  Free(tmp);
   NetWriteWErr(s,"\x0d\n",2);
   NetWriteWErr(s,con->response_text,con->response_length);
 }
@@ -386,6 +423,8 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   con->name=StrNew("",con->hc);
   con->post_data=HashTableNew(0x50,con->hc);
   con->last_ts=tS;
+  con->want_range_start=-1;
+  con->want_range_end=-1;
   ut->con=con;
 found:
   con->last_ts=tS;
@@ -405,6 +444,7 @@ loop:
      tmp=MAlloc(len2+1,con->hc);
      MemCpy(tmp,con->buffer_ptr,len2);
      tmp[len2]=0;
+PrintI(tmp,len2);
      en=SReadLine(s,tmp,len2,ut);
      Free(tmp);
      con->buffer_len-=len2;
@@ -447,6 +487,19 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     con->fbuffer=MAlloc(Str2I64(data),con->hc);
     con->content_len=Str2I64(data);
+  } else if(!StrNICmp(data,"Range",StrLen("Range"))) {
+    if(!StrOcc(data,':')) goto malformed;
+    if(t1=StrIMatch("bytes=",data)) {
+       t1+=StrLen("bytes=");
+       if(Bt(char_bmp_dec_numeric,*t1)) {
+	 con->want_range_start=Str2I64(t1,10,&t1);
+       }
+       if(*t1=='-') {
+	 t1++;
+	 if(Bt(char_bmp_dec_numeric,*t1))
+	   con->want_range_end=Str2I64(t1,10);
+       }
+    }
   }
   if(con->state.u8[0]==CON_S_BLANK_LINE&&len>2&&Bt(&con->state,CONf_URL_ENCODED)) {
     odata=data;
