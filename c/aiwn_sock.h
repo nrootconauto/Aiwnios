@@ -11,14 +11,16 @@ extern int64_t NetAccept(int64_t socket, struct CNetAddr **addr);
 extern void NetListen(int64_t socket, int64_t max);
 extern void NetBindIn(int64_t socket, struct CNetAddr *);
 extern void NetConnect(int64_t socket, struct CNetAddr *);
-extern int64_t NetSocketNew();
-extern struct CNetAddr *NetAddrNew(char *host, int64_t port);
+//ipv is 4 or 6
+extern int64_t NetSocketNew(int64_t ipv);
+//ipv is 4 or 6
+extern struct CNetAddr *NetAddrNew(char *host, int64_t port,int64_t ipv);
 extern void NetAddrDel(struct CNetAddr *);
 struct CInAddr;
 extern int64_t NetUDPSendTo(int64_t s, char *buf, int64_t len,
                             struct CInAddr *to);
 extern int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len,
                               struct CInAddr **from);
-extern int64_t NetUDPSocketNew();
-extern struct CInAddr *NetUDPAddrNew(char *host, int64_t port);
+extern int64_t NetUDPSocketNew(int64_t ipv);
+extern struct CInAddr *NetUDPAddrNew(char *host, int64_t port,int64_t ipv);
 extern void NetUDPAddrDel(struct CInAddr *);

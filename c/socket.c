@@ -39,15 +39,20 @@ typedef struct CInAddr {
 typedef struct CNetAddr {
   struct addrinfo *ai;
 } CNetAddr;
-int64_t NetSocketNew() {
-
+//ipv is either 4 or 6
+int64_t NetSocketNew(int64_t ipv) {
 #ifdef _WIN32
   if (!was_init)
     InitWS2();
 #else
   InitSock();
 #endif
-  int64_t s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  int64_t fam;
+  if(ipv==4)
+    fam=AF_INET;
+  else
+    fam=AF_INET6;
+  int64_t s = socket(fam, SOCK_STREAM, IPPROTO_TCP);
 #if defined(__FreeBSD__) || defined(__linux__) || defined(__APPLE__)
   int yes = 1;
   // On FreeBSD the port will stay in use for awhile after death,so reuse the
@@ -57,18 +62,24 @@ int64_t NetSocketNew() {
   return s;
 }
 
-CNetAddr *NetAddrNew(char *host, int64_t port) {
+//ipv is 4 or 6 
+CNetAddr *NetAddrNew(char *host, int64_t port,int64_t ipv) {
 #ifdef _WIN32
   if (!was_init)
     InitWS2();
 #else
   InitSock();
 #endif
+  int64_t fam;
+  if(ipv==4)
+    fam=AF_INET;
+  else
+    fam=AF_INET6;
   CNetAddr *ret = A_CALLOC(sizeof(CNetAddr), NULL);
   char buf[1024];
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
+  hints.ai_family = fam;
   hints.ai_socktype = 0;
   hints.ai_flags = AI_PASSIVE;
   sprintf(buf, "%d", port);
@@ -166,14 +177,19 @@ int64_t NetPollForHangup(int64_t argc, int64_t *argv) {
 //
 
 // http://matrixsust.blogspot.com/2011/10/udp-server-client-in-c.html
-int64_t NetUDPSocketNew() {
+int64_t NetUDPSocketNew(int64_t ipv) {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
 #else
   InitSock();
 #endif
-  int64_t s = socket(AF_INET, SOCK_DGRAM, 0);
+int64_t fam;
+  if(ipv==4)
+    fam=AF_INET;
+  if(ipv==6)
+    fam=AF_INET6;
+  int64_t s = socket(fam, SOCK_DGRAM, 0);
 #if defined(_WIN32) || defined(WIN32)
   // https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
   u_long mode = 1; // 1 to enable non-blocking socket
@@ -213,16 +229,21 @@ int64_t NetUDPRecvFrom(int64_t s, char *buf, int64_t len, CInAddr **from) {
   return r;
 }
 
-CInAddr *NetUDPAddrNew(char *host, int64_t port) {
+CInAddr *NetUDPAddrNew(char *host, int64_t port,int64_t ipv) {
 #if defined(_WIN32) || defined(WIN32)
   if (!was_init)
     InitWS2();
 #else
   InitSock();
 #endif
+  int64_t fam;
+  if(ipv==4)
+    fam=AF_INET;
+  if(ipv==6)
+    fam=AF_INET6;
   CInAddr *ret = A_CALLOC(sizeof(CInAddr), NULL);
   struct hostent *hoste = gethostbyname(host);
-  ret->sa.sin_family = AF_INET;
+  ret->sa.sin_family = fam;
   ret->sa.sin_port = htons(port);
   ret->sa.sin_addr = *((struct in_addr *)hoste->h_addr);
   ret->port = port;

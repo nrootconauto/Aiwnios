@@ -1237,15 +1237,18 @@ static int64_t STK_DebuggerClientSetGreg(int64_t *stk) {
 }
 
 static int64_t STK_NetSocketNew(int64_t *stk) {
-  return NetSocketNew();
+  return NetSocketNew(stk[0]);
+}
+static int64_t STK_NetUDPSocketNew(int64_t *stk) {
+  return NetUDPSocketNew(stk[0]);
 }
 
 static int64_t STK_NetAddrNew(int64_t *stk) {
-  return NetAddrNew(stk[0], stk[1]);
+  return NetAddrNew(stk[0], stk[1],stk[2]);
 }
 
 static int64_t STK_NetUDPAddrNew(int64_t *stk) {
-  return NetUDPAddrNew(stk[0], stk[1]);
+  return NetUDPAddrNew(stk[0], stk[1],stk[2]);
 }
 
 static int64_t STK_NetAddrDel(int64_t *stk) {
@@ -1567,9 +1570,9 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
     PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);
-    PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 0);
-    PrsAddSymbol("NetUDPAddrNew", STK_NetUDPAddrNew, 2);
-    PrsAddSymbol("NetUDPSocketNew", NetUDPSocketNew, 0);
+    PrsAddSymbol("NetSocketNew", STK_NetSocketNew, 1);
+    PrsAddSymbol("NetUDPAddrNew", STK_NetUDPAddrNew, 3);
+    PrsAddSymbol("NetUDPSocketNew", STK_NetUDPSocketNew, 1);
     PrsAddSymbol("NetUDPRecvFrom", STK_NetUDPRecvFrom, 4);
     PrsAddSymbol("NetUDPSendTo", STK_NetUDPSendTo, 4);
     PrsAddSymbol("NetUDPAddrDel", STK_NetUDPAddrDel, 1);
@@ -1583,7 +1586,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetPollForRead", STK_NetPollForRead, 2);
     PrsAddSymbol("NetPollForWrite", STK_NetPollForWrite, 2);
     PrsAddSymbol("NetAddrDel", STK_NetAddrDel, 1);
-    PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 2);
+    PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 3);
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
