@@ -90,7 +90,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 //TODO encode strange names
       desc=NULL;
       if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-	desc=AiwniosTubeGetVideoProp(v,"Props/Description");
+	desc=AiwniosTubeGetVideoProp(tmp_str+StrLen("Videos/"),"Props/Description");
         DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
       }
       Free(v),Free(desc);
@@ -106,4 +106,3 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   }
   return FALSE;
 }
-
