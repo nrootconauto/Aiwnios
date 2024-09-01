@@ -258,13 +258,17 @@ U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
   I64 w;
   if(!len) return;
   while(len>0) {
+    if(NetPollForHangup(1,&s)==0)
+      goto fail;
     w=NetWrite(s,data,MinI64(len,0x10000));
     if(w<=0) {
+fail:;
       LBts(&con->is_dead,0);
       Exit;
     }
-    data+=w;
+    data+=w;
     len-=w;
+    Yield;
   }
 }
 

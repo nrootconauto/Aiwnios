@@ -55,17 +55,21 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
         html=Doc2Html(tmp_doc);
       }
 
-      WriteDocToStream(stream,tmp_doc);
+      as_txt=DocSave(html,&len);
+      StrCpy(con->response_mime,"text/html");
+      con->response_code=200;
+      WriteNBytes(stream,NULL,as_txt,len);
+      DocDel(html);
       DocDel(tmp_doc);
     } else {
       tmp_doc=DocNew;
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"I coudln't find that video:\"$$$$FD$$\n");
       DocPrint(tmp_doc,"\n  Video \"%Q\" not found.\n",v);
 
+      DocDel(tmp_doc);
       StrCpy(con->response_mime,"text/html");
       con->response_code=200;
       WriteDocToStream(stream,tmp_doc);
-      DocDel(tmp_doc);
     }
     Free(tmp_str);
     Free(v);
@@ -90,7 +94,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 //TODO encode strange names
       desc=NULL;
       if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-	desc=AiwniosTubeGetVideoProp(tmp_str+StrLen("Videos/"),"Props/Description");
+	desc=AiwniosTubeGetVideoProp(tmp_str+StrLen("Videos/"),"Props/Description");
         DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
       }
       Free(v),Free(desc);

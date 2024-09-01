@@ -2,7 +2,7 @@
 #include "../run.HC";
 #endif
 //GET
-extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
+extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
 
 class CVideoSearch {
   U8 look_for[STR_LEN] format "$$DA-P,\"Look for text:%s\"$$";

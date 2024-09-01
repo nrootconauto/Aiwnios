@@ -58,7 +58,7 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
     tpass=pass->user_data1;
     tpass[pass->user_data0]=0;
 
-    if(HashStr(tpass)!=AiwniosTubeGetVideoProp(v,"/Props/AdminHash")) {
+    if(HashStr(tpass)!=AiwniosTubeGetVideoProp(v,"/Props/AdminHash")) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Invalid Password for \\\"%Q\\\"\"$$$$FD$$\n",v);
       DocPrint(tmp_doc,"\n  Go mess with your own videos.\n");
       goto flush;

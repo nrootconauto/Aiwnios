@@ -222,7 +222,7 @@ Bool HolyCGIPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable 
       if(StrMatch("OnPost",ftxt)) {
         try {
 	  ExePutS2(ftxt,try_path);
-	  pass=MStrPrint("OnPost(%d,%d,%d,%d,%d);;\n",srv,stream,url,req,post);
+	  pass=MStrPrint("OnPost(%d,%d,%d,%d,%d);;\n",srv,stream,url,req,post);
 	  ExePutS2(pass,try_path);
 	  Free(pass);
 	  ret=TRUE;

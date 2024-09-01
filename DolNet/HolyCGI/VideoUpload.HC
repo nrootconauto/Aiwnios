@@ -73,7 +73,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       if(tpasswd)
 	AiwniosTubeSetVideoPropI64(ttitle,"Props/AdminHash",HashStr(tpasswd));
 
-      AiwniosTubeSetVideoPropStr(ttitle,"Props/Description",tdesc);
+      AiwniosTubeSetVideoPropStr(ttitle,"Props/Description",tdesc);
 //Generate Page HTML(TODO make a HolyCGI script for this)
       DocPrint(page,"$$PURPLE$$$$TX+CX,\"AiwniosTube\"$$$$FD$$\n");
       DocPrint(page,"\n$$HC,\"<video controls width=640 height=480><source src='/Videos/%Q'></video>\"$$",file->user_data2);

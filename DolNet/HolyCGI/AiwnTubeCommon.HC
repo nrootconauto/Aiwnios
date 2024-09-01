@@ -25,7 +25,7 @@ U0 AiwniosTubeSetVideoPropStr(U8 *v,U8 *name,U8 *fmt,...) {
 
 U0 AiwniosTubeSetVideoPropI64(U8 *v,U8 *name,I64 val) {
   v=ExtDft(v,"DD");
-  U8 *at=ChrootFile(v,SERVER_META"/VideoProps");
+  U8 *at=ChrootFile(v,SERVER_META"/VideoProps");
   StrUtil(at,SUF_REM_SPACES);
   EnsurePathExists(at);
   DocTreeFWrite(at,name,"%d;\n",val);

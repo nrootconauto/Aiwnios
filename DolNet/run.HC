@@ -24,7 +24,7 @@ class CURL {
   U8 *query;
   I64 port;
 };
-class CHTTPRequest {
+class CHTTPRequest {
 #define HTTP_UNDEF 0
 #define HTTP_GET 1
 #define HTTP_POST 2

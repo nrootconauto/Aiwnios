@@ -50,7 +50,7 @@ flush:;
     WriteDocToStream(stream,tmp_doc);
     StrCpy(con->response_mime,"text/html");
     con->response_code=200;    
-    return TRUE;
+    return TRUE;
    }
 //TODO error mesg
   return FALSE;
