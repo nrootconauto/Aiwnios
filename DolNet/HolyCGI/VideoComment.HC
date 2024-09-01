@@ -1,6 +1,8 @@
 #if __CMD_LINE__
 #include "../run.HC";
 #endif
+#exe {Cd(__DIR__);};;
+#include "AiwnTubeCommon";
 //POST
 extern Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post_data); 
 class CVideoComment {
@@ -16,13 +18,12 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
   CDirEntry *ent,*root;
   CDoc *tmp_doc,*html,*comments;
   CHashGeneric *from=HashFind("from",post_data,HTT_DICT_WORD),*message=HashFind("message",post_data,HTT_DICT_WORD);
+  CConnection *con=Fs->user_data;
   if(!from||!message)
     return FALSE;
   if(v=GetQueryValue(url->query,"for")) {
     tmp_doc=DocNew;
-    props_file=ChrootFile(v,SERVER_META"/VideoProps");
-    StrUtil(props_file,SUF_REM_SPACES);
-    if(DocTreeFExe(props_file,"Props/DisableComments")) {
+    if(AiwniosTubeGetVideoProp(v,"/Props/DisableComments")) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments are disabled for this video\"$$$$FD$$\n",v);
       DocPrint(tmp_doc,"\n fucking ass poodles.\n");
       goto flush;
@@ -46,13 +47,11 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
     DocDel(comments);
 
 flush:;
-    html=Doc2Html(tmp_doc);
-    as_txt=DocSave(html,&len);
-    WriteNBytes(stream,NULL,as_txt,len);
-    Free(as_txt);
-    DocDel(html);
-    return TRUE;
-  }
+    WriteDocToStream(stream,tmp_doc);
+    StrCpy(con->response_mime,"text/html");
+    con->response_code=200;    
+    return TRUE;
+   }
 //TODO error mesg
   return FALSE;
 }

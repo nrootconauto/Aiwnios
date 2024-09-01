@@ -1,6 +1,9 @@
 #if __CMD_LINE__
 #include "../run.HC";
 #endif
+#exe {Cd(__DIR__);};;
+
+#include "AiwnTubeCommon.HC";
 extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
 extern Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *); 
 
@@ -41,8 +44,9 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post_data) {
   Bool disable_comments;
   Bool delete;
-  U8 *v,*props,*as_txt,*video_dd_path,*comments_path;
+  U8 *v,*as_txt,*video_dd_path,*comments_path;
   U8 *tpass;
+  U8 *props;
   I64 len;
   CDoc *tmp_doc,*html;
   CHashGeneric *pass=HashFind("video_admin_pass",post_data,HTT_DICT_WORD);
@@ -54,16 +58,9 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
     tpass=pass->user_data1;
     tpass[pass->user_data0]=0;
 
-    props=ChrootFile(v,SERVER_META"/VideoProps");
-    if(!FileFind(props)) {
-      DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Can't find vidoe \\\"%Q\\\"\"$$$$FD$$\n",v);
-      Free(props);
-      goto flush;
-    }
-    if(HashStr(tpass)!=DocTreeFExe(props,"Props/AdminHash")) {
+    if(HashStr(tpass)!=AiwniosTubeGetVideoProp(v,"/Props/AdminHash")) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Invalid Password for \\\"%Q\\\"\"$$$$FD$$\n",v);
       DocPrint(tmp_doc,"\n  Go mess with your own videos.\n");
-      Free(props);
       goto flush;
     }
 
@@ -78,13 +75,15 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
       delete=TRUE;
 
     video_dd_path=ChrootFile(v,SERVER_WWW"/Videos");
+    props=ChrootFile(v,SERVER_META"/VideoProps");
     comments_path=ChrootFile(v,SERVER_META"/VideoComments");
 
     if(disable_comments) {
       DocPrint(tmp_doc,"\n  Comments Disabled.\n");
       Del(comments_path);
     }
-    DocTreeFWrite(props,"/Props/DisableComments","%d;\n",disable_comments);
+
+    AiwniosTubeSetVideoPropI64(v,"/Props/AdminHash",disable_comments);
     if(delete) {
       DocPrint(tmp_doc,"\n  Video Deleted.\n");
       Del(props);
@@ -96,15 +95,10 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
    Free(props);
     Free(v);
 flush:
-    html=Doc2Html(tmp_doc);
-    as_txt=DocSave(html,&len);
-    WriteNBytes(stream,NULL,as_txt,len);
-    Free(as_txt);
-    DocDel(html);
-    DocDel(tmp_doc);
+    WriteDocToStream(stream,tmp_doc);
     StrCpy(con->response_mime,"text/html");
-    con->response_code=200;
-    
+    DocDel(tmp_doc);
+    con->response_code=200;    
     return TRUE;
   }
   return FALSE;

@@ -255,10 +255,16 @@ U8 *HashFileToETag(U8 *name) {
 
 U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
   CConnection *con=Fs->user_data;
+  I64 w;
   if(!len) return;
-  if(-1==NetWrite(s,data,len)) {
-    LBts(&con->is_dead,0);
-    Exit;
+  while(len>0) {
+    w=NetWrite(s,data,MinI64(len,0x10000));
+    if(w<=0) {
+      LBts(&con->is_dead,0);
+      Exit;
+    }
+    data+=w;
+    len-=w;
   }
 }
 
@@ -282,11 +288,11 @@ U0 SendRequest(I64 s) {
         );
   NetWriteWErr(s,tmp,StrLen(tmp));
   Free(tmp);
-  if(con->session_cookie) {
+/*  if(con->session_cookie) {
     tmp=MStrPrint("Set-Cookie: %s\x0d\n",con->session_cookie);
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
-  }
+  }*/
   if(con->etag_text&&con->provided_etag_by_server) {
     tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
     NetWriteWErr(s,tmp,StrLen(tmp));
@@ -686,6 +692,7 @@ kill:
 	    goto nxt;
 	  }
         }
+again:;
         if(fds[idx]!=-1&&-1!=NetPollForHangup(1,&fds[idx])) {
 	    CloseCallback(fds[idx],&unique_tokens[idx]);
 	    fds[idx]=-1;
@@ -693,6 +700,7 @@ kill:
 	    len=NetRead(fds[idx],buf,0x10000);
 	    buf[len]=0;
 	    SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+	    goto again;
         }
 nxt:;
       }

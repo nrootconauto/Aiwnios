@@ -1,6 +1,8 @@
 #if __CMD_LINE__
  #include "../run.HC";
 #endif
+#exe {Cd(__DIR__);};;
+#include "AiwnTubeCommon";
 //Example HolyCGI script
 //GET
 extern U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
@@ -44,7 +46,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
   CDoc *page=DocNew;
   I64 len;
   U8 *as_txt,*tmp_str2,*tpasswd;
-  U8 *filename,*tnam,*tdesc,*ttitle;
+  U8 *filename,*tnam,*tdesc,*ttitle;
   CConnection *con=Fs->user_data;
   if(file&&title&&desc) {
     if(file->user_data0<MAX_UPLOAD) {
@@ -64,48 +66,38 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
 	tpasswd=NULL;
       ttitle[title->user_data0]=0;
       tdesc[desc->user_data0]=0;
-      tmp_str2=ChrootFile(ttitle,SERVER_META"/VideoProps");
-      StrUtil(tmp_str2,SUF_REM_SPACES);
-      EnsurePathExists(tmp_str2);
-      as_txt=MStrPrint("%s.DD",tmp_str2);
-      props=DocNew(as_txt);
-      Free(tmp_str2);
+
       if(disable=HashFind("video_disable_comments",post_data,HTT_DICT_WORD)) {
-        DocTreeWrite(props,"Props/DisableComments",FALSE,"%d;",1);
+	AiwniosTubeSetVideoPropI64(ttitle,"Props/DisableComments",1);
       }
       if(tpasswd)
-        DocTreeWrite(props,"Props/AdminHash",FALSE,"%d;\n",HashStr(tpasswd));
-      DocWrite(props);
-      Free(as_txt);
-      DocDel(props);
+	AiwniosTubeSetVideoPropI64(ttitle,"Props/AdminHash",HashStr(tpasswd));
 
+      AiwniosTubeSetVideoPropI64(ttitle,"Props/Description",tdesc);
 //Generate Page HTML(TODO make a HolyCGI script for this)
       DocPrint(page,"$$PURPLE$$$$TX+CX,\"AiwniosTube\"$$$$FD$$\n");
       DocPrint(page,"\n$$HC,\"<video controls width=640 height=480><source src='/Videos/%Q'></video>\"$$",file->user_data2);
       DocPrint(page,"\n$$TR-C,\"%Q\"$$$$ID,2$$\n",ttitle);
       DocPrint(page,"%Q\n$$ID,-2$$\n",tdesc);
       
-      filename=file->user_data2;
-      tnam=MStrPrint("/Videos/%s",filename);
-      EnsurePathExists(tnam);
 //Save vidoe
-      filename=ChrootFile(tnam);
-      Free(tnam);
+      filename=ChrootFile(ttitle,SERVER_WWW"/Videos");
       StrUtil(filename,SUF_REM_SPACES);
       FileWrite(filename,file->user_data1,file->user_data0);
+      AiwniosTubeSetVideoPropStr(ttitle,"Props/VideoPath","%s",filename);
       Free(filename);
 //Save Video page
-      tnam=MStrPrint("/Videos/%s.DD",ttitle);
+      tnam=MStrPrint("%s.DD",ttitle);
       StrUtil(tnam,SUF_REM_SPACES);
-      filename=ChrootFile(tnam);
+      filename=ChrootFile(tnam,SERVER_WWW"/Videos");
       EnsurePathExists(tnam);
       as_txt=DocSave(page,&len);
       FileWrite(filename,as_txt,len);
       Free(as_txt);
+      Free(filename);
 
       DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"Video Uploaded:\"$$$$FD$$\n");
-      DocPrint(tmp,"\n Video \"%Q\" uploaded in $$LK,\"aiwnios.com/%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",filename,tnam,tnam+StrLen("/Videos"));
-      Free(filename);
+      DocPrint(tmp,"\n Video \"%Q\" uploaded in $$LK,\"aiwnios.com/%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n",filename,tnam,tnam);
       Free(tnam);
     } else {
       DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"Video Too Drake Massive:\"$$$$FD$$\n");
@@ -117,12 +109,6 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
 fin:;
   StrCpy(con->response_mime,"text/html");
   con->response_code=200;
-
-  html=Doc2Html(tmp);
-  as_txt=DocSave(html,&len);
-  WriteNBytes(stream,NULL,as_txt,len);
-  Free(as_txt);
-  DocDel(page);
-  DocDel(html);
+  WriteDocToStream(stream,tmp);
   DocDel(tmp);
 }

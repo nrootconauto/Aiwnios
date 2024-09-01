@@ -191,17 +191,17 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
 Bool HolyCGIGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *try_path=MStrPrint(__DIR__"/HolyCGI/%s",url->abs_path);
-  U8 *ftxt;
+  U8 *ftxt,*pass;
   Bool ret=FALSE;
   if(FileFind(try_path)) {
     if(ftxt=FileRead(try_path)) {
       if(StrMatch("OnGet",ftxt)) {
         try {
-	  ExePutS2(ftxt);
-	  ExePrint2("OnGet(%d,%d,%d,%d);;\n",
-	    srv,stream,url,req
-	  );
+	  ExePutS2(ftxt,try_path);
+	  pass=MStrPrint("OnGet(%d,%d,%d,%d);;\n",srv,stream,url,req);
+	  ExePutS2(pass,try_path);
 	  ret=TRUE;
+	  Free(pass);
         } catch {
 	  PutExcept(TRUE);
         }
@@ -215,16 +215,16 @@ Bool HolyCGIGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
 Bool HolyCGIPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post) {
   U8 *try_path=MStrPrint(__DIR__"/HolyCGI/%s",url->abs_path);
-  U8 *ftxt;
+  U8 *ftxt,*pass;
   Bool ret=FALSE;
   if(FileFind(try_path)) {
     if(ftxt=FileRead(try_path)) {
       if(StrMatch("OnPost",ftxt)) {
         try {
-	  ExePutS2(ftxt);
-	  ExePrint("OnPost(%d,%d,%d,%d,%d);;\n",
-	    srv,stream,url,req,post
-	  );
+	  ExePutS2(ftxt,try_path);
+	  pass=MStrPrint("OnPost(%d,%d,%d,%d,%d);;\n",srv,stream,url,req,post);
+	  ExePutS2(pass,try_path);
+	  Free(pass);
 	  ret=TRUE;
         } catch {
 	  PutExcept(TRUE);

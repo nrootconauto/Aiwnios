@@ -2,7 +2,7 @@
 #include "../run.HC";
 #endif
 //GET
-extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
+extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
 
 class CVideoSearch {
   U8 look_for[STR_LEN] format "$$DA-P,\"Look for text:%s\"$$";
@@ -58,6 +58,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     html=HtmlFormGen("CVideoSearch","VideoSearch.HC","GET",tmp_doc);
 
 flush:;
+    CConnection *con=Fs->user_data;
     as_txt=DocSave(html,&len);
     WriteNBytes(stream,NULL,as_txt,len);
     Free(as_txt);

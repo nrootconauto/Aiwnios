@@ -1,6 +1,8 @@
 #if __CMD_LINE__
 #include "../run.HC";
 #endif
+#exe {Cd(__DIR__);};;
+#include "AiwnTubeCommon";
 //Example HolyCGI script
 //GET
 extern Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req); 
@@ -18,6 +20,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *props_file,*desc;
   CDirEntry *ent,*root;
   CDoc *tmp_doc,*html,*comments,*props;
+  CConnection *con=Fs->user_data;
   if(v=GetQueryValue(url->query,"view")) {
     tmp_str=ChrootFile(v,SERVER_WWW"/Videos");
     if(FileFind(tmp_str)) {
@@ -33,25 +36,16 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 	comments=NULL;
       Free(tmp_str2);
 
+      if(AiwniosTubeGetVideoProp(v,"Props/DisableComments"))
+	comments_enable=FALSE;
 
-      tmp_str2=ChrootFile(v,SERVER_META"/VideoProps");
-      EnsurePathExists(tmp_str2);
-      StrUtil(tmp_str2,SUF_REM_SPACES);
-      if(FileFind(tmp_str2)) {
-use_props:
-	if(DocTreeFExe(tmp_str2,"Props/DisableComments"))
-	  comments_enable=FALSE;
-	DocTreeFWrite(tmp_str2,"Props/ViewCnt","%d;",views=DocTreeFExe(tmp_str2,"Props/ViewCnt")+1);
-      } else {
-	FileWrite(tmp_str2,"",0);
-        goto use_props;
-      }
-      Free(tmp_str2);
+      views=AiwniosTubeGetVideoProp(v,"Props/ViewCnt");
+      AiwniosTubeSetVideoPropI64(v,"Props/ViewCnt",views+1);
 
       tmp_str2=MStrPrint("/VideoComment.HC?for=%Q",v);
-      DocPrint(tmp_doc,"$$GREEN$$This video has $$RED$$%d$$GREEN$$ views$$FD$$\n",views);
+      DocPrint(tmp_doc,"$$GREEN$$This video has $$RED$$%d$$GREEN$$ views$$FD$$\n",views+1);
 
-      DocPrint(tmp_doc,"$$LK,\"Admin Panel\",HTML=\"/VideoAdmin.HC?video=%Q\"$$\n",v);
+      DocPrint(tmp_doc,"$$LK,\"Admin Panel\",HTML=\"/VideoAdmin.HC?video=%Q\"$$\n",v);
 
       if(comments_enable) {
         DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments\"$$$$FD$$");
@@ -60,21 +54,17 @@ use_props:
         DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments Disabled\"$$$$FD$$");
         html=Doc2Html(tmp_doc);
       }
-      as_txt=DocSave(html,&len);
-      WriteNBytes(stream,NULL,as_txt,len);
-      Free(as_txt);
 
-
-      DocDel(html);
+      WriteDocToStream(stream,tmp_doc);
       DocDel(tmp_doc);
     } else {
       tmp_doc=DocNew;
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"I coudln't find that video:\"$$$$FD$$\n");
       DocPrint(tmp_doc,"\n  Video \"%Q\" not found.\n",v);
-      html=Doc2Html(tmp_doc);
-      as_txt=DocSave(html,&len);
-      WriteNBytes(stream,NULL,as_txt,len);
-      DocDel(html);
+
+      StrCpy(con->response_mime,"text/html");
+      con->response_code=200;
+      WriteDocToStream(stream,tmp_doc);
       DocDel(tmp_doc);
     }
     Free(tmp_str);
@@ -91,6 +81,7 @@ use_props:
     v=MStrPrint("%s/*.DD",tmp_str);
     Free(tmp_str);
     root=FilesFind(v,FUF_FLATTEN_TREE|FUF_JUST_FILES|FUF_RECURSE);
+    Free(v);
 
     for(ent=root;ent;ent=ent->next) {
       v=MStrPrint("Videos/%Q",ent->name);
@@ -99,27 +90,20 @@ use_props:
 //TODO encode strange names
       desc=NULL;
       if(tmp_str=StrMatch("Videos/",ent->full_name)) {
-        props_file=ChrootFile(tmp_str+StrLen("Videos/"),SERVER_META"/VideoProps");
-        if(FileFind(props_file))
-          desc=DocTreeFExe(props_file,"/Props/Description");
-        Free(props_file);
-
+	desc=AiwniosTubeGetVideoProp(v,"Props/Description");
         DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
       }
       Free(v),Free(desc);
     }
     DirEntryDel(root);
-
     DocCollapse(FALSE,tmp_doc);
 
-    html=Doc2Html(tmp_doc);
-    as_txt=DocSave(html,&len);
-    WriteNBytes(stream,NULL,as_txt,len);
-    Free(as_txt);
-    DocDel(html);
-
+    StrCpy(con->response_mime,"text/html");
+    con->response_code=200;
+    WriteDocToStream(stream,tmp_doc);
     DocDel(tmp_doc);    
     return TRUE;
   }
   return FALSE;
 }
+
