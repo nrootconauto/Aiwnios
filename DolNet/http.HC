@@ -310,7 +310,7 @@ U0 SendRequest(I64 s) {
     en=ClampI64(con->want_range_end,0,con->response_length);
 range:
     tmp=MStrPrint(
-	"Content-Range: bytes %d-%d/%d\x0d\n",st,en-1,con->response_length);
+	"Content-Range: bytes %d-%d/%d\x0d\n",st,en-1,con->response_length);
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
     NetWriteWErr(s,"\x0d\n",2);
@@ -428,7 +428,7 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   ut->con=con;
 found:
   con->last_ts=tS;
-  if(MSize(con->buffer)<=1+(con->buffer_ptr-con->buffer)+len+con->buffer_len) {
+  if(MSize(con->buffer)<=1+(con->buffer_ptr-con->buffer)+len) {
     tmp=MAlloc((con->buffer_ptr-con->buffer)+1+2*MSize(con->buffer)+len,con->hc);
     MemCpy(tmp,con->buffer,MSize(con->buffer));
     Free(con->buffer);
@@ -444,8 +444,7 @@ loop:
      tmp=MAlloc(len2+1,con->hc);
      MemCpy(tmp,con->buffer_ptr,len2);
      tmp[len2]=0;
-PrintI(tmp,len2);
-     en=SReadLine(s,tmp,len2,ut);
+     en=SReadLine(s,tmp,len2,ut);
      Free(tmp);
      con->buffer_len-=len2;
      con->buffer_ptr+=len2;
