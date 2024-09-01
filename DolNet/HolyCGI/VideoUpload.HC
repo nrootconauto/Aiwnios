@@ -46,7 +46,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
   CDoc *page=DocNew;
   I64 len;
   U8 *as_txt,*tmp_str2,*tpasswd;
-  U8 *filename,*tnam,*tdesc,*ttitle;
+  U8 *filename,*tnam,*tdesc,*ttitle;
   CConnection *con=Fs->user_data;
   if(file&&title&&desc) {
     if(file->user_data0<MAX_UPLOAD) {
@@ -73,7 +73,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       if(tpasswd)
 	AiwniosTubeSetVideoPropI64(ttitle,"Props/AdminHash",HashStr(tpasswd));
 
-      AiwniosTubeSetVideoPropI64(ttitle,"Props/Description",tdesc);
+      AiwniosTubeSetVideoPropStr(ttitle,"Props/Description",tdesc);
 //Generate Page HTML(TODO make a HolyCGI script for this)
       DocPrint(page,"$$PURPLE$$$$TX+CX,\"AiwniosTube\"$$$$FD$$\n");
       DocPrint(page,"\n$$HC,\"<video controls width=640 height=480><source src='/Videos/%Q'></video>\"$$",file->user_data2);
