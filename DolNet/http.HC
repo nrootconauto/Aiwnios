@@ -704,6 +704,7 @@ again:;
 	    len=NetRead(fds[idx],buf,0x10000);
 	    buf[len]=0;
 	    SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+	    Yield;
 	    goto again;
         }
 nxt:;
