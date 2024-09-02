@@ -4106,8 +4106,8 @@ to_bool_set:;
     AIWNIOS_ADD_CODE(ARM_cmpImmX(reg, 0));                                     \
     AIWNIOS_ADD_CODE(ARM_csetX(MIR(cctrl, to), ARM_NE));                       \
   } else {                                                                     \
-    code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off);                        \
-    AIWNIOS_ADD_CODE(ARM_fcmp(reg, 2));                                        \
+    code_off = __ICMoveF64(cctrl, 0, 0, bin, code_off);                        \
+    AIWNIOS_ADD_CODE(ARM_fcmp(reg, 0));                                        \
     AIWNIOS_ADD_CODE(ARM_csetX(MIR(cctrl, to), ARM_NE));                       \
   }
     // A
@@ -4268,10 +4268,9 @@ to_bool_set:;
       into_reg = rpn->res.reg;                                                 \
     } else                                                                     \
       into_reg = 0;                                                            \
+        code_off=PutICArgIntoReg(cctrl, &next->res, next->res.raw_type, next->res.raw_type==RT_F64?3:AIWNIOS_TMP_IREG_POOP, bin, code_off);   \
     code_off =                                                                 \
-        PutICArgIntoReg(cctrl, &next->res, rpn->raw_type, 2, bin, code_off);   \
-    code_off =                                                                 \
-        PutICArgIntoReg(cctrl, &next2->res, rpn->raw_type, 1, bin, code_off);  \
+        PutICArgIntoReg(cctrl, &next2->res, next2->res.raw_type, next2->res.raw_type==RT_F64?1:AIWNIOS_TMP_IREG_POOP2, bin, code_off);  \
     if (!(next->flags & ICF_IS_BOOL)) {                                        \
       BACKEND_BOOLIFY(2, next->res.reg, next->res.raw_type);                   \
       r2 = 2;                                                                  \

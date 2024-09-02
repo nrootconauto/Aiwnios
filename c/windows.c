@@ -24,12 +24,15 @@ static int64_t screen_ready = 0, screen_update_in_progress = 0;
 static void _DrawWindowNew() {
   if (SDL_Init(SDL_INIT_VIDEO))
     return;
+  int64_t row;
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
   SDL_LockSurface(window_icon_proto);
-  memcpy(window_icon_proto->pixels, aiwnios_logo.pixel_data,
-         sizeof(aiwnios_logo.pixel_data));
+  for(row=0;row!=window_icon_proto->h;row++) {
+    memcpy((char*)window_icon_proto->pixels+row*window_icon_proto->pitch, aiwnios_logo.pixel_data+aiwnios_logo.width*row,
+         aiwnios_logo.width);
+  }
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
