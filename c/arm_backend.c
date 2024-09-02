@@ -3081,13 +3081,16 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   case IC_TO_BOOL:
     rpn->flags |= ICF_IS_BOOL;
-    PushTmp(cctrl, next = rpn->base.next, &rpn->res);
-    code_off = __OptPassFinal(cctrl, next, bin, code_off);
-    code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
+    PushTmp(cctrl, next = rpn->base.next, NULL);
     if (next->flags & ICF_IS_BOOL) {
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
-    } else {
+    } else if(next->res.raw_type!=RT_F64) {
+	  code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
       AIWNIOS_ADD_CODE(ARM_cmpImmX(next->res.reg, 0));
+to_bool_set:;
       if (rpn->res.mode == MD_REG && rpn->res.raw_type != RT_F64) {
         AIWNIOS_ADD_CODE(ARM_csetX(MIR(cctrl, rpn->res.reg), ARM_NE));
       } else {
@@ -3101,7 +3104,21 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 
         code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       }
-    }
+    } else {
+	    code_off = __OptPassFinal(cctrl, next, bin, code_off);
+        code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 0, bin, code_off);
+#define ARM_TEST(arg)                                                          \
+  if ((arg)->res.raw_type == RT_F64) {                                         \
+    code_off = PutICArgIntoReg(cctrl, &(arg)->res, RT_F64, 0, bin, code_off);  \
+    code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off);                        \
+    AIWNIOS_ADD_CODE(ARM_fcmp((arg)->res.reg, 2));                             \
+  } else {                                                                     \
+    code_off = PutICArgIntoReg(cctrl, &(arg)->res, RT_I64i, 0, bin, code_off); \
+    AIWNIOS_ADD_CODE(ARM_cmpImmX((arg)->res.reg, 0));                          \
+  }
+        ARM_TEST(next);
+		goto to_bool_set;
+	}
     PopTmp(cctrl, next);
     break;
   case IC_PAREN:
@@ -4034,15 +4051,6 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   case IC_AND_AND:
     rpn->flags |= ICF_IS_BOOL;
-#define ARM_TEST(arg)                                                          \
-  if ((arg)->res.raw_type == RT_F64) {                                         \
-    code_off = PutICArgIntoReg(cctrl, &(arg)->res, RT_F64, 0, bin, code_off);  \
-    code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off);                        \
-    AIWNIOS_ADD_CODE(ARM_fcmp((arg)->res.reg, 2));                             \
-  } else {                                                                     \
-    code_off = PutICArgIntoReg(cctrl, &(arg)->res, RT_I64i, 0, bin, code_off); \
-    AIWNIOS_ADD_CODE(ARM_cmpImmX((arg)->res.reg, 0));                          \
-  }
     if (old_pass_addr && old_fail_addr) {
       a = ICArgN(rpn, 1);
       b = ICArgN(rpn, 0);
@@ -4173,7 +4181,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       PopTmp(cctrl, a);
       PushTmp(cctrl, b, NULL);
       code_off = __OptPassFinal(cctrl, b, bin, code_off);
-      if (!(a->flags & ICF_IS_BOOL)) {
+      if (!(b->flags & ICF_IS_BOOL)) {
         ARM_TEST(b);
         if (bin) {
           AIWNIOS_ADD_CODE(ARM_bcc(ARM_NE, 0));
