@@ -12,7 +12,7 @@ extern U0 OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable*
 class CVideoUpload {
   U8 video_filename[32] format "$$DA-P,A=\"Video File:%s\"$$\n" html_input_type "file";
   U8 video_title[STR_LEN] format "$$DA-P,A=\"Video Tile:%s\"$$\n";
-  U8 video_desc[STR_LEN] format "$$DA-P,A=\"Description:%s\"$$\n" html_input_type "textarea";
+  U8 video_desc[STR_LEN] format "$$DA-P,A=\"Description:%s\"$$\n";
   U8 video_admin_password[STR_LEN] format "$$DA-P,A=\"Video Admin Panel Password:%s\"$$.\n"  html_input_type "password";
   Bool video_disable_comments format "$$CB,\"Disable Comments\"$$\n";
 };
@@ -23,7 +23,7 @@ U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *as_txt;
   CDoc *tmp=DocNew,*html;
   CConnection *con=Fs->user_data;
-  DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"AiwniosTube Video Upload:\"$$$$FD$$\n");
+  DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"AiwniosTube Video Upload:\"$$$$FD$$\n");
   DocPrint(tmp,"\n  Upload a video to AiwniosTube. No illegal content.\n");
   DocPrint(tmp,"\n  Each video has it's own video admin panel. No accounts are used here.\n");
   html=HtmlFormGen("CVideoUpload",action,"POST",tmp);
@@ -81,7 +81,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
       DocPrint(page,"%Q\n$$ID,-2$$\n",tdesc);
       
 //Save vidoe
-      filename=ChrootFile(file->user_data2,SERVER_WWW"/Videos");
+      filename=ChrootFile(file->user_data2,SERVER_WWW"/Videos");
       StrUtil(filename,SUF_REM_SPACES);
       FileWrite(filename,file->user_data1,file->user_data0);
       AiwniosTubeSetVideoPropStr(ttitle,"Props/VideoPath","%s",filename);
