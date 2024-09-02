@@ -194,6 +194,7 @@ typedef struct CCmpCtrl {
   int64_t backend_user_data9;
   int64_t backend_user_data10;
   int64_t backend_user_data11;
+  int64_t prolog_stk_sz;
   int64_t used_iregs_bmp;
   int64_t used_fregs_bmp;
   int found_used_iregs;

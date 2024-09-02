@@ -65,30 +65,34 @@ static int64_t MFR(CCmpCtrl *cc, int64_t r) {
   CRPN *rpn = cc->cur_rpn;
   if (!rpn)
     return r;
-  rpn->changes_fregs |= 1 << r;
+	rpn->changes_fregs |= 1 << r;
   return r;
 }
 
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   int64_t mask;
-  if (have->res.mode == MD_REG) {
-    // Dont reuse TMP regs as "temporaries"
-    if (AIWNIOS_TMP_IREG_START <= have->tmp_res.reg)
-      if (have->tmp_res.reg - AIWNIOS_TMP_IREG_START < AIWNIOS_TMP_IREG_CNT)
-        return 0;
-  }
-  if (have->res.mode == MD_I64 || have->res.mode == MD_F64)
+  if (have->res.mode !=MD_REG)
     return 0; // No need to stuff in tmp
+    //Fail safe
+  if(other)
+	if(SpillsTmpRegs(other))
+	  return 0;
   if (is_left_side) {
-    if (other)
+	if (other)
       mask = other->changes_iregs2 | me->changes_iregs;
     else
       mask = me->changes_iregs;
   } else {
     mask = me->changes_iregs;
   }
-
+  mask|=((1ull<<AIWNIOS_TMP_IREG_CNT)-1)<<AIWNIOS_TMP_IREG_START;
+  //Function return values are safe
+  if(other)
+	if(other->type==IC_CALL||other->type==__IC_CALL)
+		goto skip;
+  mask|=1<<0; //Accumulator is used for everything
+skip:;
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type != RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
@@ -101,6 +105,14 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   } else {
     mask = me->changes_fregs;
   }
+  
+  mask|=((1ull<<AIWNIOS_TMP_FREG_CNT)-1)<<AIWNIOS_TMP_FREG_START;
+  //Function return values are safe
+  if(other)
+	if(other->type==IC_CALL||other->type==__IC_CALL)
+		goto skip2;
+  mask|=1<<0; //Accumulator is used for everything
+  skip2:;
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type == RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
@@ -159,9 +171,7 @@ static void SetKeepTmps(CRPN *rpn) {
     // In AArch64,I do left last,safe to  do stuff with it as ICArgN(rpn,0) wont
     // mutate regs
     if (CanKeepInTmp(rpn, left, right, 1) && left->tmp_res.mode) {
-      // Only act on accumulator for now in "safe" zones
-      if (left->tmp_res.mode == MD_REG && left->tmp_res.reg == 0 &&
-          left->type == IC_CALL) {
+      if (left->tmp_res.mode == MD_REG) {
         left->res = left->tmp_res;
         left->res.keep_in_tmp = 1;
         break;
@@ -699,19 +709,6 @@ static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
     res->off = rpn->integer;
     return;
   }
-  if (inher_from) {
-    if (rpn->raw_type == RT_F64 && inher_from->raw_type == RT_F64 &&
-        inher_from->mode != MD_NULL) {
-      rpn->res = *inher_from;
-      rpn->flags |= ICF_TMP_NO_UNDO;
-      return;
-    } else if (rpn->raw_type != RT_F64 && inher_from->raw_type != RT_F64 &&
-               inher_from->mode != MD_NULL) {
-      rpn->res = *inher_from;
-      rpn->flags |= ICF_TMP_NO_UNDO;
-      return;
-    }
-  }
 normal:
   if (raw_type != RT_F64) {
     if (cctrl->backend_user_data2 < AIWNIOS_TMP_IREG_CNT) {
@@ -841,6 +838,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
         if (next3->type == IC_I64) {
           mul = next3->integer;
         idx:
+          if(!next4->res.keep_in_tmp&&!next2->res.keep_in_tmp)
           if (rsz == mul && next4->raw_type != RT_F64) {
             // IC_ADD==rpn
             //   IC_MUL==next
@@ -1350,7 +1348,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_F64:
         AIWNIOS_ADD_CODE(
-            ARM_ldrRegRegShiftF64(MIR(cctrl, dst->reg), src->reg, src->reg2));
+            ARM_ldrRegRegShiftF64(MFR(cctrl, dst->reg), src->reg, src->reg2));
       }
       return code_off;
     } else if (src->mode == MD_REG) {
@@ -1366,10 +1364,10 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         case RT_U16i:
         case RT_U32i:
         case RT_U64i:
-          AIWNIOS_ADD_CODE(ARM_ucvtf(MIR(cctrl, dst->reg), src->reg));
+          AIWNIOS_ADD_CODE(ARM_ucvtf(MFR(cctrl, dst->reg), src->reg));
           break;
         default:
-          AIWNIOS_ADD_CODE(ARM_scvtf(MIR(cctrl, dst->reg), src->reg));
+          AIWNIOS_ADD_CODE(ARM_scvtf(MFR(cctrl, dst->reg), src->reg));
         }
         return code_off;
       }
@@ -1980,7 +1978,7 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
       code_off =
           PutICArgIntoReg(cctrl, &next->res, next->raw_type, 2, bin, code_off);
       code_off = __ICMoveF64(cctrl, 1, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(f_op(MIR(cctrl, next->res.reg), next->res.reg, 1));
+      AIWNIOS_ADD_CODE(f_op(MFR(cctrl, next->res.reg), next->res.reg, 1));
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
       code_off = ICMov(cctrl, &orig, &next->res, bin, code_off);
     } else {
@@ -2294,11 +2292,11 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
 }
 static int64_t __FMod(int64_t dst, int64_t a, int64_t b, char *bin,
                       int64_t code_off) {
-  AIWNIOS_ADD_CODE(ARM_fdivReg(0, a, b));
-  AIWNIOS_ADD_CODE(ARM_fcvtzs(0, 0))
-  AIWNIOS_ADD_CODE(ARM_scvtf(0, 0));
-  AIWNIOS_ADD_CODE(ARM_fmulReg(0, 0, b));
-  AIWNIOS_ADD_CODE(ARM_fsubReg(dst, a, 0));
+  AIWNIOS_ADD_CODE(ARM_fdivReg(dst, a, b));
+  AIWNIOS_ADD_CODE(ARM_fcvtzs(0, dst))
+  AIWNIOS_ADD_CODE(ARM_scvtf(dst, 0));
+  AIWNIOS_ADD_CODE(ARM_fmulReg(dst, dst, b));
+  AIWNIOS_ADD_CODE(ARM_fsubReg(dst, a, dst));
   return code_off;
 }
 // Also handles IC_MOD_EQ
@@ -2562,6 +2560,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     to_push += 8;
   cctrl->backend_user_data4 = fsz;
   old_regs_start = fsz + cctrl->backend_user_data0;
+  cctrl->prolog_stk_sz=to_push;
 
   i2 = 0;
   for (i = 0; i != 32; i++)
@@ -2711,13 +2710,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
                     (i3 = __FindPushedFRegs(cctrl, push_freg)) * 8 + fsz +
                     cctrl->backend_user_data0,
           old_regs_start; // old_FP,old_LR
-  if (i2 % 2)
-    to_push += 8; // We push a dummy register in a pair if not aligned to 2
-  if (i3 % 2)
-    to_push += 8; // Ditto
-  if (to_push % 16)
-    to_push += 8;
-  old_regs_start = fsz + cctrl->backend_user_data0;
+  to_push=cctrl->prolog_stk_sz;
   i2 = 0;
   for (i = 0; i != 32; i++)
     if (push_ireg[i])
@@ -2739,7 +2732,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     code_off = __ICMoveI64(cctrl, 8, to_push, bin, code_off);
     AIWNIOS_ADD_CODE(ARM_addRegX(ARM_REG_SP, ARM_REG_SP, 8));
   }
-
+	
   off = 16;
   //<==== OLD SP
   // first saved reg pair<==-16
@@ -3030,7 +3023,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(
             ARM_fmovF64I64(MFR(cctrl, rpn->res.reg), next->res.reg));
       } else {
-        AIWNIOS_ADD_CODE(ARM_fmovF64I64(MIR(cctrl, 1), next->res.reg));
+        AIWNIOS_ADD_CODE(ARM_fmovF64I64(MFR(cctrl, 1), next->res.reg));
         tmp.mode = MD_REG;
         tmp.raw_type = RT_F64;
         tmp.reg = 1;
@@ -3383,7 +3376,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 
 // IC_ADD is special as we can use __MD_ARM_SHIFT_ADD
 #define ARM_SHIFT_OP(shift_op, shift_ops)                                      \
-  if (rpn->res.raw_type != RT_F64) {                                           \
+  if (rpn->res.raw_type != RT_F64&&!rpn->res.keep_in_tmp) {                                           \
     int64_t shift_cnt;                                                         \
     next = ICArgN(rpn, 1);                                                     \
     next2 = ICArgN(rpn, 0);                                                    \
@@ -3391,7 +3384,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (next2->type == IC_LSH && IsConst(next3)) {                             \
       next4 = ICArgN(next2, 1);                                                \
       shift_cnt = ConstVal(next3);                                             \
-      if (shift_cnt < (1 << 6)) {                                              \
+      if (shift_cnt < (1 << 6)&&!(next->res.keep_in_tmp||next4->res.keep_in_tmp)) {                                              \
         shift_op##shift : if (!SpillsTmpRegs(next))                            \
                               PushTmp(cctrl, next4, NULL);                     \
         else PushSpilledTmp(cctrl, next4);                                     \
@@ -3411,9 +3404,6 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           tmp.raw_type = rpn->raw_type;                                        \
           tmp.reg = 0;                                                         \
           tmp.mode = MD_REG;                                                   \
-          rpn->tmp_res = tmp;                                                  \
-          if (rpn->res.keep_in_tmp)                                            \
-            rpn->res = tmp;                                                    \
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);             \
           break;                                                               \
         } else {                                                               \
@@ -3427,9 +3417,6 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             tmp.raw_type = rpn->raw_type;                                      \
             tmp.reg = 0;                                                       \
             tmp.mode = MD_REG;                                                 \
-            rpn->tmp_res = tmp;                                                \
-            if (rpn->res.keep_in_tmp)                                          \
-              rpn->res = tmp;                                                  \
             code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);           \
             break;                                                             \
           }                                                                    \
@@ -3440,20 +3427,22 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       for (i = 0; i != 2; i++) {                                               \
         next3 = ICArgN(next2, i);                                              \
         next4 = ICArgN(next2, 1 - i);                                          \
-        if (IsConst(next3)) {                                                  \
+        if (IsConst(next3)&&!(next->res.keep_in_tmp||next4->res.keep_in_tmp)) {                                                  \
           shift_cnt = ConstVal(next3);                                         \
           if (__builtin_popcountll(shift_cnt) == 1) {                          \
             shift_cnt = __builtin_ffsll(shift_cnt) - 1;                        \
-            if (shift_cnt < (1 << 6))                                          \
-              goto shift_op##shift;                                            \
+            if (shift_cnt < (1 << 6))  {                                        \
+              goto shift_op##shift;     }                                      \
           }                                                                    \
         }                                                                      \
       }                                                                        \
     }                                                                          \
   }
 
-    ARM_SHIFT_OP(ARM_addShiftRegX, ARM_addShiftRegXs);
-
+	//Nroot here,relies on ->res.keep_in_tmp being set(happens after first run) 
+    if(cctrl->code_ctrl->final_pass) {
+//		ARM_SHIFT_OP(ARM_addShiftRegX, ARM_addShiftRegXs);
+    }
     if (use_flags && rpn->res.raw_type != RT_F64) {
       rpn->res.set_flags = 1;
       rpn->res.mode = MD_NULL;
@@ -3505,7 +3494,10 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     PopTmp(cctrl, next2);
     break;
   case IC_SUB:
-    ARM_SHIFT_OP(ARM_subShiftRegX, ARM_subShiftRegXs);
+    //Nroot here,relies on ->res.keep_in_tmp being set(happens after first run) 
+    if(cctrl->code_ctrl->final_pass) {
+		ARM_SHIFT_OP(ARM_subShiftRegX, ARM_subShiftRegXs);
+    }
     if (use_flags && rpn->res.raw_type != RT_F64) {
       rpn->res.set_flags = 1;
       rpn->res.mode = MD_NULL;
@@ -3535,7 +3527,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     AIWNIOS_ADD_CODE(ARM_fcmp(next2->res.reg, next->res.reg));                 \
     \	
         AIWNIOS_ADD_CODE(                                                      \
-        ARM_fcsel(MIR(cctrl, 0), next2->res.reg, next->res.reg, cond));        \
+        ARM_fcsel(MFR(cctrl, 0), next2->res.reg, next->res.reg, cond));        \
   } else {                                                                     \
     AIWNIOS_ADD_CODE(ARM_cmpRegX(next2->res.reg, next->res.reg));              \
     AIWNIOS_ADD_CODE(                                                          \
