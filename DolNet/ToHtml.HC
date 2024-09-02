@@ -518,12 +518,44 @@ U0 HtmlRawPrint(CDoc *d,U8 *fmt,...) {
   DocPrint(d,"$$HC,\"%Q\"$$",fmt);
   Free(fmt);
 }
-public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",CDoc *header=NULL,CDoc *footer=NULL) {
+U0 Captcha(CDoc *doc,U32 *u) {
+  Seed(cnts.jiffies);
+  CDC *dc=DCNew(256,64),*sc=DCNew(256,64);
+  U8 *p,*s;
+  I64 x,y;
+  *u=RandU32;
+  DCFill(dc,TRANSPARENT);
+  Mat4x4IdentEqu(sc->r);
+  Mat4x4Scale(sc->r,1.5);
+  sc->flags|=DCF_TRANSFORMATION;
+  DCFill(sc,WHITE);
+  dc->color=RED;
+  for(y=0;y<64;y+=8)
+    for(x=-(RandU16&7)*8;x<256;) {
+      s=god.words[RandU16%god.num_words];
+      GrPrint(dc,x,y,"%s ",s);
+      x+=StrLen(s)*8+8;
+    }
+  GrBlot3(sc,0,0,0,dc);
+ DCFill(dc,TRANSPARENT);
+  Mat4x4IdentEqu(sc->r);
+  Mat4x4Scale(sc->r,3);
+  dc->color=BLUE;
+  GrPrint(dc,0,0,s=MStrPrint("%x",*u));
+  Mat4x4TranslationAdd(sc->r,sc->width/2-StrLen(s)*8*3/2.,sc->height/2-3*8/2.,0.);
+  GrBlot3(sc,0,0,0,dc);
+  DocSprite(doc,p=DC2Sprite(sc));
+  Free(s),Free(p),DCDel(dc),DCDel(sc);
+}
+public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",
+			  CDoc *header=NULL,CDoc *footer=NULL,
+			  U32 *num=NULL) {
   CDoc *ret,*tmp;
   CHashClass *cls=HashFind(cn,Fs->hash_table,HTT_CLASS);
   CDocEntry *ent;
   CMemberLst *mlst,*override;
-  U8 *fmt,*trimmed,*more=NULL;
+  U8 *fmt,*trimmed,*more=NULL,*s,*nam;
+  I64 rand;
   if(!cls) throw('HTML');
   tmp=DocNew;
   if(header)
@@ -570,6 +602,16 @@ public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",CDoc *header=NULL,C
       }
      }
     mlst=mlst->next;
+  }
+  if(num) {
+    HtmlRawPrint(tmp,"<label for=\"captcha\">Type the hexadecimal digits only</label><br>\n");
+    //HtmlRawPrint(tmp,"<br><br>");
+    Captcha(tmp,num);
+    HtmlRawPrint(tmp,"<br><br><br><br><br><input id=\"captcha\" type=\"text\" name=\"captcha\" placeholder=\"Captcha\">\n<br>\n");
+    rand=RandI64;
+    HtmlRawPrint(tmp,"<input type=\"hidden\" id=\"session\" name=\"session\" value=\"%x\">",rand);
+    FramePtrAdd(nam=MStrPrint("%x",rand),*num,adam_task);
+    Free(nam);
   }
   HtmlRawPrint(tmp,"<input type=\"submit\" value=\"Submit\"><br>");
   HtmlRawPrint(tmp,"</form>");

@@ -459,6 +459,7 @@ loop:
   }
 }
 Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
+//PrintI(data,len);
   static I64 spawn_at=0;
   CConnection *first,*con,*con2;
   CHashGeneric *hash;
@@ -486,6 +487,7 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     con->fbuffer=MAlloc(Str2I64(data),con->hc);
     con->content_len=Str2I64(data);
+    if(con->content_len>MAX_UPLOAD) goto malformed;
   } else if(!StrNICmp(data,"Range",StrLen("Range"))) {
     if(!StrOcc(data,':')) goto malformed;
     if(t1=StrIMatch("bytes=",data)) {
@@ -755,7 +757,7 @@ again:;
 	  } else if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
 	    len=NetRead(fds[idx],buf,0x10000);
 	    if(len>0) {
-	      buf[len]=0;
+	      buf[len]=0;
 	      SReadData(fds[idx],buf,len,&unique_tokens[idx]);
 	      Yield;
 	      goto again;
