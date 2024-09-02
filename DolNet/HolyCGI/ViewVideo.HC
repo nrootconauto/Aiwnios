@@ -13,11 +13,10 @@ class CVideoComment {
 };
 
 Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
-  U8 *v,*tmp_str,*tmp_str2;
-  U8 *as_txt;
+  U8 *v,*tmp_str,*tmp_str2,*as_txt,*props_file,*desc;
   I64 len,views;
+  U32 n;
   Bool comments_enable=TRUE;
-  U8 *props_file,*desc;
   CDirEntry *ent,*root;
   CDoc *tmp_doc,*html,*comments,*props;
   CConnection *con=Fs->user_data;
@@ -49,7 +48,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 
       if(comments_enable) {
         DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments\"$$$$FD$$");
-        html=HtmlFormGen("CVideoComment",tmp_str2,"POST",tmp_doc,comments);
+        html=HtmlFormGen("CVideoComment",tmp_str2,,tmp_doc,comments,&n);
       } else {
         DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Comments Disabled\"$$$$FD$$");
         html=Doc2Html(tmp_doc);
@@ -78,7 +77,8 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     tmp_doc=DocNew;
     DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"AiwniosTube:\"$$$$FD$$\n");
     DocPrint(tmp_doc,"\n  Welcome to AiwniosTube,upload a video or explore.\n");
-    DocPrint(tmp_doc,"\n  Click $$LK,\"Here to Upload a Video\",A=\"/VideoUpload.HC\"$$ .\n");
+    DocPrint(tmp_doc,"\n  Click $$LK,\"Here to Upload a Video\",A=\"/VideoUpload.HC\"$$.\n"
+                       "  Use slashes to categorize and group your videos,like Compiler/Lexer.\n");
     DocPrint(tmp_doc,"\n  Click $$LK,\"Here to find a video\",A=\"/VideoSearch.HC\"$$\n");
 
     tmp_str=ChrootFile("/",SERVER_WWW"/Videos");

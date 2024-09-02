@@ -1,4 +1,4 @@
-#help_index "Graphics/Windows BMP Files"
+#help_index "Graphics/Windows BMP Files"
 
 #define BMP_COLORS_NUM	16
 
