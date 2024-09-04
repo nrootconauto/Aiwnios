@@ -1315,26 +1315,66 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
 static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
   int64_t i, has_vargs = 0;
-  CICArg tmp = {0};
+  CICArg tmp = {0},tmp2={0};
   CRPN *rpn2;
-  int64_t to_pop = rpn->length * 8, to_pop2 = to_pop, ptr = to_pop;
+  int64_t to_pop = rpn->length * 8, to_pop2 = to_pop, ptr = to_pop,vargs_pop=0;
   void *fptr;
+  //Here's Nroots deal. Things that wont change"IC_IREG,IC_FREG,IC_IMM_X64" will be passed later.
+  //Other arguments will be passed to a temporary area on the stack 21.,this makes passing "spilled" arguments easier
+  #define WONT_CHANGE(t) ((t)==IC_IREG||(t)==IC_FREG||(t)==IC_I64||(t)==IC_F64)
+  #define BEFORE_CALL \
+  {CRPN *rpn2;int64_t i;for (i = (rpn->length>8?8:rpn->length)-1; i>=0;i--) { \
+	  rpn2 = ICArgN(rpn, rpn->length-i-1); /* REVBERSE polish notation */ \
+		  tmp.mode=MD_REG; \
+		  tmp.raw_type=rpn2->res.raw_type; \
+		  tmp.reg=10+i; \
+	  if(WONT_CHANGE(rpn2->type)) { \
+		  switch(rpn2->type) { \
+			  case IC_IREG: \
+			  case IC_FREG: \
+			  tmp2.mode=MD_REG; \
+			  tmp2.raw_type=rpn2->res.raw_type; \
+			  tmp2.reg=rpn2->integer; \
+			  break;   \
+				case IC_I64: \
+				tmp2.mode=MD_I64; \
+				tmp2.raw_type=RT_I64i; \
+			    tmp2.integer=rpn2->integer; \
+			  break;   \
+				case IC_F64: \
+				tmp2.mode=MD_F64; \
+				tmp2.raw_type=RT_F64; \
+			    tmp2.flt=rpn2->flt; \
+			  break;   \
+		  } \
+		  code_off=ICMov(cctrl,&tmp,&tmp2,bin,code_off); \
+		  if(tmp.raw_type!=RT_F64) \
+	       {AIWNIOS_ADD_CODE(RISCV_FMV_D_X(10+i,10+i)); } else \
+	       {AIWNIOS_ADD_CODE(RISCV_FMV_X_D(10+i,10+i)); }  \		 
+	  }  else { \
+	  AIWNIOS_ADD_CODE(RISCV_LD(10+i,RISCV_REG_SP,i*8)); \		 
+	  AIWNIOS_ADD_CODE(RISCV_FMV_D_X(10+i,10+i)); \		 
+     }\
+  } \
+  	  if(to_pop/8>=8) \
+	  {AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP,RISCV_REG_SP,8*8));} \
+	  else  if(to_pop) \
+	  {AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP,RISCV_REG_SP,to_pop));} } 
   for (i = 0; i < rpn->length; i++)
     if ((rpn2 = ICArgN(rpn, i))->type == __IC_VARGS) {
       to_pop -= 8; // We dont count argv
-      to_pop2 = to_pop;
       ptr -= 8;
-      to_pop += rpn2->length * 8;
       has_vargs = 1;
+      vargs_pop=rpn2->length*8;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
       break;
     }
-  if (to_pop2)
-    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -to_pop2));
+  if (to_pop)
+    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -to_pop));
   for (i = 0; i < rpn->length; i++) {
     rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {
-    } else {
+    } else if(!WONT_CHANGE(rpn2->type)||rpn->length-1-i>=8){
       ptr -= 8; // Arguments are reversed
       tmp.mode = MD_INDIR_REG;
       tmp.reg = RISCV_REG_SP;
@@ -1343,12 +1383,14 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.raw_type = rpn2->res.raw_type == RT_F64 ? RT_F64 : RT_I64i;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
       code_off = ICMov(cctrl, &tmp, &rpn2->res, bin, code_off);
-    }
+    } else
+      ptr -= 8; //Dito
   }
   rpn2 = ICArgN(rpn, rpn->length);
   if (rpn2->type == IC_SHORT_ADDR) {
-    AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
-    AIWNIOS_ADD_CODE(RISCV_JALR(1, RISCV_IRET, 0));
+	  BEFORE_CALL;
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 0));
+    AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, 0));
     if (bin)
       CodeMiscAddRef(rpn2->code_misc, bin + code_off - 8);
     goto after_call;
@@ -1359,27 +1401,32 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (!fptr || fptr == &DoNothing)
         goto defacto;
     use_fptr:;
+      int64_t old_code_off=code_off;
+      BEFORE_CALL;
       int64_t idx = (int64_t)fptr - (int64_t)(bin + code_off);
       int64_t low12 = idx - (idx & ~((1 << 12) - 1));
+       code_off=old_code_off;
       if (!Is32Bit(idx))
         goto defacto;
+      BEFORE_CALL;
       if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
-        AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, idx >> 12));
-        AIWNIOS_ADD_CODE(RISCV_JALR(1, RISCV_IRET, low12));
+        AIWNIOS_ADD_CODE(RISCV_AUIPC(5, idx >> 12));
+        AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, low12));
       } else {
-        AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, (idx >> 12) + 1));
-        AIWNIOS_ADD_CODE(RISCV_JALR(1, RISCV_IRET, low12));
+        AIWNIOS_ADD_CODE(RISCV_AUIPC(5, (idx >> 12) + 1));
+        AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, low12));
       }
     }
   } else {
   defacto:
     rpn2->res.raw_type = RT_PTR; // Not set for some reason
     if (rpn2->type == IC_RELOC) {
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(RISCV_IRET, 0));
-      AIWNIOS_ADD_CODE(RISCV_LD(RISCV_IRET, RISCV_IRET, 0));
+      BEFORE_CALL;
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 0));
+      AIWNIOS_ADD_CODE(RISCV_LD(5, 5, 0));
       if (bin)
         CodeMiscAddRef(rpn2->code_misc, bin + code_off - 8);
-      AIWNIOS_ADD_CODE(RISCV_JALR(1, RISCV_IRET, 0));
+      AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, 0));
     } else if (rpn2->type == IC_I64 && bin) {
       fptr = rpn2->integer;
       // Avoid infitite loop as above we go to defacto if not 32bit
@@ -1389,13 +1436,26 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     } else {
     dft:
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
-      code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, RISCV_IPOOP1, bin,
+      code_off = PutICArgIntoReg(cctrl, &rpn2->res, RT_PTR, 5, bin,
                                  code_off);
+      if(rpn2->res.reg>=10&&rpn2->res.reg-10<=7) {
+		  tmp.reg=5;
+		  tmp.mode=MD_REG;
+		  tmp.raw_type=RT_I64i;
+		  code_off=ICMov(cctrl,&tmp,&rpn2->res,bin,code_off);
+		  rpn2->res=tmp;
+	  }
+      BEFORE_CALL;
       AIWNIOS_ADD_CODE(RISCV_JALR(1, rpn2->res.reg, 0));
     }
   }
 after_call:
-  if (has_vargs)
+  if(rpn->length>8)
+    to_pop-=8*8;
+  else
+    to_pop=0;
+    
+  if (to_pop)
     AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, to_pop));
   if (rpn->raw_type != RT_U0 && rpn->res.mode != MD_NULL) {
     tmp.reg = RISCV_IRET;
@@ -1554,7 +1614,7 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         } else {
           tmp2 = tmp;
           tmp2.mode = MD_REG;
-          tmp2.reg = RISCV_IRET;
+          tmp2.reg = 5;
           tmp2.raw_type = src->raw_type;
           code_off = ICMov(cctrl, &tmp2, src, bin, code_off);
           code_off = ICMov(cctrl, &tmp, &tmp2, bin, code_off);
@@ -1916,8 +1976,8 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
       if (Is12Bit(rpn->integer)) {
         AIWNIOS_ADD_CODE(i_imm(MIR(cctrl, tmp.reg), tmp.reg, rpn->integer));
       } else {
-        code_off = __ICMoveI64(cctrl, RISCV_IRET, rpn->integer, bin, code_off);
-        AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, RISCV_IRET));
+        code_off = __ICMoveI64(cctrl, 5, rpn->integer, bin, code_off);
+        AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, 5));
       }
       code_off = ICMov(cctrl, &orig, &tmp, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
@@ -1945,8 +2005,8 @@ static int64_t __SexyPreOp(CCmpCtrl *cctrl, CRPN *rpn,
       if (Is12Bit(rpn->integer)) {
         AIWNIOS_ADD_CODE(i_imm(MIR(cctrl, tmp.reg), tmp.reg, rpn->integer));
       } else {
-        code_off = __ICMoveI64(cctrl, RISCV_IRET, rpn->integer, bin, code_off);
-        AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, RISCV_IRET));
+        code_off = __ICMoveI64(cctrl, 5, rpn->integer, bin, code_off);
+        AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, 5));
       }
       code_off = ICMov(cctrl, &orig, &tmp, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
@@ -2317,8 +2377,8 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   if (Is12Bit(-to_push)) {
     AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -to_push));
   } else {
-    code_off = __ICMoveI64(cctrl, RISCV_IRET, -to_push, bin, code_off);
-    AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_REG_SP, RISCV_REG_SP, RISCV_IRET));
+    code_off = __ICMoveI64(cctrl, 5 /* t0 */, -to_push, bin, code_off);
+    AIWNIOS_ADD_CODE(RISCV_ADD(RISCV_REG_SP, RISCV_REG_SP, 5 /* t0 */));
   }
 
   off = -old_regs_start;
@@ -2350,10 +2410,16 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   if (cctrl->cur_fun) {
     lst = cctrl->cur_fun->base.members_lst;
     for (i = 0; i != cctrl->cur_fun->argc; i++) {
-      fun_arg.mode = MD_INDIR_REG;
-      fun_arg.raw_type = lst->member_class->raw_type;
-      fun_arg.reg = RISCV_REG_FP;
-      fun_arg.off = stk_arg_cnt++ * 8;
+      if(i<=7) {
+		  fun_arg.mode=MD_REG;
+		  fun_arg.raw_type=lst->member_class->raw_type;;
+		  fun_arg.reg=10+i;
+	  } else {
+        fun_arg.mode = MD_INDIR_REG;
+        fun_arg.raw_type = 
+        fun_arg.reg = RISCV_REG_FP;
+        fun_arg.off = stk_arg_cnt++ * 8;
+	  }
       // This *shoudlnt* mutate any of the argument registers
       if (lst->reg >= 0 && lst->reg != REG_NONE) {
         write_to.mode = MD_REG;
@@ -2367,12 +2433,12 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       }
       if ((cctrl->cur_fun->base.flags & CLSF_VARGS) &&
           !strcmp("argv", lst->str)) {
-        AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_IRET, RISCV_REG_FP, arg_cnt * 8));
-        fun_arg.reg = RISCV_IRET;
+        AIWNIOS_ADD_CODE(RISCV_ADDI(5, RISCV_REG_FP, stk_arg_cnt * 8));
+        fun_arg.reg = 5;
         fun_arg.mode = MD_REG;
         fun_arg.raw_type = RT_I64i;
       }
-      code_off = ICMov(cctrl, &write_to, &fun_arg, bin, code_off);
+      code_off=ICMov(cctrl,&write_to,&fun_arg,bin,code_off);
       lst = lst->next;
     }
   } else {
@@ -2381,15 +2447,20 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     for (i = 0, rpn = cctrl->code_ctrl->ir_code->last;
          rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.last) {
       if (rpn->type == __IC_ARG) {
-        fun_arg.mode = MD_INDIR_REG;
-        fun_arg.raw_type =
-            (arg = ICArgN(rpn, 0))->raw_type == RT_F64 ? RT_F64 : RT_I64i;
-        fun_arg.reg = RISCV_REG_FP;
-        fun_arg.off = stk_arg_cnt++ * 8;
+		  arg=rpn->base.next;
         PushTmp(cctrl, arg, NULL);
         PopTmp(cctrl, arg);
-        if (fun_arg.off == -arg->res.off && arg->res.mode == MD_FRAME)
-          continue;
+        i=rpn->integer;
+        if(i<=7) {
+			  fun_arg.mode=MD_REG;
+			  fun_arg.raw_type=arg->res.raw_type;
+			  fun_arg.reg=10+i;
+		  } else {
+			fun_arg.mode = MD_INDIR_REG;
+			fun_arg.raw_type = arg->res.raw_type;
+			fun_arg.reg = RISCV_REG_FP;
+			fun_arg.off = stk_arg_cnt++ * 8;
+		  }
         code_off = ICMov(cctrl, &arg->res, &fun_arg, bin, code_off);
       } else if (rpn->type == IC_GET_VARGS_PTR) {
         arg = ICArgN(rpn, 0);
@@ -2397,11 +2468,11 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         PopTmp(cctrl, arg);
         if (arg->res.mode == MD_REG) {
           AIWNIOS_ADD_CODE(
-              RISCV_ADDI(MIR(cctrl, arg->res.reg), RISCV_REG_FP, arg_cnt * 8));
+              RISCV_ADDI(MIR(cctrl, arg->res.reg), RISCV_REG_FP, stk_arg_cnt * 8));
         } else {
           AIWNIOS_ADD_CODE(
-              RISCV_ADDI(MIR(cctrl, RISCV_IRET), RISCV_REG_FP, arg_cnt * 8));
-          tmp.reg = RISCV_IRET;
+              RISCV_ADDI(MIR(cctrl, 5), RISCV_REG_FP, stk_arg_cnt * 8));
+          tmp.reg = 5;
           tmp.mode = MD_REG;
           tmp.raw_type = RT_I64i;
           code_off = ICMov(cctrl, &arg->res, &tmp, bin, code_off);
@@ -2471,7 +2542,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     if (push_freg[i])
       flist[i3++] = i;
   if (i3 % 2)
-    flist[i3++] = 1; // Dont use 0 as it is a reutrn register
+    flist[i3++] = 1; // Dont use 0 as it is a return register
   //<==== OLD SP
   // first saved reg pair<==-16
   // next saved reg pair<===-32
@@ -2503,12 +2574,8 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     off -= 8;
   }
 
-  if (is_vargs) {
-    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 0));
-  } else {
-    AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 8 * arg_cnt));
-  }
-  AIWNIOS_ADD_CODE(RISCV_LD(1, RISCV_REG_FP, -8)); // 1 is return regista
+  AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_FP, 0));
+  AIWNIOS_ADD_CODE(RISCV_LD(1, RISCV_REG_FP, -8));
   AIWNIOS_ADD_CODE(RISCV_LD(RISCV_REG_FP, RISCV_REG_FP, -16));
   AIWNIOS_ADD_CODE(RISCV_JALR(MIR(cctrl, 0), 1, 0));
   return code_off;
@@ -2551,8 +2618,8 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
       tmp = derefed;
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, RISCV_IPOOP1, bin,
                                  code_off);
-      code_off = __ICMoveI64(cctrl, RISCV_IRET, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, RISCV_IRET));
+      code_off = __ICMoveI64(cctrl, 5, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, 5));
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
     TYPECAST_ASSIGN_END(next);
@@ -2581,8 +2648,8 @@ static int64_t __SexyPostOp(CCmpCtrl *cctrl, CRPN *rpn,
       tmp = derefed;
       code_off = PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, RISCV_IPOOP1, bin,
                                  code_off);
-      code_off = __ICMoveI64(cctrl, RISCV_IRET, rpn->integer, bin, code_off);
-      AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, RISCV_IRET));
+      code_off = __ICMoveI64(cctrl, 5, rpn->integer, bin, code_off);
+      AIWNIOS_ADD_CODE(ireg(MIR(cctrl, tmp.reg), tmp.reg, 5));
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     }
   }
@@ -4581,10 +4648,10 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           r->res.mode != __MD_X86_64_SIB) {
         r->res.mode = MD_NULL;
       }
-      assert(cctrl->backend_user_data1 == 0);
-      assert(cctrl->backend_user_data2 == 0);
-      assert(cctrl->backend_user_data3 == 0);
       code_off = __OptPassFinal(cctrl, r, bin, code_off);
+      //assert(cctrl->backend_user_data1 == 0);
+      //assert(cctrl->backend_user_data2 == 0);
+      //assert(cctrl->backend_user_data3 == 0);
       if (IsTerminalInst(r)) {
         cnt++;
         for (; cnt < cnt2; cnt++) {

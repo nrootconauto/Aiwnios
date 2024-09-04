@@ -3,8 +3,7 @@
 .global AIWNIOS_setcontext
 .global AIWNIOS_makecontext
 AIWNIOS_getcontext:
-  ld t0,(sp)
-  addi sp,sp,8
+  mv t0,a0
   sd ra,(t0)
   sd sp,8(t0)
   sd fp,16(t0)
@@ -34,8 +33,7 @@ AIWNIOS_getcontext:
   li a0,0
   ret
 AIWNIOS_setcontext:
-  ld t0,(sp)
-  addi sp,sp,8
+  mv t0,a0
   ld ra,(t0)
   ld sp,8(t0)
   ld fp,16(t0)
