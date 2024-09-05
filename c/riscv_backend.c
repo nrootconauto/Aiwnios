@@ -588,7 +588,7 @@ static int64_t PushToStack(CCmpCtrl *cctrl, CICArg *arg, char *bin,
   CICArg tmp = *arg;
   AIWNIOS_ADD_CODE(RISCV_ADDI(RISCV_REG_SP, RISCV_REG_SP, -8));
   code_off =
-      PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, RISCV_IRET, bin, code_off);
+      PutICArgIntoReg(cctrl, &tmp, tmp.raw_type, 5, bin, code_off);
   if (tmp.raw_type != RT_F64) {
     AIWNIOS_ADD_CODE(RISCV_SD(tmp.reg, RISCV_REG_SP, 0));
   } else {
@@ -676,8 +676,8 @@ static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
   misc->integer = *(int64_t *)&imm;
   QueIns(misc, cctrl->code_ctrl->code_misc->last);
 found:
-  AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, RISCV_IRET), 0));
-  AIWNIOS_ADD_CODE(RISCV_FLD(MFR(cctrl, reg), RISCV_IRET, 0));
+  AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, 5), 0));
+  AIWNIOS_ADD_CODE(RISCV_FLD(MFR(cctrl, reg), 5, 0));
   if (bin)
     CodeMiscAddRef(misc, bin + code_off - 8);
   return code_off;
@@ -1333,7 +1333,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   void *fptr;
   //Here's Nroots deal. Things that wont change"IC_IREG,IC_FREG,IC_IMM_X64" will be passed later.
   //Other arguments will be passed to a temporary area on the stack 21.,this makes passing "spilled" arguments easier
-  #define WONT_CHANGE(t) ((t)==IC_IREG||(t)==IC_FREG||(t)==IC_I64||(t)==IC_F64|(t)==IC_BASE_PTR)
+  #define WONT_CHANGE(t) ((t)==IC_IREG||(t)==IC_FREG||(t)==IC_I64||(t)==IC_F64||(t)==IC_BASE_PTR)
   #define BEFORE_CALL \
   {CRPN *rpn2;int64_t i;for (i = (rpn->length>8?8:rpn->length)-1; i>=0;i--) { \
 	  rpn2 = ICArgN(rpn, rpn->length-i-1); /* REVBERSE polish notation */ \
@@ -4558,7 +4558,7 @@ ret:
       } else {
         tmp = rpn->res;
         code_off =
-            PutICArgIntoReg(cctrl, &tmp, RT_I64i, RISCV_IRET, bin, code_off);
+            PutICArgIntoReg(cctrl, &tmp, RT_I64i, RISCV_IRET , bin, code_off);
         // Pass address
         code_off = RISCV_JccToLabel(old_pass_misc, RISCV_COND_E ^ 1, tmp.reg, 0,
                                     bin, code_off);
