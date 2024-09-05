@@ -635,10 +635,10 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
     imm -= (int64_t)(bin + code_off);
     low12 = imm - (imm & ~((1 << 12) - 1));
     if (Is12Bit(low12)) {
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, (imm >> 12)));
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl,reg), (imm >> 12)));
       AIWNIOS_ADD_CODE(RISCV_ADDI(reg, reg, low12));
     } else {
-      AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, 1 + (imm >> 12)));
+      AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl,reg), 1 + (imm >> 12)));
       AIWNIOS_ADD_CODE(RISCV_ADDI(reg, reg, low12));
     }
   } else {
@@ -654,7 +654,7 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
     misc->integer = imm;
     QueIns(misc, cctrl->code_ctrl->code_misc->last);
   found:
-    AIWNIOS_ADD_CODE(RISCV_AUIPC(reg, 0));
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl,reg), 0));
     AIWNIOS_ADD_CODE(RISCV_LD(reg, reg, 0));
     if (bin)
       CodeMiscAddRef(misc, bin + code_off - 8);
@@ -1309,8 +1309,20 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
   }
   return 0;
 }
-static int64_t ArgRPNMutatesArgumentRegister(CRPN *rpn,CRPN *arg,int64_t reg) {
-  	
+//Arguments are called backwards
+static int64_t ArgRPNMutatesArgumentRegister(CRPN *rpn,int64_t reg) {
+  	int64_t i=rpn->length-(reg-10)-1;
+  	CRPN *arg;
+  	while(i<rpn->length) {
+		if(SpillsTmpRegs(arg=ICArgN(rpn,i)))
+		  return 1;
+	    //In Aiwnios RISC-V ABI,I pass all arguments in int registers
+		if((arg->changes_iregs|arg->changes_iregs2)&(1ull<<reg)) {
+			return  1;
+		} 
+		i++;
+	}
+	return 0;
 }
 static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
@@ -1321,7 +1333,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   void *fptr;
   //Here's Nroots deal. Things that wont change"IC_IREG,IC_FREG,IC_IMM_X64" will be passed later.
   //Other arguments will be passed to a temporary area on the stack 21.,this makes passing "spilled" arguments easier
-  #define WONT_CHANGE(t) ((t)==IC_IREG||(t)==IC_FREG||(t)==IC_I64||(t)==IC_F64)
+  #define WONT_CHANGE(t) ((t)==IC_IREG||(t)==IC_FREG||(t)==IC_I64||(t)==IC_F64|(t)==IC_BASE_PTR)
   #define BEFORE_CALL \
   {CRPN *rpn2;int64_t i;for (i = (rpn->length>8?8:rpn->length)-1; i>=0;i--) { \
 	  rpn2 = ICArgN(rpn, rpn->length-i-1); /* REVBERSE polish notation */ \
@@ -1359,6 +1371,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 		  if(tmp.raw_type==RT_F64) \
 	       {AIWNIOS_ADD_CODE(RISCV_FMV_X_D(10+i,10+i)); }  \		 
   }}
+  int64_t mutated=0;
   for (i = 0; i < rpn->length; i++) {
   rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {
@@ -1368,9 +1381,16 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       vargs_pop=rpn2->length*8;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
     } else if(!WONT_CHANGE(rpn2->type))  {
-		code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
+		if(!ArgRPNMutatesArgumentRegister(rpn,rpn->length-i-1+10)&&rpn->length-i-1<8) {
+			//Favor storing in argument registers if they arent changed
+			rpn2->res.mode=MD_REG;
+			rpn2->res.raw_type=rpn2->res.raw_type;
+			rpn2->res.reg=10+rpn->length-i-1;
+			code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
+		} else
+		  code_off=__OptPassFinal(cctrl,rpn2,bin,code_off);
 	}
-}
+  }
    if(to_pop>=8*8)
     to_pop-=8*8;
   else 
@@ -4559,8 +4579,8 @@ ret:
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
   }
   if (old_rpn) {
-    old_rpn->changes_iregs2 |= rpn->changes_iregs;
-    old_rpn->changes_fregs2 |= rpn->changes_fregs;
+    old_rpn->changes_iregs2 |= cctrl->cur_rpn->changes_iregs;
+    old_rpn->changes_fregs2 |= cctrl->cur_rpn->changes_fregs;
   }
   cctrl->cur_rpn = old_rpn;
   cctrl->backend_user_data5 = (int64_t)old_fail_misc;
