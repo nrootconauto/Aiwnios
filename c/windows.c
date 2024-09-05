@@ -30,8 +30,8 @@ static void _DrawWindowNew() {
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
   SDL_LockSurface(window_icon_proto);
   for(row=0;row!=window_icon_proto->h;row++) {
-    memcpy((char*)window_icon_proto->pixels+row*window_icon_proto->pitch, aiwnios_logo.pixel_data+aiwnios_logo.width*row,
-         aiwnios_logo.width);
+    memcpy((char*)window_icon_proto->pixels+row*window_icon_proto->pitch, aiwnios_logo.pixel_data+4*aiwnios_logo.width*row,
+         aiwnios_logo.width*4);
   }
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
