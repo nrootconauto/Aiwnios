@@ -1811,7 +1811,7 @@ I64 LexExpressionI64(CCmpCtrl *cc)
 
 F64 LexExpressionF64(CCmpCtrl *cc)
 {//Compile cc expression, forcing to F64 and eval.
-  F64 (*machine_code)();
+  I64 (*machine_code)();
   I64 res,type;
   if (machine_code=LexExpression2Bin(cc,&type)) {
     res=(*machine_code)();
