@@ -1662,21 +1662,26 @@ static void Boot() {
   if (bin)
     Load(bin);
 }
-static int64_t quit = 0;
-
+static int64_t quit = 0,quit_code=0;
+static void  AiwniosBye() {
+ SDL_Quit();
+}
 static void ExitAiwnios(int64_t *stk) {
-  quit = 1;
-#ifndef _WIN32
-  _Exit(stk[0]);
-#else
-  while (1)
-    TerminateProcess(GetCurrentProcess(), stk[0]);
-#endif
+  quit=1,quit_code=stk[0];
+  if(arg_cmd_line->count||arg_bootstrap_bin->count)
+    exit(stk[0]);
+  else {
+	  SDL_QuitEvent qev;
+	  qev.type=SDL_QUIT;
+	  qev.timestamp=SDL_GetTicks();
+	  SDL_PushEvent(&qev);
+  }
 }
 #ifdef main
 #  undef main
 #endif
 int main(int argc, char **argv) {
+  atexit(&AiwniosBye);
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =
@@ -1829,12 +1834,9 @@ int main(int argc, char **argv) {
     user_ev_num = SDL_RegisterEvents(1);
     SpawnCore(&Boot, NULL, 0);
     InputLoop(&quit);
-    for (idx = 0; idx != mp_cnt(); idx++)
-      __ShutdownCore(idx);
-    SDL_Quit();
   } else {
     Boot();
   }
   arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
-  return EXIT_SUCCESS;
+  return quit_code	;
 }
