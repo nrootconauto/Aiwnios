@@ -393,7 +393,7 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	      tmpg->data_addr=MAlloc(j,Fs);
 	    }
 	    tmpg->type=HTT_GLBL_VAR;
-	    if (tmpex && tmpex->type&HTT_GLBL_VAR &&
+	    if (tmpex && tmpex->type&HTT_GLBL_VAR &&
 		  tmpex->type&HTF_UNRESOLVED)
 	      has_alias=TRUE;
 	    //if (sys_var_init_flag) Tee hee

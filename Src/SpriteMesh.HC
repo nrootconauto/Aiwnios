@@ -702,7 +702,7 @@ U0 MeshClipPaste(CMeshFrame *e)
 
 MeshClipInit;
 
-U0 DrawIt(CTask *task,CDC *dc)
+U0 DrawIt2(CTask *task,CDC *dc)
 {
   CMeshFrame *e=FramePtr("CMeshFrame",task);
   CCtrl *c=CtrlFindUnique(task,CTRLT_VIEWING_ANGLES);
@@ -1070,7 +1070,7 @@ $WW,0$*/
   if (head)
     MeshLoad(&e,head);
   FramePtrAdd("CMeshFrame",&e);
-  Fs->draw_it=&DrawIt;
+  Fs->draw_it=&DrawIt2;
   MeshCurSnap(&e);
   MeshRecalcCxCy(Fs,&e);
 

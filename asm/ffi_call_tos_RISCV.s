@@ -6,43 +6,42 @@
 .global FFI_CALL_TOS_4
 .global FFI_CALL_TOS_CUSTOM_BP
 FFI_CALL_TOS_CUSTOM_BP:
+addi t0,a0,0
 addi sp,sp,-32
-sd s0,24(sp)
-sd ra,16(sp)
-sd sp,8(sp)
-sd a2,0(sp) #"POP"ed off
+sd s0,16(sp)
+sd ra,8(sp)
 addi s0,a0,0
-jalr a1
+addi a0,a1,0
+jalr t0
 ld ra,8(sp)
 ld s0,16(sp)
-addi sp,sp,24
+addi sp,sp,32
 ret
 
 FFI_CALL_TOS_0:
 jr a0
 
 FFI_CALL_TOS_1:
-addi sp,sp,-8
-sd a1,(sp)
-jr a0
+addi t0,a0,0
+mv a0,a1
+jr t0
 
 FFI_CALL_TOS_2:
-addi sp,sp,-16
-sd a2,8(sp)
-sd a1,(sp)
-jr a0
+addi t0,a0,0
+mv a0,a1
+mv a1,a2
+jr t0
 
 FFI_CALL_TOS_3:
-addi sp,sp,-24
-sd a3,16(sp)
-sd a2,8(sp)
-sd a1,(sp)
-jr a0
+addi t0,a0,0
+mv a0,a1
+mv a1,a2
+jr t0
 
 FFI_CALL_TOS_4:
-addi sp,sp,-32
-sd a4,24(sp)
-sd a3,16(sp)
-sd a2,8(sp)
-sd a1,(sp)
-jr a0
+addi t0,a0,0
+mv a0,a1
+mv a1,a2
+mv a2,a3
+mv a3,a4
+jr t0

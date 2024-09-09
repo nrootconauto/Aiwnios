@@ -1,5 +1,8 @@
 #pragma once
 #include <stdint.h>
+#ifdef _WIN32
+extern void Misc_ForceYield();
+#endif
 extern int64_t Misc_Bt(void *ptr, int64_t);
 extern int64_t Misc_Btc(void *ptr, int64_t);
 extern int64_t Misc_Btr(void *ptr, int64_t);

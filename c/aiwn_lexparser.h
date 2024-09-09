@@ -194,6 +194,7 @@ typedef struct CCmpCtrl {
   int64_t backend_user_data9;
   int64_t backend_user_data10;
   int64_t backend_user_data11;
+  int64_t prolog_stk_sz;
   int64_t used_iregs_bmp;
   int64_t used_fregs_bmp;
   int found_used_iregs;
@@ -574,8 +575,8 @@ enum {
 #if defined(__riscv__) || defined(__riscv)
 #  define AIWNIOS_IREG_START   0
 #  define AIWNIOS_FREG_START   0
-#  define AIWNIOS_TMP_IREG_CNT 5
-#  define AIWNIOS_TMP_FREG_CNT 13
+#  define AIWNIOS_TMP_IREG_CNT 4
+#  define AIWNIOS_TMP_FREG_CNT 5
 #  define AIWNIOS_IREG_CNT     (27 - 18 + 1 + 1)
 #  define AIWNIOS_FREG_CNT     (27 - 18 + 1 + 2)
 #endif

@@ -169,7 +169,7 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   }
   if(i==2) {
 //Try like a normal file in HTML directory.
-    FileGet(srv,stream,url,req); //Fails for us.
+    FileGet(srv,stream,url,req); //Fails for us.
   }else {
     et=HashFileToETag(html_name);
     if(con->etag_text&&!StrCmp(et,con->etag_text)) {
@@ -188,11 +188,63 @@ U0 DolDocGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   Free(html_name);
 }
 
+
+Bool HolyCGIGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
+  U8 *try_path=MStrPrint(__DIR__"/HolyCGI/%s",url->abs_path);
+  U8 *ftxt,*pass;
+  Bool ret=FALSE;
+  if(FileFind(try_path)) {
+    if(ftxt=FileRead(try_path)) {
+      if(StrMatch("OnGet",ftxt)) {
+        try {
+	  ExePutS2(ftxt,try_path);
+	  pass=MStrPrint("OnGet(%d,%d,%d,%d);;\n",srv,stream,url,req);
+	  ExePutS2(pass,try_path);
+	  ret=TRUE;
+	  Free(pass);
+        } catch {
+	  PutExcept(TRUE);
+        }
+      }
+      Free(ftxt);
+    } 
+  }
+  Free(try_path);
+  return ret;
+}
+
+Bool HolyCGIPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post) {
+  U8 *try_path=MStrPrint(__DIR__"/HolyCGI/%s",url->abs_path);
+  U8 *ftxt,*pass;
+  Bool ret=FALSE;
+  if(FileFind(try_path)) {
+    if(ftxt=FileRead(try_path)) {
+      if(StrMatch("OnPost",ftxt)) {
+        try {
+	  ExePutS2(ftxt,try_path);
+	  pass=MStrPrint("OnPost(%d,%d,%d,%d,%d);;\n",srv,stream,url,req,post);
+	  ExePutS2(pass,try_path);
+	  Free(pass);
+	  ret=TRUE;
+        } catch {
+	  PutExcept(TRUE);
+        }
+      }
+      Free(ftxt);
+    } 
+  }
+  Free(try_path);
+  return ret;
+}
+
+
 U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   if(!url||!url->abs_path) return;
   U8 *dot=FileExtDot(url->abs_path),*np,*data;
   I64 flen;
   CConnection *con=Fs->user_data;
+  if(HolyCGIGet(srv,stream,url,req))
+    goto fin;
   CDirEntry dent;
   if(!StrNCmp(url->abs_path,SERVER_ISOC_PREFIX,StrLen(SERVER_RAW_PREFIX))) {
     Dir_ISOC_Get(srv,stream,url,req);
@@ -232,4 +284,13 @@ U0 Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req)  {
   FileGet(srv,stream,url,req);
 fin:
   EndHttpRequest(stream);
+}
+
+U0 Post(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post)  {
+  if(HolyCGIPost(srv,stream,url,req,post)) {
+    EndHttpRequest(stream);
+    return;
+  }
+//Fallback
+  Get(srv,stream,url,req);
 }

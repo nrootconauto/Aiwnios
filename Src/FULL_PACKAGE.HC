@@ -367,12 +367,23 @@ U8 *_CmdLineGetStr(U8 *st) {
   Free(dc),Free(pmt);
   return ret;
 }
+U0 Exit0() {
+  ExitAiwnios(0);
+}
 U0 CmdLine(I64) {
-  I64 cnt=0;
+  CTask *cmd_line;
+  I64 cnt=0,old=-1;
+  Fs->task_end_cb=&Exit0;
   for(cnt=0;cnt!=CmdLineBootFileCnt;cnt++)
-     ExePrint2("#include \"%s\";;",CmdLineBootFiles[cnt]);
-  Fs->task_end_cb=&ExitAiwnios;
-  UserCmdLine;
+     ExePrint2(
+//TRick into thinking it is a valid CMD_LINE
+       "Fs->last_cc->flags|=CCF_CMD_LINE;"
+       "#include \"%s\";;",CmdLineBootFiles[cnt]);
+  Fs->task_end_cb=NULL;
+//
+//  Properly handle __CMD_LINE__
+//
+  Spawn(&UserCmdLine)->task_end_cb=&Exit0;
 }
 if(IsCmdLineMode) {
   fp_getstr2=&_CmdLineGetStr;

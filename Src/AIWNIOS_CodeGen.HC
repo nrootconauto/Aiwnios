@@ -1259,9 +1259,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   //  sure arent getting the address of said location
   //
   if(cc->htc.fun) {
-    LiveVariableAnalysis(cc);
-    GraphColoringDel(GraphColor(cc,TRUE));
-    GraphColoringDel(GraphColor(cc,FALSE));
+    if(GetOption(OPTf_NO_REG_VAR)) {
+      mlst=cc->htc.fun->member_lst_and_root;
+      while(mlst) {
+        mlst->reg=REG_NONE;
+	mlst=mlst->next;
+      }
+    } else {
+      LiveVariableAnalysis(cc);
+      GraphColoringDel(GraphColor(cc,TRUE));
+      GraphColoringDel(GraphColor(cc,FALSE));
+    }
     member_cnt=cc->htc.fun->member_cnt;
     mlst=cc->htc.fun->member_lst_and_root;
     if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT)) {
@@ -1310,13 +1318,14 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
 	  foff_lookup[idx].i32[0]=mlst->offset;
 	  //16 to offset [PC,RBP] pair at base 
 	  #ifdef TARGET_RISCV
-//See Above TARGET_RISCV_NOTE
-	  mlst->offset=-8*FunArgIdx(cc->htc.fun,mlst);
+	  //RISCV now uses a native SysV ABI srot of
+	  goto no_farg;
 	  #else
 	  mlst->offset=-16-8*FunArgIdx(cc->htc.fun,mlst);
 	  #endif
           foff_lookup[idx].i32[1]=mlst->offset;
 	} else {
+	no_farg:
           foff_lookup[idx].i32[0]=mlst->offset;
           //In X86_64 the stack grows down and the RBP is above the stack pointer,
           //SO MOVE THE OFFSETS DOWN TO THE BOTTOM

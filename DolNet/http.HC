@@ -34,6 +34,9 @@ class CConnection {
   I64 is_dead,response_length;
   U8 *session_cookie,*response_text;
   I64 response_code,cache_age;
+//Both are -1 or start
+  I64 want_range_start,want_range_end;
+  I64 accept_range_start,accept_range_end;
   Bool provided_etag_by_server;
   U8 response_mime[STR_LEN];
   U8 boundary[STR_LEN];
@@ -87,8 +90,23 @@ loop:
 }
 CURL *ParseURL(U8 *url,CTask *mem_task) {
   CURL *ret=CAlloc(sizeof(CURL),mem_task);
+  U8 *translated=MAlloc(StrLen(url)+1);
+  U8 buf[3];
   U8 *r,*q,*p,chr;
-  I64 i,l;
+  I64 i,l,i2;
+  for(i2=i=0;url[i];) {
+    if(url[i]=='%') {
+       buf[0](U16)=url[i+1](U16);
+       buf[2]=0;
+       translated[i2++]=Str2I64(buf,16);
+       i+=3;
+    } else {
+      translated[i2++]=url[i++];
+    }
+      
+  }
+  translated[i2++]=0;
+  url=translated;
   if(!(url=StrFind("//",url)))
     goto fail;
   url+=2;
@@ -121,8 +139,10 @@ CURL *ParseURL(U8 *url,CTask *mem_task) {
   } else
     ret->query=StrNew("");
 retn:
+  Free(translated);
   return ret;
 fail:
+  Free(translated);
   Free(ret);
   return NULL;
 }
@@ -238,19 +258,35 @@ U8 *HashFileToETag(U8 *name) {
 
 U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
   CConnection *con=Fs->user_data;
+  I64 w;
   if(!len) return;
-  if(-1==NetWrite(s,data,len)) {
-    LBts(&con->is_dead,0);
-    Exit;
+  while(len>0) {
+    if(NetPollForHangup(1,&s)==0)
+      goto fail;
+    w=NetWrite(s,data,MinI64(len,0x10000));
+    if(w<=0) {
+fail:;
+      LBts(&con->is_dead,0);
+      Exit;
+    }
+    data+=w;
+    len-=w;
+    Yield;
   }
 }
 
 U0 SendRequest(I64 s) {
   U8 *tmp,*tmp2,*cookie;
   U8 *msg="200 OK";
+  I64 st,en;
   CConnection *con=Fs->user_data;
+  if(con->response_code==200) {
+    if(con->want_range_start>=0||con->want_range_end>=0)
+       con->response_code=206;
+    }
   switch(con->response_code) {
       break;case 200: msg="200 OK";
+      break;case 206: msg="206 Partial Content";
       break;case 404: msg="404 Not Found";
       break;case 304: msg="304 Not Modified";
 //If we have a 304(not-modefied)
@@ -260,16 +296,49 @@ U0 SendRequest(I64 s) {
   tmp=MStrPrint(
         "HTTP/1.1 %s\x0d\n"
         "Content-Type: %s\x0d\n"
-        "Content-Length: %d\x0d\n"
         ,msg,con->response_mime,con->response_length
         );
   NetWriteWErr(s,tmp,StrLen(tmp));
   Free(tmp);
+/*  if(con->session_cookie) {
+    tmp=MStrPrint("Set-Cookie: %s\x0d\n",con->session_cookie);
+    NetWriteWErr(s,tmp,StrLen(tmp));
+    Free(tmp);
+  }*/
+  if(con->want_range_start>=0&&con->want_range_end>=0) {
+    st=ClampI64(con->want_range_start,0,con->response_length);
+    en=ClampI64(con->want_range_end,0,con->response_length);
+range:
+    tmp=MStrPrint(
+	"Content-Range: bytes %d-%d/%d\x0d\n",st,en-1,con->response_length);
+    NetWriteWErr(s,tmp,StrLen(tmp));
+    Free(tmp);
+    NetWriteWErr(s,"\x0d\n",2);
+    NetWriteWErr(s,con->response_text+st,en-st);
+    return;
+  } else if(con->want_range_start>=0&&con->want_range_end<0) {
+    st=ClampI64(con->want_range_start,0,con->response_length);
+    en=con->response_length;
+    //Deliver in 256kb chunks
+    if(en-st>0x10000*4)
+       en=0x10000*4+st;
+    goto range;
+  } else if(con->want_range_start<0&&con->want_range_end>=0) {
+    en=con->response_length;
+    st=ClampI64(en-con->want_range_end,0,con->response_length);
+    //Deliver in 256kb chunks
+    if(en-st>0x10000*4)
+       en=0x10000*4+st;
+    goto range;
+  }
   if(con->etag_text&&con->provided_etag_by_server) {
     tmp=MStrPrint("ETag: \"%s\"\x0d\n",con->etag_text);
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
   }
+  tmp=MStrPrint("Content-Length: %d\x0d\n",con->response_length);
+  NetWriteWErr(s,tmp,StrLen(tmp));
+  Free(tmp);
   NetWriteWErr(s,"\x0d\n",2);
   NetWriteWErr(s,con->response_text,con->response_length);
 }
@@ -315,7 +384,7 @@ U0 ParseRequest(CConnection *con) {
     case HTTP_POST:
       if(con->server->post) {
         (*con->server->post)(con->server,stream,url,&req,con->post_data);
-        NetWrite(stream,"\x0d\n",2);
+//        NetWrite(stream,"\x0d\n",2);
       }
       break;
   }
@@ -354,10 +423,12 @@ U0 SReadData(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   con->name=StrNew("",con->hc);
   con->post_data=HashTableNew(0x50,con->hc);
   con->last_ts=tS;
+  con->want_range_start=-1;
+  con->want_range_end=-1;
   ut->con=con;
 found:
   con->last_ts=tS;
-  if(MSize(con->buffer)<=1+(con->buffer_ptr-con->buffer)+len+con->buffer_len) {
+  if(MSize(con->buffer)<=1+(con->buffer_ptr-con->buffer)+len) {
     tmp=MAlloc((con->buffer_ptr-con->buffer)+1+2*MSize(con->buffer)+len,con->hc);
     MemCpy(tmp,con->buffer,MSize(con->buffer));
     Free(con->buffer);
@@ -388,6 +459,7 @@ loop:
   }
 }
 Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
+//PrintI(data,len);
   static I64 spawn_at=0;
   CConnection *first,*con,*con2;
   CHashGeneric *hash;
@@ -415,6 +487,20 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
     data=SkipWhitespace(StrFirstOcc(data,":")+1);
     con->fbuffer=MAlloc(Str2I64(data),con->hc);
     con->content_len=Str2I64(data);
+    if(con->content_len>MAX_UPLOAD) goto malformed;
+  } else if(!StrNICmp(data,"Range",StrLen("Range"))) {
+    if(!StrOcc(data,':')) goto malformed;
+    if(t1=StrIMatch("bytes=",data)) {
+       t1+=StrLen("bytes=");
+       if(Bt(char_bmp_dec_numeric,*t1)) {
+	 con->want_range_start=Str2I64(t1,10,&t1);
+       }
+       if(*t1=='-') {
+	 t1++;
+	 if(Bt(char_bmp_dec_numeric,*t1))
+	   con->want_range_end=Str2I64(t1,10);
+       }
+    }
   }
   if(con->state.u8[0]==CON_S_BLANK_LINE&&len>2&&Bt(&con->state,CONf_URL_ENCODED)) {
     odata=data;
@@ -511,6 +597,7 @@ cloop:;
         hash->user_data2=hash->user_data1+con->field_ptr+1;
         StrCpy(hash->user_data2,con->name);
         MemCpy(hash->user_data1,con->fbuffer,con->field_ptr);
+        hash->user_data1(U8*)[hash->user_data0]=0;
         hash->type=HTT_DICT_WORD;
         HashAdd(hash,con->post_data);
       }
@@ -532,6 +619,7 @@ cloop:;
         hash->user_data2=hash->user_data1+con->field_ptr+1;
         StrCpy(hash->user_data2,con->name);
         MemCpy(hash->user_data1,con->fbuffer,con->field_ptr);
+        hash->user_data1(U8*)[hash->user_data0]=0;
         hash->type=HTT_DICT_WORD;
         HashAdd(hash,con->post_data);
       }
@@ -573,10 +661,13 @@ loop:
     } else if(!Bt(&con->state,CONf_DATA)&&len==2) { //+2 for \x0d\n
       Bts(&con->state,CONf_DATA);
     } else if(Bt(&con->state,CONf_DATA)) {
+      if(len+con->field_ptr>=MAX_UPLOAD)
+	goto malformed;
       if(!con->fbuffer) {
-        con->fbuffer=MAlloc(len+1,con->hc);
+        con->fbuffer=MAlloc(len+10000000/4,con->hc);
       } else if(MSize(con->fbuffer)<=1+len+con->field_ptr) {
         t1=MAlloc(2*con->field_ptr+len+1,con->hc);
+	if(!t1) goto malformed;
         MemCpy(t1,con->fbuffer,con->field_ptr);
         Free(con->fbuffer);
         con->fbuffer=t1;
@@ -659,13 +750,18 @@ kill:
 	    goto nxt;
 	  }
         }
+again:;
         if(fds[idx]!=-1&&-1!=NetPollForHangup(1,&fds[idx])) {
 	    CloseCallback(fds[idx],&unique_tokens[idx]);
 	    fds[idx]=-1;
 	  } else if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
 	    len=NetRead(fds[idx],buf,0x10000);
-	    buf[len]=0;
-	    SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+	    if(len>0) {
+	      buf[len]=0;
+	      SReadData(fds[idx],buf,len,&unique_tokens[idx]);
+	      Yield;
+	      goto again;
+	    }
         }
 nxt:;
       }
@@ -687,22 +783,14 @@ nxt:;
 }
 U0 Serve(CServer *srv) {
   CTask *srv_task;
-  I64 core;
-  if (mp_cnt==1) core=-1;
-  else core=RandU16%(mp_cnt-1)+1;
+  I64 core=0;
   srv_task=Spawn(&ServeTask,srv,"Server",core,Fs);
   if (!IsCmdLineMode) {
     "Press a key to stop serving\n";
     PressAKey;
   } else {
-    if (core==-1) {
-      "Ctrl+C to quit serving\n"; /*I know this is stupid but
-       if there's only one there's no other way because
-       CmdLineGetStr() doesn't yield (of course not) and
-       Im not going to go through the effort of modifying linenoise to yield
-       force setting mp_cnt to 2 mininum didnt seem to work*/
-      while (TRUE) Sleep(10);
-    } else Free(CmdLineGetStr("Press enter to stop serving"));
+    "Ctrl+C to quit serving\n";
+    while (TRUE) Sleep(10);
   }
   Kill(srv_task);
 }
