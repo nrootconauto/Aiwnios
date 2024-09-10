@@ -622,7 +622,7 @@ I64 SMBitMap(I64 eletype,CDoc *doc,CDocEntry *doc_ce,CSprite *head,
   tmpg=CAlloc(SpriteElemQuedBaseSize(SPT_BITMAP)+
 	((xx2-xx1+7)&~7)*(yy2-yy1));
   tmpg->type=SPT_BITMAP;
-  tmpg->pwhu.width=xx2-xx1;
+  tmpg->pwhu.width=xx2-xx1;
   tmpg->pwhu.height=yy2-yy1;
   tmpg->pwhu.x1=xx1-x;
   tmpg->pwhu.y1=yy1-y;

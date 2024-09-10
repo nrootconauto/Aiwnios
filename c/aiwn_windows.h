@@ -10,3 +10,4 @@ void LaunchSDL(void (*boot_ptr)(void *data), void *data);
 void WaitForSDLQuit();
 void SetKBCallback(void *fptr);
 void SetMSCallback(void *fptr);
+void DeinitVideo();

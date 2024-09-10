@@ -31,10 +31,8 @@ void SndFreq(int64_t f) {
 }
 void InitSound() {
   SDL_AudioSpec want;
-  if (SDL_Init(SDL_INIT_AUDIO)) {
-    // Audio failed to initailize
-    return;
-  }
+  if(!SDL_Init(SDL_INIT_AUDIO))
+	return;
   memset(&want, 0, sizeof(SDL_AudioSpec));
   want.freq = 24000;
   want.format = AUDIO_S8;
@@ -45,4 +43,9 @@ void InitSound() {
                                SDL_AUDIO_ALLOW_FREQUENCY_CHANGE |
                                    SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
   SDL_PauseAudioDevice(output, 0);
+}
+
+void DeinitSound() {
+	SDL_PauseAudioDevice(output,1);
+	SDL_CloseAudioDevice(output);
 }

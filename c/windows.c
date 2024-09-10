@@ -20,10 +20,15 @@ static SDL_mutex *screen_mutex, *screen_mutex2;
 static int64_t screen_ready = 0, screen_update_in_progress = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
-
+void DeinitVideo() {
+	if(screen_mutex)
+		SDL_LockMutex(screen_mutex);
+	if(renderer)
+		SDL_DestroyRenderer(renderer);
+	if(window)
+		SDL_DestroyWindow(window);
+}
 static void _DrawWindowNew() {
-  if (SDL_Init(SDL_INIT_VIDEO))
-    return;
   int64_t row;
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
@@ -595,15 +600,6 @@ void InputLoop(void *ul) {
     }
   }
 }
-
-void LaunchSDL(void (*boot_ptr)(void *data), void *data) {
-  InitSound();
-  int64_t quit = 0;
-  user_ev_num = SDL_RegisterEvents(1);
-  SDL_CreateThread((void *)boot_ptr, "Boot thread", data);
-  InputLoop(&quit);
-}
-
 void WaitForSDLQuit() {
   SDL_WaitThread(sdl_main_thread, NULL);
 }

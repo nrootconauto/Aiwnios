@@ -172,7 +172,7 @@ public Bool DocTreeAppend(CDoc *doc,U8 *path,Bool write=TRUE,U8 *fmt,...)
   return DocTreeAppendJoin(doc,path,write,fmt,argc,argv);
 }
 
-public Bool DocTreeFWrite(U8 *name,U8 *path,U8 *fmt,...)
+public Bool DocTreeFWrite(U8 *name,U8 *path,U8 *fmt,...)
 {//Rewrite doc tree branch in file.
   CDoc *doc=DocRead(name);
   Bool res=DocTreeWriteJoin(doc,path,TRUE,fmt,argc,argv);

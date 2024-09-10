@@ -657,6 +657,7 @@ I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off,CMemberL
   MemberAdd(cc,new,cc->htc.fun,PRS1B_LOCAL_VAR);
   if(who) *who=new;
   new=cc->htc.fun->member_lst_and_root;
+  cc->htc.fun->member_cnt++;
   mc=0;
   while(new) {
    mc++;
@@ -1204,7 +1205,7 @@ next_ic:
 U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
-  CMemberLst *mlst;
+  CMemberLst *mlst,*mlst2;
   COptMemberVar *mv=NULL;
   CHashImport *h;
   CAOTImportExport *tmpaie;
@@ -1212,13 +1213,15 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   CAOTHeapGlbl *tmpgh,*glbl_gh;
   CAOTHeapGlblRef *tmpghr;
   CAddShortRelocData fill_user_data;
-  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL,align;
+  I64 idx,argc,member_cnt=0,ir=AIWNIOS_IREG_START,fr=AIWNIOS_FREG_START,foff,*foff_lookup=NULL,align,idx2;
   I64 reported_min_ln=I16_MAX,reported_max_ln=I16_MIN;
   U8 **aiwnios_dbg_info=NULL;
   U8 *acc=__HC_CmpCtrlNew(),*machine_code,*stat_nam,*dumb_crap_apple;
   I64 *table_ptr;
   U8 *cc2=__HC_CodeCtrlPush(acc);
   U8 *dumb_static;
+  U8 name[STR_LEN],name2[STR_LEN];
+  U8 *name_ptr=name,*name2_ptr=name2;
   I64 statics_sz=0;
   static I64 static_cnt=0;
   stat_nam=MStrPrint(".STATIC_%d",static_cnt++);
@@ -1302,6 +1305,17 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
     //Assign offsets
     for(idx=0;idx!=member_cnt;idx++) {
       mlst=mv[idx].m;
+//If spilled(to stack REG_NONE) reuse location  for same vairable
+      if(mlst->reg==REG_NONE&&StrOcc(mlst->str,'.')) {
+	StrScan(mlst->str,"%s.",&name_ptr);
+	  mlst2=MemberFind(name,cc->htc.fun);
+	  if(mlst2) {
+              foff_lookup[idx].i32[1]=mlst2->offset;
+              foff_lookup[idx].i32[0]=mlst->offset;              
+	      mlst->offset=mlst2->offset;
+	      goto found_offset;
+	  }
+      }
 //idx here is the alignment
       align=8;
       if(mlst->reg==REG_NONE) {
@@ -1347,6 +1361,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
         if(foff&7)
           foff+=8-(foff&7); //Align to 8
 	mlst->offset=foff;
+found_offset:;;
       }
     }
     if(foff&7)

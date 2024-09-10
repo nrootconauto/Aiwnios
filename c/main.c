@@ -1664,24 +1664,27 @@ static void Boot() {
 }
 static int64_t quit = 0,quit_code=0;
 static void  AiwniosBye() {
- SDL_Quit();
+	static int64_t done=0;
+	if(!done) {
+		done=1;
+		DeinitSound();
+		DeinitVideo();
+		SDL_Quit();
+	}
 }
 static void ExitAiwnios(int64_t *stk) {
   quit=1,quit_code=stk[0];
-  if(arg_cmd_line->count||arg_bootstrap_bin->count)
+  if(arg_cmd_line->count||arg_bootstrap_bin->count) {
+	  AiwniosBye();
     exit(stk[0]);
-  else {
+  } else {
 	  SDL_QuitEvent qev;
 	  qev.type=SDL_QUIT;
 	  qev.timestamp=SDL_GetTicks();
 	  SDL_PushEvent(&qev);
   }
 }
-#ifdef main
-#  undef main
-#endif
 int main(int argc, char **argv) {
-  atexit(&AiwniosBye);
   void *argtable[] = {
     arg_help = arg_lit0("h", "help", "Show the help message"),
     arg_overwrite =
@@ -1827,10 +1830,9 @@ int main(int argc, char **argv) {
 #endif
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
+  SDL_Init(SDL_INIT_EVERYTHING);
   InitSound();
-  if (!arg_cmd_line->count) {
-    SDL_Init(SDL_INIT_TIMER);
-    SDL_Init(SDL_INIT_EVENTS);
+  if (!(arg_cmd_line->count||arg_bootstrap_bin->count)) {
     user_ev_num = SDL_RegisterEvents(1);
     SpawnCore(&Boot, NULL, 0);
     InputLoop(&quit);
@@ -1838,5 +1840,6 @@ int main(int argc, char **argv) {
     Boot();
   }
   arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
+  AiwniosBye(); //My RISCV(and presumably others) dont like atexit with SDL_QUIT 
   return quit_code	;
 }
