@@ -501,6 +501,10 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
 	   con->want_range_end=Str2I64(t1,10);
        }
     }
+  } else if(!StrNICmp(data,"Host",StrLen("Host"))) {
+    if(!(t1=StrFirstOcc(data,":"))) goto malformed;
+    t1++;
+    con->url->hostname=StrNew(Trim(SkipWhitespace(t1)),con->hc);
   }
   if(con->state.u8[0]==CON_S_BLANK_LINE&&len>2&&Bt(&con->state,CONf_URL_ENCODED)) {
     odata=data;
