@@ -3,7 +3,7 @@ class CUniqueToken {
   CServer *srv;
   CConnection *con;
 };
-#define CON_TIMEOUT 2.
+#define CON_TIMEOUT 600.
 class CConnection {
   U8 *buffer;
   U8 *buffer_ptr;
