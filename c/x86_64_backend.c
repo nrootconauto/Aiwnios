@@ -3230,7 +3230,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       PushSpilledTmp(cctrl, r);
     for (a = 0; a != r->length; a++) {
       PushTmpDepthFirst(cctrl, ICArgN(r, a),
-                        1); // TODO check if next vargs spill
+                        0);
     }
     while (a--)
       PopTmp(cctrl, ICArgN(r, a));
