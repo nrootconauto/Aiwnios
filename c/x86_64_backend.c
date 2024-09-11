@@ -3231,9 +3231,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     for (a = 0; a != r->length; a++) {
       PushTmpDepthFirst(cctrl, ICArgN(r, a),
                         0);
-    }
-    while (a--)
       PopTmp(cctrl, ICArgN(r, a));
+    }
     break;
   case IC_RELOC:
     goto fin;
