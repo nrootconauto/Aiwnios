@@ -8045,18 +8045,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     //   \  <>  | <==| Will unwind for you| //TODO validate for X86_64
     //    \    /      \__________________/
     //      \_/
-    AIWNIOS_ADD_CODE(X86SubImm32, X86_64_STACK_REG, 8 * rpn->length)
-    for (i = 0; i != rpn->length; i++) {
+    for (i = rpn->length-1; i>=0; i--) {
       next = ICArgN(rpn, rpn->length - i - 1);
       next->res.keep_in_tmp = 1;
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
-      tmp.reg = X86_64_STACK_REG;
-      tmp.off = 8 * i;
-      tmp.mode = MD_INDIR_REG;
-      tmp.raw_type = next->raw_type;
-      if (tmp.raw_type < RT_I64i)
-        tmp.raw_type = RT_I64i;
-      code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);
+      tmp=next->res;
+      code_off=PushToStack(cctrl,&tmp,bin,code_off);
     }
     break;
   ic_add_eq:
