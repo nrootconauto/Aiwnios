@@ -21,12 +21,16 @@ U8 *action="/VideoUpload.HC";
 U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   I64 len;
   U32 n;
-  U8 *as_txt;
+  U8 *as_txt,*s;
   CDoc *tmp=DocNew,*html;
   CConnection *con=Fs->user_data;
-  if(StrMatch(".i2p",url->hostname)) {
-    WriteNBytes(stream,0,"\n",1);
-    goto w;
+  if(StrMatch(".i2p",url->hostname)||StrMatch(".onion",url->hostname)) {
+    s="451: Video uploads not allowed from I2P/Tor.\n";
+    WriteNBytes(stream,0,s,StrLen(s));
+    DocDel(tmp);
+    StrCpy(con->response_mime,"text/html");
+    con->response_code=451;
+    return;
   }
   DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"AiwniosTube Video Upload:\"$$$$FD$$\n");
   DocPrint(tmp,"\n  Upload a video to AiwniosTube. No illegal content.\n");
@@ -36,7 +40,6 @@ U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   WriteNBytes(stream,NULL,as_txt,len);
   Free(as_txt);
   DocDel(html);
-w:
   DocDel(tmp);
   StrCpy(con->response_mime,"text/html");
   con->response_code=200;

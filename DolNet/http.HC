@@ -288,6 +288,7 @@ U0 SendRequest(I64 s) {
       break;case 200: msg="200 OK";
       break;case 206: msg="206 Partial Content";
       break;case 404: msg="404 Not Found";
+      break;case 451: msg="451 Unavailable For Legal Reasons";
       break;case 304: msg="304 Not Modified";
 //If we have a 304(not-modefied)
       //We will ommit the body
