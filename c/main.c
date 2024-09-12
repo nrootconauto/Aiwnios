@@ -671,7 +671,7 @@ static int64_t STK_StrCmp(int64_t *stk) {
 }
 
 static int64_t STK_StrCpy(int64_t *stk) {
-  return (int64_t)strcpy((void *)stk[0], (void *)stk[1]);
+  return (int64_t)memmove((void *)stk[0], (void *)stk[1],1+strlen((void*)stk[1]));
 }
 
 static int64_t STK_StrNCmp(int64_t *stk) {
