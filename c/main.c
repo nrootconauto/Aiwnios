@@ -674,14 +674,6 @@ static int64_t STK_StrCpy(int64_t *stk) {
   return (int64_t)strcpy((void *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_StrICmp(int64_t *stk) {
-  return __builtin_strcasecmp((void *)stk[0], (void *)stk[1]);
-}
-
-static int64_t STK_StrNICmp(int64_t *stk) {
-  return __builtin_strncasecmp((void *)stk[0], (void *)stk[1], stk[2]);
-}
-
 static int64_t STK_StrNCmp(int64_t *stk) {
   return __builtin_strncmp((void *)stk[0], (void *)stk[1], stk[2]);
 }
@@ -693,17 +685,6 @@ static int64_t STK_StrMatch(int64_t *stk) {
     return 0;
   for (i = 0; i <= len2 - len; i++)
     if (!__builtin_strncmp(needle, heystack + i, len))
-      return (int64_t)heystack + i;
-  return 0;
-}
-
-static int64_t STK_StrIMatch(int64_t *stk) {
-  char *needle = (char *)stk[0], *heystack = (char *)stk[1];
-  int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
-  if (len > len2)
-    return 0;
-  for (i = 0; i <= len2 - len; i++)
-    if (!__builtin_strncasecmp(needle, heystack + i, len))
       return (int64_t)heystack + i;
   return 0;
 }
@@ -1419,10 +1400,7 @@ static void BootAiwnios(char *bootstrap_text) {
     X(MemSetI64, 3);
     X(StrLen, 1);
     X(StrMatch, 2);
-    X(StrIMatch, 2);
     X(StrCmp, 2);
-    X(StrICmp, 2);
-    X(StrNICmp, 3);
     X(StrNCmp, 3);
     X(StrCpy, 2);
 #if defined(__x86_64__)

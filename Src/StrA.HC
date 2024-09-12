@@ -108,6 +108,32 @@ U8 ToUpper(U8 ch) {
   return ch;
 }
 
+I64 StrICmp(U8 *a,U8 *b) {
+  I64 A,B;
+  while(*a)
+    if((A=ToUpper(*a++))!=(B=ToUpper(*b++)))
+      return A-B;
+  return ToUpper(*a)-ToUpper(*b);
+}
+
+I64 StrNICmp(U8 *a,U8 *b,I64 cnt) {
+  I64 i,A,B;
+  for(i=0;i!=cnt;i++) {
+    if((A=ToUpper(a[i]))!=(B=ToUpper(b[i])))
+      return A-B; 
+  }
+  return 0;
+}
+
+U8 *StrIMatch(U8 *needle,U8 *heystack) {
+  I64 i=0,len=StrLen(needle),len2=StrLen(heystack);
+  if(len>len2) return NULL;
+  for(i=0;i<=len2-len;i++)
+    if(!StrNICmp(needle,heystack+i,len))
+      return heystack+i;
+  return NULL;
+}
+
 U8 *LstSub(I64 sub, U8 *lst)
 {//Point to lst entry.
 //Not efficient.  Use an array of U8 ptrs for efficiency.
