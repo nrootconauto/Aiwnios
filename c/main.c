@@ -1,16 +1,16 @@
 #define AIWN_BOOTSTRAP
 #define AIWNIOS_TESTS
-#include "aiwn_asm.h"
-#include "aiwn_except.h"
-#include "aiwn_fs.h"
-#include "aiwn_lexparser.h"
-#include "aiwn_mem.h"
-#include "aiwn_multic.h"
-#include "aiwn_que.h"
-#include "aiwn_snd.h"
-#include "aiwn_sock.h"
-#include "aiwn_windows.h"
 #include "argtable3.h"
+#include "c/aiwn_asm.h"
+#include "c/aiwn_except.h"
+#include "c/aiwn_fs.h"
+#include "c/aiwn_lexparser.h"
+#include "c/aiwn_mem.h"
+#include "c/aiwn_multic.h"
+#include "c/aiwn_que.h"
+#include "c/aiwn_snd.h"
+#include "c/aiwn_sock.h"
+#include "c/aiwn_windows.h"
 #include "isocline.h"
 #include <SDL.h>
 #include <assert.h>
@@ -45,8 +45,8 @@ extern int64_t user_ev_num;
 #endif
 // clang-format on
 #ifdef _WIN64
-#include <windows.h>
-#include <processthreadsapi.h>
+#  include <windows.h>
+#  include <processthreadsapi.h>
 #endif
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
@@ -469,14 +469,14 @@ static uint64_t STK_InU32(uint64_t *stk) {
         uint64_t port = stk[2], cnt = stk[1];                                  \
         uint##n##_t *buf = stk[0];                                             \
         for (uint64_t i = 0; i < cnt; i++)                                     \
-          buf[i] = __aiwn_in(port, n / 8) & ((1ull << n) - 1);                      \
+          buf[i] = __aiwn_in(port, n / 8) & ((1ull << n) - 1);                 \
       }
 #    define RepOut(n)                                                          \
       static void STK_RepOutU##n(uint64_t *stk) {                              \
         uint64_t port = stk[2], cnt = stk[1];                                  \
         uint##n##_t *buf = stk[0];                                             \
         for (uint64_t i = 0; i < cnt; i++)                                     \
-          __aiwn_out(buf[i] & ((1ull << n) - 1), port, n / 8);                      \
+          __aiwn_out(buf[i] & ((1ull << n) - 1), port, n / 8);                 \
       }
 #  endif
 RepIn(8);
@@ -520,11 +520,6 @@ static void TaskContextSetRIP(int64_t *ctx, void *p) {
 
 static STK_TaskContextSetRIP(int64_t *stk) {
   TaskContextSetRIP((int64_t *)(stk[0]), (void *)stk[1]);
-}
-
-// strcmp returns int(32 bit on some platforms)
-static int64_t StrCmp(char *a, char *b) {
-  return strcmp(a, b);
 }
 
 static int64_t STK_GenerateFFIForFun(void **stk) {
@@ -671,7 +666,46 @@ static int64_t STK_StrLen(int64_t *stk) {
 }
 
 static int64_t STK_StrCmp(int64_t *stk) {
-  return (int64_t)strcmp((void *)stk[0], (void *)stk[1]);
+  // dont cast, sign extend
+  return strcmp((void *)stk[0], (void *)stk[1]);
+}
+
+static int64_t STK_StrCpy(int64_t *stk) {
+  return (int64_t)strcpy((void *)stk[0], (void *)stk[1]);
+}
+
+static int64_t STK_StrICmp(int64_t *stk) {
+  return __builtin_strcasecmp((void *)stk[0], (void *)stk[1]);
+}
+
+static int64_t STK_StrNICmp(int64_t *stk) {
+  return __builtin_strncasecmp((void *)stk[0], (void *)stk[1], stk[2]);
+}
+
+static int64_t STK_StrNCmp(int64_t *stk) {
+  return __builtin_strncmp((void *)stk[0], (void *)stk[1], stk[2]);
+}
+
+static int64_t STK_StrMatch(int64_t *stk) {
+  char *needle = (char *)stk[0], *heystack = (char *)stk[1];
+  int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
+  if (len > len2)
+    return 0;
+  for (i = 0; i <= len2 - len; i++)
+    if (!__builtin_strncmp(needle, heystack + i, len))
+      return (int64_t)heystack + i;
+  return 0;
+}
+
+static int64_t STK_StrIMatch(int64_t *stk) {
+  char *needle = (char *)stk[0], *heystack = (char *)stk[1];
+  int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
+  if (len > len2)
+    return 0;
+  for (i = 0; i <= len2 - len; i++)
+    if (!__builtin_strncasecmp(needle, heystack + i, len))
+      return (int64_t)heystack + i;
+  return 0;
 }
 
 MATHFUNDEF(log10);
@@ -1254,11 +1288,11 @@ static int64_t STK_NetUDPSocketNew(int64_t *stk) {
 }
 
 static int64_t STK_NetAddrNew(int64_t *stk) {
-  return NetAddrNew(stk[0], stk[1],stk[2]);
+  return NetAddrNew(stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_NetUDPAddrNew(int64_t *stk) {
-  return NetUDPAddrNew(stk[0], stk[1],stk[2]);
+  return NetUDPAddrNew(stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_NetAddrDel(int64_t *stk) {
@@ -1384,7 +1418,13 @@ static void BootAiwnios(char *bootstrap_text) {
     X(MemSetU64, 3);
     X(MemSetI64, 3);
     X(StrLen, 1);
+    X(StrMatch, 2);
+    X(StrIMatch, 2);
     X(StrCmp, 2);
+    X(StrICmp, 2);
+    X(StrNICmp, 3);
+    X(StrNCmp, 3);
+    X(StrCpy, 2);
 #if defined(__x86_64__)
     X(OutU8, 2);
     X(OutU16, 2);
@@ -1662,61 +1702,62 @@ static void Boot() {
   if (bin)
     Load(bin);
 }
-static int64_t quit = 0,quit_code=0;
-static void  AiwniosBye() {
-	static int64_t done=0;
-	if(!done) {
-		done=1;
-		DeinitSound();
-		DeinitVideo();
-		SDL_Quit();
-	}
+static int64_t quit = 0, quit_code = 0;
+static void AiwniosBye() {
+  static int64_t done = 0;
+  if (!done) {
+    done = 1;
+    DeinitSound();
+    DeinitVideo();
+    SDL_Quit();
+  }
 }
 static void ExitAiwnios(int64_t *stk) {
-  quit=1,quit_code=stk[0];
-  if(arg_cmd_line->count||arg_bootstrap_bin->count) {
-	  AiwniosBye();
+  quit = 1, quit_code = stk[0];
+  if (arg_cmd_line->count || arg_bootstrap_bin->count) {
+    AiwniosBye();
     exit(stk[0]);
   } else {
-	  SDL_QuitEvent qev;
-	  qev.type=SDL_QUIT;
-	  qev.timestamp=SDL_GetTicks();
-	  SDL_PushEvent(&qev);
+    SDL_QuitEvent qev;
+    qev.type = SDL_QUIT;
+    qev.timestamp = SDL_GetTicks();
+    SDL_PushEvent(&qev);
   }
 }
 int main(int argc, char **argv) {
   void *argtable[] = {
-    arg_help = arg_lit0("h", "help", "Show the help message"),
-    arg_overwrite =
-        arg_lit0("o", "overwrite",
-                 "Overwrite the T directory with the installed T template."),
-    arg_t_dir = arg_file0("t", NULL, "Directory",
-                          "Specify the boot drive(dft is current dir)."),
-    arg_bootstrap_bin =
-        arg_lit0("b", "bootstrap",
-                 "Build a new binary with the \"slim\" compiler of aiwnios."),
-    arg_asan_enable =
-        arg_lit0("a", "address-sanitize", "Enable bounds checking."),
-    arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
-                                "Create a new boot directory(backs up old "
-                                "boot directory if present)."),
+      arg_help = arg_lit0("h", "help", "Show the help message"),
+      arg_overwrite =
+          arg_lit0("o", "overwrite",
+                   "Overwrite the T directory with the installed T template."),
+      arg_t_dir = arg_file0("t", NULL, "Directory",
+                            "Specify the boot drive(dft is current dir)."),
+      arg_bootstrap_bin =
+          arg_lit0("b", "bootstrap",
+                   "Build a new binary with the \"slim\" compiler of aiwnios."),
+      arg_asan_enable =
+          arg_lit0("a", "address-sanitize", "Enable bounds checking."),
+      arg_new_boot_dir = arg_lit0("n", "new-boot-dir",
+                                  "Create a new boot directory(backs up old "
+                                  "boot directory if present)."),
 #if !defined(WIN32) && !defined(_WIN32)
-    arg_fork =
-        arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
-    arg_pidfile =
-        arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
+      arg_fork =
+          arg_lit0("f", "fork", "Fork to background (for FreeBSD daemons)"),
+      arg_pidfile =
+          arg_file0("p", "pidfile", "<path>", "PID file (for services)"),
 #endif
-    arg_grab = arg_lit0(
-        "g", "grab-focus",
-        "Grab the keyboard(Windows/Logo key will be handled by aiwnios)"),
-    arg_no_debug = arg_lit0(
-        "d", "user-debugger",
-        "Faults will be handled by an external debugger(such as gdb)."),
-    sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
-    arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode."),
-    arg_boot_files = arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
-                               "Files to run on  boot in command line mode."),
-    _arg_end = arg_end(20),
+      arg_grab = arg_lit0(
+          "g", "grab-focus",
+          "Grab the keyboard(Windows/Logo key will be handled by aiwnios)"),
+      arg_no_debug = arg_lit0(
+          "d", "user-debugger",
+          "Faults will be handled by an external debugger(such as gdb)."),
+      sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
+      arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode."),
+      arg_boot_files =
+          arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
+                    "Files to run on  boot in command line mode."),
+      _arg_end = arg_end(20),
   };
   int64_t errors, idx;
   errors = arg_parse(argc, argv, argtable);
@@ -1832,7 +1873,7 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   SDL_Init(SDL_INIT_EVERYTHING);
   InitSound();
-  if (!(arg_cmd_line->count||arg_bootstrap_bin->count)) {
+  if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
     user_ev_num = SDL_RegisterEvents(1);
     SpawnCore(&Boot, NULL, 0);
     InputLoop(&quit);
@@ -1840,6 +1881,7 @@ int main(int argc, char **argv) {
     Boot();
   }
   arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
-  AiwniosBye(); //My RISCV(and presumably others) dont like atexit with SDL_QUIT 
-  return quit_code	;
+  AiwniosBye(); // My RISCV(and presumably others) dont like atexit with
+                // SDL_QUIT
+  return quit_code;
 }

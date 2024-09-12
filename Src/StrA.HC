@@ -108,57 +108,6 @@ U8 ToUpper(U8 ch) {
   return ch;
 }
 
-U0 StrCpy(U8 *a,U8 *b) {
-  while(*b) {
-    *a++=*b++;
-  }
-  *a=0; 
-}
-I64 StrICmp(U8 *a,U8 *b) {
-  I64 A,B;
-  while(*a) {
-    if((A=ToUpper(*a++))!=(B=ToUpper(*b++)))
-      return A-B;
-  }
-  return ToUpper(*a)-ToUpper(*b);
-}
-
-I64 StrNCmp(U8 *a,U8 *b,I64 cnt) {
-  I64 i;
-  for(i=0;i!=cnt;i++) {
-    if(a[i]!=b[i])
-      return a[i]-b[i]; 
-  }
-  return 0;
-}
-
-I64 StrNICmp(U8 *a,U8 *b,I64 cnt) {
-  I64 i,A,B;
-  for(i=0;i!=cnt;i++) {
-    if((A=ToUpper(a[i]))!=(B=ToUpper(b[i])))
-      return A-B; 
-  }
-  return 0;
-}
-
-U8 *StrMatch(U8 *needle,U8 *heystack) {
-  I64 i=0,len=StrLen(needle),len2=StrLen(heystack);
-  if(len>len2) return NULL;
-  for(i=0;i<=len2-len;i++)
-    if(!StrNCmp(needle,heystack+i,len))
-      return heystack+i;
-  return NULL;
-}
-
-U8 *StrIMatch(U8 *needle,U8 *heystack) {
-  I64 i=0,len=StrLen(needle),len2=StrLen(heystack);
-  if(len>len2) return NULL;
-  for(i=0;i<=len2-len;i++)
-    if(!StrNICmp(needle,heystack+i,len))
-      return heystack+i;
-  return NULL;
-}
-
 U8 *LstSub(I64 sub, U8 *lst)
 {//Point to lst entry.
 //Not efficient.  Use an array of U8 ptrs for efficiency.

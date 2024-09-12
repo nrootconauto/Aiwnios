@@ -1,8 +1,8 @@
-#include "aiwn_asm.h"
-#include "aiwn_mem.h"
-#include "aiwn_snd.h"
-#include "aiwn_windows.h"
-#include "logo.c"
+#include "c/aiwn_asm.h"
+#include "c/aiwn_mem.h"
+#include "c/aiwn_snd.h"
+#include "c/aiwn_windows.h"
+#include "c/aiwn_logo.h"
 #include <SDL.h>
 #include <SDL_pixels.h>
 #include <SDL_render.h>
@@ -21,12 +21,12 @@ static int64_t screen_ready = 0, screen_update_in_progress = 0;
 #define USER_CODE_DRAW_WIN_NEW 1
 #define USER_CODE_UPDATE       2
 void DeinitVideo() {
-	if(screen_mutex)
-		SDL_LockMutex(screen_mutex);
-	if(renderer)
-		SDL_DestroyRenderer(renderer);
-	if(window)
-		SDL_DestroyWindow(window);
+  if (screen_mutex)
+    SDL_LockMutex(screen_mutex);
+  if (renderer)
+    SDL_DestroyRenderer(renderer);
+  if (window)
+    SDL_DestroyWindow(window);
 }
 static void _DrawWindowNew() {
   int64_t row;
@@ -34,9 +34,10 @@ static void _DrawWindowNew() {
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
   SDL_LockSurface(window_icon_proto);
-  for(row=0;row!=window_icon_proto->h;row++) {
-    memcpy((char*)window_icon_proto->pixels+row*window_icon_proto->pitch, aiwnios_logo.pixel_data+4*aiwnios_logo.width*row,
-         aiwnios_logo.width*4);
+  for (row = 0; row != window_icon_proto->h; row++) {
+    memcpy((char *)window_icon_proto->pixels + row * window_icon_proto->pitch,
+           aiwnios_logo.pixel_data + 4 * aiwnios_logo.width * row,
+           aiwnios_logo.width * 4);
   }
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
