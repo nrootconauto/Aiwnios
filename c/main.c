@@ -700,7 +700,7 @@ static char *STK_StrIMatch(char **stk) {
 #else
   // SDL forces UTF8,so roll our own
   char *heystack = stk[1], *needle = stk[0];
-  int64_t i = 0, len = StrLen(needle), len2 = StrLen(heystack);
+  int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
   if (len > len2)
     return 0;
   for (i = 0; i <= len2 - len; i++)
