@@ -1,4 +1,4 @@
-extern class CI64Set;
+extern class CBitSet;
 class CRPN:CQue {
   I64 type,ic_line,ic_flags;
   CHashClass *ic_class;
@@ -18,10 +18,10 @@ class CRPN:CQue {
     CCodeMisc *misc;
   };
 //For register allocater
-  CI64Set *live_out;
-  CI64Set *live_in;
-  CI64Set *use_regs;
-  CI64Set *kill_regs;
+  CBitSet *live_out;
+  CBitSet *live_in;
+  CBitSet *use_regs;
+  CBitSet *kill_regs;
   U8 *user_data;
   U8 *user_data2;
   union {

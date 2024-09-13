@@ -367,7 +367,82 @@ I64 FRegIsAvail(CHashFun *fun,I64 r) {
   }
   return TRUE;
 }
+class CBitSet {
+  union {
+    U8 *body;
+    U64 *body_u64;
+  }
+  I64 cnt,body_sz;
+};
 
+CBitSet BitSetNew() {
+  CBitSet *bs=CAlloc(sizeof CBitSet);
+  bs->body=CAlloc(8);
+  bs->body_sz=8;
+  return bs;
+}
+U0 BitSetDel(CBitSet *bs) {
+  Free(bs->body);
+  Free(bs);
+} 
+U0 BitSetAdd(CBitSet *bs,I64 b) {
+  I64 *new;
+  if(0x10000<b) throw('Compiler');
+  if(bs->body_sz<=b>>3) {
+    new=CAlloc(8+b>>3);
+    MemCpy(new,bs->body,bs->body_sz);
+    Free(bs->body);
+    bs->body=new;
+    bs->body_sz=8+b>>3;
+  }
+  Bts(bs->body,b);
+}
+U0 BitSetRem(CBitSet *bs,I64 b) {
+  I64 *new;
+  if(0x10000<b) throw('Compiler');
+  if(bs->body_sz<=b>>3)
+    return;
+  Btr(bs->body,b);
+}
+I64 BitSetCnt(CBitSet *bs) {
+  I64 c=0,i=bs->body_sz;
+  while(--i>=0)
+    c+=set_bits_table[bs->body[i]];
+  return c;
+}
+U0 BitSetRemAll(CBitSet *bs,CBitSet *bs2) {
+//Sizes are always aligned to 8
+  I64 min=MinI64(bs->body_sz,bs2->body_sz)>>3;
+  while(--min>=0) {
+    bs->body_u64[min]&=~bs2->body_u64[min];
+  }
+}
+U0 BitSetAddAll(CBitSet *bs,CBitSet *bs2) {
+  I64 *new,idx;
+  if(bs->body_sz<bs2->body_sz) {
+    new=CAlloc(bs2->body_sz);
+    MemCpy(new,bs->body,bs->body_sz);
+    Free(bs->body);
+    bs->body=new;
+    bs->body_sz=bs2->body_sz;
+  }
+//Sizes are always aligned to 8
+  idx=bs2->body_sz>>3;
+  while(--idx>=0) {
+   bs->body_u64[idx]|=bs2->body_u64[idx];
+  }
+}
+I64 BitSetWidth(CBitSet *bs) {
+  return bs->body_sz*8;
+}
+Bool BitSetHas(CBitSet *bs,I64 b) {
+  if(bs->body_sz<=b>>3)
+    return FALSE;
+  if(bs->body[b>>3]&(1<<(b&7))) {
+    return TRUE;
+  }
+  return FALSE;
+}
 class CI64Set {
   I64 cnt,cap;
   I64 *body;
@@ -424,7 +499,6 @@ U0 I64SetRemAll(CI64Set *s,CI64Set *from) {
   while(--idx>=0)
    I64SetRem(s,from->body[idx]);
 }
-
 #ifdef TARGET_X86
 I64 VarIRegToReg(I64 r)  {
   switch(r) {
@@ -626,7 +700,7 @@ Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx) {
   CI64Set *set;
   I64 cnt;
   CRPN *tmp;
-  if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx))
+  if(!BitSetHas(a->live_in,midx)&&!BitSetHas(a->kill_regs,midx))
     return FALSE;
   if(a->visited) return FALSE;
   stack=I64SetNew;
@@ -634,7 +708,7 @@ Bool InfectAdjacent(CI64Set *add_to,CRPN *a,I64 midx) {
   while(stack->cnt) {
     a=stack->body[--stack->cnt];
     a->visited=TRUE;
-    if(!I64SetHas(a->live_in,midx)&&!I64SetHas(a->kill_regs,midx)) goto skip;
+    if(!BitSetHas(a->live_in,midx)&&!BitSetHas(a->kill_regs,midx)) goto skip;
     I64SetAdd(add_to,a,TRUE);  
     set=a->user_data;
     for(cnt=0;cnt!=set->cnt;cnt++) {
@@ -673,21 +747,6 @@ I64 MakeNumberedMember(CCmpCtrl *cc,I64 from_member,I64 num,I64 tmp_off,CMemberL
   }
   return mc-1;
 }
-U0 DumpLive(CCmpCtrl *cc) {
-  CRPN *cur,*head=&cc->coc.coc_head;
-  CI64Set *set;
-  DbgPrint("Ent:%s\n",cc->htc.fun->str);
-  for(cur=head->next;cur!=head;cur=ICNext(cur)) {
-    DumpRPN(cur);
-    DbgPrint("%s(IN:",intermediate_code_table[cur->type].name);
-    set=cur->live_in;
-    DumpLiveSet(cc,set);
-    DbgPrint(")OUT:");
-    set=cur->live_out;
-    DumpLiveSet(cc,set);
-    DbgPrint("\n");
-  }
-}
 CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
   I64 new_foff=*foff,cnt=0,idx;
   CRPN *head=&cc->coc.coc_head,*cur;
@@ -719,13 +778,13 @@ CVarRenumbers *GenerateRenumbersForVar(CCmpCtrl *cc,I64 member,I64 *foff) {
         cur2=tset->body[cnt2];
         next2=ICNext(cur2);
 
-	I64SetRem(cur2->live_in,member);
-	I64SetRem(cur2->live_out,member);
-	I64SetRem(cur2->kill_regs,member);
+	BitSetRem(cur2->live_in,member);
+	BitSetRem(cur2->live_out,member);
+	BitSetRem(cur2->kill_regs,member);
 
-	I64SetAdd(cur2->live_in,renum->idx);
-	I64SetAdd(cur2->live_out,renum->idx);
-	I64SetAdd(cur2->kill_regs,renum->idx);
+	BitSetAdd(cur2->live_in,renum->idx);
+	BitSetAdd(cur2->live_out,renum->idx);
+	BitSetAdd(cur2->kill_regs,renum->idx);
 
         while(next2!=cur2) {
 	  if(cur2->type==IC_FRAME&&cur2->ic_data==ret->foffset) {
@@ -842,22 +901,28 @@ re_number:;
   }
   for(rpn=head->next;rpn!=head;rpn=rpn->next) {
     if(rpn->live_in&&rpn->kill_regs) {
-      for(tmp=0;tmp!=rpn->live_in->cnt;tmp++) {
-        bit=rpn->live_in->body[tmp];
-        if(!(flat[bit]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit]->reg!=REG_NONE) {
-	  for(tmp2=0;tmp2!=rpn->live_in->cnt;tmp2++) {
- 	    bit2=rpn->live_in->body[tmp2];
-	    if(!(flat[bit2]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit2]->reg!=REG_NONE) {
-	      I64SetAdd(graph->connects[bit],bit2);
-	      I64SetAdd(graph->connects[bit2],bit);
+      for(tmp=BitSetWidth(rpn->live_in)-1;tmp>=0;tmp--) {
+        if(BitSetHas(rpn->live_in,tmp)) {
+          bit=tmp;
+          if(!(flat[bit]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit]->reg!=REG_NONE) {
+	    for(tmp2=BitSetWidth(rpn->live_in)-1;tmp2>=0;tmp2--) {
+	      if(BitSetHas(rpn->live_in,tmp2)) {
+	        bit2=tmp2;
+	        if(!(flat[bit2]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit2]->reg!=REG_NONE) {
+	          I64SetAdd(graph->connects[bit],bit2);
+	          I64SetAdd(graph->connects[bit2],bit);
+	        }
+	      }
 	    }
-	  }
 //Include kill regs
-	  for(tmp2=0;tmp2!=rpn->kill_regs->cnt;tmp2++) {
-	    bit2=rpn->kill_regs->body[tmp2];
-	    if(!(flat[bit2]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit2]->reg!=REG_NONE) {
-	      I64SetAdd(graph->connects[bit],bit2);
-	      I64SetAdd(graph->connects[bit2],bit);
+	    for(tmp2=BitSetWidth(rpn->kill_regs)-1;tmp2>=0;tmp2--) {
+              if(BitSetHas(rpn->kill_regs,tmp2)) {
+	        bit2=tmp2;
+	        if(!(flat[bit2]->member_class->raw_type==RT_F64^^!ireg)&&flat[bit2]->reg!=REG_NONE) {
+	          I64SetAdd(graph->connects[bit],bit2);
+	          I64SetAdd(graph->connects[bit2],bit);
+	        }
+	      }
 	    }
 	  }
         }
@@ -982,7 +1047,7 @@ skip2:;
 	  flat[tmp]->reg=REG_NONE;
         else if(ireg)
 	  flat[tmp]->reg=VarIRegToReg(coloring->colors[tmp]);
-        else
+	        else
 	  flat[tmp]->reg=VarFRegToReg(coloring->colors[tmp]);
       }
     I64SetDel(graph->connects[tmp]);
@@ -1035,6 +1100,7 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     rpn=ICNext(rpn);
     cnt++;
   }
+  I64 run=0;
   flat=CAlloc(cnt*8);
   idx=0;
   rpn=head->next;
@@ -1044,10 +1110,10 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
     idx++;
     rpn->user_data=I64SetNew;
     rpn->user_data2=I64SetNew;
-    rpn->live_in=I64SetNew;
-    rpn->live_out=I64SetNew;
-    rpn->kill_regs=I64SetNew;
-    rpn->use_regs=I64SetNew;
+    rpn->live_in=BitSetNew;
+    rpn->live_out=BitSetNew;
+    rpn->kill_regs=BitSetNew;
+    rpn->use_regs=BitSetNew;
     I64SetAdd(changed1,rpn,TRUE);
     rpn=ICNext(rpn);
   }
@@ -1061,8 +1127,8 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
       start_rpn=changed1->body[idx];
       end_rpn=ICNext(start_rpn);
 
-      old_in=start_rpn->live_in->cnt;
-      old_out=start_rpn->live_out->cnt;
+      old_in=BitSetCnt(start_rpn->live_in);
+      old_out=BitSetCnt(start_rpn->live_out);
 
       if(first_run)
         for(rpn=start_rpn;rpn!=end_rpn;rpn=rpn->next) {
@@ -1097,13 +1163,16 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
 		    rpn->type==IC_XOR_EQU||
 		    rpn->type==IC_SUB_EQU||
 		    rpn->type==IC_ADD_EQU)
-	        I64SetAdd(start_rpn->use_regs,which);
-	      I64SetAdd(start_rpn->kill_regs,which);
+	        BitSetAdd(start_rpn->use_regs,which);
+	      BitSetAdd(start_rpn->kill_regs,which);
 	    }
 	  }
-	    if(rpn->type==IC_FRAME) {
-	      which=FoffToMemberIdx(cc,rpn->ic_data);
-	      I64SetAdd(start_rpn->use_regs,which);
+          while(--idx2>=0) {
+	    arg=NthArgument(rpn,idx2);
+	    if(arg->type==IC_FRAME) {
+	      which=FoffToMemberIdx(cc,arg->ic_data);
+	      BitSetAdd(start_rpn->use_regs,which);
+	    }
 	  }
         }
 
@@ -1114,13 +1183,13 @@ U0 LiveVariableAnalysis(CCmpCtrl *cc) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
 	    if(!jump_to) throw('Compiler');
 	    _RPNConnect(jump_to,rpn);
-	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    BitSetAddAll(rpn->live_out,jump_to->live_in);
 	    goto next_ic;
 	  } else {
 use_outgoing:
 	    for(idx2=0;idx2!=rpn->user_data2(CI64Set*)->cnt;idx2++) {
 	      jump_to=rpn->user_data2(CI64Set*)->body[idx2];
-	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	      BitSetAddAll(rpn->live_out,jump_to->live_in);
 	    }
 	    break;
 	  }
@@ -1132,13 +1201,13 @@ use_outgoing:
 	      if(tab->jmp_table[idx2]) {
 	        jump_to=LabelToRPN(cc,tab->jmp_table[idx2]);
 	        if(!jump_to) throw('Compiler');
-	        I64SetAddAll(rpn->live_out,jump_to->live_in);
+	        BitSetAddAll(rpn->live_out,jump_to->live_in);
 	        _RPNConnect(jump_to,rpn);
 	      }
 	    }
 	    if(tab->dft) {
 	      jump_to=LabelToRPN(cc,tab->dft);
-	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	      BitSetAddAll(rpn->live_out,jump_to->live_in);
 	      _RPNConnect(jump_to,rpn);
 	    }
 	  } else
@@ -1150,7 +1219,7 @@ use_outgoing:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
 	    if(jump_to) {
-	      I64SetAddAll(rpn->live_out,jump_to->live_in);
+	      BitSetAddAll(rpn->live_out,jump_to->live_in);
 	      _RPNConnect(jump_to,rpn);
 	    }
 	  } else
@@ -1161,14 +1230,14 @@ use_outgoing:
 //DO NOT first_run CHECK THIS
 	  jump_to=LabelToRPN(cc,rpn->ic_data);
 	  if(jump_to) {
-	    I64SetAddAll(rpn->live_out,jump_to->live_in);
+	    BitSetAddAll(rpn->live_out,jump_to->live_in);
 	    _RPNConnect(jump_to,rpn);
 //Also connect to end of SUB_CALL
 	    for(idx2=0;idx2!=cnt;idx2++) {
 	     if(flat[idx2]->type==IC_SUB_RET&&flat[idx2]->ic_data==rpn->ic_data) {
 	        jump_to=flat[idx2];
 	        _RPNConnect(rpn,jump_to);
-	        I64SetAddAll(jump_to->live_out,rpn->live_in);
+	        BitSetAddAll(jump_to->live_out,rpn->live_in);
 	      }
 	    }
 	  }
@@ -1181,7 +1250,7 @@ next_ic:
 	  if(first_run) {
 	    for(idx2=0;idx2!=cnt;idx2++) {
 	      if(flat[idx2]==rpn&&idx2+1<cnt) {
-	        I64SetAddAll(rpn->live_out,flat[idx2+1]->live_in);
+	        BitSetAddAll(rpn->live_out,flat[idx2+1]->live_in);
 	        _RPNConnect(flat[idx2+1],rpn);
 	        break;
 	      }
@@ -1189,12 +1258,12 @@ next_ic:
 	  } else
 	    goto use_outgoing;
       }
-      rpn->live_in->cnt=0;
-      I64SetAddAll(rpn->live_in,rpn->live_out);
-      I64SetRemAll(rpn->live_in,rpn->kill_regs);
-      I64SetAddAll(rpn->live_in,rpn->use_regs);
+      BitSetRemAll(rpn->live_in,rpn->live_in);
+      BitSetAddAll(rpn->live_in,rpn->live_out);
+      BitSetRemAll(rpn->live_in,rpn->kill_regs);
+      BitSetAddAll(rpn->live_in,rpn->use_regs);
 
-      if(old_in!=rpn->live_in->cnt||rpn->live_out->cnt!=old_out) {
+      if(old_in!=BitSetCnt(rpn->live_in)||BitSetCnt(rpn->live_out)!=old_out) {
         changed|=TRUE;
         I64SetAdd(changed2,rpn,TRUE);
         tmp_set=rpn->user_data;
@@ -2062,10 +2131,10 @@ break;case IC_ASM:
   // For CAiwniosAOTBlob,Fill in the relocations
   //
   for(cur=head->last;cur!=head;cur=cur->last)  {
-    if(cur->live_in) I64SetDel(cur->live_in);
-    if(cur->live_out) I64SetDel(cur->live_out);
-    if(cur->use_regs) I64SetDel(cur->use_regs);
-    if(cur->kill_regs) I64SetDel(cur->kill_regs);
+    if(cur->live_in) BitSetDel(cur->live_in);
+    if(cur->live_out) BitSetDel(cur->live_out);
+    if(cur->use_regs) BitSetDel(cur->use_regs);
+    if(cur->kill_regs) BitSetDel(cur->kill_regs);
     if(cur->user_data) I64SetDel(cur->user_data);
     if(cur->user_data2) I64SetDel(cur->user_data2);
     if(cur->type==IC_ASM) {
