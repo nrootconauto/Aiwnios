@@ -21,8 +21,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <locale.h>
 #include <time.h>
 #include <unistd.h>
+#ifndef _WIN64
+#include <sys/resource.h>
+#endif
 void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
@@ -670,23 +674,28 @@ static int64_t STK_StrCmp(int64_t *stk) {
   return strcmp((void *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_StrCpy(int64_t *stk) {
-  return (int64_t)memmove((void *)stk[0], (void *)stk[1],1+strlen((void*)stk[1]));
+static char *STK_StrCpy(char **stk) {
+  return memmove(stk[0], stk[1], strlen(stk[1]) + 1);
 }
 
-static int64_t STK_StrNCmp(int64_t *stk) {
-  return __builtin_strncmp((void *)stk[0], (void *)stk[1], stk[2]);
+static int64_t STK_StrNCmp(char **stk) {
+  return __builtin_strncmp(stk[0], stk[1], (size_t)stk[2]);
 }
 
-static int64_t STK_StrMatch(int64_t *stk) {
-  char *needle = (char *)stk[0], *heystack = (char *)stk[1];
-  int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
-  if (len > len2)
-    return 0;
-  for (i = 0; i <= len2 - len; i++)
-    if (!__builtin_strncmp(needle, heystack + i, len))
-      return (int64_t)heystack + i;
-  return 0;
+static int64_t STK_StrICmp(char **stk) {
+  return __builtin_strcasecmp(stk[0], stk[1]);
+}
+
+static int64_t STK_StrNICmp(char **stk) {
+  return __builtin_strncasecmp(stk[0], stk[1], (size_t)stk[2]);
+}
+
+static char *STK_StrMatch(char **stk) {
+  return __builtin_strstr(stk[1], stk[0]);
+}
+
+static char *STK_StrIMatch(char **stk) {
+  return strcasestr(stk[1], stk[0]);
 }
 
 MATHFUNDEF(log10);
@@ -1400,9 +1409,12 @@ static void BootAiwnios(char *bootstrap_text) {
     X(MemSetI64, 3);
     X(StrLen, 1);
     X(StrMatch, 2);
+    X(StrIMatch, 2);
     X(StrCmp, 2);
     X(StrNCmp, 3);
     X(StrCpy, 2);
+    X(StrICmp, 2);
+    X(StrNICmp, 3);
 #if defined(__x86_64__)
     X(OutU8, 2);
     X(OutU16, 2);
@@ -1703,6 +1715,13 @@ static void ExitAiwnios(int64_t *stk) {
   }
 }
 int main(int argc, char **argv) {
+  setlocale(LC_ALL, "C");
+#ifndef _WIN64
+  struct rlimit rl;
+  getrlimit(RLIMIT_NOFILE, &rl);
+  rl.rlim_cur = rl.rlim_max;
+  setrlimit(RLIMIT_NOFILE, &rl);
+#endif
   void *argtable[] = {
       arg_help = arg_lit0("h", "help", "Show the help message"),
       arg_overwrite =
