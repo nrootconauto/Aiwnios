@@ -16,16 +16,16 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <locale.h>
 #include <time.h>
 #include <unistd.h>
 #ifndef _WIN64
-#include <sys/resource.h>
+#  include <sys/resource.h>
 #endif
 void InputLoop(void *ul);
 extern CHashTable *glbl_table;
@@ -695,7 +695,19 @@ static char *STK_StrMatch(char **stk) {
 }
 
 static char *STK_StrIMatch(char **stk) {
+#ifndef _WIN64
   return strcasestr(stk[1], stk[0]);
+#else
+  // SDL forces UTF8,so roll our own
+  char *heystack = stk[1], *needle = stk[0];
+  int64_t i = 0, len = StrLen(needle), len2 = StrLen(heystack);
+  if (len > len2)
+    return 0;
+  for (i = 0; i <= len2 - len; i++)
+    if (!__builtin_strncasecmp(needle, heystack + i, len))
+      return heystack + i;
+  return 0;
+#endif
 }
 
 MATHFUNDEF(log10);

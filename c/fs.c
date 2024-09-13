@@ -51,20 +51,18 @@ enter:
 }
 #endif
 
-static char *stpcpy2(char *dst, char const *src) { // mingw doesnt have stpcpy
-  size_t sz = strlen(src);
-  return memcpy(dst, src, sz + 1) + sz;
-}
-
 static char mount_points['z' - 'a' + 1][0x200];
 _Thread_local char thrd_pwd[0x200];
 _Thread_local char thrd_drv;
 
 static char *__VFsFileNameAbs(char *name) {
   char ret[0x200], *cur;
-  cur = stpcpy2(stpcpy2(ret, mount_points[toupper(thrd_drv) - 'A']), thrd_pwd);
-  if (name)
-    strcpy(stpcpy2(cur, "/"), name);
+  cur = __builtin_stpcpy(ret, mount_points[toupper(thrd_drv) - 'A']);
+  cur = __builtin_stpcpy(cur, thrd_pwd);
+  if (name) {
+    cur = __builtin_stpcpy(cur, "/");
+    cur = __builtin_stpcpy(cur, name);
+  }
   return strdup(ret);
 }
 
@@ -143,7 +141,7 @@ static void DelDir(char *p) {
   while (d2 = readdir(d)) {
     if (!strcmp(".", d2->d_name) || !strcmp("..", d2->d_name))
       continue;
-    char *p = stpcpy2(od, p);
+    char *p = __builtin_stpcpy(od, p);
     *p++ = '/';
     strcpy(p, d2->d_name);
     if (__FIsDir(od)) {
@@ -385,7 +383,7 @@ int VFsFileExists(char *path) {
 
 int VFsMountDrive(char let, char *path) {
   int idx = toupper(let) - 'A';
-  char *p = stpcpy2(mount_points[idx], path);
+  char *p = __builtin_stpcpy(mount_points[idx], path);
   strcpy(p, "/");
 }
 
