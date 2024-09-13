@@ -11,7 +11,6 @@ extern void DoNothing();
 // backend_user_data7 is the number of Fregs
 // backend_user_data9 is set if we were called from __SexyAssignOp
 //
-//
 // a
 
 #define RISCV_IPOOP1          5
@@ -2236,6 +2235,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
   int64_t cnt = 0;
   memset(to_push, 0, 32);
   CRPN *r;
+  //Already computed
   if (!cctrl->cur_fun) {
     // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
     for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
@@ -3631,6 +3631,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         } else {
           tmp.raw_type = RT_I64i;
           tmp.reg = RISCV_IRET;
+          if(rpn->res.mode==MD_REG)
+			tmp.reg=rpn->res.reg;
           tmp.mode = MD_REG;
           code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
           AIWNIOS_ADD_CODE(RISCV_SLLI(MIR(cctrl, tmp.reg), tmp.reg,
@@ -4260,11 +4262,15 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (rpn->raw_type != RT_F64) {
       next2 = ICArgN(rpn, 0);
       next = ICArgN(rpn, 1);
+      into_reg=RISCV_IPOOP1;
+      if(rpn->res.mode==MD_REG) {
+		  into_reg=rpn->res.reg;
+	  }
       if (IsConst(next2) && Is12Bit(ConstVal(next2))) {
         code_off = __OptPassFinal(cctrl, next, bin, code_off);
         code_off = PutICArgIntoReg(cctrl, &next->res, RT_U64i, RISCV_IPOOP2,
                                    bin, code_off);
-        AIWNIOS_ADD_CODE(RISCV_SLLI(MIR(cctrl, RISCV_IPOOP1), next->res.reg,
+        AIWNIOS_ADD_CODE(RISCV_SLLI(MIR(cctrl, into_reg), next->res.reg,
                                     ConstVal(next2)));
         goto lsfin;
       }
@@ -4275,11 +4281,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_U64i, RISCV_IPOOP2, bin,
                                  code_off);
       AIWNIOS_ADD_CODE(
-          RISCV_SLL(MIR(cctrl, RISCV_IPOOP1), next->res.reg, next2->res.reg));
+          RISCV_SLL(MIR(cctrl, into_reg), next->res.reg, next2->res.reg));
     lsfin:
       tmp2.mode = MD_REG;
       tmp2.raw_type = RT_I64i;
-      tmp2.reg = RISCV_IPOOP1;
+      tmp2.reg = into_reg;
       code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
     } else {
       // TODO
@@ -4294,6 +4300,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     case RT_I64i:
       _signed = 1;
     }
+    into_reg=RISCV_IPOOP1;
+    if(rpn->res.mode==MD_REG) {
+	  into_reg=rpn->res.reg;
+    }
     if (rpn->raw_type != RT_F64) {
       next2 = ICArgN(rpn, 0);
       next = ICArgN(rpn, 1);
@@ -4302,10 +4312,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         code_off = PutICArgIntoReg(cctrl, &next->res, RT_U64i, RISCV_IPOOP2,
                                    bin, code_off);
         if (_signed)
-          AIWNIOS_ADD_CODE(RISCV_SRAI(MIR(cctrl, RISCV_IPOOP1), next->res.reg,
+          AIWNIOS_ADD_CODE(RISCV_SRAI(MIR(cctrl, into_reg), next->res.reg,
                                       ConstVal(next2)))
         else
-          AIWNIOS_ADD_CODE(RISCV_SRLI(MIR(cctrl, RISCV_IPOOP1), next->res.reg,
+          AIWNIOS_ADD_CODE(RISCV_SRLI(MIR(cctrl, into_reg), next->res.reg,
                                       ConstVal(next2)))
         goto rsfin;
       }
@@ -4317,14 +4327,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                                  code_off);
       if (_signed)
         AIWNIOS_ADD_CODE(
-            RISCV_SRA(MIR(cctrl, RISCV_IPOOP1), next->res.reg, next2->res.reg))
+            RISCV_SRA(MIR(cctrl, into_reg), next->res.reg, next2->res.reg))
       else
         AIWNIOS_ADD_CODE(
-            RISCV_SRL(MIR(cctrl, RISCV_IPOOP1), next->res.reg, next2->res.reg))
+            RISCV_SRL(MIR(cctrl, into_reg), next->res.reg, next2->res.reg))
     rsfin:
       tmp2.mode = MD_REG;
       tmp2.raw_type = RT_I64i;
-      tmp2.reg = RISCV_IPOOP1;
+      tmp2.reg = into_reg;
       code_off = ICMov(cctrl, &rpn->res, &tmp2, bin, code_off);
     } else {
       // TODO
@@ -4604,6 +4614,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   CCodeMiscRef *cm_ref, *cm_ref_tmp;
   CHashImport *import;
   CRPN *r;
+  CacheRPNArgs(cctrl);
   cctrl->fregs_restore_label = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->fregs_save_label = CodeMiscNew(cctrl, CMT_LABEL);
   cctrl->epilog_label = CodeMiscNew(cctrl, CMT_LABEL);

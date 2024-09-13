@@ -502,9 +502,9 @@ static char *PrsString(CCmpCtrl *ccmp, int64_t *sz) {
 }
 
 CRPN *ICArgN(CRPN *rpn, int64_t n) {
-  if (n == 0 && rpn->tree1)
+  if (n == 1 && rpn->tree1)
     return rpn->tree1;
-  if (n == 1 && rpn->tree2)
+  if (n == 2 && rpn->tree2)
     return rpn->tree2;
   rpn = rpn->base.next;
   while (--n >= 0)
@@ -4564,4 +4564,12 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
     refs = refs->next;
   }
   SetWriteNP(old);
+}
+
+void CacheRPNArgs(CCmpCtrl *cctrl) {
+  CRPN *head=cctrl->code_ctrl->ir_code,*rpn;
+  for(rpn=head->base.next;rpn!=head;rpn=rpn->base.next) {
+    rpn->tree1=ICArgN(rpn,1);
+	rpn->tree2=ICArgN(rpn,2);
+  }
 }

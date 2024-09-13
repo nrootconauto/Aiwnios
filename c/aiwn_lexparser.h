@@ -738,3 +738,5 @@ extern void PrsBindCSymbol(char *name, void *ptr, int64_t arity);
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
 
 CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);
+
+void CacheRPNArgs(CCmpCtrl *cctrl);

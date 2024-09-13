@@ -1721,6 +1721,7 @@ class CCodeMisc
     CArrayDim *dim;
     CHash *h;
   };
+  U8 *rpn; //Used with CMT_LABEL(think IC_LABEL)
 };
 
 #define IEF_OP_SIZE16		0x001

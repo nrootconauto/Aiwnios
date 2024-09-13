@@ -24,6 +24,11 @@ class CRPN:CQue {
   CI64Set *kill_regs;
   U8 *user_data;
   U8 *user_data2;
+  union {
+  //Used for live variable anlaysis x freinds
+    Bool visited;
+    Bool changed;
+  };
 };
 
 Bool IsPtrNode(CRPN *rpn) {

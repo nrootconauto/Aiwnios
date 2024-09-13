@@ -201,7 +201,7 @@ KernelAHH=(#exe {ExeEmbedFile("/Src/KernelA.HH");});;
 U0 ExeEmbedFile(U8 *fn) {
 //During Aiwnios bootstapping,only Functions  are imported and not macros
   DbgPrint("Embedding File \"%Q\"(may take some time)\n",fn);
-  U8 *ptr,buf[144*4];
+  U8 *ptr,*buf,*ptr2;
   CArcCompress *comp;
   I64 len,len2,b;
   ptr=FileRead(fn,&len);
@@ -209,17 +209,15 @@ U0 ExeEmbedFile(U8 *fn) {
   Free(ptr);
   ptr=comp;
   len=comp->compressed_size;
+  ptr2=buf=MAlloc(4*len+1); //\xff(4 chars )
   StreamPrint("ExpandBuf(");
   while(len>0) {
-    len2=MinI64(len,144-1);
-    buf[0]=0;
-    for(b=0;b!=len2;b++) {
-      CatPrint(buf,"\\x%02x",ptr[b]);
-    }
-    ptr+=len2;
-    len-=len2;
-    StreamPrint("\"%s\"\n",buf);
+    StrPrint(ptr2,"\\x%02x",*ptr++);
+    ptr2+=4;
+    len--;
   }
+  *ptr2=0;
+  StreamPrint("\"%s\"\n",buf);
   StreamPrint(")");
   Free(comp);
 }
