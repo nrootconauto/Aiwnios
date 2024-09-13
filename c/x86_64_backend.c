@@ -2687,7 +2687,7 @@ static int64_t IsCompare(int64_t c) {
 }
 
 static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
-                           int64_t *scale) {
+                           int64_t *scale,int64_t allow_put_in_reg) {
   CRPN *b = NULL, *idx = NULL;
   int64_t tmp, i = 0, i2 = -1, is_sib = 0;
   CRPN *arg = r;
@@ -2713,6 +2713,9 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
       is_sib = 1;
     else if (idx = __AddScale(ICArgN(arg, 1), &i2))
       is_sib = 1;
+  } else if(allow_put_in_reg) {
+	  b=arg;
+	  is_sib=1;
   }
   // Adjust for offesets in base/index
   if (b)
@@ -2856,7 +2859,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_ADD:
     orig = r;
     tmp = 0;
-    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2)) {
+    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2,0)) {
       if (b && idx) {
         if (b->type != IC_IREG)
           tmp++;
@@ -2976,7 +2979,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     }
     tmp = 0;
     arg = r->base.next;
-    if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2)) {
+    if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2,0)) {
       if (b && idx) {
         tmp = 0;
         if (b->type != IC_IREG)
@@ -4057,6 +4060,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
   }
   int64_t r = rpn->raw_type, rsz, off, mul, lea = 0, reg;
   CRPN *next = rpn->base.next, *next2, *next3, *next4, *tmp;
+  CRPN *base,*index;
   switch (r) {
     break;
   case RT_I8i:
@@ -4080,15 +4084,37 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
   default:
     rsz = 8;
   }
+  
+  if(GetSIBParts(next,&off,&base,&index,&mul,1)) {
+	  if(index&&base) {
+		  //TODO idx may mutate base's registers and vice versa
+		  goto defacto;
+	  }
+	  if(!base) goto defacto;
+	  res->reg2 = -1;
+	  res->reg = -1;
+	  if(base) {
+		  code_off=__OptPassFinal(cctrl,base,bin,code_off);
+		  code_off=PutICArgIntoReg(cctrl,&base->res,RT_I64i,base_reg_fallback,bin,code_off);
+		  res->reg=base->res.reg;
+	  }
+	  res->mode = __MD_X86_64_SIB;
+	  res->off = off;
+	  res->__SIB_scale = mul;
+	  res->raw_type = r;	  
+  } else {
+	  defacto:
   code_off = __OptPassFinal(cctrl, next, bin, code_off);
   code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR, base_reg_fallback, bin,
                              code_off);
+       
   res->mode = __MD_X86_64_SIB;
   res->reg = next->res.reg;
   res->reg2 = -1;
   res->off = 0;
   res->__SIB_scale = -1;
   res->raw_type = r;
+  }
   return code_off;
 }
 
@@ -4523,13 +4549,9 @@ enter:;
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
 
           } else {
-            old_flags3 = ((CRPN *)next->base.next)->flags;
-            code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);
-            ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
             code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
-            ((CRPN *)next->base.next)->flags = old_flags3;
           }
         } else {
           code_off = __OptPassFinal(cctrl, next, bin, code_off);
@@ -5959,6 +5981,8 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_BNOT:
   case IC_POS:
   case IC_TO_BOOL:
+  case IC_DEREF:
+  case IC_ADDR_OF:
     right = ICArgN(rpn, 0);
     right->res = right->tmp_res;
     if (right->tmp_res.mode)
@@ -5989,9 +6013,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_SUB:
   case IC_DIV:
   case IC_MUL:
-  case IC_DEREF:
   case IC_AND:
-  case IC_ADDR_OF:
   case IC_XOR:
   case IC_MOD:
   case IC_OR:
