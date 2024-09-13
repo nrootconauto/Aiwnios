@@ -3,6 +3,7 @@
 #include "c/aiwn_snd.h"
 #include "c/aiwn_windows.h"
 #include "c/aiwn_logo.h"
+#include "c/lzw.h"
 #include <SDL.h>
 #include <SDL_pixels.h>
 #include <SDL_render.h>
@@ -30,13 +31,17 @@ void DeinitVideo() {
 }
 static void _DrawWindowNew() {
   int64_t row;
+  uint8_t logo[0x10000];
+  lzw_decompress(aiwnios_logo.compressed_pixel_data, //
+		 sizeof aiwnios_logo.compressed_pixel_data, //
+                 logo, sizeof logo);
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
   SDL_LockSurface(window_icon_proto);
   for (row = 0; row != window_icon_proto->h; row++) {
     memcpy((char *)window_icon_proto->pixels + row * window_icon_proto->pitch,
-           aiwnios_logo.pixel_data + 4 * aiwnios_logo.width * row,
+           logo + 4 * aiwnios_logo.width * row,
            aiwnios_logo.width * 4);
   }
   SDL_UnlockSurface(window_icon_proto);
