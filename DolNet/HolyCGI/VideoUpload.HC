@@ -24,7 +24,7 @@ U0 OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *as_txt,*s;
   CDoc *tmp=DocNew,*html;
   CConnection *con=Fs->user_data;
-  if(StrMatch(".i2p",url->hostname)||StrMatch(".onion",url->hostname)) {
+  if(StrIMatch(".i2p",url->hostname)||StrIMatch(".onion",url->hostname)) {
     s="451: Video uploads not allowed from I2P/Tor.\n";
     WriteNBytes(stream,0,s,StrLen(s));
     DocDel(tmp);
