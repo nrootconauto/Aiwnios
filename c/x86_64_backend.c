@@ -8389,6 +8389,7 @@ ret:
 //
 char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                    CHeapCtrl *heap) {
+  CacheRPNArgs(cctrl);
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
   char *bin = NULL;
