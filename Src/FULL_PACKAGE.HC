@@ -127,11 +127,11 @@ U0 SwapI64(I64 *a,I64 *b) {
 #include "StrB.HC"
 #include "KDefine.HC"
 #include "StrScan.HC"
+#include "QSort.HC"
+#include "MakeBlkDev.HC"
 adam_task=aiwnios_boot_task;
 SetFs(adam_task);
 TaskInit(adam_task,0);
-#include "QSort.HC"
-#include "MakeBlkDev.HC"
 #include "KEnd.HC"
 #include "FontStd.HC"
 #include "FontCyrillic.HC"

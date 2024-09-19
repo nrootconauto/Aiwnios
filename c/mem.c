@@ -446,7 +446,7 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
     }
   }
   /* Fallback if we cant grab a 32bit address */
-  ret = VALLOC(NULL, sz, MEM | MEM_TOP_DOWN * topdown,
+  ret = VALLOC(NULL, sz, MEM | (MEM_TOP_DOWN * topdown),
                exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 ret:
   Misc_LBtr(&running, 0);
