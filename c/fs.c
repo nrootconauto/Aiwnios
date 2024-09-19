@@ -15,8 +15,8 @@
 #include <unistd.h>
 //__builtin_stpcpy was reducing down to stpcpy on my windows machine 
 static char *StPCpy(char *a,const char *b) {
-  strcpy(a,b);
-  return a+strlen(a);
+	size_t i = strlen(b);
+	return memcpy(a,b,i+1)+i;
 }
 #ifndef _WIN64
 #  ifndef O_BINARY
