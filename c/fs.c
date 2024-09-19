@@ -6,12 +6,18 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 // clang-format off
 #include <sys/types.h>
 #include <sys/stat.h>
 // clang-format on
 #include <fcntl.h>
 #include <unistd.h>
+//__builtin_stpcpy was reducing down to stpcpy on my windows machine 
+static char *StPCpy(char *a,const char *b) {
+  strcpy(a,b);
+  return a+strlen(a);
+}
 #ifndef _WIN64
 #  ifndef O_BINARY
 #    define O_BINARY 0
@@ -23,7 +29,7 @@
 #  include <libloaderapi.h>
 #  include <processthreadsapi.h>
 #  include <synchapi.h>
-
+#  include <shlwapi.h>
 #  define open(a...)  _open(a)
 #  define close(a...) _close(a)
 #  define write(a...) _write(a)
@@ -57,11 +63,11 @@ _Thread_local char thrd_drv;
 
 static char *__VFsFileNameAbs(char *name) {
   char ret[0x200], *cur;
-  cur = __builtin_stpcpy(ret, mount_points[toupper(thrd_drv) - 'A']);
-  cur = __builtin_stpcpy(cur, thrd_pwd);
+  cur = StPCpy(ret, mount_points[toupper(thrd_drv) - 'A']);
+  cur = StPCpy(cur, thrd_pwd);
   if (name) {
-    cur = __builtin_stpcpy(cur, "/");
-    cur = __builtin_stpcpy(cur, name);
+    cur = StPCpy(cur, "/");
+    cur = StPCpy(cur, name);
   }
   return strdup(ret);
 }
@@ -141,7 +147,7 @@ static void DelDir(char *p) {
   while (d2 = readdir(d)) {
     if (!strcmp(".", d2->d_name) || !strcmp("..", d2->d_name))
       continue;
-    char *p = __builtin_stpcpy(od, p);
+    char *p = StPCpy(od, p);
     *p++ = '/';
     strcpy(p, d2->d_name);
     if (__FIsDir(od)) {
@@ -383,7 +389,7 @@ int VFsFileExists(char *path) {
 
 int VFsMountDrive(char let, char *path) {
   int idx = toupper(let) - 'A';
-  char *p = __builtin_stpcpy(mount_points[idx], path);
+  char *p = StPCpy(mount_points[idx], path);
   strcpy(p, "/");
 }
 

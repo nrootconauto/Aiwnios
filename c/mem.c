@@ -434,10 +434,10 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
   if (low32) {
     MEMORY_BASIC_INFORMATION mbi;
     uint64_t region = cur;
-    while (region <= max && VirtualQuery(0x10000, &mbi, sizeof mbi)) {
+    while (region <= max && VirtualQuery(region, &mbi, sizeof mbi)) {
       region = (uint64_t)mbi.BaseAddress + mbi.RegionSize;
       uint64_t addr = ALIGNNUM((uint64_t)mbi.BaseAddress, ag);
-      if (mbi.State & MEM_FREE && sz <= region - addr) {
+      if ((mbi.State & MEM_FREE) && sz <= region - addr) {
         ret = VALLOC(addr, sz, MEM,
                      exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
         cur = (uint64_t)ret + sz;

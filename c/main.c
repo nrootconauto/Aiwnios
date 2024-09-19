@@ -1,3 +1,4 @@
+#define SDL_MAIN_HANDLED 1
 #define AIWN_BOOTSTRAP
 #define AIWNIOS_TESTS
 #include "argtable3.h"
