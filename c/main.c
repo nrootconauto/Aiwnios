@@ -55,7 +55,7 @@ extern int64_t user_ev_num;
 #endif
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab;
+    *sixty_fps, *arg_cmd_line, *arg_fork, *arg_no_debug, *arg_grab,*arg_fast_fail;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1353,6 +1353,10 @@ static int64_t WriteProtectMemCpy(int64_t *stk) {
 #endif
   return r;
 }
+static int64_t is_fast_fail=0;
+int64_t IsFastFail() {
+	return is_fast_fail;
+}
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1729,6 +1733,7 @@ static void ExitAiwnios(int64_t *stk) {
 }
 int main(int argc, char **argv) {
   setlocale(LC_ALL, "C");
+  atexit(&AiwniosBye);
 #ifndef _WIN64
   struct rlimit rl;
   getrlimit(RLIMIT_NOFILE, &rl);
@@ -1767,6 +1772,7 @@ int main(int argc, char **argv) {
       arg_boot_files =
           arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                     "Files to run on  boot in command line mode."),
+      arg_fast_fail=arg_lit0("F","fast-fail","Instantly fail on signals(like segmentation faults)."),
       _arg_end = arg_end(20),
   };
   int64_t errors, idx;
@@ -1778,6 +1784,8 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
+  if(arg_fast_fail->count)
+    is_fast_fail=1;
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
 #if defined(__x86_64__) && (defined(__FreeBSD__) || defined(__linux__))
@@ -1890,8 +1898,8 @@ int main(int argc, char **argv) {
   } else {
     Boot();
   }
-  arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
   AiwniosBye(); // My RISCV(and presumably others) dont like atexit with
                 // SDL_QUIT
+  arg_freetable(argtable, sizeof(argtable) / sizeof(*argtable));
   return quit_code;
 }
