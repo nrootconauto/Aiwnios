@@ -119,7 +119,9 @@ U0 Dir_ISOC_Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   if(!FileFind(cache,&cache_ent)) {
 regen:
      EnsurePathExists(cache);
-     tmp=MStrPrint("RedSeaISO(\"%Q\",\"%Q\");;",cache,fp);
+     data=FileNameAbs(cache);
+     tmp=MStrPrint("RedSeaISO(\"%Q\",\"%Q\");;",data,fp);
+     Free(data);
      JobResGet(TaskExe(Gs->seth_task,Fs,tmp,JOBf_WAKE_MASTER));
      Free(tmp);
   } else if(cache_ent.datetime<dent.datetime) {

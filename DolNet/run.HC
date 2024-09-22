@@ -40,9 +40,12 @@ class CServer {
 };
 
 U0 EnsurePathExists(U8 *path) {
-  U8 *tmp=DirFile(path),*opath=DirCur;
-  Cd(tmp,TRUE);
-  Cd(opath);
+  U8 *tmp=StrNew(path),*opath=DirCur;
+  if(StrLastOcc(tmp,"/")) {
+    *StrLastOcc(tmp,"/")=0;
+    Cd(tmp,TRUE);
+    Cd(opath);
+  }
   Free(tmp),Free(opath);
 }
 
