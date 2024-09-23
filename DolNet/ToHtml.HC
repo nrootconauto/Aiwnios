@@ -573,7 +573,7 @@ public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",
  	      trimmed=StrNew(ent->aux_str);
 	    else
 	      trimmed=MStrPrint("%s:",mlst->str);
-	    if(col=StrOcc(trimmed,':'))
+	    if(col=StrFirstOcc(trimmed,":"))
 	      *col=0;
 	    override=MemberMetaData("html_input_type",mlst);
 	  case DOCT_DATA:
