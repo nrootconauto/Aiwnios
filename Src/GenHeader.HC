@@ -32,7 +32,7 @@ U0 GenHeadersForFile(U8 *file) {
   CDoc *doc=DocRead(file,DOCF_PLAIN_TEXT_TABS|DOCF_NO_CURSOR);
   I64 ln=1;
   U8 buf[STR_LEN],header[STR_LEN];
-  U8 *ptr,*ln_txt,*header_start,*ptr2;
+  U8 *ptr,*ln_txt,*header_start,*ptr2,*b;
   CDocEntry *old;
   if(!DocGoToLine(doc,1)) {
     DocDel(doc);
@@ -81,9 +81,9 @@ U0 GenHeadersForFile(U8 *file) {
     }
     if(HashFind(buf,tab,HTT_FRAME_PTR)) {
       DocPrint(headers,"extern ");
-      if(StrFirstOcc(header_start,"{;")) {
+      if(b=StrFirstOcc(header_start,"{;")) {
 found_end:
-        *StrFirstOcc(header_start,"{;")=0;
+        *b=0;
         TrimComment(header_start);
         DocPrint(headers,header_start);
         DocPrint(headers,";\n");
@@ -100,7 +100,8 @@ found_end:
           ln_txt=StrNew(doc->cur_entry->tag);
         }
         header_start=ln_txt;
-        goto found_end;
+	b=StrFirstOcc(header_start,"{;");
+	goto found_end;
       }
     }
 next:

@@ -40,9 +40,9 @@ class CServer {
 };
 
 U0 EnsurePathExists(U8 *path) {
-  U8 *tmp=StrNew(path),*opath=DirCur;
-  if(StrLastOcc(tmp,"/")) {
-    *StrLastOcc(tmp,"/")=0;
+  U8 *tmp=StrNew(path),*opath=DirCur,*sl;
+  if(sl=StrLastOcc(tmp,"/")) {
+    *sl=0;
     Cd(tmp,TRUE);
     Cd(opath);
   }

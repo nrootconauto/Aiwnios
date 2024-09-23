@@ -148,13 +148,14 @@ fail:
 }
 
 U8 *SkipWhitespace(U8 *s) {
-	while(*s&&StrOcc(" \t\n",*s)) s++;
-	return s;
+  while(*s&&StrOcc(" \t\n",*s)) s++;
+  return s;
 }
 U8 *Trim(U8 *buf) {
-	if(StrFirstOcc(buf," \t\n\x0d"))
-			*StrFirstOcc(buf," \t\n\x0d")=0;
-	return SkipWhitespace(buf);
+  U8 *w;
+  if(w=StrFirstOcc(buf," \t\n\x0d"))
+    *w=0;
+  return SkipWhitespace(buf);
 }
 
 U0 WriteNBytes(I64 s,I64 *len=NULL,U8 *bytes,I64 n) {
@@ -196,14 +197,14 @@ U0 WriteLn(I64 s,I64 *len=NULL,U8 *fmt,...) {
 
 }
 U0 R200(I64 s,I64 *ptr,U8 *msg) {
-  U8 *ftxt=FileRead(msg),*ptr2,*next;
+  U8 *ftxt=FileRead(msg),*ptr2,*next,*nl;
   WriteLn(s,ptr,"<html>");
   WriteLn(s,ptr,"	<body>");
   WriteLn(s,ptr,"		<H1>File %s found!!!</H1>",msg);
   WriteLn(s,ptr,"			<PRE>");
   for(ptr2=ftxt;*ptr2;) {
-    if(StrFirstOcc(ptr2,"\n"))
-      *StrFirstOcc(ptr2,"\n")=0,next=1+ptr2+StrLen(ptr2);
+    if(nl=StrFirstOcc(ptr2,"\n"))
+      *nl=0,next=1+ptr2+StrLen(ptr2);
     else
       next=ptr2+StrLen(ptr2);
     WriteLn(s,ptr,"%s",ptr2);

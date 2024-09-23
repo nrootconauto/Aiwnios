@@ -554,7 +554,7 @@ public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",
   CHashClass *cls=HashFind(cn,Fs->hash_table,HTT_CLASS);
   CDocEntry *ent;
   CMemberLst *mlst,*override;
-  U8 *fmt,*trimmed,*more=NULL,*s,*nam;
+  U8 *fmt,*trimmed,*more=NULL,*s,*nam,*col;
   I64 rand;
   if(!cls) throw('HTML');
   tmp=DocNew;
@@ -573,8 +573,8 @@ public CDoc*HtmlFormGen(U8 *cn,U8 *action,U8 *method="POST",
  	      trimmed=StrNew(ent->aux_str);
 	    else
 	      trimmed=MStrPrint("%s:",mlst->str);
-	    if(StrOcc(trimmed,':'))
-	      *StrFirstOcc(trimmed,":")=0;;
+	    if(col=StrOcc(trimmed,':'))
+	      *col=0;
 	    override=MemberMetaData("html_input_type",mlst);
 	  case DOCT_DATA:
 	    if(!override)
