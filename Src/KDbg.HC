@@ -207,6 +207,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
     Exit;
   }
   DumbStackTrace(rbp,oip);
+  if(IsFastFail) ExitAiwnios(sig);
   if(Gs->num) Exit;
   MemCpy(Fs->context_save_area,gps,22*8);
   MemCpy(&clone,Fs,sizeof CTask);

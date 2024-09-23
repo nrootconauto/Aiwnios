@@ -3825,6 +3825,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import Bool IsFastFail();
 import U0 AIWNIOS_SetCaptureMouse(I64);
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
 //This will cause the debugger to write the regs into reg_dump

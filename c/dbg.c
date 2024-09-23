@@ -100,7 +100,6 @@ typedef struct CFuckup {
 #    define SIGCONT 0x101
 #  endif
 #endif
-extern int64_t IsFastFail(); //From main.c
 CFuckup *GetFuckupByTask(CQue *head, void *t) {
   CFuckup *fu;
   for (fu = head->next; fu != head; fu = fu->base.next) {
@@ -708,7 +707,6 @@ static void UnblockSignals() {
 #    include <arm/_mcontext.h>
 #  endif
 static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
-	if(IsFastFail()) exit(sig);
 #  if defined(__x86_64__)
 #    if defined(__linux__)
   // See /usr/include/x86_64-linux-gnu/sys/ucontext.h

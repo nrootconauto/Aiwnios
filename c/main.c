@@ -1403,6 +1403,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Tan", STK_tan, 1);
     PrsAddSymbol("Arg", STK_Arg, 2);
     PrsAddSymbol("ACos", STK_acos, 1);
+    PrsAddSymbol("IsFastFail", IsFastFail, 0);
     PrsAddSymbol("ASin", STK_asin, 1);
     PrsAddSymbol("ATan", STK_atan, 1);
     PrsAddSymbol("Exp", STK_exp, 1);
