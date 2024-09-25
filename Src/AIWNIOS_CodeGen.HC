@@ -1310,6 +1310,46 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   I64 statics_sz=0;
   static I64 static_cnt=0;
   stat_nam=MStrPrint(".STATIC_%d",static_cnt++);
+//Turn all IC_IMM_I64s that are used as F64's to IC_IMM_I64
+  for(cur=head->next;cur!=head;cur=cur->next) {
+    if(cur->ic_class&&cur->type!=IC_HOLYC_TYPECAST) {
+      if(!cur->ic_dim&&!cur->ic_class->ptr_stars_cnt&&OptClassFwd(cur->ic_class)->raw_type==RT_F64) {
+        idx=intermediate_code_table[cur->type].arg_cnt;
+        switch(idx) {
+	  case IS_V_ARG:
+	    idx=cur->length;
+	    break;
+	  case IS_2_ARG:
+	    idx=2;
+	    break;
+	  case IS_1_ARG:
+	    idx=1;
+	    break;
+	  default:
+	    idx=0;
+        }
+	new=cur->next;
+	switch(cur->type) {
+	  case IC_CALL:
+	  case IC_CALL_INDIRECT:
+	  case IC_CALL_INDIRECT2:
+	  case IC_CALL_EXTERN:
+	  case IC_CALL_IMPORT:
+	    //Dont convert function address(I64) into a F64
+	    goto skip_convert;
+	}
+        while(--idx>=0) {
+	  if(new->type==IC_IMM_I64) {
+	    new->type=IC_IMM_F64;
+	    new->imm_f64=new->imm_i64;
+	    new->ic_class=cmp.internal_types[RT_F64];
+	  }
+	  new=ICNext(new);
+	}
+skip_convert:;
+      }
+    }
+  }
   if(GetOption(OPTf_BOUNDS_CHECK)&&HashFind("WhineOOB",cc->htc.glbl_hash_table,HTT_FUN)) {
     for(cur=head->next;cur!=head;cur=cur->next) {
       if(cur->type==IC_DEREF) {
