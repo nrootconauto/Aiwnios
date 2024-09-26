@@ -146,7 +146,7 @@ typedef struct {
 #elif defined(__APPLE__)
 #  include <dlfcn.h>
 #  define PRIVATE 1
-#  include "ulock.h" //Not canoical
+#  include "c/ulock.h" //Not canoical
 #  undef PRIVATE
 #endif
 
@@ -352,15 +352,15 @@ void MPAwake(int64_t core) {
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
 #  endif
 #  if defined(__APPLE__)
-    static int (*ulWake)(int64_t, void *, int64_t) = NULL;
+    static typeof(__ulock_wake) *ulWake = 0;
     static int init = 0;
     if (!init) {
       init = 1;
       ulWake = dlsym(RTLD_DEFAULT, "__ulock_wake");
     }
-    if (ulWake != NULL) {
-      (*ulWake)(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL,
-                &cores[core].wake_futex, 1);
+    if (ulWake) {
+      ulWake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL, &cores[core].wake_futex,
+             1);
     } else {
       pthread_cond_signal(&cores[core].wake_cond);
     }
@@ -401,7 +401,7 @@ __attribute__((constructor)) static void init(void) {
 static CCPU cores[128];
 CHashTable *glbl_table;
 static int64_t ticks = 0;
-static int64_t tick_inc = 1;
+static int64_t inc = 1;
 static int64_t pf_prof_active;
 static MMRESULT pf_prof_timer;
 
@@ -412,7 +412,7 @@ int64_t GetTicksHP() {
     init = 1;
     TIMECAPS tc;
     timeGetDevCaps(&tc, sizeof tc);
-    tick_inc = tc.wPeriodMin;
+    inc = tc.wPeriodMin;
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&start);
   }
@@ -421,15 +421,15 @@ int64_t GetTicksHP() {
   return (t.QuadPart - start.QuadPart) * 1e6 / freq.QuadPart;
 }
 void SpawnCore(void (*fp)(), void *gs, int64_t core) {
-  CHashTable *parent_table = NULL;
+  CHashTable *parent_table = 0;
   if (Fs)
     parent_table = Fs->hash_table;
   CorePair pair = {fp, gs, core, NULL, parent_table},
            *ptr = malloc(sizeof(CorePair));
   *ptr = pair;
-  cores[core].thread = CreateThread(NULL, 0, threadrt, ptr, 0, NULL);
+  cores[core].thread = CreateThread(0, 0, threadrt, ptr, 0, 0);
   cores[core].alt_stack = VirtualAlloc(
-      NULL, 65536, MEM_TOP_DOWN | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      0, 65536, MEM_TOP_DOWN | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
   nproc++;
 }
@@ -481,7 +481,7 @@ void __ShutdownCore(int core) {
 static void WinProfTramp() {
   CCPU *c = cores + core_num;
   FFI_CALL_TOS_CUSTOM_BP(c->ctx.Rbp, c->profiler_int, c->ctx.Rip);
-  RtlRestoreContext(&c->ctx, NULL);
+  RtlRestoreContext(&c->ctx, 0);
   __builtin_trap();
 }
 
@@ -511,18 +511,40 @@ static void WinProf(_4b _0, _4b _1, _8b _2, _8b _3, _8b _4) {
   }
 }
 
+// here's the thing about using winmm:
+// amongst the win32 APIs, the highest
+// precision timer's a MSDOS subsystem
+// from 1989 written in 16bit assembly
+// for lowend boxes that need accurate
+// timer precision for multimedia play
+//
+// microsoft now wants to deprecate it
+// for the sake of it; winmm is barely
+// high precision in modern times, but
+// its ms precisions still the highest
+// in windows and there arent any alts
+// to it, NtDelayExecution() loops get
+// close but it's dumb compared to the
+// stuff POSIX has: sigaction(SIGPROF)
+//
+// thank god ms never removes anything
+
 void MPSetProfilerInt(void *fp, int c, int64_t f) {
-  static _Bool init;
-  if (!init)
-    init = pf_prof_timer =
-        timeSetEvent(tick_inc, tick_inc, WinProf, 0, TIME_PERIODIC);
+  static MMRESULT pf_prof_timer;
   CCPU *core = cores + c;
   if (fp) {
     core->profiler_freq = f / 1e3;
     core->profiler_int = fp;
     core->next_prof_int = 0;
+    if (!pf_prof_active && !pf_prof_timer)
+      pf_prof_timer = timeSetEvent(inc, inc, WinProf, 0, TIME_PERIODIC);
     Misc_LBts(&pf_prof_active, c);
-  } else
+  } else {
     Misc_LBtr(&pf_prof_active, c);
+    if (!pf_prof_active && pf_prof_timer) {
+      timeKillEvent(pf_prof_timer);
+      pf_prof_timer = 0;
+    }
+  }
 }
 #endif
