@@ -12,12 +12,9 @@ void AiwniosSetVolume(double v) {
 double AiwniosGetVolume() {
   return vol * 100;
 }
-static int8_t *WriteSample(void *out, int8_t v) {
+static int8_t *WriteSample(int8_t *out, int8_t v) {
   int64_t big = v;
-  int8_t *s8 = 0;
-  int16_t *s16 = 0;
-  int32_t *s32 = 0;
-  int64_t *s64 = 0;
+  size_t bitsz = (size_t)SDL_AUDIO_BITSIZE(have.format) >> 3;
   union {
     int32_t i;
     float f; // iee754 single Precision if you are sane
@@ -35,59 +32,31 @@ static int8_t *WriteSample(void *out, int8_t v) {
       big = f64u.i;
     }
   } else {
-    if (!SDL_AUDIO_ISSIGNED(have.format)) {
-      if (v <= 0)
-        big = 0;
-      else
-        big = -1ull * vol;
-    } else {
+    if (SDL_AUDIO_ISSIGNED(have.format)) {
       // Bigest positive for type
       big = (1ull << (SDL_AUDIO_BITSIZE(have.format) - 1)) - 1;
-      if (v > 0)
-        big *= vol;
-      else if (v == 0)
-        big = 0;
-      else if (v < 0)
-        big *= -vol;
+      big *= !!v * copysign(vol, v);
+    } else {
+      big = (v > 0) * -1ull * vol;
     }
   }
-  switch (SDL_AUDIO_BITSIZE(have.format)) {
-  case 8:
-    s8 = out;
-    out++;
-    break;
-  case 16:
-    s16 = out;
-    out += 2;
-    break;
-  case 32:
-    s32 = out;
-    out += 4;
-    break;
-  case 64:
-    s32 = out;
-    out += 8;
-    break;
-  }
-  if (SDL_AUDIO_ISBIGENDIAN(have.format)) {
-    if (s8)
-      *s8 = big;
-    if (s16)
-      *s16 = __builtin_bswap16(big);
-    if (s32)
-      *s32 = __builtin_bswap32(big);
-    if (s64)
-      *s64 = __builtin_bswap64(big);
-  } else {
-    if (s8)
-      *s8 = big;
-    if (s16)
-      *s16 = big;
-    if (s32)
-      *s32 = big;
-    if (s64)
-      *s64 = big;
-  }
+  if (SDL_AUDIO_ISBIGENDIAN(have.format))
+    switch (bitsz) {
+    case 2: {
+      uint16_t b = __builtin_bswap16(big);
+      __builtin_memcpy(&big, &b, 2);
+    } break;
+    case 4: {
+      uint32_t b = __builtin_bswap32(big);
+      __builtin_memcpy(&big, &b, 4);
+    } break;
+    case 8: {
+      uint64_t b = __builtin_bswap64(big);
+      __builtin_memcpy(&big, &b, 8);
+    } break;
+    }
+  __builtin_memcpy(out, &big, bitsz);
+  out += bitsz;
   return out;
 }
 static void AudioCB(void *ul, int8_t *out, int64_t len) {
