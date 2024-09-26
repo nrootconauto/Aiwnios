@@ -642,12 +642,12 @@ static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_MemCpy(int64_t *stk) {
-  return (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
+static void *STK_MemCpy(void **stk) {
+  return memmove(stk[0], stk[1], (size_t)stk[2]);
 }
 
-static int64_t STK_MemSet(int64_t *stk) {
-  return (int64_t)memset((void *)stk[0], stk[1], stk[2]);
+static void *STK_MemSet(int64_t *stk) {
+  return memset((void *)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_MemSetU16(int64_t *stk) {
@@ -666,13 +666,13 @@ static int64_t STK_MemSetI64(int64_t *stk) {
   return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_StrLen(int64_t *stk) {
-  return (int64_t)strlen((void *)stk[0]);
+static size_t STK_StrLen(char **stk) {
+  return strlen(stk[0]);
 }
 
-static int64_t STK_StrCmp(int64_t *stk) {
+static int64_t STK_StrCmp(char **stk) {
   // dont cast, sign extend
-  return strcmp((void *)stk[0], (void *)stk[1]);
+  return strcmp(stk[0], stk[1]);
 }
 
 static char *STK_StrCpy(char **stk) {
