@@ -6,10 +6,16 @@
 #include <SDL.h>
 #include <inttypes.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #ifdef __x86_64__
+#  include <errno.h>
+#  include <string.h>
 #  ifdef __linux__
+#    include <sys/syscall.h>
 #    include <ucontext.h>
+#  elif defined(__FreeBSD__)
+#    include <machine/sysarch.h>
 #  endif
 #  ifndef __SEG_FS
 #    ifdef __clang__
@@ -19,11 +25,6 @@
 #      error Compiler too old (should never happen)
 #    endif
 #  endif
-#endif
-#ifndef _WIN32
-_Thread_local void *ThreadGs;
-_Thread_local void *ThreadFs;
-#else
 /****************************************************************
  * The Windows TIB has an ULONG[31] array at offset %gs:0x80
  * This array's size is 0x80, which gives us plenty of space
@@ -42,6 +43,9 @@ _Thread_local void *ThreadFs;
  * use UserReserved[3] and UserReserved[4]. The answer is obvious.
  * (Wow64ExitThread is in base/wow64/wow64/thread.c)
  * (source: https://github.com/tongzx/nt5src)
+ *
+ * Linux/FreeBSD use FS for TLS, but we will allocate space on
+ * %gs for compatibility with windows ABI. (__bootstrap_tls())
  ***************************************************************/
 enum {
   TIB_FS_OFF = 0xF0,
@@ -49,8 +53,8 @@ enum {
   TIB_GS_OFF = 0xF8,
 #  define TIB_GS_OFF TIB_GS_OFF
 };
-#  define ThreadFs   (*(void *__seg_gs *)TIB_FS_OFF)
-#  define ThreadGs   (*(void *__seg_gs *)TIB_GS_OFF)
+#  define ThreadFs (*(void *__seg_gs *)TIB_FS_OFF)
+#  define ThreadGs (*(void *__seg_gs *)TIB_GS_OFF)
 #endif
 
 #if defined(__riscv) || defined(__riscv__)
@@ -65,35 +69,12 @@ void *GetHolyFsPtr() {
   return fs - tls;
 }
 #elif defined(__x86_64__)
-
-#  ifndef _WIN64
-//
-//            _Thread_local
-//     ┌──────────┬──────────┬───┐
-//     │  .tdata  │  .tbss   │tib│
-//     └──────────┴──────────┼───┘
-//                           │
-//            Linux/FreeBSD %fs
-//    calculate offset from %fs:0 (self-addressed)
-void *GetHolyGsPtr() {
-  char *gs = &ThreadGs;
-  char *__seg_fs *tls = 0; // %fs:0
-  return gs - *tls;
-}
-void *GetHolyFsPtr() {
-  char *fs = &ThreadFs;
-  char *__seg_fs *tls = 0;
-  return fs - *tls;
-}
-#  else // Win32
 void *GetHolyGsPtr() {
   return (void *)TIB_GS_OFF;
 }
 void *GetHolyFsPtr() {
   return (void *)TIB_FS_OFF;
 }
-#  endif
-
 #elif defined(_M_ARM64) || defined(__aarch64__)
 //        x28
 //     %tpidr_el0
@@ -130,6 +111,45 @@ void *GetHolyFs() {
 }
 void *GetHolyGs() {
   return ThreadGs;
+}
+
+__attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
+  (void)sig;
+  fprintf(stderr, "\e[0;31mCRITICAL\e[0m: "
+                  "processor too old\n");
+  fflush(stderr);
+  // do not ever change this to normal exit()
+  // this is a harsh exit that ignores atexit
+  _Exit(-1);
+}
+
+void __bootstrap_tls(void) {
+#if defined(__x86_64__) && !defined(_WIN64)
+  void *tls = calloc(1, 0x10) - 0xF0;
+  int ret = -1;
+#  ifdef __linux__
+  asm volatile("syscall"   //    (not defined in musl)
+               : "=a"(ret) //         ARCH_SET_GS
+               : "0"(SYS_arch_prctl), "D"(0x1001), "S"(tls)
+               : "rcx", "r11", "memory");
+#  elif defined(__FreeBSD__)
+  ret = amd64_set_gsbase(tls);
+#  endif
+  if (!ret)
+    return;
+  fprintf(stderr,
+          "\e[0;31mCRITICAL\e[0m: "
+          "Failed setting GS with error "
+          "\"%s\"; retrying with wrgsbase "
+          "(only available since ivy bridge)\n",
+          strerror(errno));
+  fflush(stderr);
+  struct sigaction sa = {.sa_handler = __sigillhndlr};
+  sigaction(SIGILL, &sa, 0);
+  asm("wrgsbase\t%0" : : "r"(tls));
+  sa.sa_handler = SIG_DFL;
+  sigaction(SIGILL, &sa, 0);
+#endif
 }
 
 typedef struct {
@@ -187,6 +207,7 @@ static int64_t nproc;
 static _Thread_local core_num = 0;
 
 static void threadrt(CorePair *pair) {
+  __bootstrap_tls();
 #ifndef _WIN64
   stack_t stk = {
       .ss_sp = malloc(SIGSTKSZ),
@@ -297,7 +318,6 @@ void SpawnCore(void (*fp)(), void *gs, int64_t core) {
   signal(SIGUSR1, InteruptRt);
   signal(SIGUSR2, ExitCoreRt);
   memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler = SIG_IGN;
   sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
   sa.sa_sigaction = (void *)&ProfRt;
   sigaction(SIGPROF, &sa, NULL);

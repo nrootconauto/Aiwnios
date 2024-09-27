@@ -6243,13 +6243,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       abort();
     }
   segment:
-#ifndef _WIN32
-    // IN LINUX/FreeBSD(?) FS is the thread local register,GS is a variabel
-    // stored in ThreadGs(from FS)
-    AIWNIOS_ADD_CODE(SEG_FS, 0);
-#else
+    // %gs is used as a TLS reg for all OS'es
     AIWNIOS_ADD_CODE(SEG_GS, 0);
-#endif
     AIWNIOS_ADD_CODE(MovRAXMoffs32, 0);
     MIR(cctrl, 0);
     if (next->type == IC_I64) {
