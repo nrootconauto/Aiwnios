@@ -56,7 +56,7 @@ enum {
 #  define ThreadFs (*(void *__seg_gs *)TIB_FS_OFF)
 #  define ThreadGs (*(void *__seg_gs *)TIB_GS_OFF)
 #else
-static _Thread_local  void *ThreadFs; 
+static _Thread_local void *ThreadFs; 
 static _Thread_local void *ThreadGs; 
 #endif
 

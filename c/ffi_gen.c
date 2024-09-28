@@ -112,6 +112,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   int32_t *blob = A_MALLOC(8 * 21+arity*4, Fs->code_heap),ptr=0;
   int64_t arg,fill;
   int64_t pop=0,pad=0;
+  int old=SetWriteNP(0);
   if(arity&1)
 	arity++,pad=8;
   if(arity);
@@ -133,6 +134,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   if(ptr&1) ptr++; //Align to 8
   *(void **)(blob + ptr) = fptr; // 16 aligned
   blob[fill]=ARM_ldrLabelX(8,(ptr-fill)*4);
+  SetWriteNP(old);
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
