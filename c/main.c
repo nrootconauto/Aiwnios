@@ -1741,6 +1741,7 @@ int main(int argc, char **argv) {
   rl.rlim_cur = rl.rlim_max;
   setrlimit(RLIMIT_NOFILE, &rl);
 #endif
+  __bootstrap_tls();
   void *argtable[] = {
       arg_help = arg_lit0("h", "help", "Show the help message"),
       arg_overwrite =

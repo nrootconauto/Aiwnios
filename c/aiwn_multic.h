@@ -2,12 +2,14 @@
 #include <stdint.h>
 extern _Thread_local struct CTask *Fs;
 void InstallDbgSignalsForThread();
+
+void *GetHolyFs();
 void *GetHolyGs();
 void *GetHolyFsPtr();
 void *GetHolyGsPtr();
-void SetHolyGs(void *);
-void *GetHolyFs();
 void SetHolyFs(void *);
+void SetHolyGs(void *);
+
 int64_t mp_cnt();
 void SpawnCore(void (*fp)(), void *gs, int64_t core);
 void MPSleepHP(int64_t ns);
@@ -22,3 +24,5 @@ void DebuggerClientSetGreg(void *, int64_t, int64_t);
 void DebuggerClientEnd(void *, int64_t);
 void DebuggerClientWatchThisTID();
 void TaskInit(struct CTask *, void *, int64_t);
+
+void __bootstrap_tls(void);

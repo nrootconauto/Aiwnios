@@ -6,6 +6,22 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
   WriteLn(s,ptr,"</html>");
 }
 
+U8 *FileExtDot2(U8 *s) {
+  U8 *tmp;
+  I64 dot=1,l;
+  if(s=FileExtDot(s)) {
+    tmp=s;
+    l=StrLen(tmp);
+    if(l>=2)
+      if(!StrICmp(tmp+l-2,".Z"))
+        dot=2;
+    while(StrOcc(tmp,'.')>dot) {
+      tmp=StrFirstOcc(tmp+1,".");
+    }
+    return tmp;
+  }
+  return s;
+}
 U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con;
   U8 *chroot;
@@ -15,9 +31,9 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     Free(link);
     link=ChrootFile(url->abs_path,SERVER_WWW);
   }
-  U8 *f,*mime,*dot=FileExtDot(link),*et;
+  U8 *f,*mime,*dot=FileExtDot2(link),*et;
   I64 len;
-  if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
+  if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
     if(!StrICmp(dot,".GIF")||!StrICmp(dot,".GIF.Z")) mime="image/gif";
     else if(!StrICmp(dot,".JPEG")||!StrICmp(dot,".JPEG.Z")) mime="image/jpeg";
     else if(!StrICmp(dot,".JPG")||!StrICmp(dot,".JPG.Z")) mime="image/jpg";

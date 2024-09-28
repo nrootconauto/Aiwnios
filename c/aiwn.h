@@ -38,15 +38,6 @@ void InteruptCore(int64_t core);
 
 void CmpCtrlCacheArgTrees(CCmpCtrl *cctrl);
 
-extern void *GetHolyFs();
-
 extern void Misc_ForceYield();
-
-void *GetHolyGs();
-void *GetHolyFs();
-void *GetHolyGsPtr();
-void *GetHolyFsPtr();
-void SetHolyFs(void *);
-void SetHolyGs(void *);
 
 int64_t DoNothing();
