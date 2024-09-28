@@ -28,7 +28,7 @@
 /****************************************************************
  * The Windows TIB has an ULONG[31] array at offset %gs:0x80
  * This array's size is 0x80, which gives us plenty of space
- * from [0x80,0x100)
+  from [0x80,0x100)
  *
  * On Wine a structure called struct ntuser_thread_info that
  * takes up 0x40 is at the start of the reserved area, so we
@@ -55,6 +55,9 @@ enum {
 };
 #  define ThreadFs (*(void *__seg_gs *)TIB_FS_OFF)
 #  define ThreadGs (*(void *__seg_gs *)TIB_GS_OFF)
+#else
+static _Thread_local  void *ThreadFs; 
+static _Thread_local void *ThreadGs; 
 #endif
 
 #if defined(__riscv) || defined(__riscv__)
@@ -76,6 +79,16 @@ void *GetHolyFsPtr() {
   return (void *)TIB_FS_OFF;
 }
 #elif defined(_M_ARM64) || defined(__aarch64__)
+#  if !defined (__APPLE__)
+//http://www.jakubkonka.com/2021/01/21/llvm-tls-apple-silicon.html
+// Basically APPLE makes  special page for TLS
+void *GetHolyGsPtr() {
+  return (void *)&ThreadGs;
+}
+void *GetHolyFsPtr() {
+  return (void *)&ThreadFs;
+}
+#  else
 //        x28
 //     %tpidr_el0
 //         │
@@ -94,6 +107,7 @@ void *GetHolyFsPtr() {
   asm volatile("mrs\t%0,tpidr_el0" : "=r"(tls));
   return fs - tls;
 }
+#endif
 #else
 
 #  error This isn't an architecture that's supported yet. Check again later.
