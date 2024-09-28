@@ -13,7 +13,6 @@ AIWNIOS_makecontext:
   ret
 _AIWNIOS_getcontext:
 AIWNIOS_getcontext:
-  ldr x0,[sp]
   stp x29,x30,[sp,-16]!
   str x30,[sp,8]
 #  str x18,[x0]
@@ -44,7 +43,6 @@ AIWNIOS_getcontext:
   ret
 _AIWNIOS_setcontext:
 AIWNIOS_setcontext:
-  ldr x0,[sp]
   mov x8,x0
 #  ldr x18,[x0]
   ldr x19,[x0,8]

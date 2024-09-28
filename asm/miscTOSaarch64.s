@@ -6,8 +6,8 @@
 .global _TempleOS_Call
 _TempleOS_Call:
 TempleOS_Call:
-  ldr x0,[sp]
   stp x29,x30,[sp,-16]!
+  
   mov x29,sp
   blr x0
   mov sp,x29
@@ -18,9 +18,6 @@ TempleOS_Call:
 .global _TempleOS_CallN
 _TempleOS_CallN:
 TempleOS_CallN:
-  ldr x0,[sp]
-  ldr x1,[sp,8]
-  ldr x2,[sp,16]
   stp x29,x30,[sp,-16]!
   mov x29,sp
   mov x4,x1
@@ -54,14 +51,12 @@ __MemCpy:
 
 TempleOS_CallVaArgs:
 _TempleOS_CallVaArgs:
-  ldr x0,[sp]
-  ldr x1,[sp,8]
-  ldr x2,[sp,16]
-  ldr x6,[sp,24]
-  ldr x7,[sp,32]
   stp x29,x30,[sp,-16]!
   mov x29,sp
  
+  mov x6,x3
+  mov x7,x4
+
   sub sp,sp,128
 
   add x4,x1,x6/*argc1+argc*/
@@ -90,7 +85,38 @@ _TempleOS_CallVaArgs:
   mov x11,x1
   bl __MemCpy
 
-  blr x0
+
+  mov x8,x0
+
+  cmp x6,8 
+  add x6,x6,2 /*argc,argv*/
+  cmp x6,8
+  bge .L_stk
+    
+  ldr x7,[sp,7*8]
+  ldr x6,[sp,6*8]
+  ldr x5,[sp,5*8]
+  ldr x4,[sp,4*8]
+  ldr x3,[sp,3*8]
+  ldr x2,[sp,2*8]	
+  ldr x1,[sp,1*8]
+  ldr x0,[sp,0*8]
+
+  blr x8
+  b .L_fin
+
+.L_stk:
+  ldr x7,[sp,7*8]
+  ldr x6,[sp,6*8]
+  ldr x5,[sp,5*8]
+  ldr x4,[sp,4*8]
+  ldr x3,[sp,3*8]
+  ldr x2,[sp,2*8]
+  ldr x1,[sp,1*8]
+  ldr x0,[sp,0*8]
+  blr x8
+  add sp,sp,8*8  
+.L_fin:
   mov sp,x29
   ldp x29,x30,[sp],16
   ret

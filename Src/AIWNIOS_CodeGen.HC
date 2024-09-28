@@ -1456,6 +1456,10 @@ skip_convert:;
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
 	  //16 to offset [PC,RBP] pair at base 
+	  #ifdef TARGET_AARCH64
+	  //ARM now uses a native SysV ABI srot of
+	  goto no_farg;
+	  #endif
 	  #ifdef TARGET_RISCV
 	  //RISCV now uses a native SysV ABI srot of
 	  goto no_farg;

@@ -109,27 +109,30 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #  include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  // 0:  stp x29,x30[sp,-16]!
-  // 4:  add x0,sp,16
-  // 8:  ldr x1,label
-  // c:  blr x1
-  // 10: ldp x29,x30[sp],16
-  // 14: ret
-  // 18: label: fptr
-  static CHeapCtrl *code = NULL;
-  if (!code) {
-    code = HeapCtrlInit(NULL, Fs, 1);
-  }
-  int old = SetWriteNP(0);
-  int32_t *blob = A_MALLOC(0x18 + 8, code);
-  blob[0] = ARM_stpPreImmX(29, 30, 31, -16);
-  blob[1] = ARM_addImmX(0, 31, 16);
-  blob[2] = ARM_ldrLabelX(1, 0x18 - 0x8);
-  blob[3] = ARM_blr(1);
-  blob[4] = ARM_ldpPostImmX(29, 30, 31, 16);
-  blob[5] = ARM_ret();
-  memcpy(blob + 6, &fptr, sizeof(void *));
-  SetWriteNP(old);
+  int32_t *blob = A_MALLOC(8 * 21+arity*4, Fs->code_heap),ptr=0;
+  int64_t arg,fill;
+  int64_t pop=0,pad=0;
+  if(arity&1)
+	arity++,pad=8;
+  if(arity);
+    blob[ptr++]=ARM_subImmX(31,31,pop=(arity<8?arity:8)*8);
+  for(arg=0;arg<arity-!!pad;arg++) {
+	  if(arg>=8) break;
+	  blob[ptr++]=ARM_strRegImmX(arg,31,arg*8+pad);
+  }	
+  blob[ptr++] = ARM_addImmX(0, 31,pad); // 31 is stack pointer,0 is 1st argument
+  blob[ptr++] = ARM_stpPreImmX(29,30,31,-16);
+  blob[ptr++]=ARM_movRegX(29,31);
+  fill=ptr;
+  blob[ptr++] = ARM_ldrLabelX(8,0); // 6 is 1st temporoary
+  blob[ptr++]=ARM_blr(8);
+  blob[ptr++]=ARM_ldpPostImmX(29, 30, 31, 16);
+  if(pop)
+	blob[ptr++]=ARM_addImmX(31,31,pop);
+  blob[ptr++]=ARM_ret();
+  if(ptr&1) ptr++; //Align to 8
+  *(void **)(blob + ptr) = fptr; // 16 aligned
+  blob[fill]=ARM_ldrLabelX(8,(ptr-fill)*4);
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
