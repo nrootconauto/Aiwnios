@@ -75,7 +75,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
     goto fin;
   }
 
-  if(tnam=FileExtDot(file->user_data2)) {
+  if(tnam=StrLastOcc(file->user_data2,".")) {
     if(StrICmp(tnam,".mp4")) {
       DocPrint(tmp,"$$PURPLE$$$$TX+CX,\"Video Needs to be an mp4:\"$$$$FD$$\n");
       goto fin;
@@ -100,13 +100,15 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
 
   AiwniosTubeSetVideoPropStr(ttitle,"Props/Description",tdesc);
 //Generate Page HTML(TODO make a HolyCGI script for this)
+  tmp_str2=StrLastOcc(file->user_data2,".");
+  tnam=MStrPrint("%s%s",ttitle,tmp_str2);
   DocPrint(page,"$$PURPLE$$$$TX+CX,\"AiwniosTube\"$$$$FD$$\n");
-  DocPrint(page,"\n$$HC,\"<video controls width=640 height=480><source src='/Videos/%Q'></video>\"$$",file->user_data2);
+  DocPrint(page,"\n$$HC,\"<video controls width=640 height=480><source src='/Videos/%Q'></video>\"$$",tnam);
   DocPrint(page,"\n$$TR-C,\"%Q\"$$$$ID,2$$\n",ttitle);
   DocPrint(page,"%Q\n$$ID,-2$$\n",tdesc);
-
   //Save vidoe
-  filename=ChrootFile(file->user_data2,SERVER_WWW"/Videos");
+  filename=ChrootFile(tnam,SERVER_WWW"/Videos");
+  Free(tnam);
   StrUtil(filename,SUF_REM_SPACES);
   FileWrite(filename,file->user_data1,file->user_data0);
   AiwniosTubeSetVideoPropStr(ttitle,"Props/VideoPath","%s",filename);
