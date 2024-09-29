@@ -6257,22 +6257,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 		AIWNIOS_ADD_CODE(X86MovRegIndirI64,into_reg,-1,-1,-1,0x12345);
 	} else  {
 		into_reg=0;
-		AIWNIOS_ADD_CODE(MovRAXMoffs32,0);
+		AIWNIOS_ADD_CODE(X86MovRegIndirI64,into_reg,-1,-1,-1,0x12345);
 	}
 	MIR(cctrl,into_reg);
-	if(into_reg==0) {
-		if (next->type == IC_I64) {
-		  if (bin)
-			*(void **)(bin + code_off - 8) = next->integer;
-		} else if (bin)
-		  CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
-    } else {
-		if (next->type == IC_I64) {
-		  if (bin)
-			*(int32_t*)(bin + code_off - 4) = (int32_t)next->integer;
-		} else if (bin)
-		  CodeMiscAddRef(next->code_misc, bin + code_off - 4);
-	}
+	if (next->type == IC_I64) {
+	  if (bin)
+		*(int32_t*)(bin + code_off - 4) = (int32_t)next->integer;
+	} else if (bin)
+	  CodeMiscAddRef(next->code_misc, bin + code_off - 4);
     tmp.mode = MD_REG;
     tmp.reg = into_reg;
     tmp.raw_type = RT_I64i;
