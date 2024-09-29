@@ -148,6 +148,12 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
         ADD_U8(ErectREX(_64, R, I, B));                                        \
     }
 #define SIB_END()                                                              \
+  if(I==-1&&B==-1) { \
+      ADD_U8(((R & 0b111) << 3) | 0b100);                                 \  
+      ADD_U8(0x25); \
+      ADD_U32(O); \
+      break; \
+  } \
   if (I == -1 && R12 != B && B != RIP && B != RSP) {                           \
     if (!O && B != RBP)                                                        \
       ADD_U8(((R & 0b111) << 3) | (B & 0b111))                                 \
@@ -6244,17 +6250,35 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   segment:
     // %gs is used as a TLS reg for all OS'es
+    into_reg=0;
     AIWNIOS_ADD_CODE(SEG_GS, 0);
-    AIWNIOS_ADD_CODE(MovRAXMoffs32, 0);
-    MIR(cctrl, 0);
-    if (next->type == IC_I64) {
-      if (bin)
-        *(void **)(bin + code_off - 8) = next->integer;
-    } else if (bin)
-      CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
+    if(rpn->res.mode==MD_REG&&next->type==IC_I64&&Is32Bit(next->integer)) {
+		into_reg=rpn->res.reg;
+		AIWNIOS_ADD_CODE(X86MovRegIndirI64,into_reg,-1,-1,-1,0x12345);
+	} else  {
+		into_reg=0;
+		AIWNIOS_ADD_CODE(MovRAXMoffs32,0);
+	}
+	MIR(cctrl,into_reg);
+	if(into_reg==0) {
+		if (next->type == IC_I64) {
+		  if (bin)
+			*(void **)(bin + code_off - 8) = next->integer;
+		} else if (bin)
+		  CodeMiscAddRef(next->code_misc, bin + code_off - 8)->is_abs64 = 1;
+    } else {
+		if (next->type == IC_I64) {
+		  if (bin)
+			*(int32_t*)(bin + code_off - 4) = (int32_t)next->integer;
+		} else if (bin)
+		  CodeMiscAddRef(next->code_misc, bin + code_off - 4);
+	}
     tmp.mode = MD_REG;
-    tmp.reg = 0;
+    tmp.reg = into_reg;
     tmp.raw_type = RT_I64i;
+    rpn->tmp_res=tmp;
+    if(rpn->res.keep_in_tmp)
+		rpn->res=tmp;
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     break;
   ic_lock:

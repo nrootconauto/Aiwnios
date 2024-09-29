@@ -1307,6 +1307,7 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
   U8 *dumb_static;
   U8 name[STR_LEN],name2[STR_LEN];
   U8 *name_ptr=name,*name2_ptr=name2;
+  Bool force_segment=FALSE;
   I64 statics_sz=0;
   static I64 static_cnt=0;
   stat_nam=MStrPrint(".STATIC_%d",static_cnt++);
@@ -1653,7 +1654,16 @@ found_offset:;;
     misc=cur->ic_data;
     misc->addr=INVALID_PTR;
     misc->flags&=~CMF_SHORT_ADDR;
-    if(!(misc->h->type&HTF_IMPORT)) {
+    #ifdef TARGET_X86
+    force_segment=TRUE;
+    #else
+    force_segment=FALSE;
+    #endif
+    if(force_segment) {
+      //Bypass import and use raw one on X86,they are predictable
+      misc->h=HashFind("__Fs",Fs->hash_table,HTT_FUN);
+      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);      
+    } else if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
     } else
       new=__HC_ICAdd_RelocUnique(
@@ -1666,6 +1676,7 @@ found_offset:;;
         );
     new=__HC_ICAdd_Fs(cc2);
 	break;case IC_GS:
+	
 	if(!cur->ic_data) {
     //Unique references to the TLS offset(unlike normal functions whose pointer is stored at the end of the function and loaded from there)
       misc=cur->ic_data=COCMiscNew(cc,CMT_HASH_ENTRY);
@@ -1676,7 +1687,17 @@ found_offset:;;
     misc=cur->ic_data;
     misc->flags&=~CMF_SHORT_ADDR;
     misc->addr=INVALID_PTR;
-    if(!(misc->h->type&HTF_IMPORT)) {
+    
+    #ifdef TARGET_X86
+    force_segment=TRUE;
+    #else
+    force_segment=FALSE;
+    #endif
+    if(force_segment) {
+      //Bypass import and use raw one on X86,they are predictable
+      misc->h=HashFind("__Gs",Fs->hash_table,HTT_FUN);
+      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);      
+    } else if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
     } else
       new=__HC_ICAdd_RelocUnique(
