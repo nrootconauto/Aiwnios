@@ -163,15 +163,12 @@ TempleOS_CallN:
 # fptr is a variadic fun with argc normal args
 # argc1/argv1 are propogated for fptr's varargs
 TempleOS_CallVaArgs:
-  ld a0,(sp)
-  ld a1,8(sp)
-  ld a2,16(sp)
-  ld a3,24(sp)
   addi sp,sp,-16
   sd fp,(sp)
   sd ra,8(sp)
   addi fp,sp,16
-  addi a4,sp,48 # point to argv
+  addi a4,sp,16 # point to argv
+  addi t5,a3,1 #t5 has args + (1 argc)
   
   # sz=argc1+argc+1 
   addi t1,a1,1
@@ -209,15 +206,37 @@ TempleOS_CallVaArgs:
   j .Lvarg_start
 .Lvarg_end:
   sd t1,(t4)
-  
-  jalr a0
-  
+  add t1,a0,zero
+  addi t2,zero,8
+  bge t5,t2, .Lbig 
+  slli t5,t5,3
+  ld a7,7*8(sp)
+  ld a6,6*8(sp)
+  ld a5,5*8(sp)
+  ld a4,4*8(sp)
+  ld a3,3*8(sp)
+  ld a2,2*8(sp)
+  ld a1,1*8(sp)
+  ld a0,0*8(sp)
+  add sp,sp,t5
+.Lend:
+  jalr t1
   addi sp,fp,-16
   ld fp,(sp)
   ld ra,8(sp)
   addi sp,sp,16
   ret
-
+.Lbig:
+  ld a7,7*8(sp)
+  ld a6,6*8(sp)
+  ld a5,5*8(sp)
+  ld a4,4*8(sp)
+  ld a3,3*8(sp)
+  ld a2,2*8(sp)
+  ld a1,1*8(sp)
+  ld a0,0*8(sp)
+  addi sp,sp,-8*8
+   j .Lend
 Misc_BP:
   mv a0,s0
   ret

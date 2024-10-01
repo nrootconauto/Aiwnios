@@ -351,6 +351,7 @@ extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 
 #define AIWNIOS_ADD_CODE(func)                                                 \
   {                                                                            \
+	  int32_t have=func;													   \
     if (bin)                                                                   \
       *(int32_t *)((char *)bin + code_off) = func;                             \
     code_off += 4;                                                             \
@@ -618,6 +619,10 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
                            char *bin, int64_t code_off) {
   CCodeMisc *misc;
   int64_t low12;
+  if(!imm) {
+    AIWNIOS_ADD_CODE(RISCV_ADDI(reg, 0, imm));
+    return code_off;
+  }
   if (Is12Bit(imm)) {
     AIWNIOS_ADD_CODE(RISCV_ADDI(reg, 0, imm));
   } else if (Is32Bit(imm)) {
@@ -1309,17 +1314,20 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
   return 0;
 }
 //Arguments are called backwards
-static int64_t ArgRPNMutatesArgumentRegister(CRPN *rpn,int64_t reg) {
+static int64_t ArgRPNMutatesArgumentRegister(CRPN *rpn,int64_t reg,int64_t is_farg) {
   	int64_t i=rpn->length-(reg-10)-1;
   	CRPN *arg;
-  	while(i<rpn->length) {
+  	while(++i<rpn->length) {
 		if(SpillsTmpRegs(arg=ICArgN(rpn,i)))
 		  return 1;
 	    //In Aiwnios RISC-V ABI,I pass all arguments in int registers
-		if((arg->changes_iregs|arg->changes_iregs2)&(1ull<<reg)) {
-			return  1;
-		} 
-		i++;
+	    if(is_farg) {
+			if((arg->changes_fregs|arg->changes_fregs2)&(1ull<<reg)) {
+				return  1;
+			} 
+		} else if((arg->changes_iregs|arg->changes_iregs2)&(1ull<<reg)) {
+				return  1;
+			} 
 	}
 	return 0;
 }
@@ -1380,7 +1388,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       vargs_pop=rpn2->length*8;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
     } else if(!WONT_CHANGE(rpn2->type))  {
-		if(!ArgRPNMutatesArgumentRegister(rpn,rpn->length-i-1+10)&&rpn->length-i-1<8) {
+		if(!ArgRPNMutatesArgumentRegister(rpn,rpn->length-i-1+10,rpn2->res.raw_type==RT_F64)&&rpn->length-i-1<8) {
 			//Favor storing in argument registers if they arent changed
 			rpn2->res.mode=MD_REG;
 			rpn2->res.raw_type=rpn2->res.raw_type;
@@ -3154,9 +3162,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (next->raw_type == RT_F64) {
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, RISCV_IPOOP1, bin,
                                  code_off);
-      code_off = __ICMoveF64(cctrl, RISCV_FRET, 0, bin, code_off);
+      code_off = __ICMoveF64(cctrl, RISCV_FPOOP2, 0, bin, code_off);
       AIWNIOS_ADD_CODE(
-          RISCV_FEQ_D(MIR(cctrl, RISCV_IRET), next->res.reg, RISCV_FRET));
+          RISCV_FEQ_D(MIR(cctrl, RISCV_IRET), next->res.reg, RISCV_FPOOP2));
       // freg==0.,so do opposite
       if (!reverse) {
         code_off = RISCV_JccToLabel(rpn->code_misc, RISCV_COND_E, RISCV_IRET, 0,
