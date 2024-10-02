@@ -22,7 +22,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con=Fs->user_data;
   if(v=GetQueryValue(url->query,"view")) {
     tmp_str=ChrootFile(v,SERVER_WWW"/Videos");
-    if(FileFind(tmp_str)) {
+    if(FileFind(tmp_str)) {
 //Predefined(maybe change this in the future)
       tmp_doc=DocRead(tmp_str);
 //Load Comments
@@ -65,10 +65,10 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
       DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"I coudln't find that video:\"$$$$FD$$\n");
       DocPrint(tmp_doc,"\n  Video \"%Q\" not found.\n",v);
 
-      DocDel(tmp_doc);
       StrCpy(con->response_mime,"text/html");
       con->response_code=200;
       WriteDocToStream(stream,tmp_doc);
+      DocDel(tmp_doc);
     }
     Free(tmp_str);
     Free(v);
