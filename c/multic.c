@@ -79,14 +79,14 @@ void *GetHolyFsPtr() {
   return (void *)TIB_FS_OFF;
 }
 #elif defined(_M_ARM64) || defined(__aarch64__)
-#  if !defined (__APPLE__)
+#  if defined (__APPLE__)
 //http://www.jakubkonka.com/2021/01/21/llvm-tls-apple-silicon.html
 // Basically APPLE makes  special page for TLS
 void *GetHolyGsPtr() {
-  return (void *)&ThreadGs;
+  return (char*)&ThreadGs-(char*)&ThreadFs;
 }
 void *GetHolyFsPtr() {
-  return (void *)&ThreadFs;
+  return (char*)&ThreadFs-(char*)&ThreadFs;
 }
 #  else
 //        x28
@@ -138,6 +138,14 @@ __attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
+  #if (defined(__aarch64__) || defined(_M_ARM64))
+  #if defined(__APPLE__)
+  void *tls=&ThreadFs;
+  asm volatile("mov\tx28,%0"::"r"(tls));
+  #else
+  asm volatile("mrs\tx28,tpidr_el0");
+  #endif
+  #endif
 #if defined(__x86_64__) && !defined(_WIN64)
   void *tls = calloc(1, 0x10) - 0xF0;
   int ret = -1;

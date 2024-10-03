@@ -18,7 +18,7 @@ AIWNIOS_enter_try:
   str x25,[x0,8*7]
   str x26,[x0,8*8]
   str x27,[x0,8*9]
-  str x28,[x0,8*10]
+#  str x28,[x0,8*10] TLS register in aiwnios
   str x29,[x0,8*11]
   str x30,[x0,8*12]
   str d8,[x0,8*13]
@@ -47,7 +47,7 @@ AIWNIOS_throw:
   ldr x25,[x0,8*7]
   ldr x26,[x0,8*8]
   ldr x27,[x0,8*9]
-  ldr x28,[x0,8*10]
+#  ldr x28,[x0,8*10] TLS register in aiwnios
   ldr x29,[x0,8*11]
   ldr x30,[x0,8*12]
   ldr d8,[x0,8*13]

@@ -129,6 +129,8 @@ static void SetKeepTmps(CRPN *rpn) {
   switch (rpn->type) {
   case IC_FS:
   case IC_GS:
+    if(rpn->tmp_res.mode)
+		rpn->res.keep_in_tmp=1;
     return;
   case IC_RET:
   case IC_GOTO_IF:
@@ -1790,7 +1792,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
     goto unop;
   case IC_FS:
   case IC_GS:
-    return 1;
+    return 0;
   }
   return 0;
 t:
@@ -4442,8 +4444,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       ref->patch_cond_br = ARM_ldrLabelX;
       ref->user_data1 = 0;
     }
-    AIWNIOS_ADD_CODE(ARM_msrX1_tpidr_el0(MIR(cctrl, 0)));
-    AIWNIOS_ADD_CODE(ARM_addRegX(MIR(cctrl, 1), 0, 1));
+    AIWNIOS_ADD_CODE(ARM_addRegX(MIR(cctrl, 1), 0, 28));
     if (rpn->res.mode == MD_REG && rpn->res.raw_type != RT_F64) {
       AIWNIOS_ADD_CODE(ARM_ldrRegImmX(MIR(cctrl, rpn->res.reg), 1, 0));
     } else {
@@ -4736,7 +4737,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_FS:
   case IC_GS:
     // On ARM these are functions
-    PushSpilledTmp(cctrl, r);
+    PushTmp(cctrl, r);
     return 1;
   }
   int64_t a, argc, old_icnt = cctrl->backend_user_data2,

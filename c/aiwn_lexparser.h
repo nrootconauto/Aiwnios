@@ -547,7 +547,7 @@ enum {
 #elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))
 #  define AIWNIOS_IREG_START     19
-#  define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+#  define AIWNIOS_IREG_CNT       (27 - 19 + 1)
 #  define AIWNIOS_REG_FP         ARM_REG_FP
 #  define AIWNIOS_REG_SP         ARM_REG_SP
 #  define AIWNIOS_TMP_IREG_POOP  18 // Platform register,I use it as a poo poo
@@ -560,7 +560,7 @@ enum {
 #  define AIWNIOS_TMP_FREG_CNT   (31 - 16 + 1)
 #elif defined(__APPLE__) && (defined(_M_ARM64) || defined(__aarch64__))
 #  define AIWNIOS_IREG_START     19
-#  define AIWNIOS_IREG_CNT       (28 - 19 + 1)
+#  define AIWNIOS_IREG_CNT       (27 - 19 + 1)
 #  define AIWNIOS_REG_FP         ARM_REG_FP
 #  define AIWNIOS_REG_SP         ARM_REG_SP
 #  define AIWNIOS_TMP_IREG_POOP  16

@@ -212,7 +212,7 @@ extern U8 * __HC_ICAdd_Gs(U8*)
 //
 #ifdef TARGET_AARCH64
 #define AIWNIOS_IREG_START 19
-#define AIWNIOS_IREG_CNT (28 - 19 + 1)
+#define AIWNIOS_IREG_CNT (27 - 19 + 1)
 #define AIWNIOS_FREG_START 8
 #define AIWNIOS_FREG_CNT (15 - 8 + 1)
 I64 VarIRegToReg(I64 r) {return r+AIWNIOS_IREG_START;}
