@@ -20,8 +20,9 @@ _TempleOS_CallN:
 TempleOS_CallN:
   stp x29,x30,[sp,-16]!
   mov x29,sp
-  mov x4,x1
-  and x3,x1,1  /* %1*/
+  mov x8,x1
+  mov x9,x0
+  and x3,x1,1  /* %2*/
   add x1,x1,x3 /* If remainder of x1 is 1,add 1 to align to 2(we multiply by 8 to align to 16) */
   lsl x5,x1,3 /* times 8 */
   sub sp,sp,x5
@@ -32,7 +33,20 @@ TempleOS_CallN:
   str x5,[sp,x1,LSL 3]
   cbnz x1,.L_loop
 .L_bye:
-  blr x0
+  
+  ldr x7,[sp,7*8]
+  ldr x6,[sp,6*8]
+  ldr x5,[sp,5*8]
+  ldr x4,[sp,4*8]
+  ldr x3,[sp,3*8]
+  ldr x2,[sp,2*8]	
+  ldr x1,[sp,1*8]
+  ldr x0,[sp,0*8]
+  cmp x8,8
+  bls .L_no_sub
+  sub sp,sp,8*8
+.L_no_sub:
+  blr x9
   mov sp,x29
   ldp x29,x30,[sp],16
   ret
