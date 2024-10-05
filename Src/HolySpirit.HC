@@ -133,7 +133,7 @@ public I64 GodInit(U8 *files_find_mask,U8 *fu_flags=NULL)
   }
   DirTreeDel(tmpde1);
   return god.num_words;
-} GodInit("/Vocab.DD*");
+} GodInit("/God/Vocab.DD*");
 
 public U8 *GodWordStr(I64 bits=17)
 {//Make God pick a word. $LK+PU,"Holy Spirit Instructions",A="FI:::/HSNotes.DD"$
