@@ -47,20 +47,22 @@
  * Linux/FreeBSD use FS for TLS, but we will allocate space on
  * %gs for compatibility with windows ABI. (__bootstrap_tls())
  ***************************************************************/
-enum {
-  TIB_FS_OFF = 0xF0,
-#  define TIB_FS_OFF TIB_FS_OFF
-  TIB_GS_OFF = 0xF8,
-#  define TIB_GS_OFF TIB_GS_OFF
-};
-#  define ThreadFs (*(void *__seg_gs *)TIB_FS_OFF)
-#  define ThreadGs (*(void *__seg_gs *)TIB_GS_OFF)
-#else
-static _Thread_local void *ThreadFs; 
-static _Thread_local void *ThreadGs; 
+#  define FS_OFF   0xF0
+#  define GS_OFF   0xF8
+#  define ThreadFs (*(void *__seg_gs *)FS_OFF)
+#  define ThreadGs (*(void *__seg_gs *)GS_OFF)
+#elif defined(__aarch64__)
+register long aiwnios_tls_reg asm("x28");
+#  define FS_OFF   0
+#  define GS_OFF   8
+#  define ThreadFs (*(void **)(aiwnios_tls_reg + FS_OFF))
+#  define ThreadGs (*(void **)(aiwnios_tls_reg + GS_OFF))
 #endif
 
 #if defined(__riscv) || defined(__riscv__)
+static _Thread_local void *ThreadFs;
+static _Thread_local void *ThreadGs;
+
 void *GetHolyGsPtr() {
   char *gs = &ThreadGs, *tls;
   asm volatile("mv\t%0,tp" : "=r"(tls));
@@ -71,43 +73,13 @@ void *GetHolyFsPtr() {
   asm volatile("mv\t%0,tp" : "=r"(tls));
   return fs - tls;
 }
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(__aarch64__)
 void *GetHolyGsPtr() {
-  return (void *)TIB_GS_OFF;
+  return (void *)GS_OFF;
 }
 void *GetHolyFsPtr() {
-  return (void *)TIB_FS_OFF;
+  return (void *)FS_OFF;
 }
-#elif defined(_M_ARM64) || defined(__aarch64__)
-#  if defined (__APPLE__)
-//http://www.jakubkonka.com/2021/01/21/llvm-tls-apple-silicon.html
-// Basically APPLE makes  special page for TLS
-void *GetHolyGsPtr() {
-  return (char*)&ThreadGs-(char*)&ThreadFs;
-}
-void *GetHolyFsPtr() {
-  return (char*)&ThreadFs-(char*)&ThreadFs;
-}
-#  else
-//        x28
-//     %tpidr_el0
-//         │
-//         │    _Thread_local
-//         ├───┬──────────┬──────────┐
-//         │dtv│  .tdata  │  .tbss   │
-//         └───┴──────────┴──────────┘
-void *GetHolyGsPtr() {
-  char *tls, *gs = &ThreadGs;
-  asm volatile("mrs\t%0,tpidr_el0" : "=r"(tls));
-  return gs - tls;
-}
-
-void *GetHolyFsPtr() {
-  char *tls, *fs = &ThreadFs;
-  asm volatile("mrs\t%0,tpidr_el0" : "=r"(tls));
-  return fs - tls;
-}
-#endif
 #else
 
 #  error This isn't an architecture that's supported yet. Check again later.
@@ -138,15 +110,9 @@ __attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
-  #if (defined(__aarch64__) || defined(_M_ARM64))
-  #if defined(__APPLE__)
-  void *tls=&ThreadFs;
-  asm volatile("mov\tx28,%0"::"r"(tls));
-  #else
-  asm volatile("mrs\tx28,tpidr_el0");
-  #endif
-  #endif
-#if defined(__x86_64__) && !defined(_WIN64)
+#ifdef __aarch64__
+  aiwnios_tls_reg = (long)calloc(1, 0x10);
+#elif defined(__x86_64__) && !defined(_WIN64)
   void *tls = calloc(1, 0x10) - 0xF0;
   int ret = -1;
 #  ifdef __linux__
@@ -364,7 +330,7 @@ void MPSleepHP(int64_t ns) {
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
 #  endif
 #  if defined(__APPLE__)
-  static int (*ulWait)(void *, int64_t, int64_t, int32_t) = NULL;
+  static typeof(__ulock_wait) *ulWait = 0;
   static int init = 0;
   if (!init) {
     init = 1;
