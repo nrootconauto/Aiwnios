@@ -52,11 +52,11 @@
 #  define ThreadFs (*(void *__seg_gs *)FS_OFF)
 #  define ThreadGs (*(void *__seg_gs *)GS_OFF)
 #elif defined(__aarch64__)
-register long aiwnios_tls_reg asm("x28");
+static _Thread_local void *__fsgs[2];
 #  define FS_OFF   0
 #  define GS_OFF   8
-#  define ThreadFs (*(void **)(aiwnios_tls_reg + FS_OFF))
-#  define ThreadGs (*(void **)(aiwnios_tls_reg + GS_OFF))
+#  define ThreadFs __fsgs[0]
+#  define ThreadGs __fsgs[1]
 #endif
 
 #if defined(__riscv) || defined(__riscv__)
@@ -111,7 +111,7 @@ __attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
 
 void __bootstrap_tls(void) {
 #ifdef __aarch64__
-  aiwnios_tls_reg = (long)calloc(1, 0x10);
+  asm("mov\tx28,%0" : : "r"(__fsgs));
 #elif defined(__x86_64__) && !defined(_WIN64)
   void *tls = calloc(1, 0x10) - 0xF0;
   int ret = -1;
