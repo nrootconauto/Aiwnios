@@ -11,7 +11,7 @@ void SetHolyFs(void *);
 void SetHolyGs(void *);
 
 int64_t mp_cnt();
-void SpawnCore(void (*fp)(), void *gs, int64_t core);
+void SpawnCore(void *fp, void *gs, int64_t core);
 void MPSleepHP(int64_t ns);
 void MPAwake(int64_t core);
 void InteruptCore(int64_t core);

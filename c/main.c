@@ -83,9 +83,9 @@ static void PrsAddSymbolNaked(char *name, void *ptr, int64_t arity) {
 }
 static void FuzzTest1() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char tf[BUFSIZ];
   strcpy(tf, "FUZZ1.HC");
-  char buf[TMP_MAX + 64];
+  char buf[BUFSIZ + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintI(U8i *,I64i);\n");
   // Do complicated expr to dirty some temp registers
@@ -163,9 +163,9 @@ static void FuzzTest1() {
 }
 static void FuzzTest2() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char tf[BUFSIZ];
   strcpy(tf, "FUZZ2.HC");
-  char buf[TMP_MAX + 64];
+  char buf[BUFSIZ + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintF(U8i *,F64);\n");
   // Do complicated expr to dirty some temp registers
@@ -232,9 +232,9 @@ static void FuzzTest2() {
 }
 static void FuzzTest3() {
   int64_t i, i2, o;
-  char tf[TMP_MAX];
+  char tf[BUFSIZ];
   strcpy(tf, "FUZZ3.HC");
-  char buf[TMP_MAX + 64];
+  char buf[BUFSIZ + 64];
   FILE *f = fopen(tf, "w");
   fprintf(f, "extern U0 PrintPtr(U8i *,I64i);\n");
   // Do complicated expr to dirty some temp registers

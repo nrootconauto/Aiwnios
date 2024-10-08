@@ -1,8 +1,9 @@
-#include "aiwn_asm.h"
-#include "aiwn_hash.h"
-#include "aiwn_mem.h"
-#include "aiwn_multic.h"
-#include "aiwn_que.h"
+#include "c/aiwn_asm.h"
+#include "c/aiwn_except.h"
+#include "c/aiwn_hash.h"
+#include "c/aiwn_mem.h"
+#include "c/aiwn_multic.h"
+#include "c/aiwn_que.h"
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -706,7 +707,8 @@ static void UnblockSignals() {
 #  if defined(__APPLE__)
 #    include <arm/_mcontext.h>
 #  endif
-static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
+static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
+  ucontext_t *_ctx = __ctx;
 #  if defined(__x86_64__)
 #    if defined(__linux__)
   // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
@@ -777,7 +779,7 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
@@ -875,10 +877,11 @@ static void SigHandler(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 #  endif
 }
 #endif
-#if defined(WIN32) || defined(_WIN32)
-static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
+#ifdef _WIN32
+#  define E(code) EXCEPTION_##code
+static LONG WINAPI VectorHandler(EXCEPTION_POINTERS *einfo) {
   CONTEXT *ctx = einfo->ContextRecord;
-  CFuckup *fu = calloc(1, sizeof(CFuckup));
+  CFuckup *fu = calloc(1, sizeof *fu);
   int64_t sig = 0;
   QueIns(fu, &fuckups);
   fu->pid = GetCurrentThreadId();
@@ -890,8 +893,8 @@ static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
   CHashExport *exp;
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     switch (einfo->ExceptionRecord->ExceptionCode) {
-    case EXCEPTION_SINGLE_STEP:
-    case EXCEPTION_BREAKPOINT:
+    case E(SINGLE_STEP):
+    case E(BREAKPOINT):
       sig = 5;
     }
     FFI_CALL_TOS_2(exp->val, sig, actx);
@@ -902,21 +905,37 @@ static int64_t VectorHandler(struct _EXCEPTION_POINTERS *einfo) {
 fin:
   return EXCEPTION_CONTINUE_EXECUTION;
 }
+
+static LONG WINAPI Div0Handler(EXCEPTION_POINTERS *info) {
+  CONTEXT *ctx = info->ContextRecord;
+  switch (info->ExceptionRecord->ExceptionCode) {
+  case E(FLT_DIVIDE_BY_ZERO):
+  case E(INT_DIVIDE_BY_ZERO):
+    // throw wants a context from holyc
+    ctx->Rip = throw;
+    ctx->Rcx = *(uint64_t *)"DivZero";
+    RtlRestoreContext(ctx, 0);
+  default:
+    return E(CONTINUE_EXECUTION);
+  }
+}
 #endif
 void InstallDbgSignalsForThread() {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_handler = SIG_IGN;
-  sa.sa_flags = SA_SIGINFO;
-  sa.sa_sigaction = (void *)&SigHandler;
-  sigaction(SIGSEGV, &sa, NULL);
-  sigaction(SIGBUS, &sa, NULL);
-  sigaction(SIGTRAP, &sa, NULL);
-  sigaction(SIGILL, &sa, NULL);
-  sigaction(SIGFPE, &sa, NULL);
+#ifndef _WIN32
+  struct sigaction sa = {
+      .sa_flags = SA_SIGINFO,
+      .sa_sigaction = SigHandler,
+  };
+  int sigs[] = {SIGSEGV, SIGBUS, SIGTRAP, SIGILL, -1};
+  for (int *sigp = sigs; *sigp != -1; sigp++)
+    sigaction(*sigp, &sa, 0);
 #else
+  /* If the First parameter is nonzero, the handler is the first handler to be
+   * called until a subsequent call to AddVectoredExceptionHandler is used to
+   * specify a different handler as the first handler.
+   *   --Quoth MSDN */
   AddVectoredExceptionHandler(1, VectorHandler);
+  AddVectoredExceptionHandler(1, Div0Handler);
 #endif
 }
 // This happens when after we call DebuggerClientEnd

@@ -1,8 +1,9 @@
-#include "aiwn_asm.h"
-#include "aiwn_fs.h"
-#include "aiwn_hash.h"
-#include "aiwn_mem.h"
-#include "aiwn_multic.h"
+#include "c/aiwn_asm.h"
+#include "c/aiwn_except.h"
+#include "c/aiwn_fs.h"
+#include "c/aiwn_hash.h"
+#include "c/aiwn_mem.h"
+#include "c/aiwn_multic.h"
 #include <SDL.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -11,11 +12,13 @@
 #ifdef __x86_64__
 #  include <errno.h>
 #  include <string.h>
-#  ifdef __linux__
+#  ifndef _WIN32
+#    include <setjmp.h>
 #    include <sys/syscall.h>
 #    include <ucontext.h>
-#  elif defined(__FreeBSD__)
-#    include <machine/sysarch.h>
+#    ifdef __FreeBSD__
+#      include <machine/sysarch.h>
+#    endif
 #  endif
 #  ifndef __SEG_FS
 #    ifdef __clang__
@@ -109,42 +112,76 @@ __attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
   _Exit(-1);
 }
 
-void __bootstrap_tls(void) {
 #ifdef __aarch64__
+void __bootstrap_tls(void) {
   asm("mov\tx28,%0" : : "r"(__fsgs));
+}
 #elif defined(__x86_64__) && !defined(_WIN64)
+static int __setgs(void *gs);
+static jmp_buf jmpb;
+
+void __bootstrap_tls(void) {
+  static bool init, fsgsbase;
+  if (!init) {
+    int ebx;
+    asm("cpuid"          // Structured Extended Feature Flags Enumeration Leaf
+        : "=b"(ebx)      //         (Initial EAX Value = 07H, ECX = 0)
+        : "a"(7), "c"(0) //       EBX - Bit 00: FSGSBASE. Supports if 1.
+        : "edx");
+    fsgsbase = ebx & 1;
+    init = true;
+  }
   void *tls = calloc(1, 0x10) - 0xF0;
-  int ret = -1;
-#  ifdef __linux__
-  asm volatile("syscall"   //    (not defined in musl)
-               : "=a"(ret) //         ARCH_SET_GS
-               : "0"(SYS_arch_prctl), "D"(0x1001), "S"(tls)
-               : "rcx", "r11", "memory");
-#  elif defined(__FreeBSD__)
-  ret = amd64_set_gsbase(tls);
-#  endif
-  if (!ret)
-    return;
-  fprintf(stderr,
-          "\e[0;31mCRITICAL\e[0m: "
-          "Failed setting GS with error "
-          "\"%s\"; retrying with wrgsbase "
-          "(only available since ivy bridge)\n",
-          strerror(errno));
-  fflush(stderr);
-  struct sigaction sa = {.sa_handler = __sigillhndlr};
-  sigaction(SIGILL, &sa, 0);
-  asm("wrgsbase\t%0" : : "r"(tls));
-  sa.sa_handler = SIG_DFL;
-  sigaction(SIGILL, &sa, 0);
-#endif
+  if (fsgsbase) {
+    struct sigaction sa = {
+        .sa_handler = __sigillhndlr,
+        .sa_flags = SA_SIGINFO,
+    };
+    sigaction(SIGILL, &sa, 0);
+    if (!setjmp(jmpb))
+      asm("wrgsbase\t%0" : : "r"(tls));
+    else
+      fsgsbase = false;
+    sa.sa_handler = SIG_DFL;
+    sigaction(SIGILL, &sa, 0);
+    if (!fsgsbase)
+      goto sysc;
+  } else {
+  sysc:
+    if (!__setgs(tls)) // both syscall and sysarch return 0 on success
+      return;
+    fprintf(stderr, "\e[0;31mCRITICAL\e[0m: Unable to set %%gs: %s\n",
+            strerror(errno));
+    fflush(stderr);
+    // do not ever change this to normal exit()
+    // this is a harsh exit that ignores atexit
+    _Exit(-1);
+  }
 }
 
+static int __setgs(void *gs) {
+  int ret = -1;
+#  ifdef __linux__
+  asm("syscall"   //    (not defined in musl)
+      : "=a"(ret) //         ARCH_SET_GS
+      : "0"(SYS_arch_prctl), "D"(0x1001), "S"(gs)
+      : "rcx", "r11", "memory");
+#  else
+  ret = amd64_set_gsbase(gs);
+#  endif
+  return ret;
+}
+#else
+void __bootstrap_tls(void) {
+}
+#endif
+
 typedef struct {
-  void (*fp)(), *gs;
+  void *fp, *gs;
   int64_t num;
-  void (*profiler_int)(void *fs);
+  void *profiler_int;
   CHashTable *parent_table;
+  char name[16];
 } CorePair;
 #ifdef __linux__
 #  include <linux/futex.h>
@@ -169,10 +206,15 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
-#  if defined(__APPLE__)
+#  ifdef __APPLE__
   pthread_cond_t wake_cond;
 #  endif
 } CCPU;
+
+static void ProfRt(int sig, siginfo_t *info, void *__ctx);
+static void InteruptRt(int sig, siginfo_t *info, void *__ctx);
+static void Div0Rt(int sig);
+static void ExitCoreRt(int sig);
 #else
 #  include <windows.h>
 #  include <winnt.h>
@@ -186,7 +228,7 @@ typedef struct {
   HANDLE thread;
   CONTEXT ctx;
   int64_t sleep;
-  void (*profiler_int)(void *fs);
+  void *profiler_int;
   int64_t profiler_freq, next_prof_int;
   uint8_t *alt_stack;
 } CCPU;
@@ -194,18 +236,36 @@ static int64_t nproc;
 #endif
 static _Thread_local core_num = 0;
 
-static void threadrt(CorePair *pair) {
+#ifdef __APPLE__
+#  define pthread_setname_np(a, b) pthread_setname_np(b)
+#endif
+static void *threadrt(void *_pair) {
+  CorePair *pair = _pair;
   __bootstrap_tls();
 #ifndef _WIN64
+  pthread_setname_np(pthread_self(), pair->name);
   stack_t stk = {
       .ss_sp = malloc(SIGSTKSZ),
       .ss_size = SIGSTKSZ,
   };
-  sigaltstack(&stk, NULL);
+  sigaltstack(&stk, 0);
+  static struct Sig {
+    int sig;
+    struct sigaction sa;
+  } sigs[] = {
+      {SIGFPE,
+       {.sa_handler = Div0Rt}}, // DO NOT USE SA_ONSTACK HERE, throw() needs it
+      {SIGUSR2, {.sa_handler = ExitCoreRt}},
+      {SIGUSR1, {.sa_sigaction = InteruptRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
+      {SIGPROF, {.sa_sigaction = ProfRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
+      {-1},
+  };
+  for (struct Sig *sg = sigs; sg->sig != -1; sg++)
+    sigaction(sg->sig, &sg->sa, 0);
 #endif
   InstallDbgSignalsForThread();
   DebuggerClientWatchThisTID();
-  Fs = calloc(sizeof(CTask), 1);
+  Fs = calloc(sizeof *Fs, 1);
   VFsThrdInit();
   TaskInit(Fs, NULL, 0);
   Fs->hash_table->next = pair->parent_table;
@@ -216,14 +276,16 @@ static void threadrt(CorePair *pair) {
   free(pair);
   fp();
 }
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#ifndef _WIN32
 static CCPU cores[128];
 CHashTable *glbl_table;
 
 void InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
 }
-static void InteruptRt(int ul, siginfo_t *info, ucontext_t *_ctx) {
+static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
+  (void)sig, (void)info;
+  ucontext_t *_ctx = __ctx;
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
@@ -247,11 +309,24 @@ static void InteruptRt(int ul, siginfo_t *info, ucontext_t *_ctx) {
 #  endif
   }
 }
-static void ExitCoreRt(int s) {
+
+static void Div0Rt(int sig) {
+  (void)sig;
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGFPE);
+  pthread_sigmask(SIG_UNBLOCK, &set, 0);
+  throw(*(uint64_t *)"Div0\0\0\0");
+}
+
+static void ExitCoreRt(int sig) {
+  (void)sig;
   pthread_exit(0);
 }
 
-static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
+static void ProfRt(int sig, siginfo_t *info, void *__ctx) {
+  (void)sig, (void)info;
+  ucontext_t *_ctx = __ctx;
   int64_t c = core_num;
   sigset_t set;
   sigemptyset(&set);
@@ -261,8 +336,8 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
     return;
   }
   if (cores[c].profiler_int) {
-#  if defined(__x86_64__)
-#    if defined(__FreeBSD__)
+#  ifdef __x86_64__
+#    ifdef __FreeBSD__
     FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.mc_rbp, cores[c].profiler_int,
                            _ctx->uc_mcontext.mc_rip);
 #    elif defined(__linux__)
@@ -272,7 +347,7 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
 #    endif
 #  endif
 #  if defined(__riscv) || defined(__riscv__)
-#    if defined(__linux__)
+#    ifdef __linux__
     FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.__gregs[8], cores[c].profiler_int,
                            _ctx->uc_mcontext.__gregs[1]);
 #    endif
@@ -283,33 +358,20 @@ static void ProfRt(int64_t sig, siginfo_t *info, ucontext_t *_ctx) {
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 }
 
-void SpawnCore(void (*fp)(), void *gs, int64_t core) {
-  struct sigaction sa;
-  char buf[144];
-  CHashTable *parent_table = NULL;
+void SpawnCore(void *fp, void *gs, int64_t core) {
+  CHashTable *parent_table = 0;
   if (Fs)
     parent_table = Fs->hash_table;
-  CorePair pair = {fp, gs, core, NULL, parent_table},
-           *ptr = malloc(sizeof(CorePair));
-  *ptr = pair;
-  pthread_create(&cores[core].pt, NULL, (void *)&threadrt, ptr);
-  char nambuf[16];
-  snprintf(nambuf, sizeof nambuf, "Seth(Core%" PRIu64 ")", core);
+  CorePair *ptr = calloc(1, sizeof *ptr);
+  ptr->fp = fp, ptr->gs = gs, ptr->num = core, ptr->parent_table = parent_table;
+  CCPU *c = &cores[core];
+  pthread_create(&c->pt, 0, threadrt, ptr);
+  snprintf(ptr->name, sizeof ptr->name, "Seth(Core%" PRIu64 ")", core);
 #  if defined(__APPLE__)
-  pthread_setname_np(nambuf);
-#  else
-  pthread_setname_np(cores[core].pt, nambuf);
+  pthread_cond_init(&c->wake_cond, NULL);
 #  endif
-#  if defined(__APPLE__)
-  pthread_cond_init(&cores[core].wake_cond, NULL);
-#  endif
-  signal(SIGUSR1, InteruptRt);
-  signal(SIGUSR2, ExitCoreRt);
-  memset(&sa, 0, sizeof(struct sigaction));
-  sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
-  sa.sa_sigaction = (void *)&ProfRt;
-  sigaction(SIGPROF, &sa, NULL);
 }
+
 int64_t mp_cnt() {
   static int64_t ret = 0;
   if (!ret)
@@ -408,7 +470,6 @@ __attribute__((constructor)) static void init(void) {
 }
 static CCPU cores[128];
 CHashTable *glbl_table;
-static int64_t ticks = 0;
 static int64_t inc = 1;
 static int64_t pf_prof_active;
 static MMRESULT pf_prof_timer;
@@ -428,14 +489,13 @@ int64_t GetTicksHP() {
   QueryPerformanceCounter(&t);
   return (t.QuadPart - start.QuadPart) * 1e6 / freq.QuadPart;
 }
-void SpawnCore(void (*fp)(), void *gs, int64_t core) {
+void SpawnCore(void *fp, void *gs, int64_t core) {
   CHashTable *parent_table = 0;
   if (Fs)
     parent_table = Fs->hash_table;
-  CorePair pair = {fp, gs, core, NULL, parent_table},
-           *ptr = malloc(sizeof(CorePair));
-  *ptr = pair;
-  cores[core].thread = CreateThread(0, 0, threadrt, ptr, 0, 0);
+  CorePair *ptr = calloc(1, sizeof *ptr);
+  ptr->fp = fp, ptr->gs = gs, ptr->num = core, ptr->parent_table = parent_table;
+  cores[core].thread = CreateThread(0, 0, (void *)threadrt, ptr, 0, 0);
   cores[core].alt_stack = VirtualAlloc(
       0, 65536, MEM_TOP_DOWN | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
   SetThreadPriority(cores[core].thread, THREAD_PRIORITY_HIGHEST);
@@ -476,10 +536,13 @@ _init:
 }
 
 static void nopf(uint64_t ul) {
+  (void)ul;
 }
 void MPAwake(int64_t c) {
   if (!Misc_LBtr(&cores[core_num].sleep, 0))
     return;
+  // there's no better way to do this;
+  // NtAlertThread() just doesn't work
   QueueUserAPC(nopf, cores[core_num].thread, 0);
 }
 void __ShutdownCore(int core) {
@@ -497,25 +560,26 @@ typedef unsigned _4b;
 typedef uint64_t _8b;
 static void WinProf(_4b _0, _4b _1, _8b _2, _8b _3, _8b _4) {
   (void)_0, (void)_1, (void)_2, (void)_3, (void)_4;
+  uint64_t *rip;
   for (int i = 0; i < nproc; ++i) {
     if (!Misc_Bt(&pf_prof_active, i))
       continue;
     CCPU *c = cores + i;
-    if (ticks < c->next_prof_int || !c->profiler_int)
+    if (GetTicksHP() / 1e3 < c->next_prof_int || !c->profiler_int)
       continue;
     CONTEXT ctx = {.ContextFlags = CONTEXT_FULL};
     SuspendThread(c->thread);
     GetThreadContext(c->thread, &ctx);
     if (ctx.Rip > INT32_MAX)
-      goto a;
+      goto secular;
     c->ctx = ctx;
     ctx.Rsp = (uint64_t)c->alt_stack + 65536;
     *(uint64_t *)(ctx.Rsp -= 8) = ctx.Rip;
     ctx.Rip = WinProfTramp;
     SetThreadContext(c->thread, &ctx);
-  a:
+  secular:
     ResumeThread(c->thread);
-    c->next_prof_int = c->profiler_freq + ticks;
+    c->next_prof_int = c->profiler_freq + GetTicksHP() / 1e3;
   }
 }
 

@@ -1044,7 +1044,7 @@ void LexerDump(CLexer *lex) {
 #ifdef AIWNIOS_TESTS
 #  include <assert.h>
 void LexTests() {
-  char tmpf[TMP_MAX];
+  char tmpf[BUFSIZ];
   tmpnam(tmpf);
   CLexer *lex = LexerNew("None", "if poodle\n"
                                  "0 123 0b11 0xfeF0\n"
