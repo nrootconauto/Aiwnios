@@ -225,7 +225,7 @@ static void ExitCoreRt(int sig);
 #  include <sysinfoapi.h>
 #  include <time.h>
 typedef struct {
-  HANDLE thread;
+  HANDLE thread,wait_timer;
   CONTEXT ctx;
   int64_t sleep;
   void *profiler_int;
@@ -495,6 +495,7 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
     parent_table = Fs->hash_table;
   CorePair *ptr = calloc(1, sizeof *ptr);
   ptr->fp = fp, ptr->gs = gs, ptr->num = core, ptr->parent_table = parent_table;
+  cores[core].wait_timer=CreateWaitableTimer(NULL,1,NULL);
   cores[core].thread = CreateThread(0, 0, (void *)threadrt, ptr, 0, 0);
   cores[core].alt_stack = VirtualAlloc(
       0, 65536, MEM_TOP_DOWN | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -503,7 +504,8 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
 }
 void MPSleepHP(int64_t us) {
   Misc_LBts(&cores[core_num].sleep, 0);
-  NtDelayExecution(1, &(LARGE_INTEGER){.QuadPart = -us * 10});
+  static int64_t one=1;
+  WaitOnAddress(&cores[core_num].sleep,&one,8,us/1e6*1000);
   Misc_LBtr(&cores[core_num].sleep, 0);
 }
 // Dont make this static,used for miscWIN.s
@@ -539,11 +541,7 @@ static void nopf(uint64_t ul) {
   (void)ul;
 }
 void MPAwake(int64_t c) {
-  if (!Misc_LBtr(&cores[core_num].sleep, 0))
-    return;
-  // there's no better way to do this;
-  // NtAlertThread() just doesn't work
-  QueueUserAPC(nopf, cores[core_num].thread, 0);
+	WakeByAddressSingle(&cores[c].sleep);
 }
 void __ShutdownCore(int core) {
   TerminateThread(cores[core].thread, 0);

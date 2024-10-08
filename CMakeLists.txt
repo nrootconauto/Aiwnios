@@ -95,7 +95,7 @@ endif ()
 target_link_libraries(aiwnios PRIVATE m)
 
 if (WIN32)
-  target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 ntdll -static)
+  target_link_libraries(aiwnios PRIVATE shlwapi winmm ws2_32 ntdll synchronization -static)
 else()
   target_link_libraries(aiwnios PRIVATE pthread)
   if (ARCH STREQUAL "riscv64")
