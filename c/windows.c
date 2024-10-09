@@ -612,4 +612,5 @@ void WaitForSDLQuit() {
 // Your own your own(used for FPS games)
 void SetCaptureMouse(int64_t i) {
   SDL_SetRelativeMouseMode(i);
+  SDL_SetWindowMouseGrab(window,i);
 }
