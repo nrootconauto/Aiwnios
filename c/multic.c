@@ -199,6 +199,7 @@ typedef struct {
 #  include <pthread.h>
 #  include <sys/syscall.h>
 #  include <sys/time.h>
+#  include <time.h>
 #  include <unistd.h>
 typedef struct {
   pthread_t pt;
@@ -225,7 +226,7 @@ static void ExitCoreRt(int sig);
 #  include <sysinfoapi.h>
 #  include <time.h>
 typedef struct {
-  HANDLE thread,wait_timer;
+  HANDLE thread, tid;
   CONTEXT ctx;
   int64_t sleep;
   void *profiler_int;
@@ -235,6 +236,8 @@ typedef struct {
 static int64_t nproc;
 #endif
 static _Thread_local core_num = 0;
+static CCPU cores[128];
+CHashTable *glbl_table;
 
 #ifdef __APPLE__
 #  define pthread_setname_np(a, b) pthread_setname_np(b)
@@ -253,10 +256,9 @@ static void *threadrt(void *_pair) {
     int sig;
     struct sigaction sa;
   } sigs[] = {
-      {SIGFPE,
-       {.sa_handler = Div0Rt}}, // DO NOT USE SA_ONSTACK HERE, throw() needs it
+      {SIGFPE, {.sa_handler = Div0Rt}},
+      {SIGUSR1, {.sa_sigaction = InteruptRt, .sa_flags = SA_SIGINFO}},
       {SIGUSR2, {.sa_handler = ExitCoreRt}},
-      {SIGUSR1, {.sa_sigaction = InteruptRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
       {SIGPROF, {.sa_sigaction = ProfRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
       {-1},
   };
@@ -277,8 +279,6 @@ static void *threadrt(void *_pair) {
   fp();
 }
 #ifndef _WIN32
-static CCPU cores[128];
-CHashTable *glbl_table;
 
 void InteruptCore(int64_t core) {
   pthread_kill(cores[core].pt, SIGUSR1);
@@ -461,29 +461,39 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
 }
 #else
 extern void NtDelayExecution(BOOLEAN, LARGE_INTEGER *),
-    NtSetTimerResolution(ULONG, BOOLEAN, PULONG);
+    NtSetTimerResolution(ULONG, BOOLEAN, PULONG),
+    NtCreateKeyedEvent(HANDLE, void const *, BOOLEAN, int64_t *),
+    NtWaitForKeyedEvent(HANDLE, void const *, BOOLEAN, int64_t *),
+    NtReleaseKeyedEvent(HANDLE, void const *, BOOLEAN, int64_t *);
+uint64_t NtAlertThreadByThreadId(HANDLE);
 __attribute__((constructor)) static void init(void) {
   NtSetTimerResolution(
       GetProcAddress(GetModuleHandle("ntdll.dll"), "wine_get_version") ? 10000
                                                                        : 5000,
       1, &(ULONG){0});
 }
-static CCPU cores[128];
-CHashTable *glbl_table;
 static int64_t inc = 1;
 static int64_t pf_prof_active;
 static MMRESULT pf_prof_timer;
+
+static void initinc(void) {
+  static bool init;
+  if (init)
+    return;
+  TIMECAPS tc;
+  timeGetDevCaps(&tc, sizeof tc);
+  inc = tc.wPeriodMin;
+  init = true;
+}
 
 int64_t GetTicksHP() {
   static int64_t init;
   static LARGE_INTEGER freq, start;
   if (!init) {
-    init = 1;
-    TIMECAPS tc;
-    timeGetDevCaps(&tc, sizeof tc);
-    inc = tc.wPeriodMin;
+    initinc();
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&start);
+    init = 1;
   }
   LARGE_INTEGER t;
   QueryPerformanceCounter(&t);
@@ -495,7 +505,6 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
     parent_table = Fs->hash_table;
   CorePair *ptr = calloc(1, sizeof *ptr);
   ptr->fp = fp, ptr->gs = gs, ptr->num = core, ptr->parent_table = parent_table;
-  cores[core].wait_timer=CreateWaitableTimer(NULL,1,NULL);
   cores[core].thread = CreateThread(0, 0, (void *)threadrt, ptr, 0, 0);
   cores[core].alt_stack = VirtualAlloc(
       0, 65536, MEM_TOP_DOWN | MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -504,8 +513,8 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
 }
 void MPSleepHP(int64_t us) {
   Misc_LBts(&cores[core_num].sleep, 0);
-  static int64_t one=1;
-  WaitOnAddress(&cores[core_num].sleep,&one,8,us/1e6*1000);
+  LARGE_INTEGER delay = {.QuadPart = -us * 10};
+  NtDelayExecution(TRUE, &delay);
   Misc_LBtr(&cores[core_num].sleep, 0);
 }
 // Dont make this static,used for miscWIN.s
@@ -525,24 +534,34 @@ void InteruptCore(int64_t core) {
 }
 
 int64_t mp_cnt() {
-  static bool b;
-  static SYSTEM_INFO info;
-  if (!b)
-    goto _init;
-ret:
-  return info.dwNumberOfProcessors;
-_init:
-  GetSystemInfo(&info);
-  b = true;
-  goto ret;
+  static bool init;
+  static int64_t n;
+  if (!init) {
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    n = info.dwNumberOfProcessors;
+    init = true;
+  }
+  return n;
 }
 
-static void nopf(uint64_t ul) {
-  (void)ul;
+static void nopf(uint64_t i) {
+  (void)i;
 }
+
+// here's the deal, this is how it works:
+// NtDelayExecution pauses the thread til
+// the time expires or an APC is raise.
+// (if the first arg is true) so we raise
+// an APC that does nothing to wake it up
+// http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Thread/NtDelayExecution.html
+// https://learn.microsoft.com/en-us/windows/win32/fileio/alertable-i-o
 void MPAwake(int64_t c) {
-	WakeByAddressSingle(&cores[c].sleep);
+  if (!Misc_LBtr(&cores[c].sleep, 0))
+    return;
+  QueueUserAPC(nopf, cores[c].thread, 0);
 }
+
 void __ShutdownCore(int core) {
   TerminateThread(cores[core].thread, 0);
 }

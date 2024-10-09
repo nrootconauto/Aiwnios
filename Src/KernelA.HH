@@ -3356,7 +3356,7 @@ public class CCPU //The Gs segment reg points to current CCPU.
   I64	kill_jiffy;
   CTSS	*tss;
   I64	start_stk[16];
-  I64 ready;
+  I64 ready,last_yield;
 };
 
 #define MEM_MIN_MEG		512 //512 Meg minimum.
@@ -3839,6 +3839,7 @@ import I64 Call(U8 *);
 import I64 CallArgs(U8 *,I64 argc,I64 *argv);
 import I64 CallVaArgs(U8 *,I64 argc1,I64 *argv1,...);
 import U0 ExitAiwnios(I32 ec=0);
+import U0 MPIntsInit();
 import U0 TaskContextSetRIP(U8 *,U8 *);
 import U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 import U8 *AiwniosGetClipboard();
@@ -3991,6 +3992,7 @@ extern I64 Call(U8 *);
 extern I64 CallArgs(U8 *,I64 argc,I64 *argv);
 extern I64 CallVaArgs(U8 *,I64 argc1,I64 *argv1,...);
 extern U0 ExitAiwnios(I32 ec=0);
+extern U0 MPIntsInit();
 extern U0 MakeContext(U8 *,U8 *rip,U8*rsp);
 extern F64 Ln(F64);
 extern U8 *AiwniosGetClipboard();

@@ -364,7 +364,7 @@ U0 InteruptRt(I64 rip,U8 **rbp) {
   Yield;
 }
 U0 KBCb(I64 c,I64 s) {
-  I64 initial_time,freeze_time=100;
+  I64 initial_time,freeze_time=100,time_out;
   while(LBts(&kb_mtx,0))
     ; //TODO ATOMIC WAIT
   if(!(s&SCF_KEY_UP))
@@ -374,16 +374,8 @@ U0 KBCb(I64 c,I64 s) {
   kbd.timestamp=cnts.jiffies;
   c=ScanCode2Char(s&0x7f);
   if(!(s&SCF_KEY_UP)&&s&SCF_ALT&&s&SCF_CTRL&&(c=='c'||c=='x')&&TaskValidate(sys_focus_task)) {
-    initial_time=cpu_structs[0].total_jiffies;
-    while(initial_time==cpu_structs[0].total_jiffies&&freeze_time>=0) {
-      __Sleep(2);
-      freeze_time-=2;
-    }
-    if(initial_time!=cpu_structs[0].total_jiffies) {
-      //Not frozen
-    } else {
+    if (__GetTicks>=cpu_structs[0].last_yield+500)
       InteruptCore(0);
-    }
   }
   LBtr(&kb_mtx,0);
 }

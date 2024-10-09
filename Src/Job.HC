@@ -531,14 +531,12 @@ CJob *JobQue(I64 (*fp_addr)(U8 *data),U8 *data=NULL,
   seth=cpu_structs[target_cpu].seth_task;
   ctrl=&seth->srv_ctrl;
   tmpc->ctrl=ctrl;
-  if(target_cpu) //TODO REMOVE target_cpu!=0 check
-    MPAwake(target_cpu);
+  MPAwake(target_cpu);
   while (LBts(&ctrl->flags,JOBCf_LOCKED))
     Yield;
   if(ctrl->next_waiting==ctrl)
     LBtr(&seth->task_flags,TASKf_AWAITING_MSG);
-  if(target_cpu) //TODO REMOVE target_cpu!=0 check
-    MPAwake(target_cpu);
+  MPAwake(target_cpu);
   QueIns(tmpc,ctrl->last_waiting);
   LBtr(&ctrl->flags,JOBCf_LOCKED);
   return tmpc;

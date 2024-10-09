@@ -367,9 +367,6 @@ static int64_t __GetTicksHP() {
 static int64_t __GetTicks() {
   return __GetTicksHP() / 1000;
 }
-static void __SleepHP(int64_t us) {
-  usleep(us);
-}
 #if defined(__x86_64__)
 static int __iofd_warned;
 #  if defined(__FreeBSD__) || defined(__linux__)
@@ -502,9 +499,6 @@ int64_t UnixNow() {
 static double Arg(double x, double y) {
   return atan2(y, x);
 }
-static void __Sleep(int64_t ms) {
-  SDL_Delay(ms);
-}
 static char *AiwniosGetClipboard() {
   char *has, *ret;
   if (!SDL_HasClipboardText())
@@ -631,7 +625,7 @@ static int64_t STK_MSize(int64_t *stk) {
 }
 
 static int64_t STK___SleepHP(int64_t *stk) {
-  __SleepHP(stk[0]);
+  MPSleepHP(stk[0]);
 }
 
 static int64_t STK___GetTicksHP(int64_t *stk) {
@@ -815,7 +809,7 @@ static int64_t STK___GetTicks(int64_t *stk) {
 }
 
 static int64_t STK___Sleep(int64_t *stk) {
-  __Sleep(stk[0]);
+  MPSleepHP(stk[0] * 1e3);
 }
 
 static int64_t STK_ImportSymbolsToHolyC(int64_t *stk) {

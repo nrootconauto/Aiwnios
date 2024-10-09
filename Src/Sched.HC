@@ -72,7 +72,7 @@ extern CTask *TaskEnd();
 U0 Yield() {
   CTask *task=Fs;
   CBpt *bp;
-  cnts.jiffies=__GetTicks;
+  Gs->last_yield=cnts.jiffies=__GetTicks;
   if(!Bt(&task->task_flags,TASKf_DISABLE_BPTS)) {
     for(bp=task->bpt_lst;bp;bp=bp->next) {
       *bp->addr=bp->val;
@@ -128,7 +128,7 @@ next:
     task=TaskEnd();
     goto next;
   }
-  if(task->wake_jiffy>__GetTicksHP) {
+  if(task->wake_jiffy>__GetTicks) {
     goto next;
   }
 

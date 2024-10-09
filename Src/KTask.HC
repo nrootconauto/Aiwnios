@@ -438,7 +438,7 @@ I64 TaskEnd()
   LBtr(&task->srv_ctrl.flags,JOBCf_LOCKED);
   LBtr(&task->task_flags,TASKf_TASK_LOCK);
 
-  task->wake_jiffy=__GetTicksHP+DYING_JIFFIES*1000; //Use __GetTicksUP
+  task->wake_jiffy=__GetTicks+DYING_JIFFIES;
   while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
     ; //TODO ATOMIC LOCK
   QueIns(task,Gs->last_dying);
@@ -455,7 +455,7 @@ U0 TaskKillDying()
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
       ; //TODO atomic lock
     task=Gs->next_dying;
-    while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicksHP) {
+    while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicks) {
       task1=task->next;
       QueRem(task);
       TaskDel(task);

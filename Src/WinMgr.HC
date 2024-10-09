@@ -15,16 +15,16 @@ public U0 Refresh(I64 cnt=1,Bool force=FALSE)
     LBts(&sys_semas[SEMA_JUST_PUMP_MSGS],0);
   while (Bt(&sys_semas[SEMA_REFRESH_IN_PROGRESS],0)) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicksHP;
-    Sleep(1);
+      sys_winmgr_task->wake_jiffy=__GetTicks;
+    Yield;
   }
   if (cnt>1 && old_doc)
     old_full_refresh=LBts(&old_doc->flags,DOCf_DO_FULL_REFRESH);
   update_cnt=winmgr.updates+cnt;
   while (winmgr.updates<update_cnt) {
     if (force && sys_winmgr_task)
-      sys_winmgr_task->wake_jiffy=__GetTicksHP;
-    Sleep(1);
+      sys_winmgr_task->wake_jiffy=__GetTicks;
+    Yield;
   }
   if (old_doc)
     LBEqu(&old_doc->flags,DOCf_DO_FULL_REFRESH,old_full_refresh);
@@ -197,7 +197,7 @@ U0 WinCalcIdles()
   if ((t->calc_idle_delta_time=
 	(calc_idle_time=tS)-t->last_calc_idle_time)>.25) {
     bl=BreakLock;
-    total_jiffies=cpu_structs[0].total_jiffies;
+    total_jiffies=__GetTicks;
     for (i=0;i<mp_cnt;i++)
       idle_pt_hits[i]=cpu_structs[i].idle_pt_hits;
     if(bl) BreakUnlock;
