@@ -514,7 +514,11 @@ static void AiwniosSetClipboard(char *c) {
 }
 
 static void TaskContextSetRIP(int64_t *ctx, void *p) {
+	#if defined(_M_ARM64) || defined(__aarch64__)
+	ctx[12] = (int64_t)p;
+	#else
   ctx[0] = (int64_t)p;
+  #endif
 }
 
 static STK_TaskContextSetRIP(int64_t *stk) {
