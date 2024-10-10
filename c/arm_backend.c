@@ -4729,15 +4729,12 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_BASE_PTR:
   case IC_STR:
   case IC_CHR:
+  case IC_FS:
+  case IC_GS:
     if (spilled)
       PushSpilledTmp(cctrl, r);
     else
       PushTmp(cctrl, r);
-    return 1;
-  case IC_FS:
-  case IC_GS:
-    // On ARM these are functions
-    PushTmp(cctrl, r);
     return 1;
   }
   int64_t a, argc, old_icnt = cctrl->backend_user_data2,
