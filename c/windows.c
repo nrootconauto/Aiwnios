@@ -67,7 +67,7 @@ static void _DrawWindowNew() {
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  renderer = SDL_CreateRenderer(window, -1, 0);
   SDL_UnlockMutex(screen_mutex);
   Misc_LBts(&screen_ready, 0);
 }
@@ -611,6 +611,7 @@ void WaitForSDLQuit() {
 }
 // Your own your own(used for FPS games)
 void SetCaptureMouse(int64_t i) {
+	i=i?SDL_TRUE:SDL_FALSE;
   SDL_SetRelativeMouseMode(i);
   SDL_SetWindowMouseGrab(window,i);
 }
