@@ -102,16 +102,6 @@ void *GetHolyGs() {
   return ThreadGs;
 }
 
-__attribute__((maybe_unused)) static void __sigillhndlr(int sig) {
-  (void)sig;
-  fprintf(stderr, "\e[0;31mCRITICAL\e[0m: "
-                  "processor too old\n");
-  fflush(stderr);
-  // do not ever change this to normal exit()
-  // this is a harsh exit that ignores atexit
-  _Exit(-1);
-}
-
 #ifdef __aarch64__
 void __bootstrap_tls(void) {
   asm("mov\tx28,%0" : : "r"(__fsgs));
@@ -119,6 +109,11 @@ void __bootstrap_tls(void) {
 #elif defined(__x86_64__) && !defined(_WIN64)
 static int __setgs(void *gs);
 static jmp_buf jmpb;
+
+static void __sigillhndlr(int sig) {
+  (void)sig;
+  longjmp(jmpb, 1);
+}
 
 void __bootstrap_tls(void) {
   static bool init, fsgsbase;
@@ -133,10 +128,7 @@ void __bootstrap_tls(void) {
   }
   void *tls = calloc(1, 0x10) - 0xF0;
   if (fsgsbase) {
-    struct sigaction sa = {
-        .sa_handler = __sigillhndlr,
-        .sa_flags = SA_SIGINFO,
-    };
+    struct sigaction sa = {.sa_handler = __sigillhndlr};
     sigaction(SIGILL, &sa, 0);
     if (!setjmp(jmpb))
       asm("wrgsbase\t%0" : : "r"(tls));
