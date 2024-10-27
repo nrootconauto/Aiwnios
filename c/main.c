@@ -1889,7 +1889,10 @@ int main(int argc, char **argv) {
 #endif
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
-  SDL_Init(SDL_INIT_EVERYTHING);
+  if(0>SDL_Init(SDL_INIT_EVERYTHING)) {
+	  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"AIWNIOS","Failed to int SDL.",NULL);
+	  exit(EXIT_FAILURE);
+  }
   InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
     user_ev_num = SDL_RegisterEvents(1);

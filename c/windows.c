@@ -1,8 +1,8 @@
 #include "c/aiwn_asm.h"
+#include "c/aiwn_logo.h"
 #include "c/aiwn_mem.h"
 #include "c/aiwn_snd.h"
 #include "c/aiwn_windows.h"
-#include "c/aiwn_logo.h"
 #include "c/lzw.h"
 #include <SDL.h>
 #include <SDL_pixels.h>
@@ -32,21 +32,29 @@ void DeinitVideo() {
 static void _DrawWindowNew() {
   int64_t row;
   uint8_t logo[0x10000];
-  lzw_decompress(aiwnios_logo.compressed_pixel_data, //
-		 sizeof aiwnios_logo.compressed_pixel_data, //
+  lzw_decompress(aiwnios_logo.compressed_pixel_data,        //
+                 sizeof aiwnios_logo.compressed_pixel_data, //
                  logo, sizeof logo);
   SDL_Surface *window_icon_proto = SDL_CreateRGBSurfaceWithFormat(
       0, aiwnios_logo.width, aiwnios_logo.height,
       aiwnios_logo.bytes_per_pixel * 8, SDL_PIXELFORMAT_ABGR8888);
+  if (!window_icon_proto)
+    goto err_wincon;
   SDL_LockSurface(window_icon_proto);
   for (row = 0; row != window_icon_proto->h; row++) {
     memcpy((char *)window_icon_proto->pixels + row * window_icon_proto->pitch,
-           logo + 4 * aiwnios_logo.width * row,
-           aiwnios_logo.width * 4);
+           logo + 4 * aiwnios_logo.width * row, aiwnios_logo.width * 4);
   }
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
+  if (!window_icon) {
+  err_wincon:
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to make window icon.", NULL);
+    exit(EXIT_FAILURE);
+  }
+
   SDL_FreeSurface(window_icon_proto);
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
@@ -61,13 +69,28 @@ static void _DrawWindowNew() {
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+  if (!window) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to create window.", NULL);
+    exit(EXIT_FAILURE);
+  }
   SDL_SetWindowIcon(window, window_icon);
   SDL_SetWindowKeyboardGrab(window,
                             sdl_window_grab_enable ? SDL_TRUE : SDL_FALSE);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
+  if (!screen) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to create surface.", NULL);
+    exit(EXIT_FAILURE);
+  }
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
   renderer = SDL_CreateRenderer(window, -1, 0);
+  if (!renderer) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to create renderer.", NULL);
+    exit(EXIT_FAILURE);
+  }
   SDL_UnlockMutex(screen_mutex);
   Misc_LBts(&screen_ready, 0);
 }
@@ -131,6 +154,11 @@ static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_RenderClear(renderer);
   UpdateViewPort();
   text = SDL_CreateTextureFromSurface(renderer, screen);
+  if (!text) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to create texture.", NULL);
+    exit(EXIT_FAILURE);
+  }
   SDL_RenderCopy(renderer, text, NULL, &view_port);
   SDL_RenderPresent(renderer);
   SDL_DestroyTexture(text);
@@ -611,7 +639,7 @@ void WaitForSDLQuit() {
 }
 // Your own your own(used for FPS games)
 void SetCaptureMouse(int64_t i) {
-	i=i?SDL_TRUE:SDL_FALSE;
+  i = i ? SDL_TRUE : SDL_FALSE;
   SDL_SetRelativeMouseMode(i);
-  SDL_SetWindowMouseGrab(window,i);
+  SDL_SetWindowMouseGrab(window, i);
 }

@@ -197,7 +197,14 @@ static int debugger_pipe[2];
 static void ReadMsg(char *buf) {
   if (!debugger_pipe[0])
     return;
-  buf[read(debugger_pipe[0], buf, 0x100)] = 0;
+  char ch;
+  size_t ptr = 0;
+  // Dont read all a once
+  while (read(debugger_pipe[0], &ch, 1) == 1) {
+    buf[ptr++] = ch;
+    if (!ch)
+      break;
+  }
 }
 static void WriteMsg(char const *fmt, ...) {
   if (!debugger_pipe[1])
@@ -206,6 +213,7 @@ static void WriteMsg(char const *fmt, ...) {
   va_start(l, fmt);
   vdprintf(debugger_pipe[1], fmt, l);
   va_end(l);
+  write(debugger_pipe[1], "", 1);
 }
 static int64_t MsgPoll() {
   struct pollfd poll_for;
@@ -396,7 +404,9 @@ void DebuggerBegin() {
         ptr = buf;
         task = NULL;
         while (1) {
-          if (*ptr == ':') {
+          if (!*ptr) { // Empty message?
+            continue;
+          } else if (*ptr == ':') {
             tid = 0;
             sscanf(buf, "%p:%d", &task, &tid);
           } else if (*ptr == ',') {
@@ -779,7 +789,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();
