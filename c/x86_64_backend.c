@@ -5953,7 +5953,7 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
 //
 static void SetKeepTmps(CRPN *rpn) {
   int64_t idx;
-  CRPN *left, *right;
+  CRPN *left, *right,*last;
   switch (rpn->type) {
   case IC_FS:
   case IC_GS:
@@ -6011,8 +6011,6 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_AND_AND:
   case IC_OR_OR:
   case IC_XOR_XOR:
-  case IC_EQ_EQ:
-  case IC_NE:
   case IC_LSH:
   case IC_RSH:
   case IC_ADD:
@@ -6026,6 +6024,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_POW:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
+normal_binop:
     if (CanKeepInTmp(rpn, right, left, 0) && !SpillsTmpRegs(left) &&
         right->tmp_res.mode) {
       right->res = right->tmp_res;
@@ -6038,6 +6037,13 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_LT:
   case IC_GT:
     break;
+  case IC_EQ_EQ:
+  case IC_NE:
+  // Nroot here,there are 2 vaiants of IC_EQ_EQ
+  //   One with IC_GOTO_IF
+  //   One use as a normal operator.
+  //   Lets just reutrn 0 to make things simpler. 
+     break;
   case IC_EQ:
   case IC_ADD_EQ:
   case IC_SUB_EQ:
