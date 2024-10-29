@@ -17,10 +17,19 @@ U8 *StrNew(U8 *str,CTask *task=NULL) {
 U8 *MAlloc(I64 cnt,CTask *task=NULL) {
   U8 *hc;
   CMemUnused *m;
+  if(task) {
+//Heap?
+    if(task->task_signature.u8[0]=='H') {
+      hc=task;
+      goto do_it;
+    }
+  }
   if(task)
     hc=task->data_heap;
   else
     hc=Fs->data_heap;
+
+do_it:
   m=__MAlloc(cnt,hc);
   if(m) {
     m[-1].caller1=Caller(2);
@@ -31,10 +40,17 @@ U8 *MAlloc(I64 cnt,CTask *task=NULL) {
 U8 *CAlloc(I64 cnt,CTask *task=NULL) {
   U8 *hc;
   CMemUnused *m;
-  if(task)
+  if(task) {
+//Heap?
+    if(task->task_signature.u8[0]=='H') {
+      hc=task;
+      goto do_it;
+    }
+  }  if(task)
     hc=task->data_heap;
   else
     hc=Fs->data_heap;
+do_it:
   m=__CAlloc(cnt,hc);
   if(m) {
     m[-1].caller1=Caller(2);
@@ -54,10 +70,17 @@ U8 *ACAlloc(I64 cnt) {
 U8 *MAllocIdent(U8 *ptr,CTask *task=NULL) {
   CMemUnused *hc,*ret;
   I64 cnt=MSize(ptr);
-  if(task)
+  if(task) {
+//Heap?
+    if(task->task_signature.u8[0]=='H') {
+      hc=task;
+      goto do_it;
+    }
+  }  if(task)
     hc=task->data_heap;
   else
     hc=Fs->data_heap;
+do_it:
   ret=__MAlloc(cnt,hc);
   MemCpy(ret,ptr,cnt);
   if(ret) {

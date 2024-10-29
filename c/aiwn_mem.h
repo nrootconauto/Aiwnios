@@ -4,6 +4,7 @@
 #include <setjmp.h>
 #include <stdint.h>
 typedef struct CTask {
+  void *pad;
   int64_t task_signature;
   struct CQue *except; // CExcept
   int64_t except_ch;
@@ -21,6 +22,7 @@ struct CHashTable;
 #define MEM_PAG_BITS       (12)
 #define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
 typedef struct CHeapCtrl {
+  void *pad;
   int32_t hc_signature;
   int32_t is_code_heap;
   int64_t locked_flags, alloced_u8s, used_u8s;
