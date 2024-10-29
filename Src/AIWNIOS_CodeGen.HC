@@ -2156,15 +2156,16 @@ break;case IC_ASM:
           h->type=HTT_IMPORT_SYS_SYM;
           h->str=StrNew(misc->h->str);
           h->module_base=machine_code;
-          //[reloc type 1][reloc offset 4][name?]NULL]
+          //[reloc type 1][reloc offset 4][target-offset 4][name?]NULL]
           //Nroot adds an aditional byte to specify NULL after we load the silly sauce 
-          h->module_header_entry=CAlloc(StrLen(h->str)+5+1+1);
+          h->module_header_entry=CAlloc(StrLen(h->str)+8+1+1);
           if(IsTLSReloc(misc))
 	    h->module_header_entry[0]=IET_IMM_I64;
           else 
 	    h->module_header_entry[0]=IET_IMM_I64;
           h->module_header_entry[1](U32)=misc->addr(U8*)-machine_code;
-          StrCpy(h->module_header_entry+5,h->str);
+          h->module_header_entry[5](U32)=0;
+          StrCpy(h->module_header_entry+8+1,h->str);
           HashAdd(h,Fs->hash_table);
         }
       }
