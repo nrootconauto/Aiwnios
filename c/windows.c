@@ -549,6 +549,9 @@ void SetKBCallback(void *fptr) {
   static init;
   if (!init) {
     init = 1;
+    if(IsCmdLineMode2()) {
+      TermSetKbCb(fptr,NULL);
+	} else
     SDL_AddEventWatch(KBCallback, NULL);
   }
 }

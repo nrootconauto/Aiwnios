@@ -362,12 +362,14 @@ U8 *body=
 #include "UAsmRiscV.HC"
 #endif
 #include "HomeKeyPlugIns.HC"
-if(!IsCmdLineMode)
+if(!IsCmdLineMode&&!IsCmdLineMode2)
   DrawWindowNew;
 #ifdef GEN_HEADERS
 #include "GenHeader.HC";;
 #endif
 Gs->seth_task=adam_task;
+if(IsCmdLineMode2)
+  AiwniosTUIEnable;
 if(!IsCmdLineMode)
   sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 UserStartUp()

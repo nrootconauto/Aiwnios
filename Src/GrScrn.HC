@@ -320,43 +320,82 @@ U0 DCBlotColor8(CDC *dc,CDC *img)
   }
 }
 
+U8 term_colors[16]={
+   BLACK,RED,GREEN,BROWN,BLUE,PURPLE,CYAN,DKGRAY,
+   LTGRAY,LTRED,LTGREEN,YELLOW,LTBLUE,LTPURPLE,LTCYAN,WHITE
+};
 U0 GrUpdateTextModeText()
 {
   U32 *src=gr.text_base;
   I64 cur_ch,i=TEXT_COLS*TEXT_ROWS;
   U16 *dst=text.vga_text_alias,*dst2=gr.vga_text_cache;
-  Bool blink_flag=Blink(2.5);
-  if (1) {
-    while (i--) {
-      cur_ch=*src++;
-      if (cur_ch & ATTRF_SEL)
-	cur_ch.u8[1]=cur_ch.u8[1]^0xFF;
-      if (cur_ch & ATTRF_INVERT)
-	cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
-      if (cur_ch & ATTRF_BLINK)
-	if (blink_flag)
-	  cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
-      *dst++=*dst2++=cur_ch&0x7FFF;
+  I64 across=0,line=1;
+  Bool blink_flag=Blink(2.5),underline=FALSE,ounderline=FALSE;
+  U8 fg,bg,ofg=BLACK,obg=BLACK;
+  I64 want;
+#define ANSI_CSI "\x1b["
+  DbgPrint(
+	ANSI_CSI"0m" //Default
+	ANSI_CSI"3J" //Clear screen
+	ANSI_CSI"1;1H" //1,1 position
+	ANSI_CSI"30m" //FG BLACK
+	ANSI_CSI"38m" //BG BLACK
+	ANSI_CSI"?25l" //Hide Cursor
+	);
+  while (i--) {
+    cur_ch=*src++;
+    if (cur_ch & ATTRF_SEL)
+      cur_ch.u8[1]=cur_ch.u8[1]^0xFF;
+    if (cur_ch & ATTRF_INVERT)
+      cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
+    if (cur_ch & ATTRF_BLINK)
+      if (blink_flag)
+        cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
+    if (cur_ch & ATTRF_UNDERLINE)
+      underline=TRUE;
+    else
+      underline=FALSE;
+    fg=cur_ch.u8[1]&0xf;
+    bg=cur_ch.u8[1]>>4;
+    if(fg!=ofg) {
+      want=0;
+      while(term_colors[want]!=fg&&want<=15)
+        want++;
+      if(want>=8)
+        DbgPrint(ANSI_CSI"9%dm",want-8);
+      else
+        DbgPrint(ANSI_CSI"3%dm",want);
+      ofg=fg;
     }
-  } else {
-    while (i--) {
-      cur_ch=*src++;
-      if (cur_ch & ATTRF_SEL)
-	cur_ch.u8[1]=cur_ch.u8[1]^0xFF;
-      if (cur_ch & ATTRF_INVERT)
-	cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
-      if (cur_ch & ATTRF_BLINK)
-	if (blink_flag)
-	  cur_ch.u8[1]=cur_ch.u8[1]<<4+cur_ch.u8[1]>>4;
-      cur_ch&=0x7FFF;
-      if (*dst2!=cur_ch)
-	*dst++=*dst2++=cur_ch;
-      else {
-	dst++;
-	dst2++;
-      }
+    if(bg!=obg) {
+      want=0;
+      while(term_colors[want]!=bg&&want<=15)
+        want++;
+      if(want>=8)
+        DbgPrint(ANSI_CSI"10%dm",want-8);
+      else
+        DbgPrint(ANSI_CSI"4%dm",want);
+      obg=bg;
+    }
+    if(underline!=ounderline) {
+      if(underline)
+        DbgPrint(ANSI_CSI"4m");
+      else
+        DbgPrint(ANSI_CSI"24m");
+      ounderline=underline;
+    }
+    if(32<=cur_ch.u8[0]<=126)
+      DbgPrint("%c",cur_ch.u8[0]);
+    else
+      DbgPrint(" ");
+    if(++across==TEXT_COLS) {
+      DbgPrint(ANSI_CSI"%d;1H",++line);
+      across=0;
     }
   }
+  DbgPrint(
+	ANSI_CSI"?24l" //Enable Cursor
+  );
 }
 
 
@@ -386,8 +425,11 @@ Bool GrUpdateScrn()
     GrZoomInScrn;
     dc=gr.zoomed_dc;
   }
-  
-  UpdateScreen(dc->body,dc->width,dc->height,dc->width_internal);
+    
+  if(IsCmdLineMode2) {
+    GrUpdateTextModeText;
+  } else
+    UpdateScreen(dc->body,dc->width,dc->height,dc->width_internal);
   MemCpy(gr.scrn_image->body,dc->body,dc->width_internal*dc->height);
   
   return TRUE;

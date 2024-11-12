@@ -707,6 +707,7 @@ CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg);
 CRPN *__HC_ICAdd_Reloc(CCmpCtrl *cmpc, CCodeCtrl *cc, int64_t *pat_addr,
                        char *sym, int64_t rt, int64_t ptrs);
 int64_t IsCmdLineMode();
+int64_t IsCmdLineMode2();
 CCodeMisc *AddRelocMisc(CCmpCtrl *cctrl, char *name);
 CRPN *__HC_ICAdd_Deref(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
 void __HC_ICSetLine(CRPN *r, int64_t ln);
