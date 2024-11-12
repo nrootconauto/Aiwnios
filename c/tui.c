@@ -203,8 +203,10 @@ static int InputThread(void *fptr) {
           if (!c)
             break;
           buf[ptr] = c;
-          if (c == '~' || isalpha(c))
+          if (c == '~' || isalpha(c)) {
+			  ptr++;
             break;
+          }
         }
         buf[ptr] = 0;
         a = 1;
@@ -224,6 +226,14 @@ static int InputThread(void *fptr) {
         if (b & 4)
           flags |= SCF_CTRL;
         switch (c) {
+		case 'O':
+		   switch(c=ReadChr()) {
+			           case 'P': goto f1;
+			           case 'Q': goto f2;
+			           case 'R': goto f3;
+			           case 'S': goto f4;
+		   }
+		   break;
         case 'A':
           SendOut(0, SC_CURSOR_UP | flags);
           break;

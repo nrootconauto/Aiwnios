@@ -400,7 +400,7 @@ U0 GrUpdateTextModeText()
     }
   }
   DynPrint(&dump,&final,
-	ANSI_CSI"?24l" //Enable Cursor
+	ANSI_CSI"?25h" //Enable Cursor
   );
 //Write all at once to avoid flicker
   DbgPutS(final);

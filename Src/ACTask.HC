@@ -26,7 +26,7 @@ U0 ACDocRst(I64 left,I64 top)
   Fs->border_attr=LTGRAY<<4+DrvTextAttrGet(':')&15;
   Fs->text_attr  =LTGRAY<<4+BLUE;
   LBtr(&(Fs->display_flags),DISPLAYf_SHOW);
-  WinHorz(left,Fs->win_right);
+  WinHorz(left,TEXT_COLS-2);
   WinVert(top,Fs->win_bottom);
   DocCursor;
 }
@@ -115,7 +115,7 @@ U0 ACPutChoices(CDoc *focus_l,CDocEntry *doc_e,CTask *focus_task,
 	  tmpw=tmpw->next;
 	}
       }
-    ACDocRst(51,13);
+    ACDocRst(TEXT_COLS+(51-GR_WIDTH/8),13); //GR_WID/8 is dft TEXT_COLS
     if (ac.cur_word && *ac.cur_word) {
       "$$PURPLE$$Word:%s$$FG$$\n",ac.cur_word;
       for (i=0;i<ac.num_fillins;i++) {
@@ -174,7 +174,7 @@ U0 ACTaskCtrl(I64 sc,I64 last_sc,
   } else {
     if (sc!=last_sc) {
       if (sc&SCF_ALT) {
-	ACDocRst(27,3);
+	ACDocRst(TEXT_COLS+(27-GR_WIDTH/8),3); //GR_WIDTH/8 is dft  TEXT_COLS
 	if (TaskValidate(original_focus_task) &&
 	      !Bt(&original_focus_task->win_inhibit,WIf_SELF_KEY_DESC))
 	  KeyMapFamily(original_focus_task,0,
@@ -183,7 +183,7 @@ U0 ACTaskCtrl(I64 sc,I64 last_sc,
 	      !(sc&SCF_SHIFT),!!(sc&SCF_SHIFT));
       } else if (TaskValidate(original_focus_task) &&
 	    !Bt(&original_focus_task->win_inhibit,WIf_SELF_KEY_DESC)) {
-	ACDocRst(27,3);
+	ACDocRst(TEXT_COLS+27-GR_WIDTH/8,3); //GR_WIDTH/8  is dft TEXT_COLS
 	KeyMapFamily(original_focus_task,SCF_CTRL,
 	      !(sc&SCF_SHIFT),!!(sc&SCF_SHIFT));
       }
@@ -198,7 +198,7 @@ U0 ACTaskAlt(I64 sc,I64 last_sc,
 {
   if (sc!=last_sc && TaskValidate(original_focus_task) &&
 	!Bt(&original_focus_task->win_inhibit,WIf_SELF_KEY_DESC)) {
-    ACDocRst(27,3);
+    ACDocRst(TEXT_COLS+27-GR_WIDTH/8,3); //GR_WIDTH/8 is dft TEXT_COLKS
     KeyMapFamily(original_focus_task,SCF_ALT,
 	  !!(!(sc&SCF_SHIFT)),!!(sc&SCF_SHIFT));
   }
@@ -220,7 +220,7 @@ U0 ACTask(I64)
   Fs->task_end_cb=&ACTaskEndCB;
   DocTermNew;
   LBts(&(Fs->display_flags),DISPLAYf_SHOW);
-  WinHorz(51,Fs->win_right);
+  WinHorz(TEXT_COLS-(51-GR_WIDTH/8),TEXT_COLS-2); //GR_WIDTH/8 is dft TEXT_COLS
   LBts(&(Fs->display_flags),DISPLAYf_WIN_ON_TOP);
   Fs->win_inhibit=WIG_NO_FOCUS_TASK_DFT;
   ac.cur_word=NULL;
