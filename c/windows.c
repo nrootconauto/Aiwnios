@@ -3,6 +3,7 @@
 #include "c/aiwn_mem.h"
 #include "c/aiwn_snd.h"
 #include "c/aiwn_windows.h"
+#include "c/aiwn_tui.h"
 #include "c/lzw.h"
 #include <SDL.h>
 #include <SDL_pixels.h>

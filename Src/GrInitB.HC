@@ -173,12 +173,15 @@ U0 GrInit2()
   gr.to_8_bits	=MAlloc(256*sizeof(I64));
   gr.to_8_colors=MAlloc(256*sizeof(I64));
 
-  gr.text_base=CAlloc(TEXT_ROWS*TEXT_COLS*sizeof(U32));
+  
+  //I wont change these at runtime to avoid chanigng ptr on Yield(while using GrSetTextBaseSize)
+  gr.text_base=CAlloc(0x100*0x100*sizeof(U32)); //See GrSetTextBaseSize(Maximum size)
+  gr.win_z_buf=MAlloc(0x100*0x100*sizeof(U16)); //See GrSetTextBaseSize(Maximum size)
+  
   gr.vga_text_cache=MAlloc(TEXT_ROWS*TEXT_COLS*sizeof(U16));
   gr.win_uncovered_bitmap=CAlloc(65536/8);
   gr.highest_uncovered=0;
-  gr.win_z_buf=MAlloc(TEXT_ROWS*TEXT_COLS*sizeof(U16));
-
+  
   gr.dc2=DCNew(GR_WIDTH,GR_HEIGHT);
   gr.dc2->flags|=DCF_SCRN_BITMAP;
   gr.dc_cache=DCNew(GR_WIDTH,GR_HEIGHT);
@@ -198,3 +201,12 @@ U0 GrInit2()
 GrInit2;
 GrSetUpTables;
 WinMax;
+
+U0 GrSetTextBaseSize(I64 c,I64 r) {
+  c=ClampI64(c,1,0x100);
+  r=ClampI64(r,1,0x100);
+  TEXT_COLS=c; //Macro for text.cols
+  TEXT_ROWS=r;
+  WinHorz(0,TEXT_COLS,sys_winmgr_task);
+  WinVert(0,TEXT_ROWS,sys_winmgr_task);
+}

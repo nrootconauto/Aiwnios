@@ -1325,6 +1325,11 @@ int64_t IsCmdLineMode2() {
   return arg_cmd_line2->count != 0;
 }
 
+int64_t STK_TermSize(int64_t *stk) {
+	TermSize((int64_t*)(stk[0]),(int64_t*)(stk[1]));
+   return 0;
+}
+
 static void _freestr(void *p) {
   free(*(void **)p);
 }
@@ -1652,6 +1657,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
     PrsAddSymbol("AiwniosTUIEnable", AiwniosTUIEnable, 0);
     PrsAddSymbol("IsCmdLineMode2", IsCmdLineMode2, 0); //Sexy text mode
+    PrsAddSymbol("TermSize", STK_TermSize, 2);
     PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
   }
   CmpCtrlDel(ccmp);

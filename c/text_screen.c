@@ -2,15 +2,9 @@
  *
  **/
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-#  include "c/aiwn_asm.h"
-#  include "c/aiwn_mem.h"
-#  include <SDL.h>
 #  include <ctype.h>
-#  include <stdlib.h>
 #  include <string.h>
 #  include <termios.h>
-#  include <unistd.h>
-#include <sys/ioctl.h>
 static struct termios orig_termios;
 static void enableRawMode() {
   struct termios raw;
@@ -147,17 +141,8 @@ static char keys[] = {
     '.', '/',    0,    '*', 0,    ' ', 0,   0,   0,   0,   0,   0,   0,
     0,   0,      0,    0,   0,    0,   0,   0,   0,   '-', 0,   '5', 0,
     '+', 0,      0,    0,   0,    0,   0,   0,   0,   0,   0,   0};
-static int64_t IsShift(char ch) {
-	if(isupper(ch)) return 1;
-	return NULL!=strchr("~!@#$%^&*()_+{}|:\"<>?",ch);
-}
 static int64_t K2SC(char ch) {
   int64_t i = 0;
-  const char *shift="~!@#$%^&*()_+{}|:\"<>?";
-  const char *unshift="`1234567890-=[]\\;',./";
-  const char *ptr=strchr(shift,ch);
-  if(ptr) 
-    ch=unshift[ptr-shift];
   for (; i != sizeof(keys) / sizeof(*keys); i++) {
     if (keys[i] == ch)
       return i;
@@ -166,10 +151,9 @@ static int64_t K2SC(char ch) {
 }
 static void (*kb_cb)(int64_t, void *);
 static void *kb_cb_data;
-static void SendOut(int64_t c, int64_t sc) {
-  SetWriteNP(1);
+static void SendOut(int64_t sc) {
   if (kb_cb)
-    FFI_CALL_TOS_2(kb_cb, c, sc);
+    (*kb_cb)(sc, kb_cb_data);
 }
 
 static int InputThread(void *fptr) {
@@ -180,20 +164,12 @@ static int InputThread(void *fptr) {
   while (1) {
     flags = 0;
     c = ReadChr();
-    if (c == 127) {
-      SendOut(CH_BACKSPACE, K2SC(CH_BACKSPACE));
-      continue;
-    }
-    if (c == '\r') {
-      SendOut('\n', K2SC('\n'));
-      continue;
-    }
-    if (1 <= c && c <= 26) {
-      c = 'a' + c - 1;
-      flags = SCF_CTRL;
-      SendOut((CH_CTRLA + c - 1), K2SC(c) | flags);
-      continue;
-    }
+    if(1<=c&&c<=26) {
+		c='a'+c;
+		flags=SCF_CTRL;
+		SendOut(c|flags);
+		continue;
+	}
     if (c == 27) {
       c = ReadChr();
       if (c == '[') {
@@ -225,122 +201,110 @@ static int InputThread(void *fptr) {
           flags |= SCF_CTRL;
         switch (c) {
         case 'A':
-          SendOut(0, SC_CURSOR_UP | flags);
+          SendOut(SC_CURSOR_UP | flags);
           break;
         case 'B':
-          SendOut(0, SC_CURSOR_DOWN | flags);
+          SendOut(SC_CURSOR_DOWN | flags);
           break;
         case 'C':
-          SendOut(0, SC_CURSOR_RIGHT | flags);
+          SendOut(SC_CURSOR_RIGHT | flags);
           break;
         case 'D':
-          SendOut(0, SC_CURSOR_LEFT | flags);
+          SendOut(SC_CURSOR_LEFT | flags);
           break;
         case 'F':
         end:
-          SendOut(0, SC_END | flags);
+          SendOut(SC_END | flags);
           break;
         case 'H':
         home:
-          SendOut(0, SC_HOME | flags);
+          SendOut(SC_HOME | flags);
           break;
         case 'P':
         f1:
           if (a == 1)
-            SendOut(0, SC_F1 | flags);
+            SendOut(SC_F1 | flags);
           break;
         case 'Q':
         f2:
           if (a == 1)
-            SendOut(0, SC_F2 | flags);
+            SendOut(SC_F2 | flags);
           break;
-        case 'R':
+        case 'P':
         f3:
           if (a == 1)
-            SendOut(0, SC_F3 | flags);
+            SendOut(SC_F3 | flags);
           break;
         case 'S':
         f4:
           if (a == 1)
-            SendOut(0, SC_F4 | flags);
+            SendOut(SC_F4 | flags);
           break;
         case '~':
           switch (a) {
           case 1:
             goto home;
           case 2:
-            SendOut(0, SC_INS | flags);
+            SendOut(SC_INS | flags);
             break;
           case 3:
-            SendOut(0, SC_DELETE | flags);
+            SendOut(SC_DELETE | flags);
             break;
           case 4:
             goto end;
           case 5:
-            SendOut(0, SC_PAGE_UP | flags);
+            SendOut(SC_PAGE_UP | flags);
             break;
           case 6:
-            SendOut(0, SC_PAGE_DOWN | flags);
+            SendOut(SC_PAGE_DOWN | flags);
             break;
           case 7:
             goto home;
           case 8:
             goto end;
           case 10 ... 15:
-            SendOut(0, (SC_F1 + c - 10) | flags);
+            SendOut((SC_F1 + c - 10) | flags);
             break;
           case 17 ... 21:
-            SendOut(0, (SC_F6 + c - 10) | flags);
+            SendOut((SC_F6 + c - 10) | flags);
             break;
           }
           break;
         }
       } else if (!c)
-        SendOut(CH_ESC, SC_ESC);
+        SendOut(SC_ESC);
       else if (c) {
-        if (1 <= c && c <= 26) {
-          c = 'a' + c - 1;
-          flags |= SCF_CTRL;
-          SendOut(CH_CTRLA + c - 1, SCF_ALT | K2SC(c) | flags);
-          continue;
-        }
-        if (IsShift(c)) {
-          flags |= SCF_SHIFT;
-          c = tolower(c);
-        }
-        SendOut(c, SCF_ALT | K2SC(c));
+		  if(1<=c&&c<=26) {
+		c='a'+c;
+		flags|=SCF_CTRL;
+		SendOut(c|flags);
+		continue;
+	}
+        SendOut(SCF_ALT | K2SC(c));
       }
-    } else if (c) {
-      b = c;
-      if (IsShift(c)) {
-        flags |= SCF_SHIFT;
-        c = tolower(c);
-      }
-      a = K2SC(c);
-      if (a > 0)
-        SendOut(b, a | flags);
-    }
+    } else if(c) {
+		if(isupper(c)) {
+			flags|=SCF_SHIFT;
+			c=tolower(c);
+		}
+		a=K2SC(c);
+		if(a>0)
+		SendOut(a);
+	}
   }
 }
 void AiwniosTUIEnable() {
   tcgetattr(STDIN_FILENO, &orig_termios);
   atexit(&disableRawMode);
   enableRawMode();
-  SDL_CreateThread(&InputThread, "TemrinalInput", NULL);
+  SDL_CreateThread(&InputThread)
 }
-void TermSetKbCb(void *fptr) {
+void TermSetKbCb(void *fptr, void *d) {
   kb_cb = fptr;
+  kb_cb_data = d;
 }
-void TermSize(int64_t *a,int64_t *b) {
-	struct winsize wsz;
-	ioctl(STDOUT_FILENO	,TIOCGWINSZ,&wsz);
-	if(a) *a=wsz.ws_col;
-	if(b) *b=wsz.ws_row;
-}
+
 #else
-void TermSize(int64_t *a,int64_t *b) {
-  abort();
-}
 void TermSetKbCb(void *fptr) {
   abort();
 }

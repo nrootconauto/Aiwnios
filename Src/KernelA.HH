@@ -3978,6 +3978,7 @@ import F64 GetVolume();
 import I64 ScreenUpdateInProgress();
 import I64 GetRBP();
 import U0 AiwniosTUIEnable();
+import U0 TermSize(I64 *c,I64 *r);
 #else
 extern U0 AIWNIOS_SetCaptureMouse(I64);
 extern I64 GetRBP();
@@ -3988,6 +3989,7 @@ extern U0 MPAwake(I64);
 extern U8 *CmdLineGetStr(U8 *);
 extern U0 PutS2(U8*);
 extern Bool IsCmdLineMode();
+extern U0 TermSize(I64 *c,I64 *r);
 extern Bool IsCmdLineMode2();
 extern U0 AiwniosTUIEnable();
 extern U0 SpawnCore(U0(*fp)(I64),CCPU *,I64 );

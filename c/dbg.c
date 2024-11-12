@@ -692,7 +692,7 @@ void DebuggerBegin() {
 #else
         if (sig == SIGCONT)
           ;
-        else if (sig == SIGSTOP) // This is used for ptrace events
+        else if (sig == SIGSTOP||sig==SIGWINCH) // This is used for ptrace events
           ptrace(PT_CONTINUE, tid, 1, 0);
         else
           ptrace(PT_CONTINUE, tid, 1, sig);
@@ -719,6 +719,11 @@ static void UnblockSignals() {
 #  endif
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   ucontext_t *_ctx = __ctx;
+  if(sig==SIGWINCH) {
+	  puts("SIGWINCH");
+	  UnblockSignals();
+	  return;
+  }
 #  if defined(__x86_64__)
 #    if defined(__linux__)
   // See /usr/include/x86_64-linux-gnu/sys/ucontext.h

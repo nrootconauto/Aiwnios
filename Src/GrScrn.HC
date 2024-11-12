@@ -324,19 +324,25 @@ U8 term_colors[16]={
    BLACK,RED,GREEN,BROWN,BLUE,PURPLE,CYAN,DKGRAY,
    LTGRAY,LTRED,LTGREEN,YELLOW,LTBLUE,LTPURPLE,LTCYAN,WHITE
 };
+U0 DynPrint(U8 **buf,U8 **final,U8 *fmt,...) {
+  fmt=StrPrintJoin(NULL,fmt,argc,argv);;
+  OutStr(fmt,final,buf,0,0);
+  Free(fmt);
+}
 U0 GrUpdateTextModeText()
 {
+//Write all at once to avoid buffering
+  U8 *dump=NULL;
   U32 *src=gr.text_base;
+  U8 *final=dump;
   I64 cur_ch,i=TEXT_COLS*TEXT_ROWS;
-  U16 *dst=text.vga_text_alias,*dst2=gr.vga_text_cache;
   I64 across=0,line=1;
   Bool blink_flag=Blink(2.5),underline=FALSE,ounderline=FALSE;
   U8 fg,bg,ofg=BLACK,obg=BLACK;
   I64 want;
 #define ANSI_CSI "\x1b["
-  DbgPrint(
+  DynPrint(&dump,&final,
 	ANSI_CSI"0m" //Default
-	ANSI_CSI"3J" //Clear screen
 	ANSI_CSI"1;1H" //1,1 position
 	ANSI_CSI"30m" //FG BLACK
 	ANSI_CSI"38m" //BG BLACK
@@ -362,9 +368,9 @@ U0 GrUpdateTextModeText()
       while(term_colors[want]!=fg&&want<=15)
         want++;
       if(want>=8)
-        DbgPrint(ANSI_CSI"9%dm",want-8);
+        DynPrint(&dump,&final,ANSI_CSI"9%dm",want-8);
       else
-        DbgPrint(ANSI_CSI"3%dm",want);
+        DynPrint(&dump,&final,ANSI_CSI"3%dm",want);
       ofg=fg;
     }
     if(bg!=obg) {
@@ -372,38 +378,47 @@ U0 GrUpdateTextModeText()
       while(term_colors[want]!=bg&&want<=15)
         want++;
       if(want>=8)
-        DbgPrint(ANSI_CSI"10%dm",want-8);
+        DynPrint(&dump,&final,ANSI_CSI"10%dm",want-8);
       else
-        DbgPrint(ANSI_CSI"4%dm",want);
+        DynPrint(&dump,&final,ANSI_CSI"4%dm",want);
       obg=bg;
     }
     if(underline!=ounderline) {
       if(underline)
-        DbgPrint(ANSI_CSI"4m");
+        DynPrint(&dump,&final,ANSI_CSI"4m");
       else
-        DbgPrint(ANSI_CSI"24m");
+        DynPrint(&dump,&final,ANSI_CSI"24m");
       ounderline=underline;
     }
     if(32<=cur_ch.u8[0]<=126)
-      DbgPrint("%c",cur_ch.u8[0]);
+      DynPrint(&dump,&final,"%c",cur_ch.u8[0]);
     else
-      DbgPrint(" ");
+      DynPrint(&dump,&final," ");
     if(++across==TEXT_COLS) {
-      DbgPrint(ANSI_CSI"%d;1H",++line);
+      DynPrint(&dump,&final,ANSI_CSI"%d;1H",++line);
       across=0;
     }
   }
-  DbgPrint(
+  DynPrint(&dump,&final,
 	ANSI_CSI"?24l" //Enable Cursor
   );
+//Write all at once to avoid flicker
+  DbgPutS(final);
+  Free(final);
 }
 
 
 Bool GrUpdateScrn()
 {//Called by the Window Manager $LK,"HERE",A="FF:::/Adam/WinMgr.HC,GrUpdateScrn"$, 30 times a second.
   CDC *dc;
+  I64 oldc=TEXT_COLS,oldr=TEXT_ROWS;
   //Finish rendering previous frame
   if(ScreenUpdateInProgress) return FALSE;
+  if(IsCmdLineMode2) {
+    TermSize(&text.cols,&text.rows);
+    if(oldc!=TEXT_COLS||oldr!=TEXT_ROWS)
+      GrSetTextBaseSize(TEXT_COLS,TEXT_ROWS);
+  }
   if (0) //if text mode
     ;//GrUpdateTasks; TODO RESTORE
   else {
