@@ -226,14 +226,6 @@ static int InputThread(void *fptr) {
         if (b & 4)
           flags |= SCF_CTRL;
         switch (c) {
-		case 'O':
-		   switch(c=ReadChr()) {
-			           case 'P': goto f1;
-			           case 'Q': goto f2;
-			           case 'R': goto f3;
-			           case 'S': goto f4;
-		   }
-		   break;
         case 'A':
           SendOut(0, SC_CURSOR_UP | flags);
           break;
@@ -297,10 +289,10 @@ static int InputThread(void *fptr) {
           case 8:
             goto end;
           case 10 ... 15:
-            SendOut(0, (SC_F1 + c - 10) | flags);
+            SendOut(0, (SC_F1 + a - 10) | flags);
             break;
           case 17 ... 21:
-            SendOut(0, (SC_F6 + c - 10) | flags);
+            SendOut(0, (SC_F6 + a - 17) | flags);
             break;
           }
           break;
@@ -308,6 +300,14 @@ static int InputThread(void *fptr) {
       } else if (!c)
         SendOut(CH_ESC, SC_ESC);
       else if (c) {
+		if(c=='O') {
+		   switch(c=ReadChr()) {
+			           case 'P': goto f1;
+			           case 'Q': goto f2;
+			           case 'R': goto f3;
+			           case 'S': goto f4;
+		   }
+			}
         if (1 <= c && c <= 26) {
           c = 'a' + c - 1;
           flags |= SCF_CTRL;
