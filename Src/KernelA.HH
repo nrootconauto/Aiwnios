@@ -2825,6 +2825,7 @@ public class CBlkPool
 //See aiwn.h
 public class CHeapCtrl
 {
+  U8 *pad;
   U32	hc_signature,is_code_heap;
   I64	locked_flags,alloced_u8s,used_u8s;
   CTask *mem_task;
