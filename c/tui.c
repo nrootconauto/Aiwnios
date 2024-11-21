@@ -1,13 +1,13 @@
 /* See https://viewsourcecode.org/snaptoken/kilo/
  *
  **/
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 #  include "c/aiwn_asm.h"
 #  include "c/aiwn_mem.h"
-#  include <SDL.h>
 #  include <ctype.h>
 #  include <stdlib.h>
 #  include <string.h>
+#  if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#  include <SDL.h>
 #  include <termios.h>
 #  include <unistd.h>
 #include <sys/ioctl.h>
