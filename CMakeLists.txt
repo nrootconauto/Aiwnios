@@ -66,7 +66,6 @@ elseif (ARCH STREQUAL x86_64)
   else ()
     #please dont change this
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
-    list(APPEND  COMP_OPTS -Wl,-subsystem,windows) #Remove console window
   endif ()
 endif ()
 
@@ -180,10 +179,14 @@ if(WIN32)
     "Delete '$SMPROGRAMS\\\\$START_MENU\\\\Aiwnios.lnk' \n \
     Delete '$SMPROGRAMS\\\\$START_MENU\\\\AiwniosFreshEnviroment.lnk'")
  set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
- WriteRegStr HKLM 'Software\\\\Aiwnios' 'InstallAt' '$INSTDIR\\\\T'
+   SetRegView 64
+   WriteRegStr HKLM 'SOFTWARE\\\\Aiwnios' 'InstallAt' '$INSTDIR\\\\T_Template' #Dont use T(use T_Template),I will commit in the future to check permisions
+   SetRegView Default
                 ")
  set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS " 
-    DeleteRegKey HKLM 'Software\\\\Aiwnios'
+    SetRegView 64
+    DeleteRegKey HKLM 'SOFTWARE\\\\Aiwnios'
+    SetRegView Default
     ")
  #set (CPACK_NSIS_MUI_WELCOMEFINISHPAGE_BITMAP "${CMAKE_CURRENT_SOURCE_DIR}/Install.bmp")
  #set (CPACK_NSIS_MUI_UNWELCOMEFINISHPAGE_BITMAP "${CMAKE_CURRENT_SOURCE_DIR}/Uninstall.bmp")
@@ -236,13 +239,13 @@ else()
       install(
         DIRECTORY 
         "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
-        DESTINATION T
+        DESTINATION T_Template
       )
      else()
        install (
          FILES
          "${CMAKE_CURRENT_SOURCE_DIR}/${F}"
-         DESTINATION T
+         DESTINATION T_Template
        )
      endif()
    endforeach()     
