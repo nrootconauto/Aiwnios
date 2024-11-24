@@ -56,7 +56,7 @@ extern int64_t user_ev_num;
 #endif
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line,*arg_cmd_line2, *arg_fork, *arg_no_debug, *arg_grab,*arg_fast_fail;
+    *sixty_fps, *arg_cmd_line,*arg_cmd_line2=NULL, *arg_fork, *arg_no_debug, *arg_grab,*arg_fast_fail;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1322,6 +1322,8 @@ int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
 int64_t IsCmdLineMode2() {
+	//On windows im not supporting --tui yet
+	if(arg_cmd_line2==NULL) return 0;
   return arg_cmd_line2->count != 0;
 }
 
@@ -1781,7 +1783,9 @@ int main(int argc, char **argv) {
           "Faults will be handled by an external debugger(such as gdb)."),
       sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode(dumb)."),
+      #if ! defined (_WIN32) && ! defined(WIN32)
       arg_cmd_line2 = arg_lit0(NULL, "tui", "Run in text mode(command line mode on steriods)."),
+      #endif
       arg_boot_files =
           arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                     "Files to run on  boot in command line mode."),

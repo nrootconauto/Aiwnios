@@ -8,6 +8,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
   message(FATAL_ERROR "MAY NOT BUILD FROM ROOT")
 endif ()
 
+
 if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   set(CMAKE_INSTALL_PREFIX "/usr/local")
 elseif (NOT WIN32)
@@ -65,6 +66,7 @@ elseif (ARCH STREQUAL x86_64)
   else ()
     #please dont change this
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
+    list(APPEND  COMP_OPTS -Wl,-subsystem,windows) #Remove console window
   endif ()
 endif ()
 
