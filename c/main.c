@@ -1873,6 +1873,7 @@ int main(int argc, char **argv) {
     char inst_dir[reg_size + 1];
     RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
                  RRF_RT_REG_MULTI_SZ, NULL, inst_dir, &reg_size);
+    strcpy(installed_at,inst_dir);
     has_installed = 1;
   }
   char home_dir[MAX_PATH];
