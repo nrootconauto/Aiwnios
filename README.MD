@@ -21,7 +21,7 @@ machines,although other aritchecures are planned for the future. This project is
 ### FreeBSD/Linux
 
 I use a Raspberry Pi 3,as my daily machine for developing this peice of software,I would recomend 
-something saucier if you want to be comfy expirience (M1 macs with Asahi Linux work smoothly if you ignore the chassis).
+something saucier if you want to be comfy experience (M1 macs with Asahi Linux work smoothly if you ignore the chassis).
 To build Aiwnios, you will need a C compiler, SDL2 development libraries and headers, and cmake. LTO with Clang/lld is supported if you like something saucy.
 
 Build with the following after cloning:
