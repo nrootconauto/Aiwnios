@@ -242,7 +242,6 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       ptr3 = A_MALLOC(READ_NUM(src, int32_t), NULL);
       src += 4;
     end:
-puts(st_ptr);
       if (*st_ptr) {
         *(tmpex = A_MALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
             .base =

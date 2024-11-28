@@ -1814,7 +1814,7 @@ break;case IC_ASM:
     }
     if(h->type&HTT_GLBL_VAR) {
       if((h(CHashGlblVar*)->flags&GVF_EXTERN)||cc->flags&CCF_AOT_COMPILE) {
-        new=__HC_ICAdd_Reloc(
+        new=__HC_ICAdd_RelocUnique( //Unique because of ->offset
           acc,
           cc2,
           &cur->ic_data(CCodeMisc*)->addr,

@@ -346,7 +346,7 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	  break;
 	default:
 	  if (cc->flags&CCF_AOT_COMPILE) {
-	    if (Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP))) {
+	    if (Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)) {
 //	      if (cc->token=='=')
 //		LexExcept(cc,"Can't init glbl var on data heap in AOT module ");
 	      tmpg=CAlloc(sizeof(CHashGlblVar));
