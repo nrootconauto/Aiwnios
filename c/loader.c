@@ -239,11 +239,11 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       break;
     case IET_CODE_HEAP:
     case IET_ZEROED_CODE_HEAP:
-      ptr3 = A_MALLOC(READ_NUM(src, int32_t), NULL);
+      ptr3 = A_CALLOC(READ_NUM(src, int32_t), NULL);
       src += 4;
     end:
       if (*st_ptr) {
-        *(tmpex = A_MALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
+        *(tmpex = A_CALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
             .base =
                 {
                     .str = A_STRDUP(st_ptr, NULL),

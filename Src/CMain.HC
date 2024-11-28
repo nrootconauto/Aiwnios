@@ -573,17 +573,20 @@ riscv_patch:
 		if(fun->type&HTF_EXPORT) {
 			i=fun(CHashGlblVar*)->data_addr_rip-(tmpaotie->rip+4)+tmpaotie->offset;
 			AOTStoreCodeU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
-}
+} else goto skip;
 			#endif
 			#ifdef TARGET_RISCV
-		if(fun->type&HTF_EXPORT) {
-			ptr=fun(CHashGlblVar*)->data_addr_rip+tmpaotie->offset;
-			goto riscv_patch;
-}
+		//if(fun->type&HTF_EXPORT) {
+			if(fun(CHashGlblVar*)->data_addr_rip) {
+				ptr=fun(CHashGlblVar*)->data_addr_rip+tmpaotie->offset;
+				goto riscv_patch;
+			} else goto skip;
+//}
 			#endif
 			QueRem(tmpaotie);
 			Free(tmpaotie->str);
 			Free(tmpaotie);
+skip:;
       }
     }
   }

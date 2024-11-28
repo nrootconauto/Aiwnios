@@ -136,6 +136,10 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!ps)
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
+#  if defined(__riscv__) || defined(__riscv)
+	if (hc->is_code_heap||bc_enable)
+		at = GetAvailRegion32(b);
+#  endif 
 #  if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(__APPLE__)
   if (bc_enable)
     at = GetAvailRegion32(b);

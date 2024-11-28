@@ -551,6 +551,7 @@ U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   #endif
   tmpaie->str=StrNew(data->cm->h->str);
   tmpaie->rip=data->cc->aotc->rip+(addr-data->machine_code);
+  
   tmpaie->offset=data->cm->offset;
   tmpaie->short_jmp=TRUE;
   QueIns(tmpaie,data->cc->aot->last_ie);
