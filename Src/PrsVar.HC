@@ -82,10 +82,8 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	    throw('Compiler');
 	  if(to) {RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);
 	  RPNAddNew(cc,IC_RET,0,tmpc,FALSE);
-#ifdef TARGET_RISCV
 	  while(cc->aotc->rip&3)
 	    AOTStoreCodeU8(cc,0);
-#endif
 	  if (machine_code=COCCompile(cc,&size,NULL,NULL)) {
 	    tmpie=CAlloc(sizeof(CAOTImportExport));
 	    tmpie->type=IET_MAIN;
