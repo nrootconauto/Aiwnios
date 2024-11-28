@@ -1,7 +1,8 @@
+
 # Welcome to Aiwnios
 
 This is a HolyC Compiler/Runtime written for 64bit x86, aarch64 (includes ***MacOS***) and RISC-V
-machines,although other aritchecures are planned for the future. This project is a work in progress,so stay tuned.
+machines,although other architectures are planned for the future. This project is largely complete (aside from adding support for other architectures) so stay tuned.
 
 ## Support table
 
@@ -20,8 +21,8 @@ machines,although other aritchecures are planned for the future. This project is
 
 ### FreeBSD/Linux
 
-I use a Raspberry Pi 3,as my daily machine for developing this peice of software,I would recomend 
-something saucier if you want to be comfy experience (M1 macs with Asahi Linux work smoothly if you ignore the chassis).
+I develop on a lot of computers. For ARM I use an Apple M1 MacBook(MacOS x Asahi Linux). For RISC-V I use a [LicheePi4](https://wiki.sipeed.com/hardware/en/lichee/th1520/lpi4a/2_unbox.html). Make sure you buy one Trump imposes tariffs on sexy RISCV machines(I also test on a [StarFive VisionFive 2](https://www.starfivetech.com/en/site/boards)). For X86_64 I use alot of old and new machines.
+
 To build Aiwnios, you will need a C compiler, SDL2 development libraries and headers, and cmake. LTO with Clang/lld is supported if you like something saucy.
 
 Build with the following after cloning:
@@ -40,7 +41,7 @@ cd ..;
 ./aiwnios; # Use -g or --grab-focus to grab the keyboard, -h for more options
 ```
 
-If you want to create a cool package for your system, you can use the [ESP Package Manager](https://github.com/jimjag/epm/). Simply run `epm aiwnios` to make a cool package for your system.
+If you want to create a cool package for your system, you can use [CPack](https://cmake.org/cmake/help/book/mastering-cmake/chapter/Packaging%20With%20CPack.html). Ill probably do this for you. The `cpack` is tested on Windows(NSIS). If you want to generate a FreeBSD `.pkg`,you'll need build cmake from source of FreeBSD because cpack has *experimental*  support for FreeBSD. Make sure you enable it.
 
 ### Windows
 
@@ -61,6 +62,16 @@ cd ..
 ### MacOS
 
 Your on your own. Use homebrew to install packages, rest is same as FreeBSD
+
+
+# TUI Mode
+
+<div align="center">
+    <img src="img/tui.png" alt="TUI Screenshot" width="80%">
+</div> <!-- whoever did the <center> was retarded, thats HTML3 (!) and only applies to text -->
+
+You can use the `--tui` to run a DolDoc enviroment in the terminal. ***Use `ExitAiwnios;` to leave.***
+
 
 # Future
 
