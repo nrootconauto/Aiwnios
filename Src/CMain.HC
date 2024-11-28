@@ -539,6 +539,8 @@ U0 FillInShortCalls(CCmpCtrl *cc) {
 riscv_patch:
 		  i=ptr-tmpaotie->rip;
 	      low12=i-(i&~(1<<12-1));
+	      //In riscv_backend,I use 1/2/etc to tell what kind of reloction it is,Use mask (0xfff) to presereve the low12 bits(used by opcode)
+	      AOTAndBytesU8At(cc,tmpaotie->rip,0xff,0x0f,0,0);
 		  if(-(1<<11)<=low12<(1<<11-1)) {/*Chekc for bit 12 being set*/
 		    //AUIPC imm20
 		    i=((ptr-tmpaotie->rip)>>12)<<12;
@@ -567,21 +569,22 @@ riscv_patch:
           Free(tmpaotie);
         }
       } else if(fun&&fun->type&HTT_GLBL_VAR) {
-		if(fun->type&HTF_EXPORT) {
 			#ifdef TARGET_X86
+		if(fun->type&HTF_EXPORT) {
 			i=fun(CHashGlblVar*)->data_addr_rip-(tmpaotie->rip+4)+tmpaotie->offset;
 			AOTStoreCodeU8At(cc,tmpaotie->rip,i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+}
 			#endif
 			#ifdef TARGET_RISCV
+		if(fun->type&HTF_EXPORT) {
 			ptr=fun(CHashGlblVar*)->data_addr_rip+tmpaotie->offset;
 			goto riscv_patch;
+}
 			#endif
 			QueRem(tmpaotie);
 			Free(tmpaotie->str);
 			Free(tmpaotie);
-        }
-      } else
-		throw('Compiler');
+      }
     }
   }
 }

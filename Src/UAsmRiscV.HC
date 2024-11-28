@@ -269,9 +269,9 @@ U32 *DisasOpc(CDoc *doc,U32 *data) {
   if(DisasIType(d,"LBU",0b100,0b11)) return data+1;
   if(DisasIType(d,"LHU",0b101,0b11)) return data+1;
   if(DisasIType(d,"LWU",0b110,0b11)) return data+1;  
-  if(DisasIType(d,"LB",0,0b100011)) return data+1;
-  if(DisasIType(d,"LH",0b1,0b100011)) return data+1;
-  if(DisasIType(d,"LW",0b10,0b100011)) return data+1;
+  if(DisasIType(d,"SB",0,0b100011)) return data+1;
+  if(DisasIType(d,"SH",0b1,0b100011)) return data+1;
+  if(DisasIType(d,"SW",0b10,0b100011)) return data+1;
   if(DisasIType(d,"LBU",0b100,0b100011)) return data+1;
   if(DisasIType(d,"LHU",0b101,0b100011)) return data+1;
   if(DisasIType(d,"LWU",0b110,0b100011)) return data+1;
@@ -284,7 +284,7 @@ U32 *DisasOpc(CDoc *doc,U32 *data) {
   if(DisasRType(d,"ADD",0b0,0b000,0b110011)) return data+1;
   if(DisasRType(d,"SUB",0b0100000,0b000,0b110011)) return data+1;
   if(DisasRType(d,"SLL",0b0000000,0b001,0b110011)) return data+1;
-  if(DisasRType(d,"SLT",0b0000000,0b010,0b10011)) return data+1;
+  if(DisasRType(d,"SLT",0b0000000,0b010,0b110011)) return data+1;
   if(DisasRType(d,"SLTU",0b0000000,0b011,0b110011)) return data+1;
   if(DisasRType(d,"XOR",0b0000000,0b100,0b110011)) return data+1;
   if(DisasRType(d,"SRL",0b0000000,0b101,0b110011)) return data+1;

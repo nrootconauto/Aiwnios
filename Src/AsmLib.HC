@@ -143,3 +143,24 @@ U0 AOTOrBytesU8At(CCmpCtrl *cc,I64 rip,...)
   if (rip>aotc->num_bin_U8s)
     aotc->num_bin_U8s=rip;
 }
+
+U0 AOTAndBytesU8At(CCmpCtrl *cc,I64 rip,...)
+{
+  CAOTCtrl *aotc=cc->aotc;
+  CAOTBinBlk *tmpbin;
+  I64 i,j;
+  for (j=0;j<argc;j++) {
+    i=rip>>AOT_BIN_BLK_BITS+1;
+    tmpbin=&aotc->bin;
+    while (i--) {
+      if (!tmpbin->next) {
+	tmpbin->next=CAlloc(sizeof(CAOTBinBlk));
+	tmpbin->next->next=NULL;
+      }
+      tmpbin=tmpbin->next;
+    }
+    tmpbin->body[rip++ & (AOT_BIN_BLK_SIZE-1)]&=argv[j];
+  }
+  if (rip>aotc->num_bin_U8s)
+    aotc->num_bin_U8s=rip;
+}

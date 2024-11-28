@@ -802,6 +802,7 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
   #ifdef TARGET_X86
   //In X86_64,I will do every relocation as a short one that isnt an import
   if(cc->flags&CCF_AOT_COMPILE) {
+//Globals are on heap due to MacOS RW/X protections
     if(!(h->type&HTF_IMPORT)&&!(h->type&HTT_GLBL_VAR)) {
       cur=COCMiscNew(cc,CMT_HASH_ENTRY);
       cur->flags|=CMF_SHORT_ADDR;
@@ -813,7 +814,7 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
   #ifdef TARGET_RISCV
   //In RISCV do the same
   if(cc->flags&CCF_AOT_COMPILE) {
-    if(!(h->type&HTF_IMPORT)&&!(h->type&HTT_GLBL_VAR)) {
+    if(!(h->type&HTF_IMPORT)) {
       cur=COCMiscNew(cc,CMT_HASH_ENTRY);
       cur->flags|=CMF_SHORT_ADDR;
       cur->h=h;

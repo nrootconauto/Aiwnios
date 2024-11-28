@@ -1,6 +1,6 @@
 class CInternalType
 {
-  U8 type,size,name[8];
+  U8 type,size,*name;
 } internal_types_table[INTERNAL_TYPES_NUM]={
   {RT_I0,0,"I0i"},{RT_I0,0,"I0"},{RT_U0,0,"U0i"},{RT_U0,0,"U0"},
   {RT_I8,1,"I8i"},{RT_I8,1,"I8"},{RT_I8,1,"Bool"},

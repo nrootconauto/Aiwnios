@@ -100,7 +100,6 @@ Bool IsSuspended(CTask *task=NULL)
   else
     return FALSE;
 }
-
 I64 TaskInit(CTask *task,I64 stk_size)
 {//Returns Fs of task
   task->data_heap=HeapCtrlInit(NULL,task,0);
@@ -116,14 +115,15 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->next_child_task=task->last_child_task=
 	(&task->next_child_task)(U8 *)-offset(CTask.next_sibling_task);
 
-
+#ifndef BOOTSTRAP
   JobCtrlInit(&task->srv_ctrl);
+#endif
+
   QueInit(&task->next_cc);
   QueInit(&task->next_except);
   QueInit(&task->next_ctrl);
   QueInit(&task->next_ode);
   task->hash_table=HashTableNew(TASK_HASH_TABLE_SIZE,task);
-
 /*
   if (!stk_size)
     stk_size=MEM_DFT_STK;
@@ -135,7 +135,9 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->stk=MAlloc(stk_size,task);
   task->text_attr	=WHITE<<4+BLUE;
   task->border_src	=BDS_CONST;
+#ifndef BOOTSTRAP
   task->border_attr	=DrvTextAttrGet(':');
+#endif
   task->title_src	=TTS_CONST;
   task->win_left	=1;
   task->win_right	=text.cols-2;

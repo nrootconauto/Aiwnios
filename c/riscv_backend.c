@@ -1087,20 +1087,6 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     break;
   case IC_DEREF:
     orig = r;
-    //
-    // We can directly use the code ref(ICF_PRECOMPUTED to avoid recomputing)
-    //
-    if ((b = ICArgN(r, 0))->type == IC_SHORT_ADDR) {
-      r->flags |= ICF_TMP_NO_UNDO;
-      r->res.mode = MD_CODE_MISC_PTR;
-      r->res.raw_type = r->raw_type;
-      r->res.code_misc = b->code_misc;
-      // PUSH in case someone tries to bybass IC_DEREF
-      PushTmpDepthFirst(cctrl, b, 0);
-      PopTmp(cctrl, b);
-      r->flags |= ICF_PRECOMPUTED;
-      return 1;
-    }
     tmp = 0;
     arg = r->base.next;
     // You dont derefernece a func pointer
@@ -1422,7 +1408,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   rpn2 = ICArgN(rpn, rpn->length);
   if (rpn2->type == IC_SHORT_ADDR) {
 	  BEFORE_CALL;
-    AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 0));
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 1<<12));
     AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, 0));
     if (bin)
       CodeMiscAddRef(rpn2->code_misc, bin + code_off - 8);
@@ -3000,7 +2986,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       into_reg = rpn->res.reg;
     else
       into_reg = RISCV_IRET;
-    AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, into_reg), 0));
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, into_reg), 2<<12));
     AIWNIOS_ADD_CODE(RISCV_ADDI(MIR(cctrl, into_reg), into_reg, 0));
     if (bin)
       CodeMiscAddRef(rpn->code_misc, bin + code_off - 8);
@@ -3766,7 +3752,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       // Undefined?
       if (!enter_addr || enter_addr == &DoNothing) {
         misc = AddRelocMisc(cctrl, next->global_var->base.str);
-        AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, into_reg), 0));
+        AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, into_reg), 2<<12));
         AIWNIOS_ADD_CODE(RISCV_LD(MIR(cctrl, into_reg), into_reg, 0));
         CodeMiscAddRef(misc, bin + code_off - 8);
         goto restore_reg;
@@ -4751,6 +4737,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       } else {                                                                 \
         int64_t low12;                                                         \
         idx = (char *)misc->addr - (char *)cm_ref->add_to + cm_ref->offset;    \
+        *(int32_t *)(cm_ref->add_to)&=0xfff; \
         low12 = idx - (idx & ~((1 << 12) - 1));                                \
         if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/                   \
           *(int32_t *)(cm_ref->add_to) |= (idx >> 12) << 12;                   \

@@ -520,6 +520,7 @@ class CAddShortRelocData {
 	CCmpCtrl *cc;
 	CCodeMisc *cm;
 	U8 *machine_code;
+	Bool is_fun_call;
 };
 Bool Globalify(U8 *addr,CAddShortRelocData *data) {
   CCodeMisc *cm=data->cm;
@@ -544,7 +545,7 @@ Bool Globalify(U8 *addr,CAddShortRelocData *data) {
 U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   CAOTImportExport *tmpaie=CAlloc(sizeof(CAOTImportExport));
   #ifdef TARGET_RISCV
-  tmpaie->type=IET_REL_RISCV; //FOR FUNCTION CALLS ONLY
+  tmpaie->type=IET_REL_RISCV;
   #else
   tmpaie->type=IET_REL_I32;
   #endif
@@ -1813,7 +1814,7 @@ break;case IC_ASM:
     }
     if(h->type&HTT_GLBL_VAR) {
       if((h(CHashGlblVar*)->flags&GVF_EXTERN)||cc->flags&CCF_AOT_COMPILE) {
-        new=__HC_ICAdd_RelocUnique(
+        new=__HC_ICAdd_Reloc(
           acc,
           cc2,
           &cur->ic_data(CCodeMisc*)->addr,
@@ -2124,9 +2125,9 @@ break;case IC_ASM:
           //All non-imported functions are short calls
           if(misc->flags&CMF_SHORT_ADDR) {
             fill_user_data.cc=cc;
-			fill_user_data.cm=misc;
-			fill_user_data.machine_code=machine_code;
-			__HC_CodeMiscInterateThroughRefs(misc->addr,&AddShortReloc,&fill_user_data);
+	    fill_user_data.cm=misc;
+	    fill_user_data.machine_code=machine_code;
+	    __HC_CodeMiscInterateThroughRefs(misc->addr,&AddShortReloc,&fill_user_data);
           }else if(IsTLSReloc(misc)) {
             tmpaie=CAlloc(sizeof(CAOTImportExport));
             tmpaie->type=IET_IMM_I64;

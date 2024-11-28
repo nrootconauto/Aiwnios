@@ -1,4 +1,7 @@
 #include "KernelA.HH"
+#ifdef BOOTSTRAP
+#define mp_cnt 1
+#endif
 #include "CompilerA.HH"
 #include "CExts.HC"
 #include "CompilerB.HH"
@@ -140,12 +143,12 @@ U0 SwapI64(I64 *a,I64 *b) {
 #include "StrA.HC"
 #include "Sched.HC"
 #include "Display.HC"
+#include "KHashB.HC"
 #include "KTask.HC"
 #include "MultiProc.HC"
 #include "KExcept.HC"
 #include "Job.HC"
 #include "KDataTypes.HC"
-#include "KHashB.HC"
 #include "Compress.HC"
 #include "StrB.HC"
 #include "KDefine.HC"

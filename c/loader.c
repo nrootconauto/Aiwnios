@@ -140,8 +140,22 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
         IMM(int64_t);
         break;
       case IET_REL_RISCV: {
+		  /*
+		   * AUIPC d,X
+		   * 
+		   * X==1
+		   * JALR reta,low12
+		   * 
+		   * X==2
+		   * ADDI d,d,low12
+		   */
         int64_t idx = (char *)i - (char *)ptr2;
         int64_t low12 = idx - (idx & ~((1 << 12) - 1));
+		switch(*(int32_t *)(ptr2)>>12) {
+			default:
+			case 1:
+			case 2: {
+				*(int32_t *)(ptr2)&=0xfff;
         if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
           *(int32_t *)(ptr2) |= (idx >> 12) << 12;
           *(int32_t *)((char *)ptr2 + 4) |= low12 << 20;
@@ -149,6 +163,9 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
           *(int32_t *)(ptr2) |= ((idx >> 12) + 1) << 12;
           *(int32_t *)((char *)ptr2 + 4) |= low12 << 20;
         }
+        break;
+			}
+		}
       }
       }
 #undef OFF
@@ -225,6 +242,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       ptr3 = A_MALLOC(READ_NUM(src, int32_t), NULL);
       src += 4;
     end:
+puts(st_ptr);
       if (*st_ptr) {
         *(tmpex = A_MALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
             .base =

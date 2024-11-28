@@ -82,13 +82,18 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	    throw('Compiler');
 	  if(to) {RPNAddNew(cc,IC_ASSIGN,,tmpc,FALSE);
 	  RPNAddNew(cc,IC_RET,0,tmpc,FALSE);
+#ifdef TARGET_RISCV
+	  while(cc->aotc->rip&3)
+	    AOTStoreCodeU8(cc,0);
+#endif
 	  if (machine_code=COCCompile(cc,&size,NULL,NULL)) {
 	    tmpie=CAlloc(sizeof(CAOTImportExport));
 	    tmpie->type=IET_MAIN;
 	    QueIns(tmpie,cc->aot->last_ie);
       tmpie->rip=cc->aotc->rip;
-	    for (i=0;i<size;i++)
+	    for (i=0;i<size;i++) {
 	      AOTStoreCodeU8(cc,machine_code(U8*)[i]);
+	    }
 	    Free(machine_code);
 	    }
 	  }

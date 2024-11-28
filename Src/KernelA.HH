@@ -2825,7 +2825,7 @@ public class CBlkPool
 //See aiwn.h
 public class CHeapCtrl
 {
-  U8 *pad;
+  U8 *pad;
   U32	hc_signature,is_code_heap;
   I64	locked_flags,alloced_u8s,used_u8s;
   CTask *mem_task;
@@ -3981,6 +3981,7 @@ import I64 GetRBP();
 import U0 AiwniosTUIEnable();
 import U0 TermSize(I64 *c,I64 *r);
 #else
+extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 AIWNIOS_SetCaptureMouse(I64);
 extern I64 GetRBP();
 extern U0 WriteProtectMemCpy(U8*,U8*,I64);
@@ -4046,7 +4047,6 @@ extern U0 RepInU32(U8 *buf,I64 cnt,I64 port);
 //From AIWNIOS
 extern F64 Exp(F64);
 extern I64 MemCmp(U8*,U8*,I64);
-extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 HeapCtrlDel(U8 *);
 extern U8 *__MAlloc(I64i sz,CTask *t=NULL);
 extern U8 *__CAlloc(I64i sz,CTask *t=NULL);

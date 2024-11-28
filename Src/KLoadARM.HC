@@ -1,7 +1,7 @@
 U0 LoadOneImport(U8 **_src,U8 *module_base,I64 ld_flags)
 {
   U8 *src=*_src,*ptr2,*st_ptr;
-  I64 i,etype,off,width;
+  I64 i,etype,off,width,low12,write;
   CHashExport *tmpex=NULL;
   CHashImport *tmpiss;
   Bool first=TRUE;
@@ -74,7 +74,25 @@ U0 LoadOneImport(U8 **_src,U8 *module_base,I64 ld_flags)
         case IET_IMM_I64:
 	  WriteProtectMemCpy(ptr2,&i,8);
 	  break;
+	case IET_REL_RISCV:
+	  i=i-ToI64(ptr2);
+	  low12 = i - (i & ~((1 << 12) - 1));
+	  write=ptr2(U64*)[0];
+	  switch(write>>12) {
+	    default:
+	    case 1:
+	    case 2:
+	      if (-(1<<11)<=low12<=1<<11-1) { /*Chekc for bit 12 being set*/
+	        write.u32[0] |= (i >> 12) << 12;
+	        write.u32[1] |= low12 << 20;
+	      } else {
+	        write.u32[0] |= ((i >> 12) + 1) << 12;
+	        write.u32[1] |= low12 << 20;
+	      }
+          WriteProtectMemCpy(ptr2,&write,8);
+	      break;
       }
+    }
     }
   }
   *_src=src-1;

@@ -132,7 +132,6 @@ typedef struct CCodeMiscRef {
   // Used for RISC-V
   int8_t is_jal;     // Not JALR
   int8_t is_4_bytes; // Default is 8 bytes
-  int8_t is_dummy;
 } CCodeMiscRef;
 typedef struct CCodeMisc {
   CQue base;

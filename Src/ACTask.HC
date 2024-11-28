@@ -26,7 +26,7 @@ U0 ACDocRst(I64 left,I64 top)
   Fs->border_attr=LTGRAY<<4+DrvTextAttrGet(':')&15;
   Fs->text_attr  =LTGRAY<<4+BLUE;
   LBtr(&(Fs->display_flags),DISPLAYf_SHOW);
-  WinHorz(left,TEXT_COLS-2);
+  WinHorz(left,TEXT_COLS-2);
   WinVert(top,Fs->win_bottom);
   DocCursor;
 }
