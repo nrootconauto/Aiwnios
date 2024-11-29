@@ -1321,7 +1321,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
   int64_t i, has_vargs = 0;
   CICArg tmp = {0},tmp2={0};
-  CRPN *rpn2;
+  CRPN *rpn2,*arg;
   int64_t to_pop = rpn->length * 8, to_pop2 = to_pop, ptr = to_pop,vargs_pop=0;
   void *fptr;
   //Here's Nroots deal. Things that wont change"IC_IREG,IC_FREG,IC_IMM_X64" will be passed later.
@@ -1333,7 +1333,15 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 		  tmp.mode=MD_REG; \
 		  tmp.raw_type=rpn2->res.raw_type; \
 		  tmp.reg=10+i; \
-	  if(WONT_CHANGE(rpn2->type)) { \
+	  arg=ICArgN(rpn2,0); \
+	   if(rpn2->type==IC_ADDR_OF&&arg->type==IC_BASE_PTR) { \
+		   if(Is12Bit(-arg->integer)) { \
+			AIWNIOS_ADD_CODE(RISCV_ADDI(10+i,RISCV_REG_FP,-arg->integer)); \
+		} else { \
+			code_off=__ICMoveI64(cctrl,10+i,-arg->integer,bin,code_off); \
+			AIWNIOS_ADD_CODE(RISCV_ADD(10+i,RISCV_REG_FP,10+i)); \
+		} \
+	} else if(WONT_CHANGE(rpn2->type)) { \
 		  switch(rpn2->type) { \
 			  case IC_IREG: \
 			  case IC_FREG: \
@@ -1358,7 +1366,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 			  break;   \
 		  } \
 		  code_off=ICMov(cctrl,&tmp,&tmp2,bin,code_off); \
-	  }  else { \
+	  }  else {\
 		  code_off=ICMov(cctrl,&tmp,&rpn2->res,bin,code_off); /* In PushSpilledTmp I spilled them*/ \
      }\
 		  if(tmp.raw_type==RT_F64) \
