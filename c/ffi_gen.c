@@ -144,7 +144,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #if defined(__riscv__) || defined(__riscv)
 #  include "aiwn_riscv.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8 * 21+arity*4, Fs->code_heap),ptr=0;
+  int32_t *blob = A_MALLOC(8* 21+arity*4, Fs->code_heap),ptr=0;
   int64_t arg,fill;
   int64_t top=0;
   if(arity)

@@ -1375,6 +1375,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   int64_t mutated=0;
   for (i = 0; i < rpn->length; i++) {
   rpn2 = ICArgN(rpn, i);
+  arg=ICArgN(rpn2,0);
     if (rpn2->type == __IC_VARGS) {
       to_pop -= 8; // We dont count argv
       ptr -= 8;
@@ -1382,6 +1383,13 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       vargs_pop=rpn2->length*8;
       code_off = __OptPassFinal(cctrl, rpn2, bin, code_off);
     } else if(!WONT_CHANGE(rpn2->type))  {
+		//See BEFORE_CALL
+		if(rpn2->type==IC_ADDR_OF&&arg->type==IC_BASE_PTR&&rpn->length-i-1<8) {
+			rpn2->res.mode=MD_REG;
+			rpn2->res.raw_type=RT_I64i;
+			rpn2->res.reg=10+rpn->length-i-1;
+			continue;
+		}
 		if(!ArgRPNMutatesArgumentRegister(rpn,rpn->length-i-1+10,rpn2->res.raw_type==RT_F64)&&rpn->length-i-1<8) {
 			//Favor storing in argument registers if they arent changed
 			rpn2->res.mode=MD_REG;
@@ -1413,9 +1421,9 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = ICMov(cctrl, &tmp, &rpn2->res, bin, code_off);
     }
   }
+  BEFORE_CALL;
   rpn2 = ICArgN(rpn, rpn->length);
   if (rpn2->type == IC_SHORT_ADDR) {
-	  BEFORE_CALL;
     AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 1<<12));
     AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, 0));
     if (bin)
@@ -1429,13 +1437,11 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         goto defacto;
     use_fptr:;
       int64_t old_code_off=code_off;
-      BEFORE_CALL;
       int64_t idx = (int64_t)fptr - (int64_t)(bin + code_off);
       int64_t low12 = idx - (idx & ~((1 << 12) - 1));
        code_off=old_code_off;
       if (!Is32Bit(idx))
         goto defacto;
-      BEFORE_CALL;
       if (Is12Bit(low12)) { /*Chekc for bit 12 being set*/
         AIWNIOS_ADD_CODE(RISCV_AUIPC(5, idx >> 12));
         AIWNIOS_ADD_CODE(RISCV_JALR(1, 5, low12));
@@ -1448,7 +1454,6 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   defacto:
     rpn2->res.raw_type = RT_PTR; // Not set for some reason
     if (rpn2->type == IC_RELOC) {
-      BEFORE_CALL;
       AIWNIOS_ADD_CODE(RISCV_AUIPC(5, 0));
       AIWNIOS_ADD_CODE(RISCV_LD(5, 5, 0));
       if (bin)
@@ -1472,7 +1477,6 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 		  code_off=ICMov(cctrl,&tmp,&rpn2->res,bin,code_off);
 		  rpn2->res=tmp;
 	  }
-      BEFORE_CALL;
       AIWNIOS_ADD_CODE(RISCV_JALR(1, rpn2->res.reg, 0));
     }
   }

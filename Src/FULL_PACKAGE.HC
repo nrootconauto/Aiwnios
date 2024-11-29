@@ -363,6 +363,7 @@ U8 *body=
 #endif
 #ifdef TARGET_RISCV
 #include "UAsmRiscV.HC"
+#include "AsmRISCV.HC"
 #endif
 #include "HomeKeyPlugIns.HC"
 if(!IsCmdLineMode&&!IsCmdLineMode2)
