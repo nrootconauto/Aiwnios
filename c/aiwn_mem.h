@@ -22,7 +22,7 @@ struct CHashTable;
 #define MEM_PAG_BITS       (12)
 #define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
 typedef struct CHeapCtrl {
-  void *pad; //Needed
+  void *pad; // Needed
   int32_t hc_signature;
   int32_t is_code_heap;
   int64_t locked_flags, alloced_u8s, used_u8s;

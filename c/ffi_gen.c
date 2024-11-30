@@ -109,31 +109,35 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #  include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8 * 21+arity*4, Fs->code_heap),ptr=0;
-  int64_t arg,fill;
-  int64_t pop=0,pad=0;
-  int old=SetWriteNP(0);
-  if(arity&1)
-	arity++,pad=8;
-  if(arity);
-    blob[ptr++]=ARM_subImmX(31,31,pop=(arity<8?arity:8)*8);
-  for(arg=0;arg<arity-!!pad;arg++) {
-	  if(arg>=8) break;
-	  blob[ptr++]=ARM_strRegImmX(arg,31,arg*8+pad);
-  }	
-  blob[ptr++] = ARM_addImmX(0, 31,pad); // 31 is stack pointer,0 is 1st argument
-  blob[ptr++] = ARM_stpPreImmX(29,30,31,-16);
-  blob[ptr++]=ARM_movRegX(29,31);
-  fill=ptr;
-  blob[ptr++] = ARM_ldrLabelX(8,0); // 6 is 1st temporoary
-  blob[ptr++]=ARM_blr(8);
-  blob[ptr++]=ARM_ldpPostImmX(29, 30, 31, 16);
-  if(pop)
-	blob[ptr++]=ARM_addImmX(31,31,pop);
-  blob[ptr++]=ARM_ret();
-  if(ptr&1) ptr++; //Align to 8
+  int32_t *blob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
+  int64_t arg, fill;
+  int64_t pop = 0, pad = 0;
+  int old = SetWriteNP(0);
+  if (arity & 1)
+    arity++, pad = 8;
+  if (arity)
+    ;
+  blob[ptr++] = ARM_subImmX(31, 31, pop = (arity < 8 ? arity : 8) * 8);
+  for (arg = 0; arg < arity - !!pad; arg++) {
+    if (arg >= 8)
+      break;
+    blob[ptr++] = ARM_strRegImmX(arg, 31, arg * 8 + pad);
+  }
+  blob[ptr++] =
+      ARM_addImmX(0, 31, pad); // 31 is stack pointer,0 is 1st argument
+  blob[ptr++] = ARM_stpPreImmX(29, 30, 31, -16);
+  blob[ptr++] = ARM_movRegX(29, 31);
+  fill = ptr;
+  blob[ptr++] = ARM_ldrLabelX(8, 0); // 6 is 1st temporoary
+  blob[ptr++] = ARM_blr(8);
+  blob[ptr++] = ARM_ldpPostImmX(29, 30, 31, 16);
+  if (pop)
+    blob[ptr++] = ARM_addImmX(31, 31, pop);
+  blob[ptr++] = ARM_ret();
+  if (ptr & 1)
+    ptr++;                       // Align to 8
   *(void **)(blob + ptr) = fptr; // 16 aligned
-  blob[fill]=ARM_ldrLabelX(8,(ptr-fill)*4);
+  blob[fill] = ARM_ldrLabelX(8, (ptr - fill) * 4);
   SetWriteNP(old);
   return blob;
 }
@@ -144,15 +148,16 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #if defined(__riscv__) || defined(__riscv)
 #  include "aiwn_riscv.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8* 21+arity*4, Fs->code_heap),ptr=0;
-  int64_t arg,fill;
-  int64_t top=0;
-  if(arity)
-    blob[ptr++]=RISCV_ADDI(2,2,-(arity<8?arity:8)*8);
-  for(arg=0;arg<arity;arg++) {
-	  if(arg>=8) break;
-	  top+=8;
-	  blob[ptr++]=RISCV_SD(10+arg,2,arg*8);
+  int32_t *blob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
+  int64_t arg, fill;
+  int64_t top = 0;
+  if (arity)
+    blob[ptr++] = RISCV_ADDI(2, 2, -(arity < 8 ? arity : 8) * 8);
+  for (arg = 0; arg < arity; arg++) {
+    if (arg >= 8)
+      break;
+    top += 8;
+    blob[ptr++] = RISCV_SD(10 + arg, 2, arg * 8);
   }
   blob[ptr++] = RISCV_ADDI(10, 2, 0); // 2 is stack pointer,10 is 1st argument
   blob[ptr++] = RISCV_SD(1, 2, -8);   // 1 is return address
@@ -161,20 +166,20 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   blob[ptr++] = RISCV_ADDI(8, 2, 16);
   blob[ptr++] = RISCV_ANDI(2, 2, ~0xf);
   blob[ptr++] = RISCV_AUIPC(6, 0); // 6 is 1st temporoary
-  fill=ptr;
-  blob[ptr++] =
-      RISCV_LD(6, 6, 0); //+4 for LD,+4 for JALR,+4 for
-                                          // AUIPC(address starts at AUIPC)
+  fill = ptr;
+  blob[ptr++] = RISCV_LD(6, 6, 0); //+4 for LD,+4 for JALR,+4 for
+                                   // AUIPC(address starts at AUIPC)
   blob[ptr++] = RISCV_JALR(1, 6, 0);
   blob[ptr++] = RISCV_LD(1, 8, -8); // 1 is return address
   blob[ptr++] = RISCV_LD(11, 2, -8);
   blob[ptr++] = RISCV_FMV_D_X(10, 10);
-  blob[ptr++]=RISCV_ADDI(2,8,top);
+  blob[ptr++] = RISCV_ADDI(2, 8, top);
   blob[ptr++] = RISCV_LD(8, 8, -16);
   blob[ptr++] = RISCV_JALR(0, 1, 0);
-  if(ptr&1) ptr++; //Align to 8
+  if (ptr & 1)
+    ptr++;                       // Align to 8
   *(void **)(blob + ptr) = fptr; // 16 aligned
-  blob[fill]=RISCV_LD(6,6,(1+ptr-fill)*4);
+  blob[fill] = RISCV_LD(6, 6, (1 + ptr - fill) * 4);
   return blob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {

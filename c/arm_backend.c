@@ -129,8 +129,8 @@ static void SetKeepTmps(CRPN *rpn) {
   switch (rpn->type) {
   case IC_FS:
   case IC_GS:
-    if(rpn->tmp_res.mode)
-		rpn->res.keep_in_tmp=1;
+    if (rpn->tmp_res.mode)
+      rpn->res.keep_in_tmp = 1;
     return;
   case IC_RET:
   case IC_GOTO_IF:
@@ -944,7 +944,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(ARM_fmovI64F64(i, i));                                \
       }                                                                        \
       \		 
-                                                                       \
+                                                                                                                                            \
     }                                                                          \
   }
   // Arm mandates 16 byte align

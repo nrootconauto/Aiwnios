@@ -2,8 +2,8 @@
 #define ERR         0x7fFFffFFffFFffFF
 #define INVALID_PTR ERR
 typedef struct CRPN CRPN;
-#include <stdint.h>
 #include "aiwn_hash.h"
+#include <stdint.h>
 struct CTask;
 // This represents a peice of text being lexed(it could be a file macro, or
 // such)

@@ -1,16 +1,16 @@
 /* See https://viewsourcecode.org/snaptoken/kilo/
  *
  **/
-#  include "c/aiwn_asm.h"
-#  include "c/aiwn_mem.h"
-#  include <ctype.h>
-#  include <stdlib.h>
-#  include <string.h>
-#  if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#include "c/aiwn_asm.h"
+#include "c/aiwn_mem.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 #  include <SDL.h>
+#  include <sys/ioctl.h>
 #  include <termios.h>
 #  include <unistd.h>
-#include <sys/ioctl.h>
 static struct termios orig_termios;
 static void enableRawMode() {
   struct termios raw;
@@ -25,6 +25,8 @@ static void enableRawMode() {
 }
 static void disableRawMode() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  puts("\e[?1000;1006;1015l"); // Disable mouse trackin'
+  puts("\e[?1049l"); //Alternate screen buffer
 }
 static int ReadChr() {
   char c;
@@ -148,21 +150,31 @@ static char keys[] = {
     0,   0,      0,    0,   0,    0,   0,   0,   0,   '-', 0,   '5', 0,
     '+', 0,      0,    0,   0,    0,   0,   0,   0,   0,   0,   0};
 static int64_t IsShift(char ch) {
-	if(isupper(ch)) return 1;
-	return NULL!=strchr("~!@#$%^&*()_+{}|:\"<>?",ch);
+  if (isupper(ch))
+    return 1;
+  return NULL != strchr("~!@#$%^&*()_+{}|:\"<>?", ch);
 }
 static int64_t K2SC(char ch) {
   int64_t i = 0;
-  const char *shift="~!@#$%^&*()_+{}|:\"<>?";
-  const char *unshift="`1234567890-=[]\\;',./";
-  const char *ptr=strchr(shift,ch);
-  if(ptr) 
-    ch=unshift[ptr-shift];
+  const char *shift = "~!@#$%^&*()_+{}|:\"<>?";
+  const char *unshift = "`1234567890-=[]\\;',./";
+  const char *ptr = strchr(shift, ch);
+  if (ptr)
+    ch = unshift[ptr - shift];
   for (; i != sizeof(keys) / sizeof(*keys); i++) {
     if (keys[i] == ch)
       return i;
   }
   return -1;
+}
+
+static void (*ms_cb)(int64_t, int64_t, int64_t, int64_t);
+static int64_t ms_z = 0;
+void TermSetMsCb(void *c) {
+  ms_cb = c;
+  // Enable mouse trackin.
+  puts("\e[?1000;1006;1015h");
+  puts("\e[?1049h"); //Alternate screen buffer
 }
 static void (*kb_cb)(int64_t, void *);
 static void *kb_cb_data;
@@ -172,12 +184,13 @@ static void SendOut(int64_t c, int64_t sc) {
     FFI_CALL_TOS_2(kb_cb, c, sc);
 }
 
-static int InputThread(void *fptr) {
+static int InputThread(void *ul) {
   char c;
   int64_t flags;
-  char buf[256];
-  int a, b, ptr;
-  while (1) {
+  char _buf[256], *buf = _buf;
+  int a, b, c2, ptr;
+  int ms;
+  while (!*(uint64_t *)ul) {
     flags = 0;
     c = ReadChr();
     if (c == 127) {
@@ -204,20 +217,31 @@ static int InputThread(void *fptr) {
             break;
           buf[ptr] = c;
           if (c == '~' || isalpha(c)) {
-			  ptr++;
+            ptr++;
             break;
           }
         }
         buf[ptr] = 0;
         a = 1;
         b = 0;
-        if (strlen(buf) == 1) {
+        ms = 0;
+        if (buf[0] == '<')
+          ms = 1;
+        if (strlen(buf + ms) == 1) {
           // ESC[letter
           c = buf[0];
-        } else if (strchr(buf, ';')) {
-          sscanf(buf, "%d;%d%c", &b, &a, &c);
+        } else if (ms&&strchr(buf + ms, ';')) {
+          // Check for a;b;c2c
+          int cnt = 0;
+          for (ptr = 0; buf[ptr]; ptr++)
+            if (buf[ptr] == ';')
+              cnt++;
+          if (cnt == 1)
+            sscanf(buf + ms, "%d;%d%c", &b, &a, &c);
+          else if (cnt == 2)
+            sscanf(buf + ms, "%d;%d;%d%c", &b, &a, &c2, &c);
         } else {
-          sscanf(buf, "%d%c", &a, &c);
+          sscanf(buf + ms, "%d%c", &a, &c);
         }
         if (b & 1)
           flags |= SCF_SHIFT;
@@ -225,6 +249,30 @@ static int InputThread(void *fptr) {
           flags |= SCF_ALT;
         if (b & 4)
           flags |= SCF_CTRL;
+        if (ms) {
+          if (ms_cb) {
+            SetWriteNP(1);
+            if (c == 'M') {
+			  a--; //0 based instead of 1 based
+			  c2--; //ditto 21
+              if (b == 2) // Right click
+                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b01);
+              else if (b == 0) // Left click
+                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b10);
+              else if (b == 64) {
+                ms_z--;
+                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b00);
+              } else if (b == 65) {
+                ms_z++;
+                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b00);
+              }
+            } else if (c == 'm') {
+				//-1 ???,likes to sneak in a thing.
+              FFI_CALL_TOS_4(ms_cb, (a-1) * 8+4, (c2-1) * 8+4, ms_z, 0b00);
+            }
+          }
+          continue;
+        }
         switch (c) {
         case 'A':
           SendOut(0, SC_CURSOR_UP | flags);
@@ -300,14 +348,18 @@ static int InputThread(void *fptr) {
       } else if (!c)
         SendOut(CH_ESC, SC_ESC);
       else if (c) {
-		if(c=='O') {
-		   switch(c=ReadChr()) {
-			           case 'P': goto f1;
-			           case 'Q': goto f2;
-			           case 'R': goto f3;
-			           case 'S': goto f4;
-		   }
-			}
+        if (c == 'O') {
+          switch (c = ReadChr()) {
+          case 'P':
+            goto f1;
+          case 'Q':
+            goto f2;
+          case 'R':
+            goto f3;
+          case 'S':
+            goto f4;
+          }
+        }
         if (1 <= c && c <= 26) {
           c = 'a' + c - 1;
           flags |= SCF_CTRL;
@@ -336,19 +388,23 @@ void AiwniosTUIEnable() {
   tcgetattr(STDIN_FILENO, &orig_termios);
   atexit(&disableRawMode);
   enableRawMode();
-  SDL_CreateThread(&InputThread, "TemrinalInput", NULL);
+}
+void TUIInputLoop(int64_t *ul) {
+  InputThread(ul);
 }
 void TermSetKbCb(void *fptr) {
   kb_cb = fptr;
 }
-void TermSize(int64_t *a,int64_t *b) {
-	struct winsize wsz;
-	ioctl(STDOUT_FILENO	,TIOCGWINSZ,&wsz);
-	if(a) *a=wsz.ws_col;
-	if(b) *b=wsz.ws_row;
+void TermSize(int64_t *a, int64_t *b) {
+  struct winsize wsz;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+  if (a)
+    *a = wsz.ws_col;
+  if (b)
+    *b = wsz.ws_row;
 }
 #else
-void TermSize(int64_t *a,int64_t *b) {
+void TermSize(int64_t *a, int64_t *b) {
   abort();
 }
 void TermSetKbCb(void *fptr) {

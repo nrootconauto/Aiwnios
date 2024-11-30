@@ -3,7 +3,6 @@
 #include "aiwn_fs.h"
 #include "aiwn_lexparser.h"
 #include "aiwn_mem.h"
-#include "aiwn_asm.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>

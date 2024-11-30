@@ -2,8 +2,8 @@
 #include "c/aiwn_logo.h"
 #include "c/aiwn_mem.h"
 #include "c/aiwn_snd.h"
-#include "c/aiwn_windows.h"
 #include "c/aiwn_tui.h"
+#include "c/aiwn_windows.h"
 #include "c/lzw.h"
 #include <SDL.h>
 #include <SDL_pixels.h>
@@ -550,10 +550,10 @@ void SetKBCallback(void *fptr) {
   static init;
   if (!init) {
     init = 1;
-    if(IsCmdLineMode2()) {
-      TermSetKbCb(fptr,NULL);
-	} else
-    SDL_AddEventWatch(KBCallback, NULL);
+    if (IsCmdLineMode2()) {
+      TermSetKbCb(fptr, NULL);
+    } else
+      SDL_AddEventWatch(KBCallback, NULL);
   }
 }
 // x,y,z,(l<<1)|r
@@ -615,25 +615,32 @@ void SetMSCallback(void *fptr) {
   static int init;
   if (!init) {
     init = 1;
-    SDL_AddEventWatch(MSCallback, NULL);
+    if (IsCmdLineMode2()) {
+      TermSetMsCb(fptr);
+    } else
+      SDL_AddEventWatch(MSCallback, NULL);
   }
 }
 
 void InputLoop(void *ul) {
   SDL_Event e;
-  while (!*(uint64_t *)ul) {
-    if (!SDL_WaitEvent(&e))
-      continue;
-    switch (e.type) {
-    case SDL_QUIT:
-      return;
-    case SDL_USEREVENT:
-      switch (e.user.code) {
-      case USER_CODE_UPDATE:
-        _UpdateScreen(e.user.data1, 640, 480, e.user.data2);
-        break;
-      case USER_CODE_DRAW_WIN_NEW:
-        _DrawWindowNew();
+  if (IsCmdLineMode2()) {
+    TUIInputLoop(ul);
+  } else {
+    while (!*(uint64_t *)ul) {
+      if (!SDL_WaitEvent(&e))
+        continue;
+      switch (e.type) {
+      case SDL_QUIT:
+        return;
+      case SDL_USEREVENT:
+        switch (e.user.code) {
+        case USER_CODE_UPDATE:
+          _UpdateScreen(e.user.data1, 640, 480, e.user.data2);
+          break;
+        case USER_CODE_DRAW_WIN_NEW:
+          _DrawWindowNew();
+        }
       }
     }
   }

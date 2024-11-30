@@ -692,7 +692,8 @@ void DebuggerBegin() {
 #else
         if (sig == SIGCONT)
           ;
-        else if (sig == SIGSTOP||sig==SIGWINCH) // This is used for ptrace events
+        else if (sig == SIGSTOP ||
+                 sig == SIGWINCH) // This is used for ptrace events
           ptrace(PT_CONTINUE, tid, 1, 0);
         else
           ptrace(PT_CONTINUE, tid, 1, sig);
@@ -719,10 +720,10 @@ static void UnblockSignals() {
 #  endif
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   ucontext_t *_ctx = __ctx;
-  if(sig==SIGWINCH) {
-	  puts("SIGWINCH");
-	  UnblockSignals();
-	  return;
+  if (sig == SIGWINCH) {
+    puts("SIGWINCH");
+    UnblockSignals();
+    return;
   }
 #  if defined(__x86_64__)
 #    if defined(__linux__)
@@ -794,7 +795,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   //  I have a secret,im only filling in saved registers as they are used
   //  for vairables in Aiwnios. I dont have plans on adding tmp registers
   //  in here anytime soon
-  int64_t (*fp)(int64_t sig, int64_t * ctx), (*fp2)();
+  int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
   UnblockSignals();

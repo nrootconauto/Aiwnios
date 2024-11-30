@@ -9,9 +9,9 @@
     if ((v) & ((1 << (chop)) - 1))                                             \
       return ARM_ERR_INV_OFF;                                                  \
     if ((v) >= 0) {                                                            \
-      if (((v) >> chop) > (1l << ((bits)-1)) - 1)                              \
+      if (((v) >> chop) > (1l << ((bits) - 1)) - 1)                            \
         return ARM_ERR_INV_OFF;                                                \
-    } else if ((-(v) >> chop) > (1l << ((bits)-1)))                            \
+    } else if ((-(v) >> chop) > (1l << ((bits) - 1)))                          \
       return ARM_ERR_INV_OFF;                                                  \
   }
 #define ARM_FORCE_REG(r)                                                       \

@@ -1,3 +1,9 @@
+/**
+  * Nrootconauto here,
+  * I use TEXT_COLS*8 because of --tui mode instead of GR_WIDTH
+  * The mouse needs to adapt to the terminal size.
+  */
+
 U0 GridInit()
 {//Init mouse grid struct. See $LK,"::/Demo/Graphics/Grid.HC"$.
   ms_grid.x=ms_grid.y=ms_grid.z=8;
@@ -21,8 +27,8 @@ U0 MsUpdate(I64 x,I64 y,I64 z,Bool l,Bool r)
     ms.pos.z=ms.presnap.z;
   }
 
-  ms.pos.x=ClampI64(ms.pos.x,0,GR_WIDTH-1);
-  ms.pos.y=ClampI64(ms.pos.y,0,GR_HEIGHT-1);
+  ms.pos.x=ClampI64(ms.pos.x,0,TEXT_COLS*8-1);
+  ms.pos.y=ClampI64(ms.pos.y,0,TEXT_ROWS*8-1);
   ms.pos_text.x=ms.pos.x/FONT_WIDTH;
   if (ms.pos_text.x>=text.cols) {
     ms.pos_text.x=text.cols-1;
@@ -41,9 +47,9 @@ U0 MsUpdate(I64 x,I64 y,I64 z,Bool l,Bool r)
 
 U0 MsSet(I64 x=I64_MAX,I64 y=I64_MAX,I64 z=I64_MAX,I64 l=I64_MAX,I64 r=I64_MAX)
 {//Note: Generates a message. See $LK,"MsSet",A="FF:::/Demo/Games/Zing.HC,MsSet"$().
-  if (!(0<=x<GR_WIDTH))
+  if (!(0<=x<TEXT_COLS*8))
     x=ms.pos.x;
-  if (!(0<=y<GR_HEIGHT))
+  if (!(0<=y<TEXT_ROWS*8))
     y=ms.pos.y;
   if (z==I64_MAX)
     z=ms.pos.z;
@@ -105,14 +111,14 @@ U0 MsHardSetPost()
 //TODO ms_grid.x_offset?
   if (i<0)
     ms.offset.x-=i;
-  else if (i>=GR_WIDTH)
-    ms.offset.x+=GR_WIDTH-1-i;
+  else if (i>=TEXT_COLS*8)
+    ms.offset.x+=TEXT_COLS*8-1-i;
 
   i=Trunc(ms.scale.y*ms_hard.pos.y/ms_grid.y)*ms_grid.y+ms.offset.y;
   if (i<0)
     ms.offset.y-=i;
-  else if (i>=GR_HEIGHT)
-    ms.offset.y+=GR_HEIGHT-1-i;
+  else if (i>=TEXT_ROWS*8)
+    ms.offset.y+=TEXT_ROWS*8-1-i;
 
   if (ms_hard.pos.x!=ms_hard_last.pos.x || ms_hard.pos.y!=ms_hard_last.pos.y ||
 	ms_hard.pos.z!=ms_hard_last.pos.z) {
@@ -194,11 +200,11 @@ U0 MsInit2()
   ms_hard.scale.x=0.5;
   ms_hard.scale.y=0.5;
   ms_hard.scale.z=1.0;
-  ms_hard.prescale.x=GR_WIDTH/ms_hard.scale.x/2.0;
-  ms_hard.prescale.y=GR_HEIGHT/ms_hard.scale.y/2.0;
+  ms_hard.prescale.x=TEXT_COLS*8/ms_hard.scale.x/2.0;
+  ms_hard.prescale.y=TEXT_ROWS*8/ms_hard.scale.y/2.0;
   ms_hard.prescale.z=0/ms_hard.scale.z;
-  ms_hard.pos.x=GR_WIDTH>>1;
-  ms_hard.pos.y=GR_HEIGHT>>1;
+  ms_hard.pos.x=(TEXT_COLS*8)>>1;
+  ms_hard.pos.y=(TEXT_ROWS*8)>>1;
   MemCpy(&ms_hard_last,&ms_hard,sizeof(CMsHardStateGlbls));
 }
 
@@ -206,7 +212,7 @@ I64 ms_mtx=0;
 U0 HMSSet4(I64 x,I64 y,I64 z,I64 lr) {
   while(LBts(&ms_mtx,0))
     ; //TODO atomic
-  SetFs(adam_task);
+  //SetFs(adam_task);
   MsSet(x,y,z,lr>>1,lr&1);
   LBtr(&ms_mtx,0);
 }

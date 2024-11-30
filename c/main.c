@@ -11,8 +11,8 @@
 #include "c/aiwn_que.h"
 #include "c/aiwn_snd.h"
 #include "c/aiwn_sock.h"
-#include "c/aiwn_windows.h"
 #include "c/aiwn_tui.h"
+#include "c/aiwn_windows.h"
 #include "isocline.h"
 #include <SDL.h>
 #include <assert.h>
@@ -56,7 +56,8 @@ extern int64_t user_ev_num;
 #endif
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
-    *sixty_fps, *arg_cmd_line,*arg_cmd_line2=NULL, *arg_fork, *arg_no_debug, *arg_grab,*arg_fast_fail;
+    *sixty_fps, *arg_cmd_line, *arg_cmd_line2 = NULL, *arg_fork, *arg_no_debug,
+                               *arg_grab, *arg_fast_fail;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -515,11 +516,11 @@ static void AiwniosSetClipboard(char *c) {
 }
 
 static void TaskContextSetRIP(int64_t *ctx, void *p) {
-	#if defined(_M_ARM64) || defined(__aarch64__)
-	ctx[12] = (int64_t)p;
-	#else
+#if defined(_M_ARM64) || defined(__aarch64__)
+  ctx[12] = (int64_t)p;
+#else
   ctx[0] = (int64_t)p;
-  #endif
+#endif
 }
 
 static STK_TaskContextSetRIP(int64_t *stk) {
@@ -1322,14 +1323,15 @@ int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
 int64_t IsCmdLineMode2() {
-	//On windows im not supporting --tui yet
-	if(arg_cmd_line2==NULL) return 0;
+  // On windows im not supporting --tui yet
+  if (arg_cmd_line2 == NULL)
+    return 0;
   return arg_cmd_line2->count != 0;
 }
 
 int64_t STK_TermSize(int64_t *stk) {
-	TermSize((int64_t*)(stk[0]),(int64_t*)(stk[1]));
-   return 0;
+  TermSize((int64_t *)(stk[0]), (int64_t *)(stk[1]));
+  return 0;
 }
 
 static void _freestr(void *p) {
@@ -1362,9 +1364,9 @@ static int64_t WriteProtectMemCpy(int64_t *stk) {
 #endif
   return r;
 }
-static int64_t is_fast_fail=0;
+static int64_t is_fast_fail = 0;
 int64_t IsFastFail() {
-	return is_fast_fail;
+  return is_fast_fail;
 }
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
@@ -1658,7 +1660,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
     PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
     PrsAddSymbol("AiwniosTUIEnable", AiwniosTUIEnable, 0);
-    PrsAddSymbol("IsCmdLineMode2", IsCmdLineMode2, 0); //Sexy text mode
+    PrsAddSymbol("IsCmdLineMode2", IsCmdLineMode2, 0); // Sexy text mode
     PrsAddSymbol("TermSize", STK_TermSize, 2);
     PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
   }
@@ -1783,13 +1785,16 @@ int main(int argc, char **argv) {
           "Faults will be handled by an external debugger(such as gdb)."),
       sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode(dumb)."),
-      #if ! defined (_WIN32) && ! defined(WIN32)
-      arg_cmd_line2 = arg_lit0(NULL, "tui", "Run in text mode(command line mode on steriods)."),
-      #endif
+#if !defined(_WIN32) && !defined(WIN32)
+      arg_cmd_line2 = arg_lit0(
+          NULL, "tui", "Run in text mode(command line mode on steriods)."),
+#endif
       arg_boot_files =
           arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                     "Files to run on  boot in command line mode."),
-      arg_fast_fail=arg_lit0("F","fast-fail","Instantly fail on signals(like segmentation faults)."),
+      arg_fast_fail =
+          arg_lit0("F", "fast-fail",
+                   "Instantly fail on signals(like segmentation faults)."),
       _arg_end = arg_end(20),
   };
   int64_t errors, idx;
@@ -1801,8 +1806,8 @@ int main(int argc, char **argv) {
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     exit(1);
   }
-  if(arg_fast_fail->count)
-    is_fast_fail=1;
+  if (arg_fast_fail->count)
+    is_fast_fail = 1;
   if (arg_grab->count)
     sdl_window_grab_enable = 1;
 #if defined(__x86_64__) && (defined(__FreeBSD__) || defined(__linux__))
@@ -1877,7 +1882,7 @@ int main(int argc, char **argv) {
     char inst_dir[reg_size + 1];
     RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
                  RRF_RT_REG_MULTI_SZ, NULL, inst_dir, &reg_size);
-    strcpy(installed_at,inst_dir);
+    strcpy(installed_at, inst_dir);
     has_installed = 1;
   }
   char home_dir[MAX_PATH];
@@ -1907,9 +1912,10 @@ int main(int argc, char **argv) {
 #endif
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
-  if(0>SDL_Init(SDL_INIT_EVERYTHING)) {
-	  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"AIWNIOS","Failed to int SDL.",NULL);
-	  exit(EXIT_FAILURE);
+  if (0 > SDL_Init(SDL_INIT_EVERYTHING)) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             "Failed to int SDL.", NULL);
+    exit(EXIT_FAILURE);
   }
   InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {

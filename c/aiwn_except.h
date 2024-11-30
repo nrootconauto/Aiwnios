@@ -14,7 +14,8 @@ typedef struct CExcept {
 #define try                                                                    \
   {                                                                            \
     if (AIWNIOS_enter_try()) {
-#define catch (body)                                                           \
+#define catch                                                                  \
+  (body)                                                                       \
   }                                                                            \
   else {                                                                       \
     body;                                                                      \

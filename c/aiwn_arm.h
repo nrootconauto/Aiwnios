@@ -1,6 +1,6 @@
 #pragma once
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #define ARM_ERR         -1
 #define ARM_ERR_INV_OFF -2
 #define ARM_ERR_INV_REG -3

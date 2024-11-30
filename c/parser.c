@@ -4567,9 +4567,9 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
 }
 
 void CacheRPNArgs(CCmpCtrl *cctrl) {
-  CRPN *head=cctrl->code_ctrl->ir_code,*rpn;
-  for(rpn=head->base.next;rpn!=head;rpn=rpn->base.next) {
-    rpn->tree1=ICArgN(rpn,1);
-	rpn->tree2=ICArgN(rpn,2);
+  CRPN *head = cctrl->code_ctrl->ir_code, *rpn;
+  for (rpn = head->base.next; rpn != head; rpn = rpn->base.next) {
+    rpn->tree1 = ICArgN(rpn, 1);
+    rpn->tree2 = ICArgN(rpn, 2);
   }
 }

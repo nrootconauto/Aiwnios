@@ -148,12 +148,13 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
         ADD_U8(ErectREX(_64, R, I, B));                                        \
     }
 #define SIB_END()                                                              \
-  if(I==-1&&B==-1) { \
-      ADD_U8(((R & 0b111) << 3) | 0b100);                                 \  
-      ADD_U8(0x25); \
-      ADD_U32(O); \
-      break; \
-  } \
+  if (I == -1 && B == -1) {                                                    \
+    ADD_U8(((R & 0b111) << 3) | 0b100);                                        \
+    \  
+      ADD_U8(0x25);                                                            \
+    ADD_U32(O);                                                                \
+    break;                                                                     \
+  }                                                                            \
   if (I == -1 && R12 != B && B != RIP && B != RSP) {                           \
     if (!O && B != RBP)                                                        \
       ADD_U8(((R & 0b111) << 3) | (B & 0b111))                                 \
@@ -2693,7 +2694,7 @@ static int64_t IsCompare(int64_t c) {
 }
 
 static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
-                           int64_t *scale,int64_t allow_put_in_reg) {
+                           int64_t *scale, int64_t allow_put_in_reg) {
   CRPN *b = NULL, *idx = NULL;
   int64_t tmp, i = 0, i2 = -1, is_sib = 0;
   CRPN *arg = r;
@@ -2719,9 +2720,9 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
       is_sib = 1;
     else if (idx = __AddScale(ICArgN(arg, 1), &i2))
       is_sib = 1;
-  } else if(allow_put_in_reg) {
-	  b=arg;
-	  is_sib=1;
+  } else if (allow_put_in_reg) {
+    b = arg;
+    is_sib = 1;
   }
   // Adjust for offesets in base/index
   if (b)
@@ -2865,7 +2866,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_ADD:
     orig = r;
     tmp = 0;
-    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2,0)) {
+    if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
       if (b && idx) {
         if (b->type != IC_IREG)
           tmp++;
@@ -2985,7 +2986,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     }
     tmp = 0;
     arg = r->base.next;
-    if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2,0)) {
+    if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2, 0)) {
       if (b && idx) {
         tmp = 0;
         if (b->type != IC_IREG)
@@ -3238,8 +3239,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     else
       PushSpilledTmp(cctrl, r);
     for (a = 0; a != r->length; a++) {
-      PushTmpDepthFirst(cctrl, ICArgN(r, a),
-                        0);
+      PushTmpDepthFirst(cctrl, ICArgN(r, a), 0);
       PopTmp(cctrl, ICArgN(r, a));
     }
     break;
@@ -4066,7 +4066,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
   }
   int64_t r = rpn->raw_type, rsz, off, mul, lea = 0, reg;
   CRPN *next = rpn->base.next, *next2, *next3, *next4, *tmp;
-  CRPN *base,*index;
+  CRPN *base, *index;
   switch (r) {
     break;
   case RT_I8i:
@@ -4090,36 +4090,38 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
   default:
     rsz = 8;
   }
-  
-  if(GetSIBParts(next,&off,&base,&index,&mul,1)) {
-	  if(index&&base) {
-		  //TODO idx may mutate base's registers and vice versa
-		  goto defacto;
-	  }
-	  if(!base) goto defacto;
-	  res->reg2 = -1;
-	  res->reg = -1;
-	  if(base) {
-		  code_off=__OptPassFinal(cctrl,base,bin,code_off);
-		  code_off=PutICArgIntoReg(cctrl,&base->res,RT_I64i,base_reg_fallback,bin,code_off);
-		  res->reg=base->res.reg;
-	  }
-	  res->mode = __MD_X86_64_SIB;
-	  res->off = off;
-	  res->__SIB_scale = mul;
-	  res->raw_type = r;	  
+
+  if (GetSIBParts(next, &off, &base, &index, &mul, 1)) {
+    if (index && base) {
+      // TODO idx may mutate base's registers and vice versa
+      goto defacto;
+    }
+    if (!base)
+      goto defacto;
+    res->reg2 = -1;
+    res->reg = -1;
+    if (base) {
+      code_off = __OptPassFinal(cctrl, base, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &base->res, RT_I64i, base_reg_fallback,
+                                 bin, code_off);
+      res->reg = base->res.reg;
+    }
+    res->mode = __MD_X86_64_SIB;
+    res->off = off;
+    res->__SIB_scale = mul;
+    res->raw_type = r;
   } else {
-	  defacto:
-  code_off = __OptPassFinal(cctrl, next, bin, code_off);
-  code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR, base_reg_fallback, bin,
-                             code_off);
-       
-  res->mode = __MD_X86_64_SIB;
-  res->reg = next->res.reg;
-  res->reg2 = -1;
-  res->off = 0;
-  res->__SIB_scale = -1;
-  res->raw_type = r;
+  defacto:
+    code_off = __OptPassFinal(cctrl, next, bin, code_off);
+    code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR, base_reg_fallback,
+                               bin, code_off);
+
+    res->mode = __MD_X86_64_SIB;
+    res->reg = next->res.reg;
+    res->reg2 = -1;
+    res->off = 0;
+    res->__SIB_scale = -1;
+    res->raw_type = r;
   }
   return code_off;
 }
@@ -5953,7 +5955,7 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
 //
 static void SetKeepTmps(CRPN *rpn) {
   int64_t idx;
-  CRPN *left, *right,*last;
+  CRPN *left, *right, *last;
   switch (rpn->type) {
   case IC_FS:
   case IC_GS:
@@ -6024,7 +6026,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_POW:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-normal_binop:
+  normal_binop:
     if (CanKeepInTmp(rpn, right, left, 0) && !SpillsTmpRegs(left) &&
         right->tmp_res.mode) {
       right->res = right->tmp_res;
@@ -6039,11 +6041,11 @@ normal_binop:
     break;
   case IC_EQ_EQ:
   case IC_NE:
-  // Nroot here,there are 2 vaiants of IC_EQ_EQ
-  //   One with IC_GOTO_IF
-  //   One use as a normal operator.
-  //   Lets just reutrn 0 to make things simpler. 
-     break;
+    // Nroot here,there are 2 vaiants of IC_EQ_EQ
+    //   One with IC_GOTO_IF
+    //   One use as a normal operator.
+    //   Lets just reutrn 0 to make things simpler.
+    break;
   case IC_EQ:
   case IC_ADD_EQ:
   case IC_SUB_EQ:
@@ -6256,27 +6258,28 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
   segment:
     // %gs is used as a TLS reg for all OS'es
-    into_reg=0;
+    into_reg = 0;
     AIWNIOS_ADD_CODE(SEG_GS, 0);
-    if(rpn->res.mode==MD_REG&&next->type==IC_I64&&Is32Bit(next->integer)) {
-		into_reg=rpn->res.reg;
-		AIWNIOS_ADD_CODE(X86MovRegIndirI64,into_reg,-1,-1,-1,0x12345);
-	} else  {
-		into_reg=0;
-		AIWNIOS_ADD_CODE(X86MovRegIndirI64,into_reg,-1,-1,-1,0x12345);
-	}
-	MIR(cctrl,into_reg);
-	if (next->type == IC_I64) {
-	  if (bin)
-		*(int32_t*)(bin + code_off - 4) = (int32_t)next->integer;
-	} else if (bin)
-	  CodeMiscAddRef(next->code_misc, bin + code_off - 4);
+    if (rpn->res.mode == MD_REG && next->type == IC_I64 &&
+        Is32Bit(next->integer)) {
+      into_reg = rpn->res.reg;
+      AIWNIOS_ADD_CODE(X86MovRegIndirI64, into_reg, -1, -1, -1, 0x12345);
+    } else {
+      into_reg = 0;
+      AIWNIOS_ADD_CODE(X86MovRegIndirI64, into_reg, -1, -1, -1, 0x12345);
+    }
+    MIR(cctrl, into_reg);
+    if (next->type == IC_I64) {
+      if (bin)
+        *(int32_t *)(bin + code_off - 4) = (int32_t)next->integer;
+    } else if (bin)
+      CodeMiscAddRef(next->code_misc, bin + code_off - 4);
     tmp.mode = MD_REG;
     tmp.reg = into_reg;
     tmp.raw_type = RT_I64i;
-    rpn->tmp_res=tmp;
-    if(rpn->res.keep_in_tmp)
-		rpn->res=tmp;
+    rpn->tmp_res = tmp;
+    if (rpn->res.keep_in_tmp)
+      rpn->res = tmp;
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     break;
   ic_lock:
@@ -8083,12 +8086,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     //   \  <>  | <==| Will unwind for you| //TODO validate for X86_64
     //    \    /      \__________________/
     //      \_/
-    for (i = rpn->length-1; i>=0; i--) {
+    for (i = rpn->length - 1; i >= 0; i--) {
       next = ICArgN(rpn, rpn->length - i - 1);
       next->res.keep_in_tmp = 1;
       code_off = __OptPassFinal(cctrl, next, bin, code_off);
-      tmp=next->res;
-      code_off=PushToStack(cctrl,&tmp,bin,code_off);
+      tmp = next->res;
+      code_off = PushToStack(cctrl, &tmp, bin, code_off);
     }
     break;
   ic_add_eq:

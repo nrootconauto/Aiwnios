@@ -78,7 +78,8 @@ static void lzw_init(struct lzw_state *state) {
   lzw_reset(state);
 }
 
-int64_t lzw_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
+int64_t lzw_decompress(const uint8_t *src, size_t slen, uint8_t *dest,
+                       size_t dlen) {
   static struct lzw_state _state, *state = &_state;
   if (!state->was_init)
     lzw_init(state);

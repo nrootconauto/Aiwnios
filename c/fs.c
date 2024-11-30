@@ -5,18 +5,18 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 // clang-format off
 #include <sys/types.h>
 #include <sys/stat.h>
 // clang-format on
 #include <fcntl.h>
 #include <unistd.h>
-//__builtin_stpcpy was reducing down to stpcpy on my windows machine 
-static char *StPCpy(char *a,const char *b) {
-	size_t i = strlen(b);
-	return memcpy(a,b,i+1)+i;
+//__builtin_stpcpy was reducing down to stpcpy on my windows machine
+static char *StPCpy(char *a, const char *b) {
+  size_t i = strlen(b);
+  return memcpy(a, b, i + 1) + i;
 }
 #ifndef _WIN64
 #  ifndef O_BINARY
@@ -28,8 +28,8 @@ static char *StPCpy(char *a,const char *b) {
 #  include <io.h>
 #  include <libloaderapi.h>
 #  include <processthreadsapi.h>
-#  include <synchapi.h>
 #  include <shlwapi.h>
+#  include <synchapi.h>
 #  define open(a...)  _open(a)
 #  define close(a...) _close(a)
 #  define write(a...) _write(a)
@@ -589,12 +589,13 @@ const char *ResolveBootDir(char *use, int make_new_dir,
   if (!make_new_dir && __FExists("T/HCRT2.BIN"))
     return "T";
   if (__FExists(use) && !make_new_dir) {
-	  if(template_dir)
-	if(__FIsNewer(template_dir,use))
-	   goto new;;
+    if (template_dir)
+      if (__FIsNewer(template_dir, use))
+        goto new;
+    ;
     return strdup(use);
   }
-new:;
+  new :;
   // CreateTemplateBootDrv will return existing boot dir if missing
   if (!CreateTemplateBootDrv(use, template_dir)) {
   fail:
