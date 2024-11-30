@@ -436,7 +436,7 @@ indir:
   Free(am);
   return NULL;
 }
-CHashTable *riscv_opcs=HashTableNew(0x80);
+CHashTable *riscv_opcs=adam_task->hash_table;
 CRiscVOpcode *AO(U8 *name,U32 o,U64 f3,U64 f7,U64 type,U64 r2_style=0) {
   CRiscVOpcode *opc=CAlloc(sizeof CRiscVOpcode);
   opc->str=StrNew(name);
@@ -592,10 +592,8 @@ U0 InitOpcodes()  {
   AOf("FSGNJX",0b1010011,0b010,0b0010001,'R');
   AOf("FMIN",0b1010011,0b000,0b0010101,'R');
   AOf("FMAX",0b1010011,0b001,0b0010101,'R');
-  AOf("FCVTW",0b1010011,0b000,0b1100001,'R2',0);
-  AOf("FCVTWU",0b1010011,0b000,0b1100001,'R2',1);
-  AOf("FMVXD",0b1010011,0b000,0b1110001,'R2',1);
-  AOf("FMVDX",0b1010011,0b000,0b1111001,'R2',1);
+  AOf("FCVTSD",0b1010011,rm,0b100000,'R2',1);
+  AOf("FCVTDS",0b1010011,rm,0b100001,'R2',0);
   AOf("FEQ",0b1010011,0b010,0b1010001,'R',1);
   AOf("FLT",0b1010011,0b001,0b1010001,'R',1);
   AOf("FLE",0b1010011,0b000,0b1010001,'R',1);
@@ -606,6 +604,8 @@ U0 InitOpcodes()  {
   AOf("FCVTDLU",0b1010011,rm,0b1101001,'R2',0b00011);
 
 
+  AOf("FMVXD",0b1010011,0,0b1110001,'R2',0b000000);
+  AOf("FMVDX",0b1010011,0,0b1111001,'R2',0b000000);
   AOf("FCVTWD",0b1010011,rm,0b1100001,'R2',0b000000);
   AOf("FCVTWUD",0b1010011,rm,0b1100001,'R2',0b00001);
   AOf("FCVTDW",0b1010011,rm,0b1101001,'R2',0b00010);
