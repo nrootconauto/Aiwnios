@@ -413,4 +413,6 @@ void TermSetKbCb(void *fptr) {
 void AiwniosTUIEnable() {
   abort();
 }
+void TermSetMsCb(void *c) {abort();}
+void TUIInputLoop(int64_t *ul) {abort();};
 #endif
