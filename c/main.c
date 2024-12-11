@@ -1785,10 +1785,8 @@ int main(int argc, char **argv) {
           "Faults will be handled by an external debugger(such as gdb)."),
       sixty_fps = arg_lit0("6", "60fps", "Run in 60 fps mode."),
       arg_cmd_line = arg_lit0("c", NULL, "Run in command line mode(dumb)."),
-#if !defined(_WIN32) && !defined(WIN32)
       arg_cmd_line2 = arg_lit0(
           NULL, "tui", "Run in text mode(command line mode on steriods)."),
-#endif
       arg_boot_files =
           arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                     "Files to run on  boot in command line mode."),

@@ -6,35 +6,15 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-#  include <SDL.h>
-#  include <sys/ioctl.h>
-#  include <termios.h>
-#  include <unistd.h>
-static struct termios orig_termios;
-static void enableRawMode() {
-  struct termios raw;
-  tcgetattr(STDIN_FILENO, &raw);
-  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-  raw.c_oflag &= ~(OPOST);
-  raw.c_cflag |= (CS8);
-  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-  raw.c_cc[VMIN] = 0;
-  raw.c_cc[VTIME] = 1;
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-}
-static void disableRawMode() {
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-  puts("\e[?1000;1006;1015l"); // Disable mouse trackin'
-  puts("\e[?1049l"); //Alternate screen buffer
-}
-static int ReadChr() {
-  char c;
-  if (1 == read(STDIN_FILENO, &c, 1))
-    return c;
-  return 0;
-}
 
+
+static void (*kb_cb)(int64_t, void *);
+static void *kb_cb_data;
+static void SendOut(int64_t c, int64_t sc) {
+  SetWriteNP(1);
+  if (kb_cb)
+    FFI_CALL_TOS_2(kb_cb, c, sc);
+}
 #  define CH_CTRLA       0x01
 #  define CH_CTRLB       0x02
 #  define CH_CTRLC       0x03
@@ -168,6 +148,36 @@ static int64_t K2SC(char ch) {
   return -1;
 }
 
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#  include <SDL.h>
+#  include <sys/ioctl.h>
+#  include <termios.h>
+#  include <unistd.h>
+static struct termios orig_termios;
+static void enableRawMode() {
+  struct termios raw;
+  tcgetattr(STDIN_FILENO, &raw);
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_cflag |= (CS8);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 0;
+  raw.c_cc[VTIME] = 1;
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+static void disableRawMode() {
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  puts("\e[?1000;1006;1015l"); // Disable mouse trackin'
+  puts("\e[?1049l"); //Alternate screen buffer
+}
+static int ReadChr() {
+  char c;
+  if (1 == read(STDIN_FILENO, &c, 1))
+    return c;
+  return 0;
+}
+
 static void (*ms_cb)(int64_t, int64_t, int64_t, int64_t);
 static int64_t ms_z = 0;
 void TermSetMsCb(void *c) {
@@ -175,13 +185,6 @@ void TermSetMsCb(void *c) {
   // Enable mouse trackin.
   puts("\e[?1000;1006;1015h");
   puts("\e[?1049h"); //Alternate screen buffer
-}
-static void (*kb_cb)(int64_t, void *);
-static void *kb_cb_data;
-static void SendOut(int64_t c, int64_t sc) {
-  SetWriteNP(1);
-  if (kb_cb)
-    FFI_CALL_TOS_2(kb_cb, c, sc);
 }
 
 static int InputThread(void *ul) {
@@ -404,15 +407,156 @@ void TermSize(int64_t *a, int64_t *b) {
     *b = wsz.ws_row;
 }
 #else
+#include <windows.h>
+#include <stdio.h>
+static DWORD old_stdin_mode,old_stdout_mode;
+static HANDLE stdin_handle=NULL;
+static HANDLE stdout_handle=NULL;
+static int64_t term_x=20,term_y=20,ms_x=0,ms_y=0,ms_z=0,size_taitned=0;
+static void (*ms_cb)(int64_t, int64_t, int64_t, int64_t);
 void TermSize(int64_t *a, int64_t *b) {
-  abort();
+	CONSOLE_SCREEN_BUFFER_INFO scrn;
+	if(stdout_handle&&size_taitned) {
+		if(GetConsoleScreenBufferInfo(stdout_handle,&scrn)) {
+			term_x=scrn.dwSize.X;
+			term_y=scrn.dwSize.Y;
+			size_taitned=0;
+		}
+    }
+    if(a) *a=term_x;
+	if(b) *b=term_y;
 }
 void TermSetKbCb(void *fptr) {
-  abort();
+  kb_cb=fptr;
+}
+static void AiwniosTUIDisable() {
+	SetConsoleMode(stdout_handle,old_stdout_mode);
+	SetConsoleMode(stdin_handle,old_stdin_mode);
+	CloseHandle(stdin_handle);
+	CloseHandle(stdout_handle);
+	puts("\e[?1049h"); //Alternate screen buffer
 }
 void AiwniosTUIEnable() {
-  abort();
+  stdin_handle=GetStdHandle(STD_INPUT_HANDLE);
+  GetConsoleMode(stdin_handle,&old_stdin_mode);
+  SetConsoleMode(stdin_handle,
+	ENABLE_MOUSE_INPUT|
+	ENABLE_WINDOW_INPUT
+  );
+  stdout_handle=GetStdHandle(STD_OUTPUT_HANDLE);
+  GetConsoleMode(stdout_handle,&old_stdout_mode);
+  SetConsoleMode(stdout_handle,
+	ENABLE_PROCESSED_OUTPUT |
+	ENABLE_VIRTUAL_TERMINAL_PROCESSING
+  );
+  puts("\e[?1049l"); //Alternate screen buffer
+  atexit(&AiwniosTUIDisable);
 }
-void TermSetMsCb(void *c) {abort();}
-void TUIInputLoop(int64_t *ul) {abort();};
+void TermSetMsCb(void *c) {ms_cb=c;}
+void TUIInputLoop(int64_t *ul) {
+	INPUT_RECORD buf[512];
+	DWORD read;
+	int64_t i,flags,flags2;
+	size_taitned=1;
+	while(!*ul) {
+		ReadConsoleInput(stdin_handle,buf,512,&read);
+		for(i=0;i<read;i++) {
+			switch(buf[i].EventType) {
+				case KEY_EVENT:
+				{
+					KEY_EVENT_RECORD  *ptr=&buf[i].Event.KeyEvent;
+					flags=0;
+					if(ptr->dwControlKeyState&CAPSLOCK_ON)
+						flags|=SCF_CAPS;
+					if(ptr->dwControlKeyState&(LEFT_CTRL_PRESSED|RIGHT_CTRL_PRESSED) )
+						flags|=SCF_CTRL;
+					if(ptr->dwControlKeyState&(LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED))
+						flags|=SCF_ALT;
+					if(ptr->dwControlKeyState&SHIFT_PRESSED)
+						flags|=SCF_SHIFT;
+					
+					if(ptr->bKeyDown) {
+						switch(ptr->wVirtualKeyCode) {
+							break;case VK_BACK:
+							SendOut(CH_BACKSPACE,SC_BACKSPACE|flags);
+							break;case VK_TAB:
+							SendOut('\t',K2SC('\t')|flags);
+							break;case VK_RETURN:
+							SendOut('\n',K2SC('\n')|flags);
+							break;case VK_ESCAPE:
+							SendOut(0,SC_ESC|flags);
+							break;case VK_SPACE:
+							SendOut(' ',K2SC(' ')|flags);
+							break;case VK_PRIOR:
+							SendOut(0,SC_PAGE_UP|flags);
+							break;case VK_NEXT:
+							SendOut(0,SC_PAGE_DOWN|flags);
+							break;case VK_END:
+							SendOut(0,SC_END|flags);
+							break;case VK_HOME:
+							SendOut(0,SC_HOME|flags);
+							break;case VK_LEFT:
+							SendOut(0,SC_CURSOR_LEFT|flags);
+							break;case VK_RIGHT:
+							SendOut(0,SC_CURSOR_RIGHT|flags);
+							break;case VK_UP:
+							SendOut(0,SC_CURSOR_UP|flags);
+							break;case VK_DOWN:
+							SendOut(0,SC_CURSOR_DOWN|flags);
+							break;case VK_INSERT:
+							SendOut(0,SC_INS|flags);
+							break;case VK_DELETE:
+							SendOut(0,SC_DELETE|flags);
+							break;case 0x30 ... 0x39:
+							SendOut(ptr->uChar.AsciiChar,K2SC(tolower(ptr->uChar.AsciiChar))|flags);
+							break;case 0x41 ... 0x5A:
+							SendOut(ptr->uChar.AsciiChar,K2SC(tolower(ptr->uChar.AsciiChar))|flags);
+							break;case VK_F1 ... VK_F24:
+							SendOut(0,(SC_F1 + ptr->wVirtualKeyCode- VK_F1)|flags);
+							break;
+							case VK_NUMLOCK:
+							SendOut(0,SC_NUM|flags);
+							break;
+							default:
+							SendOut(ptr->uChar.AsciiChar,K2SC(tolower(ptr->uChar.AsciiChar))|flags);
+							break;
+						}
+					}
+				}
+				break; 
+				case WINDOW_BUFFER_SIZE_EVENT:
+				{
+					WINDOW_BUFFER_SIZE_RECORD *ptr=&buf[i].Event.WindowBufferSizeEvent;
+					term_x=ptr->dwSize.X;
+					term_y=ptr->dwSize.Y;
+					size_taitned=0;
+				}
+				break;
+				case MOUSE_EVENT:
+				{
+					MOUSE_EVENT_RECORD *ptr=&buf[i].Event.MouseEvent;
+					if(ptr->dwEventFlags&MOUSE_WHEELED)
+						if(ptr->dwButtonState>>(8*sizeof(WORD))>0)
+							ms_z++;
+						else
+							ms_z--;
+					if(ms_cb) {
+						int64_t lr=0;
+						if(ptr->dwButtonState&FROM_LEFT_1ST_BUTTON_PRESSED)
+							lr|=0b10;
+						if(ptr->dwButtonState&RIGHTMOST_BUTTON_PRESSED)
+							lr|=0b01;
+						FFI_CALL_TOS_4(ms_cb,
+						ptr->dwMousePosition.X*8+4,
+						ptr->dwMousePosition.Y*8+4,
+						ms_z,
+						lr
+						);
+					}
+				}
+				break;
+			}
+		}
+	}
+};
 #endif
