@@ -946,13 +946,6 @@ int64_t ARM_fmovF64I64(int64_t d, int64_t s) {
   return ConversionFpIntFI(1, 0, 1, 0, 7, d, s);
 }
 
-int64_t ARM_strbRegRegShift(int64_t a, int64_t n, int64_t m) {
-  return LdStRegReg(0, 0, a, n, m, 1);
-}
-
-int64_t ARM_ldrbRegRegShift(int64_t a, int64_t n, int64_t m) {
-  return LdStRegReg(0, 1, a, n, m, 1);
-}
 
 int64_t ARM_strhRegRegShift(int64_t a, int64_t n, int64_t m) {
   return LdStRegReg(1, 0, a, n, m, 1);

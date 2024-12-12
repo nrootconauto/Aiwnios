@@ -1102,7 +1102,7 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        AIWNIOS_ADD_CODE(ARM_strbRegRegShift(src->reg, dst->reg, dst->reg2));
+        AIWNIOS_ADD_CODE(ARM_strbRegReg(src->reg, dst->reg, dst->reg2));
         break;
       case RT_U16i:
       case RT_I16i:
@@ -1336,12 +1336,12 @@ static int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
         AIWNIOS_ADD_CODE(
-            ARM_ldrbRegRegShift(MIR(cctrl, dst->reg), src->reg, src->reg2));
+            ARM_ldrbRegReg(MIR(cctrl, dst->reg), src->reg, src->reg2));
         AIWNIOS_ADD_CODE(ARM_uxtbX(MIR(cctrl, dst->reg), MIR(cctrl, dst->reg)));
         break;
       case RT_I8i:
         AIWNIOS_ADD_CODE(
-            ARM_ldrsbRegRegShiftX(MIR(cctrl, dst->reg), src->reg, src->reg2));
+            ARM_ldrsbRegRegX(MIR(cctrl, dst->reg), src->reg, src->reg2));
         break;
       case RT_U16i:
         AIWNIOS_ADD_CODE(
@@ -4691,15 +4691,6 @@ static int64_t GetAddrModeParts(CCmpCtrl *cctrl, CRPN *r) {
           next3 = next4;
           next4 = tmp;
           mul = next3->integer;
-          goto idx;
-        } else {
-          // See above note
-          //  IC_ADD==add==next
-          //    mul==next4
-          //    off==next2
-          //
-          next2 = next3;
-          mul = 1;
           goto idx;
         }
       } else if (next2->type == IC_MUL) {
