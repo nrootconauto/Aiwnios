@@ -168,7 +168,7 @@ static void enableRawMode() {
 }
 static void disableRawMode() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-  puts("\e[?1000;1006;1015l"); // Disable mouse trackin'
+  puts("\e[?1006;1015;1003l"); // Disable mouse trackin'
   puts("\e[?1049l"); //Alternate screen buffer
 }
 static int ReadChr() {
@@ -183,13 +183,13 @@ static int64_t ms_z = 0;
 void TermSetMsCb(void *c) {
   ms_cb = c;
   // Enable mouse trackin.
-  puts("\e[?1000;1006;1015h");
+  puts("\e[?1003;1006;1016h");
   puts("\e[?1049h"); //Alternate screen buffer
 }
 
 static int InputThread(void *ul) {
   char c;
-  int64_t flags;
+  int64_t flags,lr=0;
   char _buf[256], *buf = _buf;
   int a, b, c2, ptr;
   int ms;
@@ -255,23 +255,27 @@ static int InputThread(void *ul) {
         if (ms) {
           if (ms_cb) {
             SetWriteNP(1);
+//https://stackoverflow.com/questions/5966903/how-to-get-mousemove-and-mouseclick-in-bash   
             if (c == 'M') {
 			  a--; //0 based instead of 1 based
 			  c2--; //ditto 21
-              if (b == 2) // Right click
-                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b01);
-              else if (b == 0) // Left click
-                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b10);
-              else if (b == 64) {
+              if (b == 2) {  // Right click
+				  lr|=0b01;
+              } else if (b == 0) { // Left click
+				  lr|=0b10;
+              } else if (b == 64) {
                 ms_z--;
-                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b00);
               } else if (b == 65) {
                 ms_z++;
-                FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, 0b00);
               }
+             FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, lr);
             } else if (c == 'm') {
-				//-1 ???,likes to sneak in a thing.
-              FFI_CALL_TOS_4(ms_cb, (a-1) * 8+4, (c2-1) * 8+4, ms_z, 0b00);
+				a--;c2--;
+				if(b==2)
+					lr&=~0b01;
+				if(b==0)
+					lr&=~0b10;
+              FFI_CALL_TOS_4(ms_cb, a * 8+4, c2 * 8+4, ms_z, lr);
             }
           }
           continue;
