@@ -12,10 +12,20 @@ CCPU cpu_structs[64];
 SetGs(&cpu_structs[0]);
 //AIWNIOS Boot stuff
 U8 *StrNew(U8 *str,CTask *task=NULL) {
-  if(!task)
-    task=Fs;
+  if(task) {
+//Heap?
+    if(task->task_signature.u8[0]=='H') {
+      task=task;
+      goto do_it;
+    }
+  }
+  if(task)
+    task=task->data_heap;
+  else
+    task=Fs->data_heap;
+do_it:
   if(!str) str="";
-  return __StrNew(str,task->data_heap);
+  return __StrNew(str,task);
 }
 U8 *MAlloc(I64 cnt,CTask *task=NULL) {
   U8 *hc;
