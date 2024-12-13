@@ -560,6 +560,7 @@ static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
   misc->integer = *(int64_t *)&imm;
   QueIns(misc, cctrl->code_ctrl->code_misc->last);
 found:
+  MFR(cctrl, reg);
   if (bin && misc->addr && cctrl->code_ctrl->final_pass) {
     AIWNIOS_ADD_CODE(ARM_ldrLabelF64(MFR(cctrl, reg), 0));
     ref = CodeMiscAddRef(misc, bin + code_off - 4);
