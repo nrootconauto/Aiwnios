@@ -472,7 +472,7 @@ void DebuggerBegin() {
 #endif
 #if defined(__linux__) && (defined(_M_ARM64) || defined(__aarch64__))
               switch (which) {
-              case 0:
+              case 22:
                 fu->regs.pc = value;
                 break;
               case 21:
@@ -580,9 +580,7 @@ void DebuggerBegin() {
 
 #if defined(_M_ARM64) || defined(__aarch64__)
 #  if defined(__linux__)
-                PTWriteAPtr(tid, &write_regs_to[0], fu->regs.pc);
-                PTWriteAPtr(tid, &write_regs_to[21], fu->regs.sp);
-                PTWriteAPtr(tid, &write_regs_to[11], fu->regs.regs[29]);
+				//???	
 #  elif defined(__FreeBSD__)
 #  endif
 #endif
@@ -811,26 +809,8 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
 // file actx[i-18]=ctx->__ss.__x[i];
 #    endif
 #    if defined(__linux__)
-  // We will look for FPSIMD_MAGIC(0x46508001)
-  // From
-  // https://github.com/torvalds/linux/blob/master/arch/arm64/include/uapi/asm/sigcontext.h
-  for (i = 0; i < 4096;) {
-    sz = ((uint32_t *)(&ctx->__reserved[i]))[1];
-    if (((uint32_t *)(&ctx->__reserved[i]))[0] == 0x46508001) {
-      i += 4 + 4 + 4 + 4;
-      fp_idx = i;
-      for (i2 = 8; i2 <= 15; i2++)
-        actx[(30 - 18 + 1) + i2 - 8] =
-            *(int64_t *)(&ctx->__reserved[fp_idx + 16 * i2]);
-      break;
-    } else if (!sz)
-      break;
-    else
-      i += sz;
-  }
+	actx[22]=ctx->pc;
 #    elif defined(__FreeBSD__)
-  for (i2 = 8; i2 <= 15; i2++)
-    actx[(30 - 18 + 1) + i2 - 8] = *(int64_t *)(&ctx->mc_fpregs.fp_q[16 * i2]);
 #    endif
 #    if defined(__linux__)
   actx[21] = ctx->sp;

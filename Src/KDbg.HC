@@ -143,8 +143,12 @@ U0 DebuggerSpawn(CTask *debugee) {
   "Type 'DbgHelp;' for help,it's a bit different than TempleOS.\n";
   #ifdef TARGET_X86
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[0],src_link=SrcEdLink(debugee->context_save_area[0]);
-  #else
+  #endif
+  #ifdef TARGET_RISCV
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[0],src_link=SrcEdLink(debugee->context_save_area[0]);
+  #endif
+  #ifdef TARGET_AARCH64
+  "Oh,and welcome to %P(%s)\n",debugee->context_save_area[22],src_link=SrcEdLink(debugee->context_save_area[22]);
   #endif
   "\n";
   Free(src_link);
@@ -174,7 +178,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   AIWNIOS_SetCaptureMouse(FALSE); //If you freeze you are on your own
   I64 gps[33];
   MemCpy(gps,_gps,8*33);
-  DebuggerClientStart(Fs,gps);
+  DebuggerClientStart(Fs,gps);
   CBpt *bp;
   CTask clone;
   CHashTable *old;
@@ -183,7 +187,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   I64 oip=gps[0],rbp=gps[2]; 
   #endif
   #ifdef TARGET_AARCH64
-  I64 oip=gps[0],rbp=gps[11]; 
+  I64 oip=gps[22],rbp=gps[11]; 
   #endif
   #ifdef TARGET_RISCV
   I64 oip=gps[0],rbp=gps[2]; 
@@ -209,7 +213,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   DumbStackTrace(rbp,oip);
   if(IsFastFail) ExitAiwnios(sig);
   if(Gs->num) Exit;
-  MemCpy(Fs->context_save_area,gps,22*8);
+  MemCpy(Fs->context_save_area,gps,23*8);
   MemCpy(&clone,Fs,sizeof CTask);
   CTask *task=Spawn(&DebuggerSpawn,&clone,"Debugger",0,Fs);
   DeathWait(&task);
@@ -231,7 +235,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
 fin:
   Fs->task_flags=clone.task_flags;
   Fs->bpt_lst=clone.bpt_lst;
-  for(idx=0;idx!=23;idx++)
+  for(idx=0;idx!=24;idx++)
      DebuggerClientSetGreg(Fs,idx,clone.context_save_area[idx]);
   WinRefocus;
   DebuggerClientEnd(Fs,clone.is_single_step);
@@ -387,9 +391,10 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
 #ifdef TARGET_X86
   rbp=t->context_save_area[2];
   rip=t->context_save_area[0];
-#else
+#endif
+#ifdef TARGET_AARCH64
   rbp=t->context_save_area[11];
-  rip=t->context_save_area[12];
+  rip=t->context_save_area[22];
 #endif
   while(frame>0) {
     rip=rbp[1];
@@ -439,8 +444,7 @@ public U0 S(U8 *ip=INVALID_PTR,CTask *task=NULL) //Single-step.
   if(bl) BreakUnlock;
   Exit;
 }
-/*
-U0 StkRep(CTask *task=NULL)
+/*U0 StkRep(CTask *task=NULL)
 {//Reports whats on the stk.
   I64 i,j,addr,
 	**rbp,**rsp,*my_rsp[STK_REP_LEN],bl;
@@ -452,7 +456,12 @@ U0 StkRep(CTask *task=NULL)
   if (task==Fs) {
     rbp=GetRBP;
     rsp=rbp+3;
+#ifndef TARGET_RISCV
     rbp=*rbp;
+#endif
+#ifdef TARGET_RISCV
+    rbp=rbp[1];
+#endif
   } else {
     rsp=task->rsp;
     rbp=task->rbp;
@@ -486,16 +495,31 @@ U0 StkRep(CTask *task=NULL)
   }
   '\n';
   Fs->hash_table=old_hash;
-}
-*/
-/*U0 Dr(CTask *task=NULL)
+}*/
+
+U0 Dr(CTask *task=NULL)
 {//Dump regs
   I64 i;
+  U64 *ptr;
   if (!task) task=GetDebuggedProcess;
+#ifdef TARGET_X86
   for (i=0;i<16;i++)
-    "%3Z:%016X\n",i,"ST_U64_REGS",*TaskRegAddr(task,i);
+#endif
+#ifdef TARGET_AARCH64
+  for (i=0;i<32;i++)
+#endif
+#ifdef TARGET_RISCV
+  for (i=0;i<32;i++)
+#endif
+    if(ptr=TaskRegAddr(task,i)){
+      "%3Z:%016X\n",i,"ST_U64_REGS",*ptr;
+    }
+#ifdef TARGET_AARCH64
+  "RIP:%016X\n",task->context_save_area[22];
+#else
   "RIP:%016X\n",task->context_save_area[0];
-}*/
+#endif
+}
 U0 D(U8 *addr,I64 cnt=0x80,Bool show_offset=TRUE)
 {//Dump mem, showing offsets.
 //See $LK,"DocD",A="MN:DocD"$() for a live dump.

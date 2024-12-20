@@ -2,12 +2,12 @@
 I64 *TaskRegAddr(CTask *t,I64 r,I64 raw_type=RT_U64) {
 #ifdef TARGET_AARCH64
   //See swapctxAARCH64.s
-  if(raw_type==RT_F64) {
+  if(raw_type!=RT_F64) {
     if(8<=r<=15) {
       return &t->context_save_area[13+r-8];
-    }
-  } else if(18<=r<=30)
+    } else if(18<=r<=30)
       return &t->context_save_area[r-18];
+  }
 #endif
 #ifdef TARGET_X86
   if(raw_type==RT_F64) {
