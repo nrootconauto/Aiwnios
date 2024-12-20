@@ -751,11 +751,13 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   actx[0] = ctx->gregs[REG_RIP];
   actx[1] = ctx->gregs[REG_RSP];
   actx[2] = ctx->gregs[REG_RBP];
-  actx[3] = ctx->gregs[REG_R11];
-  actx[4] = ctx->gregs[REG_R12];
-  actx[5] = ctx->gregs[REG_R13];
-  actx[6] = ctx->gregs[REG_R14];
-  actx[7] = ctx->gregs[REG_R15];
+  actx[3] = ctx->gregs[REG_RBX];
+  actx[4] = ctx->gregs[REG_R10];
+  actx[5] = ctx->gregs[REG_R11];
+  actx[6] = ctx->gregs[REG_R12];
+  actx[7] = ctx->gregs[REG_R13];
+  actx[8] = ctx->gregs[REG_R14];
+  actx[9] = ctx->gregs[REG_R15];
   CHashExport *exp;
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     FFI_CALL_TOS_2(exp->val, sig, actx);
@@ -771,11 +773,13 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   actx[0] = ctx->mc_rip;
   actx[1] = ctx->mc_rsp;
   actx[2] = ctx->mc_rbp;
-  actx[3] = ctx->mc_r11;
-  actx[4] = ctx->mc_r12;
-  actx[5] = ctx->mc_r13;
-  actx[6] = ctx->mc_r14;
-  actx[7] = ctx->mc_r15;
+  actx[3] = ctx->mc_rbx;
+  actx[4] = ctx->mc_r10;
+  actx[5] = ctx->mc_r11;
+  actx[6] = ctx->mc_r12;
+  actx[7] = ctx->mc_r13;
+  actx[8] = ctx->mc_r14;
+  actx[9] = ctx->mc_r15;
   CHashExport *exp;
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     FFI_CALL_TOS_2(exp->val, sig, actx);
@@ -785,7 +789,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
   setcontext(_ctx);
 #    endif
-#  elif defined(__aarch64__) || defined(_M_ARM64)
+#  elif defined(__aarch6	4__) || defined(_M_ARM64)
   mcontext_t *ctx = &_ctx->uc_mcontext;
   CHashExport *exp;
   int64_t is_single_step;
@@ -827,24 +831,29 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     if (FFI_CALL_TOS_2(fp, sig, actx)) { // Returns 1 for single step
 #    if defined(__x86_64__)
 #      if defined(__FreeBSD__)
-      ctx->mc_rip = actx[0];
-      ctx->mc_rsp = actx[1];
-      ctx->mc_rbp = actx[2];
-      ctx->mc_r11 = actx[3];
-      ctx->mc_r12 = actx[4];
-      ctx->mc_r13 = actx[5];
-      ctx->mc_r14 = actx[6];
-      ctx->mc_r15 = actx[7];
+      
+  ctx->mc_rip=actx[0]  ;
+  ctx->mc_rsp=actx[1]  ;
+  ctx->mc_rbp=actx[2]  ;
+  ctx->mc_rbx=actx[3] ;
+  ctx->mc_r10=actx[4];
+  ctx->mc_r11=actx[5];
+  ctx->mc_r12=actx[6] ;
+  ctx->mc_r13=actx[7];
+  ctx->mc_r14=actx[8];
+  ctx->mc_r15=actx[9]
       ctx->mc_eflags |= 1 << 8;
 #      elif defined(__linux__)
       ctx->gregs[REG_RIP] = actx[0];
       ctx->gregs[REG_RSP] = actx[1];
       ctx->gregs[REG_RBP] = actx[2];
-      ctx->gregs[REG_R11] = actx[3];
-      ctx->gregs[REG_R12] = actx[4];
-      ctx->gregs[REG_R13] = actx[5];
-      ctx->gregs[REG_R14] = actx[6];
-      ctx->gregs[REG_R15] = actx[7];
+      ctx->gregs[REG_RBX] = actx[3];
+      ctx->gregs[REG_R10] = actx[4];
+      ctx->gregs[REG_R11] = actx[5];
+      ctx->gregs[REG_R12] = actx[6];
+      ctx->gregs[REG_R13] = actx[7];
+      ctx->gregs[REG_R14] = actx[8];
+      ctx->gregs[REG_R15] = actx[9];
 #      endif
 #    endif
     }

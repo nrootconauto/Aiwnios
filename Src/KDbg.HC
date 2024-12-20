@@ -178,7 +178,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   AIWNIOS_SetCaptureMouse(FALSE); //If you freeze you are on your own
   I64 gps[33];
   MemCpy(gps,_gps,8*33);
-  DebuggerClientStart(Fs,gps);
+  DebuggerClientStart(Fs,gps);
   CBpt *bp;
   CTask clone;
   CHashTable *old;

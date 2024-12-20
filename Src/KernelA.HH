@@ -7166,3 +7166,4 @@ extern U0 HeapWho();
 //For bootsrapping
 extern U0 ExeEmbedFile(U8 *fn);
 extern U0 CmdLineRunFiles();
+extern U0 Dr(CTask *t=NULL);
