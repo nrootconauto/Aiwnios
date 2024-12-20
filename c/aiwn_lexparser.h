@@ -575,7 +575,7 @@ enum {
 #  define AIWNIOS_IREG_START   0
 #  define AIWNIOS_FREG_START   0
 #  define AIWNIOS_TMP_IREG_CNT 4
-#  define AIWNIOS_TMP_FREG_CNT 5
+#  define AIWNIOS_TMP_FREG_CNT 3
 #  define AIWNIOS_IREG_CNT     (27 - 18 + 1 + 1)
 #  define AIWNIOS_FREG_CNT     (27 - 18 + 1 + 2)
 #endif

@@ -944,6 +944,7 @@ re_number:;
 
   best_penalty=I64_MAX;
   I64 *best_colors=CAlloc(8*mcnt);
+  QSort(mv,mcnt,sizeof (COptMemberVar),&OptMVCompare);
 
   MemSetI64(coloring->colors,-1,mcnt);
   for(run=2;run>=0;--run) {

@@ -780,7 +780,7 @@ int64_t ITmpRegToReg(int64_t r) {
 int64_t FTmpRegToReg(int64_t r) {
   switch (r) {
     break;
-  case 0 ... 3:
+  case 0 ... 2:
     return r + 29;
   default:
     abort();
@@ -858,7 +858,7 @@ static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
     }
   }
 use_defacto:
-  if (raw_type != RT_F64) {
+   if (raw_type != RT_F64) {
     if (cctrl->backend_user_data2 < AIWNIOS_TMP_IREG_CNT) {
       res->mode = MD_REG;
       res->raw_type = raw_type;
@@ -1026,7 +1026,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     arg2 = ICArgN(r, 0);
     if (!IsCompoundCompare(r)) {
       PushTmpDepthFirst(cctrl, arg, SpillsTmpRegs(arg2));
-      PushTmpDepthFirst(cctrl, arg2, 1);
+      PushTmpDepthFirst(cctrl, arg2, 0);
       PopTmp(cctrl, arg2);
       PopTmp(cctrl, arg);
       goto fin;
@@ -1047,10 +1047,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       PushTmpDepthFirst(cctrl, d->base.next, 1);
       d = ICFwd(d->base.next);
     }
-    // See above note(d here is the 3)
-    array[argc++] = d;
-    PushTmpDepthFirst(cctrl, d, 1);
-    //
+    array[argc++]=d;
+    PushTmpDepthFirst(cctrl, array[argc-1], 1);
     while (argc--)
       PopTmp(cctrl, array[argc]);
     A_FREE(array);
