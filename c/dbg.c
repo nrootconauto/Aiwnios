@@ -789,7 +789,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
   setcontext(_ctx);
 #    endif
-#  elif defined(__aarch6	4__) || defined(_M_ARM64)
+#  elif defined(__aarch64__) || defined(_M_ARM64)
   mcontext_t *ctx = &_ctx->uc_mcontext;
   CHashExport *exp;
   int64_t is_single_step;
