@@ -15,7 +15,7 @@ extern void DoNothing();
 
 #define RISCV_IPOOP1          5
 #define RISCV_IPOOP2          6
-#define RISCV_FPOOP1          0
+#define RISCV_FPOOP1          28
 #define RISCV_FPOOP2          1
 #define RISCV_IRET            10
 #define RISCV_FRET            10
@@ -43,6 +43,8 @@ static int64_t MFR(CCmpCtrl *cc, int64_t r) {
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   int64_t mask;
+  if(me->flags&ICF_SPILLED)
+    return 0;
   if (have->res.mode == MD_I64 || have->res.mode == MD_F64)
     return 0; // No need to stuff in tmp
   if (is_left_side) {
@@ -729,6 +731,7 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
     res->off = rpn->integer;
     return;
   }
+  res->keep_in_tmp=0; //Dont use tmp registers
   rpn->flags |= ICF_SPILLED;
   res->is_tmp = 1;
   if (raw_type != RT_F64) {
@@ -777,8 +780,8 @@ int64_t ITmpRegToReg(int64_t r) {
 int64_t FTmpRegToReg(int64_t r) {
   switch (r) {
     break;
-  case 0 ... 4:
-    return r + 28;
+  case 0 ... 3:
+    return r + 29;
   default:
     abort();
   }
@@ -3925,8 +3928,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       i2 = RT_I64i;
       i2 = next->res.raw_type > i2 ? next->res.raw_type : i2;
       i2 = next2->res.raw_type > i2 ? next2->res.raw_type : i2;
-      code_off = PutICArgIntoReg(cctrl, &tmp, i2, RISCV_IPOOP2, bin, code_off);
-      code_off = PutICArgIntoReg(cctrl, &tmp2, i2, RISCV_IPOOP1, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &tmp, i2, use_flt_cmp?RISCV_FPOOP2:RISCV_IPOOP2, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &tmp2, i2, use_flt_cmp?RISCV_FPOOP1:RISCV_IPOOP1, bin, code_off);
       //
       // We use the opposite compare because if fail we jump to the fail
       // zone
