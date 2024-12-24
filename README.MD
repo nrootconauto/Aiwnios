@@ -72,6 +72,23 @@ Your on your own. Use homebrew to install packages, rest is same as FreeBSD
 
 You can use the `--tui` to run a DolDoc enviroment in the terminal. ***Use `ExitAiwnios;` to leave.***
 
+# AiwniosPack
+
+  You can make a standalone exe with an application(on MingW64(not msys unless you want all the libraries)).
+  
+  It works by appending an HCRT2.BIN and RamDisk at the end of the executable. SDL on windows is statically linked by default.
+  
+  You will need to include the `Src` and `Doc`(For `/Doc/StandBy.DD` and friends.)  directories in your Aiwnios packages.
+  
+  Do something like this:
+
+```c
+DelTree("Root");
+DirMk("Root");
+CopyTree("Doc","Root/Doc");
+CopyTree("Src","Root/Src");
+AiwniosPack("a2.exe","Beep;\n","Root");
+```
 
 # Future
 
