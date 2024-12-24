@@ -331,21 +331,16 @@ typedef struct __attribute__((packed)) CBinFile {
   char data[];
 } CBinFile;
 
-char *Load(char *filename) { // Load a .BIN file module into memory.
+char *Load(char *fbuf,int64_t size) { // Load a .BIN  module from RAM into memory.
   // bfh_addr==INVALID_PTR means don't care what load addr.
-  char *fbuf = filename, *module_base, *absname;
-  int64_t size, module_align, misalignment;
+  char *module_base, *absname;
+  int64_t module_align, misalignment;
   CBinFile *bfh;
   CBinFile *bfh_addr;
   CHeapCtrl *hc = HeapCtrlInit(NULL, Fs, 1);
-  if (!(bfh = FileRead(fbuf, &size))) {
-    return NULL;
-  }
   SetWriteNP(0);
-  fbuf = (CBinFile *)bfh;
   bfh = A_MALLOC(size, hc);
   memcpy(bfh, fbuf, size);
-  A_FREE(fbuf);
 
   // See $LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$
   module_align = 1 << bfh->module_align_bits;

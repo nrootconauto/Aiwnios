@@ -717,7 +717,7 @@ CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp, CCodeCtrl *cc, int64_t at, char *d,
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
                            int64_t ptrs);
 CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl *cc, int64_t len);
-char *Load(char *filename);
+char *Load(char *fbuf,int64_t size);
 CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr);
 

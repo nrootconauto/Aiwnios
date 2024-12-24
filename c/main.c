@@ -1368,6 +1368,8 @@ static int64_t is_fast_fail = 0;
 int64_t IsFastFail() {
   return is_fast_fail;
 }
+static char *AiwniosPackRamDiskPtr(int64_t **);
+static char *AiwniosPackBootCommand(int64_t **);
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1429,6 +1431,8 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
+    PrsAddSymbol("AiwniosPackRamDisk",AiwniosPackRamDiskPtr,1);
+    PrsAddSymbol("AiwniosPackBootCommand",AiwniosPackBootCommand,0);
 #define X(a, b) PrsAddSymbol(#a, STK_##a, b)
     X(MemCpy, 3);
     X(MemSet, 3);
@@ -1668,15 +1672,73 @@ static void BootAiwnios(char *bootstrap_text) {
   LexerDel(lex);
 }
 static const char *t_drive;
+static const char *exe_name=NULL;
+static char *ramdisk_ptr=NULL;
+static int64_t ramdisk_size=0;
+static char *boot_command=NULL;
+//See Src/AiwniosPack
+static char *AiwniosPackRamDiskPtr(int64_t **stk) {
+	int64_t *sz=stk[0];
+	if(sz)
+		*sz=ramdisk_size;
+	return ramdisk_ptr;
+}
+//See Src/AiwniosPack
+static char *AiwniosPackBootCommand(int64_t **stk) {
+	return boot_command;
+}
+
+typedef struct CAiwniosPack {
+//Non-absolute paths are relative to home directory
+  int64_t ramdisk_size;
+  int64_t hcrt_size;
+  int64_t hcrt_offset;
+  int64_t ramdisk_offset;
+  char boot_command[144];
+  char save_directory[144];
+} CAiwniosPack;
 static void Boot() {
-  int64_t len;
-  char *host_abi;
-  char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
-  strcpy(bin, t_drive);
-  strcat(bin, "/HCRT2.BIN");
+  int64_t len,size,hcrt_size;
+  char *fbuf,*hcrt;
   Fs = calloc(sizeof(CTask), 1);
-  InstallDbgSignalsForThread();
   TaskInit(Fs, NULL, 0);
+    char *host_abi;
+  if(exe_name) {
+	uint64_t offset;
+    //See AiwniosPack/Embed.HC
+    if(!(fbuf=FileRead(exe_name,&size))) {
+		goto normal;
+	}
+	if(size<16) {
+		abort();
+	}
+	if(strncmp(fbuf+size-16,"AiwnPack",8)) {
+		A_FREE(fbuf);
+		goto normal;
+	}
+	offset=*(int64_t*)(fbuf+size-8);
+	if(!(offset>0&&offset<size)) {
+		A_FREE(fbuf);
+		goto normal;
+	}
+	CAiwniosPack *cpack=fbuf+offset;
+	hcrt=fbuf+cpack->hcrt_offset;
+	hcrt_size=cpack->hcrt_size;
+    ramdisk_ptr=fbuf+cpack->ramdisk_offset;
+    ramdisk_size=cpack->ramdisk_size;
+    boot_command=cpack->boot_command;
+    printf("PACK_HCRT:%p,%d\n",cpack->hcrt_offset,cpack->hcrt_size);
+    printf("PACK_RAMDISK:%p,%d\n",cpack->ramdisk_offset,cpack->ramdisk_size);
+    printf("PACK_BOOTCOMD:%s\n",cpack->boot_command);
+  } else {
+normal:;
+    char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
+    strcpy(bin, t_drive);
+    strcat(bin, "/HCRT2.BIN");
+    hcrt=FileRead(bin,&size);
+    hcrt_size=size;
+  }
+  InstallDbgSignalsForThread();
   VFsMountDrive('T', t_drive);
   /*  FuzzTest1();
     FuzzTest2();
@@ -1721,8 +1783,8 @@ static void Boot() {
   } else
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
-  if (bin)
-    Load(bin);
+  if (hcrt)
+    Load(hcrt,hcrt_size);
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {
@@ -1747,6 +1809,7 @@ static void ExitAiwnios(int64_t *stk) {
   }
 }
 int main(int argc, char **argv) {
+	exe_name=argv[0];
   setlocale(LC_ALL, "C");
   atexit(&AiwniosBye);
 #ifndef _WIN64
@@ -1918,10 +1981,10 @@ int main(int argc, char **argv) {
   InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
     user_ev_num = SDL_RegisterEvents(1);
-    SpawnCore(&Boot, NULL, 0);
+    SpawnCore(&Boot, argv[0], 0);
     InputLoop(&quit);
   } else {
-    Boot();
+    Boot(argv[0]);
   }
   AiwniosBye(); // My RISCV(and presumably others) dont like atexit with
                 // SDL_QUIT

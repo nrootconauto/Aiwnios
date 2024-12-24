@@ -422,18 +422,20 @@ U0 CmdLine(I64) {
 //
   Spawn(&UserCmdLine)->task_end_cb=&Exit0;
 }
+#include "AiwniosPack.HC";
+AiwniosPackLoad; //Does nothing if not aiwnios-packed
 if(IsCmdLineMode) {
   fp_getstr2=&_CmdLineGetStr;
   Spawn(&CmdLine);
   CoreAPSethTask;
-} else 
+} else
   WinMax(User);
 if(!IsCmdLineMode) {
-  ExePrint2("#include \"T:/Src/WallPaper.HC\";WallPaperInit;;");
-  ExePrint2("#include \"T:/Src/AMouse.HC\";");
+  ExePrint2("#include \"~:/Src/WallPaper.HC\";WallPaperInit;;");
+  ExePrint2("#include \"~:/Src/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
-  ACInit("T:/Src/*.HC*;*.HH*");
+  ACInit("~:/Src/*.HC*;*.HH*");
   OnceExe;
 }
 CoreAPSethTask;

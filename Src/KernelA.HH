@@ -3826,6 +3826,8 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U8 *AiwniosPackBootCommand();
+import U8 *AiwniosPackRamDisk(I64 *len=NULL);
 import Bool IsFastFail();
 import U0 AIWNIOS_SetCaptureMouse(I64);
 import U0 DebuggerClientSetGreg(CTask*,I64,I64);
@@ -3981,6 +3983,8 @@ import I64 GetRBP();
 import U0 AiwniosTUIEnable();
 import U0 TermSize(I64 *c,I64 *r);
 #else
+extern U8 *AiwniosPackBootCommand();
+extern U8 *AiwniosPackRamDisk(I64 *len=NULL);
 extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 AIWNIOS_SetCaptureMouse(I64);
 extern I64 GetRBP();
@@ -7167,3 +7171,6 @@ extern U0 HeapWho();
 extern U0 ExeEmbedFile(U8 *fn);
 extern U0 CmdLineRunFiles();
 extern U0 Dr(CTask *t=NULL);
+//See Src/AiwniosPack.HC
+extern U0 AiwniosPack(U8 *result_name,U8 *boot_command=NULL,U8 *root,U8 *hcrt_bin="/HCRT2.BIN");
+extern U0 AiwniosPackLoad();
