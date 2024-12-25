@@ -103,7 +103,8 @@ U0 AiwniosPackLoad() {
   U8 *ram_disk=AiwniosPackRamDisk(&l);
   if(!ram_disk)
     return;
-  dumb=MStrPrint("%C:/",MountRamDisk(ram_disk,l)->drv_let);
+  dumb=MStrPrint("%C:/",
+	blkdev.boot_drv_let=MountRamDisk(ram_disk,l)->drv_let);
   dumb2=MStrPrint("Cd(\"%Q\");",dumb);
   TaskExe(Gs->seth_task,Fs,dumb2,0);
   blkdev.home_dir=AStrNew(dumb);

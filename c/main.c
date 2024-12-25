@@ -1808,6 +1808,19 @@ static void ExitAiwnios(int64_t *stk) {
     SDL_PushEvent(&qev);
   }
 }
+static int64_t IsAiwniosPackApp() {
+	char signature[9];
+	signature[8]=0;
+	if(exe_name) {
+		FILE *f=fopen(exe_name,"rb");
+		fseek(f,-16,SEEK_END);
+		fread(signature,1,8,f);
+		fclose(f);
+		if(!strcmp(signature,"AiwnPack"))
+		  return 1;
+	}
+	return 0;
+}
 int main(int argc, char **argv) {
 	exe_name=argv[0];
   setlocale(LC_ALL, "C");
@@ -1919,6 +1932,9 @@ int main(int argc, char **argv) {
     t_drive = arg_t_dir->filename[0];
   else if (arg_bootstrap_bin->count)
     t_drive = "."; // Bootstrap in current directory
+  if(IsAiwniosPackApp()&&!arg_t_dir->count) {
+	  t_drive=ResolveBootDir(".",0,NULL);
+  } else {
 #if !defined(WIN32) && !defined(_WIN32)
   struct passwd *pwd = getpwuid(getuid());
   const char *dft = "/.local/share/aiwnios/T";
@@ -1971,6 +1987,7 @@ int main(int argc, char **argv) {
     }
   }
 #endif
+  }
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
   if (0 > SDL_Init(SDL_INIT_EVERYTHING)) {

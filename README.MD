@@ -92,7 +92,7 @@ AiwniosPack("a2.exe","Beep;\n","Root");
 
 # Future
 
-i plan on adding something lit like an arm assembler from HolyC.
+I plan on adding something lit like an arm assembler from HolyC.
 
 ## Internals
 
