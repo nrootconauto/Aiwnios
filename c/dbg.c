@@ -905,8 +905,9 @@ static LONG WINAPI VectorHandler(EXCEPTION_POINTERS *einfo) {
     FFI_CALL_TOS_2(exp->val, sig, actx);
   } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
     FFI_CALL_TOS_0(exp->val);
-  else
+  else {
     abort();
+  }
 fin:
   return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -921,7 +922,7 @@ static LONG WINAPI Div0Handler(EXCEPTION_POINTERS *info) {
     ctx->Rcx = *(uint64_t *)"DivZero";
     RtlRestoreContext(ctx, 0);
   default:
-    return E(CONTINUE_EXECUTION);
+    return EXCEPTION_CONTINUE_SEARCH;
   }
 }
 #endif
