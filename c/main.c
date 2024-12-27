@@ -1822,6 +1822,7 @@ static int64_t IsAiwniosPackApp() {
 	return 0;
 }
 int main(int argc, char **argv) {
+	SDL_SetMainReady();
 	exe_name=argv[0];
   setlocale(LC_ALL, "C");
   atexit(&AiwniosBye);
@@ -1990,13 +1991,18 @@ int main(int argc, char **argv) {
   }
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
-  if (0 > SDL_Init(SDL_INIT_EVERYTHING)) {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
-                             "Failed to int SDL.", NULL);
-    exit(EXIT_FAILURE);
-  }
   InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
+	if (0 > SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS)) {
+      char *p=SDL_GetError();
+      if(!p) p="???";
+      int64_t l=snprintf(NULL,0,"Failed to init SDL(%s)",p);
+      char buf[l+1];
+      sprintf(buf,"Failed to init SDL(%s)",p);
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
+                             buf, NULL);
+      exit(EXIT_FAILURE);
+    }
     user_ev_num = SDL_RegisterEvents(1);
     SpawnCore(&Boot, argv[0], 0);
     InputLoop(&quit);

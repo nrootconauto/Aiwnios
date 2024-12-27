@@ -81,7 +81,7 @@ void SndFreq(int64_t f) {
 }
 void InitSound() {
   SDL_AudioSpec want;
-  if (SDL_Init(SDL_INIT_AUDIO))
+  if (0>SDL_Init(SDL_INIT_AUDIO))
     return;
   memset(&want, 0, sizeof(SDL_AudioSpec));
   want.freq = 24000;
