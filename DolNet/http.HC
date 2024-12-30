@@ -264,7 +264,7 @@ U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
   while(len>0) {
     if(NetPollForHangup(1,&s)==0)
       goto fail;
-    w=NetWrite(s,data,MinI64(len,0x10000));
+    w=NetWrite(s,data,MinI64(len,0x10000*4));
     if(w<=0) {
 fail:;
       LBts(&con->is_dead,0);
@@ -729,7 +729,7 @@ U0 ServeExit() {
   Exit;
 }
 U0 ServeTask(CServer *srv) {
-  U8 buf[0x10000],found;
+  U8 *buf=MAlloc(0x10000*4),found;
   I64 fd_cnt=0,idx;
   I64 sleep_time=10,len;
   MemSetU64(fds,-1,BACKLOG);
@@ -761,7 +761,7 @@ again:;
 	    CloseCallback(fds[idx],&unique_tokens[idx]);
 	    fds[idx]=-1;
 	  } else if(fds[idx]!=-1&&-1!=NetPollForRead(1,&fds[idx])) {
-	    len=NetRead(fds[idx],buf,0x10000);
+	    len=NetRead(fds[idx],buf,0x10000*4);
 	    if(len>0) {
 	      buf[len]=0;
 	      SReadData(fds[idx],buf,len,&unique_tokens[idx]);
@@ -771,7 +771,7 @@ again:;
         }
 nxt:;
       }
-      Sleep(100);
+      Sleep(4);
     } else {
       found=FALSE;
       for(idx=0;idx!=BACKLOG;idx++) {
@@ -786,6 +786,7 @@ nxt:;
       if(!found) goto force;
     }
   }
+  Free(buf);
 }
 U0 Serve(CServer *srv) {
   CTask *srv_task;
