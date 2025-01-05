@@ -2664,18 +2664,18 @@ static CRPN *__AddScale(CRPN *r, int64_t *const_val) {
 
 // Returns the non-constant side of a +Const
 
-static CRPN *__AddOffset(CRPN *r, int64_t *const_val) {
+static CRPN *__AddSIBOffset(CRPN *r, int64_t *const_val) {
   if (r->type != IC_ADD && r->type != IC_SUB)
     return NULL;
   int64_t mul = (r->type == IC_ADD) ? 1 : -1;
   CRPN *n0 = ICArgN(r, 0), *n1 = ICArgN(r, 1);
-  if (IsConst(n0) && Is32Bit(ConstVal(n0))) {
+  if (n0->type!=IC_F64&&IsConst(n0) && Is32Bit(ConstVal(n0))) {
     if (const_val)
       *const_val = mul * ConstVal(n0);
     return n1;
   }
   // Dont do 256-idx(ONLY DO idx-256)
-  if (IsConst(n1) && Is32Bit(ConstVal(n1)) && r->type != IC_SUB) {
+  if (n1->type!=IC_F64&&IsConst(n1) && Is32Bit(ConstVal(n1)) && r->type != IC_SUB) {
     if (const_val)
       *const_val = mul * ConstVal(n1);
     return n0;
@@ -2698,8 +2698,8 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
   CRPN *b = NULL, *idx = NULL;
   int64_t tmp, i = 0, i2 = -1, is_sib = 0;
   CRPN *arg = r;
-  while (__AddOffset(arg, &tmp)) {
-    arg = __AddOffset(arg, &tmp);
+  while (__AddSIBOffset(arg, &tmp)) {
+    arg = __AddSIBOffset(arg, &tmp);
     i += tmp;
   }
   if (arg->type == IC_ADD) {
@@ -2716,7 +2716,7 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
     is_sib = 1;
   } else if (arg->type == IC_MUL) {
     b = NULL;
-    if (idx = __AddScale(ICArgN(arg, 0), &i2))
+    if (idx =	 __AddScale(ICArgN(arg, 0), &i2))
       is_sib = 1;
     else if (idx = __AddScale(ICArgN(arg, 1), &i2))
       is_sib = 1;
@@ -2726,13 +2726,13 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
   }
   // Adjust for offesets in base/index
   if (b)
-    while (__AddOffset(b, &tmp)) {
-      b = __AddOffset(b, &tmp);
+    while (__AddSIBOffset(b, &tmp)) {
+      b = __AddSIBOffset(b, &tmp);
       i += tmp;
     }
   if (idx)
-    while (__AddOffset(idx, &tmp)) {
-      idx = __AddOffset(idx, &tmp);
+    while (__AddSIBOffset(idx, &tmp)) {
+      idx = __AddSIBOffset(idx, &tmp);
       i += tmp * i2;
     }
   if (_b)
@@ -2743,6 +2743,12 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
     *off = i;
   if (scale)
     *scale = i2;
+  if(b)
+	if(b->res.raw_type==RT_F64)
+		is_sib=0;
+  if(idx)
+	if(idx->res.raw_type==RT_F64)
+		is_sib=0;
   return is_sib && Is32Bit(i);
 }
 
@@ -2866,6 +2872,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_ADD:
     orig = r;
     tmp = 0;
+    if(r->raw_type!=RT_F64) {
     if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
       if (b && idx) {
         if (b->type != IC_IREG)
@@ -2950,6 +2957,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         goto lea_sib;
       }
     }
+	}
     goto binop;
     break;
   case IC_EQ:
