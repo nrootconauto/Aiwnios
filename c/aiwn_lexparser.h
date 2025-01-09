@@ -370,6 +370,7 @@ typedef struct CICArg {
   int8_t reg, reg2, fallback_reg;
   // True on enter of things that want to set the flags
   // True/False if the result of the thing set the flags or not
+  char want_use_flags; //This is reset by __OptPassFinal
   char set_flags;
   // keep the value in a temp location,good for removing reundant stores
   char keep_in_tmp;

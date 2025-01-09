@@ -2209,16 +2209,16 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
     goto unop;
     break;
   case IC_POST_INC:
-    goto binop;
+    goto unop;
     break;
   case IC_POST_DEC:
-    goto binop;
+    goto unop;
     break;
   case IC_PRE_INC:
-    goto binop;
+    goto unop;
     break;
   case IC_PRE_DEC:
-    goto binop;
+    goto unop;
     break;
   case IC_AND_AND:
     goto binop;
@@ -2752,6 +2752,10 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
   return is_sib && Is32Bit(i);
 }
 
+static int64_t IsGoodIReg(r) {
+	return IsSavedIReg(r)||r==R9||r==RBX;
+}
+
 // Returns 1 if we hit the bottom
 static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   switch (r->type) {
@@ -2874,89 +2878,92 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     tmp = 0;
     if(r->raw_type!=RT_F64) {
     if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
+      if(b)
+      PushTmpDepthFirst(cctrl,b,0);
+      if(idx)
+      PushTmpDepthFirst(cctrl,idx,0);
       if (b && idx) {
-        if (b->type != IC_IREG)
+        if (b->res.mode==MD_REG||b->res.mode==__MD_X86_64_LEA_SIB)
           tmp++;
-        if (idx->type != IC_IREG)
+        if (idx->res.mode==MD_REG||idx->res.mode==__MD_X86_64_LEA_SIB)
           tmp++;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0 ||
-            tmp >= 2)
-          goto binop;
+            tmp!= 2)
+          goto add_dft;
         if (SpillsTmpRegs(idx))
-          goto binop;
-        PushTmpDepthFirst(cctrl, b, 0);
-        PushTmpDepthFirst(cctrl, idx, 0);
-        PopTmp(cctrl, idx);
-        PopTmp(cctrl, b);
+          goto add_dft;
 
       lea_sib:
-        // Make a dummy node to store in a tmp register
-        if (b)
-          if (b->res.mode != MD_REG || b->res.raw_type == RT_F64) {
-            new = A_CALLOC(sizeof(CRPN), cctrl->hc);
-            new->type = IC_POS;
-            new->raw_type = RT_I64i;
-            new->ic_line = b->ic_line;
-            QueIns(new, b->base.last);
-            new->res.mode = MD_REG;
-            new->res.reg = TmpRegToReg(cctrl->backend_user_data2);
-            new->res.raw_type = RT_I64i;
-            b = new;
-          }
-        // Make a dummy node to store in a tmp register
-        if (idx)
-          if (idx->res.mode != MD_REG || idx->res.raw_type == RT_F64) {
-            new = A_CALLOC(sizeof(CRPN), cctrl->hc);
-            new->type = IC_POS;
-            new->raw_type = RT_I64i;
-            new->ic_line = idx->ic_line;
-            QueIns(new, idx->base.last);
-            new->res.mode = MD_REG;
-            new->res.reg = TmpRegToReg(cctrl->backend_user_data2);
-            new->res.raw_type = RT_I64i;
-            idx = new;
-          }
+      if(idx)
+      PopTmp(cctrl,idx);
+      if(b)
+      PopTmp(cctrl,b);
+
 
         orig->flags |= ICF_INDIR_REG;
         orig->res.mode = __MD_X86_64_LEA_SIB;
         orig->res.__SIB_scale = idx ? i2 : -1;
         orig->res.off = i;
-        if (idx)
+        if (idx) {
+			if(idx->res.mode==__MD_X86_64_LEA_SIB)
+			orig->res.reg2=idx->res.fallback_reg;
+			else
           orig->res.reg2 = idx->res.reg;
-        else
+          //Watch out for  SetKeepTmps
+          if(!IsGoodIReg(orig->res.reg2))
+			goto add_dft;
+        } else
           orig->res.reg2 = -1;
         orig->res.__sib_idx_rpn = idx;
         orig->res.__sib_base_rpn = b;
         orig->res.raw_type = r->raw_type;
-        if (b)
+        if (b) {
+			if(b->res.mode==__MD_X86_64_LEA_SIB)
+			orig->res.reg=b->res.fallback_reg;
+			else
           orig->res.reg = b->res.reg;
-        else
+          //Watch out for  SetKeepTmps
+          if(!IsGoodIReg(orig->res.reg))
+			goto add_dft;
+        }else
           orig->res.reg = -1;
-        orig->res.fallback_reg = TmpRegToReg(cctrl->backend_user_data2++);
-        orig->res.pop_n_tmp_regs = 1;
+          
+          
+          orig->res.pop_n_tmp_regs = 1;
+          orig->res.fallback_reg=TmpRegToReg(cctrl->backend_user_data2++);
         return 1;
       } else if (b) {
-        if (b->type != IC_IREG)
+        if (b->res.mode==MD_REG)
           tmp++;
         else if (b->integer == 13) // R13 has quirks when used with SIBs
-          goto binop;
-        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
-          goto binop;
-        PushTmpDepthFirst(cctrl, b, 0);
-        PopTmp(cctrl, b);
+          goto add_dft;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0||tmp!=1)
+          goto add_dft;
         goto lea_sib;
       } else if (idx && 0) {
-        if (idx->type != IC_IREG)
+        if (idx->res.mode==MD_REG)
           tmp++;
         else if (idx->integer == 13) // R13 has quirks when used with SIBs
-          goto binop;
-        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0)
-          goto binop;
-        PushTmpDepthFirst(cctrl, idx, 0);
-        PopTmp(cctrl, idx);
+          goto add_dft;
+        if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 < 0||tmp!=1)
+          goto add_dft;
         goto lea_sib;
       }
     }
+	}
+add_dft:
+    //Reset flags and stuff from attemptd SIB-ify
+    if(!spilled) {
+		cctrl->backend_user_data1=old_scnt;
+		cctrl->backend_user_data2=old_icnt;
+		cctrl->backend_user_data3=old_fcnt;
+	   CRPN *clear_to=ICFwd(orig),*cur=orig;
+	   while(cur!=clear_to) {
+		   cur->flags=0;
+		   cur->res.mode=0;
+		   cur=cur->base.next;
+	   }
+	   r=orig;
 	}
     goto binop;
     break;
@@ -2995,100 +3002,96 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     tmp = 0;
     arg = r->base.next;
     if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2, 0)) {
+		if(b)
+      PushTmpDepthFirst(cctrl,b,0);
+      if(idx)
+      PushTmpDepthFirst(cctrl,idx,0);
       if (b && idx) {
         tmp = 0;
-        if (b->type != IC_IREG)
+        if (b->res.mode==MD_REG)
           tmp++;
-        if (idx->type != IC_IREG)
+        if (idx->res.mode==MD_REG)
           tmp++;
         if (tmp && spilled) {
           goto deref_norm;
         }
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
-            tmp >= 2)
+            tmp!= 2)
           goto deref_norm;
         if (SpillsTmpRegs(idx))
           goto deref_norm;
-        PushTmpDepthFirst(cctrl, b, 0);
-        PushTmpDepthFirst(cctrl, idx, 0);
-        PopTmp(cctrl, idx);
-        PopTmp(cctrl, b);
-
       sib:
-        // Make a dummy node to store in a tmp register
-        if (b)
-          if (b->res.mode != MD_REG || b->res.raw_type == RT_F64) {
-            new = A_CALLOC(sizeof(CRPN), cctrl->hc);
-            new->type = IC_POS;
-            new->raw_type = RT_I64i;
-            new->ic_line = b->ic_line;
-            QueIns(new, b->base.last);
-            new->res.mode = MD_REG;
-            new->res.reg = TmpRegToReg(cctrl->backend_user_data2);
-            new->res.raw_type = RT_I64i;
-            b = new;
-          }
-        // Make a dummy node to store in a tmp register
-        if (idx)
-          if (idx->res.mode != MD_REG || idx->res.raw_type == RT_F64) {
-            new = A_CALLOC(sizeof(CRPN), cctrl->hc);
-            new->type = IC_POS;
-            new->raw_type = RT_I64i;
-            new->ic_line = idx->ic_line;
-            QueIns(new, idx->base.last);
-            new->res.mode = MD_REG;
-            new->res.reg = TmpRegToReg(cctrl->backend_user_data2);
-            new->res.raw_type = RT_I64i;
-            idx = new;
-          }
-
+      if(idx) PopTmp(cctrl,idx);
+      if(b) PopTmp(cctrl,b);
+      if(cctrl->backend_user_data2+1>AIWNIOS_TMP_IREG_CNT)
+		goto deref_norm;
         orig->flags |= ICF_SIB;
         orig->res.mode = __MD_X86_64_SIB;
         orig->res.__SIB_scale = idx ? i2 : -1;
         orig->res.off = i;
-        if (idx)
-          orig->res.reg2 = idx->res.reg;
-        else
+        if (idx) {
+          if(idx->res.mode==__MD_X86_64_LEA_SIB)
+			orig->res.reg2=idx->res.fallback_reg;
+			else
+			orig->res.reg2 = idx->res.reg;
+          //Watch out for  SetKeepTmps
+			if(!IsGoodIReg(orig->res.reg2))
+			goto deref_norm;
+        } else
           orig->res.reg2 = -1;
         orig->res.raw_type = r->raw_type;
         orig->res.__sib_base_rpn = b;
         orig->res.__sib_idx_rpn = idx;
-        if (b)
-          orig->res.reg = b->res.reg;
-        else
+        if (b) {
+			if(b->res.mode==__MD_X86_64_LEA_SIB)
+				orig->res.reg=b->res.fallback_reg;
+				else orig->res.reg=b->res.reg;
+          //Watch out for  SetKeepTmps
+				if(!IsGoodIReg(orig->res.reg))
+			goto deref_norm;
+			}
+			        else
           orig->res.reg = -1;
-        orig->res.fallback_reg = TmpRegToReg(cctrl->backend_user_data2++);
-        orig->res.pop_n_tmp_regs = 1;
-        return 1;
+          orig->res.pop_n_tmp_regs = 1;
+         orig->res.fallback_reg=TmpRegToReg(cctrl->backend_user_data2++);
+         return 1;
       } else if (b) {
-        if (b->type != IC_IREG)
+        if (b->res.mode==MD_REG)
           tmp++;
         else if (b->integer == 13) // R13 has quirks when used with SIBs
           goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
-            tmp >= 2)
+            tmp !=1)
           goto deref_norm;
-        PushTmpDepthFirst(cctrl, b, 0);
-        PopTmp(cctrl, b);
         goto sib;
       } else if (idx) {
-        if (idx->type != IC_IREG)
+        if (idx->res.mode==MD_REG)
           tmp++;
         else if (idx->integer == 13) // R13 has quirks when used with SIBs
           goto binop;
         if (tmp && spilled)
           goto deref_norm;
         if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - tmp - 1 < 0 ||
-            tmp >= 2)
+            tmp !=1)
           goto deref_norm;
-        PushTmpDepthFirst(cctrl, idx, 0);
-        PopTmp(cctrl, idx);
         goto sib;
       }
     }
+    //Reset flags and stuff from attemptd SIB-ify
   deref_norm:
+    if(!spilled) {
+		cctrl->backend_user_data1=old_scnt;
+		cctrl->backend_user_data2=old_icnt;
+		cctrl->backend_user_data3=old_fcnt;
+	   CRPN *clear_to=ICFwd(orig),*cur=orig;
+	   while(cur!=clear_to) {
+		   cur->flags=0;
+		   cur->res.mode=0;
+		   cur=cur->base.next;
+	   }
+	}
     PushTmpDepthFirst(cctrl, r->base.next, 0);
     PopTmp(cctrl, r->base.next);
     goto fin;
@@ -5933,11 +5936,7 @@ static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
   if (have->tmp_res.mode == MD_REG && have->tmp_res.raw_type != RT_F64)
     if (mask & (1ull << have->tmp_res.reg))
       return 0;
-  if (have->tmp_res.mode == __MD_X86_64_SIB)
-    if ((mask & (1ull << have->tmp_res.reg)) ||
-        (mask & (1ull << have->tmp_res.reg2)))
-      return 0;
-  if (have->tmp_res.mode == __MD_X86_64_LEA_SIB) {
+  if (have->tmp_res.mode == __MD_X86_64_LEA_SIB||have->tmp_res.mode == __MD_X86_64_SIB) {
     if ((mask & (1ull << have->tmp_res.reg)) ||
         (mask & (1ull << have->tmp_res.reg2)) ||
         (mask & (1ull << have->tmp_res.fallback_reg)))
@@ -6023,7 +6022,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_XOR_XOR:
   case IC_LSH:
   case IC_RSH:
-  case IC_ADD:
+  //case IC_ADD: add does SIB stuff
   case IC_SUB:
   case IC_DIV:
   case IC_MUL:
@@ -6090,7 +6089,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   CICArg tmp = {0}, orig_dst = {0}, tmp2 = {0}, derefed = {0};
   int64_t i = 0, cnt, i2, use_reg, a_reg, b_reg, into_reg, use_flt_cmp, reverse,
           is_typecast, use_lock_prefix = 0;
-  int64_t *range_cmp_types, use_flags = rpn->res.set_flags;
+  int64_t *range_cmp_types, use_flags = rpn->res.want_use_flags;
   CCodeMisc *old_fail_misc = (CCodeMisc *)cctrl->backend_user_data5,
             *old_pass_misc = (CCodeMisc *)cctrl->backend_user_data6;
   CCodeMiscRef *cm_ref;
@@ -6521,6 +6520,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       }
     PushTmpDepthFirst(cctrl, next, 0);
     PopTmp(cctrl, next);
+    next->res.want_use_flags=1;
     next->res.keep_in_tmp = 1;
     code_off = __OptPassFinal(cctrl, next, bin, code_off);
     //
@@ -6868,11 +6868,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->res.__sib_base_rpn) {
         code_off =
             __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
-        rpn->res.reg = rpn->res.__sib_base_rpn->res.reg;
       }
       if (rpn->res.__sib_idx_rpn) {
         code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
-        rpn->res.reg2 = rpn->res.__sib_idx_rpn->res.reg;
       }
       AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, rpn->res.fallback_reg),
                        rpn->res.__SIB_scale, rpn->res.reg2, rpn->res.reg,
@@ -7269,7 +7267,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
       if (rpn->res.__sib_idx_rpn)
         code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
-      break;
+      goto ret;
     }
     next = rpn->base.next;
     i = 0;
@@ -8472,16 +8470,17 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       code_off = 0;
       bin = NULL;
     } else if (run == 1) {
-      // Second run,be sure to set SetKeepTmps(we see the changed reigsters in
-      // first pass)
+      
+      bin = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      code_off = 0;
+    } else if (run == 2) {
+      // Final run,be sure to set SetKeepTmps(we see the changed reigsters in
+      // first/second pass)
       for (r = cctrl->code_ctrl->ir_code->last; r != cctrl->code_ctrl->ir_code;
            r = r->base.last) {
         // Do first(REVERSE polish notation) things first
         SetKeepTmps(r);
       }
-      bin = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
-      code_off = 0;
-    } else if (run == 2) {
       A_FREE(bin);
       bin = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
       code_off = 0;
@@ -8489,17 +8488,28 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
     code_off = FuncProlog(cctrl, bin, code_off);
     for (cnt = 0; cnt < cnt2; cnt++) {
     enter:
+    cctrl->backend_user_data1=0;
+    cctrl->backend_user_data2=0;
+   cctrl->backend_user_data3=0;
       r = forwards[cnt];
+      {
+		  //Clear previous attributes	
+      	   CRPN *clear_to=ICFwd(r),*cur=r;
+	   while(cur!=clear_to) {
+		   cur->flags=0;
+		   cur->res.mode=0;
+		   cur=cur->base.next;
+	   }
+   }
+
       if (PushTmpDepthFirst(cctrl, r, 0))
         PopTmp(cctrl, r);
+
       // These modes expect you run ->__sib_base_rpn/__sib_index_rpn
       if (r->res.mode != __MD_X86_64_LEA_SIB &&
           r->res.mode != __MD_X86_64_SIB) {
         r->res.mode = MD_NULL;
       }
-      assert(cctrl->backend_user_data1 == 0);
-      assert(cctrl->backend_user_data2 == 0);
-      assert(cctrl->backend_user_data3 == 0);
       code_off = __OptPassFinal(cctrl, r, bin, code_off);
       if (IsTerminalInst(r)) {
         cnt++;
