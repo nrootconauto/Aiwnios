@@ -4062,6 +4062,15 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
     return code_off;
   }
   if (rpn->type != IC_DEREF) {
+	if(rpn->type==IC_BASE_PTR) {
+      res->raw_type = rpn->raw_type;
+      res->mode = __MD_X86_64_SIB;
+      res->reg = RBP;
+      res->reg2 = -1;
+      res->off = -rpn->integer;
+      res->__SIB_scale = -1;
+      return code_off;
+	}
     code_off = __OptPassFinal(cctrl, rpn, bin, code_off);
     if (rpn->res.mode == MD_FRAME) {
       res->raw_type = rpn->raw_type;
