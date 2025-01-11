@@ -6837,6 +6837,7 @@ _intern IC_TO_I64 I64 ToI64(F64);
 _intern IC_TO_F64 F64 ToF64(I64);
 _intern IC_TO_BOOL Bool ToBool(I64);
 #ifdef TARGET_X86
+_intern IC_SQRT F64 Sqrt(F64);
 _intern IC_BT Bool Bt(U8*,I64);
 _intern IC_BTS Bool Bts(U8*,I64);
 _intern IC_BTC Bool Btc(U8*,I64);

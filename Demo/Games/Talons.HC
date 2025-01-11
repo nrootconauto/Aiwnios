@@ -1,8 +1,10 @@
+I64 scrn_lock=0; //Added to remove screen flickering
+
 //Uses $LK,"fixed-point",A="FI:::/Demo/Lectures/FixedPoint.HC"$.
+
 
 RegDft("TempleOS/Talons","F64 best_score=9999;\n");
 RegExe("TempleOS/Talons");
-
 //Keep these power of two so shift is used instead of multiply
 //to index arrays.
 #define MAP_WIDTH		1024
@@ -182,20 +184,19 @@ F64 game_t0,game_tf,pitch,roll,heading,è,speed;
 Bool invert_pitch,rolled_over;
 I64 strip_height,x,y,z,fish_left;
 CD3 v;
-
 U0 WrapAngles()
 {
   I64 r[4][4],x,y,z;
 
   è=Wrap(è);
-  pitch=Wrap(-è-pi/2);
-  if (Abs(pitch)>pi/2) {
+  pitch=Wrap(-è-ã/2);
+  if (Abs(pitch)>ã/2) {
     invert_pitch=TRUE;
-    pitch=Wrap(pi-pitch);
+    pitch=Wrap(ã-pitch);
   } else
     invert_pitch=FALSE;
   roll=Wrap(roll);
-  if (invert_pitch ^^ -pi/2<=roll<pi/2)
+  if (invert_pitch ^^ -ã/2<=roll<ã/2)
     rolled_over=FALSE;
   else
     rolled_over=TRUE;
@@ -274,8 +275,8 @@ U0 MPDoPanels(CTask *task)
   Panel *tmpp,*start_ptr=NULL,*end_ptr=NULL;
   CD3I32 *poly;
   Obj *tmpo;
-  lo=0;
-  hi=MAP_HEIGHT-1;
+  lo=Gs->num*(MAP_HEIGHT-1)/mp_cnt;
+  hi=(Gs->num+1)*(MAP_HEIGHT-1)/mp_cnt;
   for (threshold=8;threshold>=1;threshold--)
     for (j=lo;j<hi;j++) {
       for (i=0;i<MAP_WIDTH-1;i++) {
@@ -293,19 +294,19 @@ U0 MPDoPanels(CTask *task)
 	      cont=TRUE;
 	    }
 	  } while (cont);
-	  if (w>=threshold>=1 || h>=threshold>=1) {
+	  if (w>=threshold || h>=threshold) {
 	    tmpp=CAlloc(sizeof(Panel),task);
 	    QueInit(&tmpp->next_obj);
-	    l=elevations[j%MAP_HEIGHT][i%MAP_WIDTH];
+	    l=elevations[j][i];
 	    if (l<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[j%MAP_HEIGHT][(i+w-1)%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[(j+h-1)%MAP_HEIGHT][i%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE &&
-		  elevations[(j+h-1)%MAP_HEIGHT][(i+w-1)%MAP_WIDTH]<=WATER_ELEVATION*MAP_SCALE) {
+		  elevations[j][i+w-1]<=WATER_ELEVATION*MAP_SCALE &&
+		  elevations[j+h-1][i]<=WATER_ELEVATION*MAP_SCALE &&
+		  elevations[j+h-1][i+w-1]<=WATER_ELEVATION*MAP_SCALE) {
 	      tmpp->color=BLUE;
 	      if (Rand<0.05) {
 		tmpo=MAlloc(sizeof(Obj),task);
-		tmpo->p.x=(i+w/2)*MAP_SCALE;
-		tmpo->p.y=(j+h/2)*MAP_SCALE;
+		tmpo->p.x=(i+w/2)%MAP_WIDTH*MAP_SCALE;
+		tmpo->p.y=(j+h/2)%MAP_HEIGHT*MAP_SCALE;
 		if (Rand<0.1) {
 		  tmpo->fish=FALSE;
 		  if (RandI16&1)
@@ -365,16 +366,16 @@ U0 MPDoPanels(CTask *task)
 	    poly=tmpp->pts=MAlloc(sizeof(CD3I32)*tmpp->num_sides,task);
 	    poly[0].x=MAP_SCALE*i;
 	    poly[0].y=MAP_SCALE*j;
-	    poly[0].z=elevations[j%MAP_HEIGHT][i%MAP_WIDTH];
+	    poly[0].z=elevations[j][i];
 	    poly[1].x=MAP_SCALE*(i+w);
 	    poly[1].y=MAP_SCALE*j;
-	    poly[1].z=elevations[j%MAP_HEIGHT][(i+w)%MAP_WIDTH];
+	    poly[1].z=elevations[j][i+w];
 	    poly[2].x=MAP_SCALE*(i+w);
 	    poly[2].y=MAP_SCALE*(j+h);
-	    poly[2].z=elevations[(j+h)%MAP_HEIGHT][(i+w)%MAP_WIDTH];
+	    poly[2].z=elevations[j+h][i+w];
 	    poly[3].x=MAP_SCALE*i;
 	    poly[3].y=MAP_SCALE*(j+h);
-	    poly[3].z=elevations[(j+h)%MAP_HEIGHT][i%MAP_WIDTH];
+	    poly[3].z=elevations[j+h][i];
 	    tmpp->next=start_ptr;
 	    start_ptr=tmpp;
 	    if (!end_ptr)
@@ -387,13 +388,14 @@ U0 MPDoPanels(CTask *task)
       }
     }
   if (end_ptr) {
-//    while (LBts(&critical_section_flag,0))
-//      Yield;
+    while (LBts(&critical_section_flag,0))
+      Yield;
     if (end_ptr)
       end_ptr->next=panel_head;
     panel_head=start_ptr;
-//    LBtr(&critical_section_flag,0);
+    LBtr(&critical_section_flag,0);
   }
+  LBtr(&mp.init_not_done_flags,Gs->num);
 }
 
 U0 InitElevations()
@@ -437,15 +439,14 @@ for each spot.
   MemSet(panels,0,sizeof(panels));
   CalcNormals;
   panel_head=NULL;
-  MPDoPanels(Fs);
-//This routine deadlocks at loads of cores,Nrootconauto
-  /*
   mp.init_not_done_flags=1<<mp_cnt-1;
-  for (i=0;i<mp_cnt;i++) {
-     Spawn(&MPDoPanels,Fs,"Do Panels",i);
+  for (i=1;i<mp_cnt;i++) {
+    JobQue(&MPDoPanels,Fs,i);
   }
-  while (mp.init_not_done_flags)
-    Sleep(1);*/
+  MPDoPanels(Fs);
+  while (mp.init_not_done_flags) {
+    Sleep(1);
+  }
 }
 
 F64 claws_down;
@@ -507,10 +508,13 @@ U0 ClawsDraw(CTask *task,CDC *dc)
 CDC *main_dc;
 U0 DrawIt(CTask *task,CDC *dc)
 {
+  while(Bts(&scrn_lock,0))
+    Yield;
   main_dc->flags|=DCF_NO_TRANSPARENTS;
   GrBlot(dc,0,0,main_dc);
   if (claws_down)
     ClawsDraw(task,dc);
+  LBtr(&scrn_lock,0);
 }
 
 /*
@@ -632,7 +636,7 @@ U0 MPDrawIt(CTask *task,CDC *dc)
   Mat4x4TranslationEqu(dc->r,x1,y1,z1);
 
   //This is a refinement.
-  if (Abs(è*180/pi)>90) {
+  if (Abs(è*180/ã)>90) {
     x3=0;
     y3=-cy;
     z3=0;
@@ -663,11 +667,11 @@ U0 MPDrawIt(CTask *task,CDC *dc)
   xh2>>=1; yh2>>=1;
   w_on_map=FALSE;
   dd_old=I64_MAX;
-  for (strip_width=0;__GetTicks<update_jiffy_limit;strip_width++) {
+  for (strip_width=0;cnts.jiffies<update_jiffy_limit;strip_width++) {
     x1h=x1wa;
     y1h=y1wa;
     h_on_map=FALSE;
-    for (j=0;j<strip_height && __GetTicks<update_jiffy_limit;j++) {
+    for (j=0;j<strip_height && cnts.jiffies<update_jiffy_limit;j++) {
       x1=x1h>>8; y1=y1h>>8;
       if (0<=x1<MAP_WIDTH && 0<=y1<MAP_HEIGHT) {
 	if ((tmpp=panels[y1][x1]) && tmpp->update!=update) {
@@ -761,7 +765,7 @@ U0 DrawHorizon(CDC *dc)
 
   if (game_tf && fish_left)
     DCFill(dc,BLACK);
-  else if (-pi/4<=Wrap(è-pi)<pi/4)
+  else if (-ã/4<=Wrap(è-ã)<ã/4)
     DCFill(dc,LTCYAN);
   else {
     if (z/COORDINATE_SCALE<(WATER_ELEVATION+3)*MAP_SCALE)
@@ -858,16 +862,18 @@ U0 DrawHorizon(CDC *dc)
 
 U0 Core0Talons()
 {
+  while(LBts(&scrn_lock,0))
+   Yield;
   CDC *dc=DCAlias(main_dc,Fs);
   I64 i,xx,yy,elev,height,cx=Fs->pix_width>>1,cy=Fs->pix_height>>1;
   F64 min_strip_width,tt;
 
-  update_jiffy_limit=__GetTicks+JIFFY_FREQ/40;
+  update_jiffy_limit=cnts.jiffies+JIFFY_FREQ/40;
 
   xx=x/(MAP_SCALE*COORDINATE_SCALE);
   yy=y/(MAP_SCALE*COORDINATE_SCALE);
   if (0<=xx<MAP_WIDTH && 0<=yy<MAP_HEIGHT)
-    elev=elevations[yy%MAP_HEIGHT][xx%MAP_WIDTH];
+    elev=elevations[yy][xx];
   else
     elev=I64_MAX;
 
@@ -902,6 +908,7 @@ U0 Core0Talons()
 	  strip_height*Clamp(0.25*min_strip_width/strip_height,0.9,1.1),
 	  64,1024);
 
+
     tt=tS-game_t0;
     if (tt<5.0 && Blink) {
       dc->color=WHITE;
@@ -921,18 +928,19 @@ U0 Core0Talons()
   if (invert_pitch)
     GrPrint(dc,0,0,"Pitch:%5.1f Roll:%5.1f Heading:%5.1f "
 	  "Height:%5d [Core Strip:%3d]",
-	  pitch*180/pi,Wrap(roll+pi)*180/pi,Wrap(heading+pi,0)*180/pi,
+	  pitch*180/ã,Wrap(roll+ã)*180/ã,Wrap(heading+ã,0)*180/ã,
 	  height,strip_height);
   else
     GrPrint(dc,0,0,"Pitch:%5.1f Roll:%5.1f Heading:%5.1f "
 	  "Height:%5d [Core Strip:%3d]",
-	  pitch*180/pi,roll*180/pi,heading*180/pi,height,strip_height);
+	  pitch*180/ã,roll*180/ã,heading*180/ã,height,strip_height);
   GrPrint(dc,0,FONT_HEIGHT,"Fish Remaining:%d Time:%3.2f Best:%3.2f",
 	fish_left,tt,best_score);
 
   //We made an alias of this we don't want freed.
   dc->depth_buf=NULL;
   DCDel(dc);
+  LBtr(&scrn_lock,0);
   Refresh;
 }
 
@@ -989,10 +997,10 @@ U0 AnimateTask(I64)
 	if (z1<WATER_ELEVATION*MAP_SCALE) {
 	  z=WATER_ELEVATION*MAP_SCALE*COORDINATE_SCALE;
 	  if (invert_pitch) {
-	    if (pitch<-pi/8)
-	      è+=ms/1000.0*Sign(3*pi/8-è);
-	  } else if (pitch<-pi/8)
-	    è+=ms/1000.0*Sign(-3*pi/8-è);
+	    if (pitch<-ã/8)
+	      è+=ms/1000.0*Sign(3*ã/8-è);
+	  } else if (pitch<-ã/8)
+	    è+=ms/1000.0*Sign(-3*ã/8-è);
 	  WrapAngles;
 	}
 	speed=1.0;
@@ -1022,13 +1030,13 @@ U0 AnimateTask(I64)
 	}
       } else {
 	claws_down=0;
-	if (-pi/4<=è<=pi/4)
+	if (-ã/4<=è<=ã/4)
 	  speed+=0.0005;
-	else if (-3*pi/4<=è<=3*pi/4)
+	else if (-3*ã/4<=è<=3*ã/4)
 	  speed+=0.0001;
 	else
 	  speed-=0.0001;
-	speed=Clamp(speed+(0.0005-0.0002*Abs(è)/(pi/4)),0.1,5.0);
+	speed=Clamp(speed+(0.0005-0.0002*Abs(è)/(ã/4)),0.1,5.0);
       }
 
       for (i=0;i<mp_cnt;i++) {
@@ -1036,9 +1044,10 @@ U0 AnimateTask(I64)
 	while (tmpb!=&b_head[i]) {
 	  tmpb->p.x+=10*ms/1000*MAP_SCALE*Cos(tmpb->é);
 	  tmpb->p.y+=10*ms/1000*MAP_SCALE*Sin(tmpb->é);
+
 	  tmpb->p.z=BIRD_ELEVATION*MAP_SCALE+
-		elevations[AbsI64(tmpb->p.y/MAP_SCALE)%MAP_HEIGHT][AbsI64(tmpb->p.x/MAP_SCALE)%MAP_WIDTH];
-	  tmpb->é+=2*pi*ms/1000/10;
+		elevations[MaxI64(0,(tmpb->p.y/MAP_SCALE)%MAP_HEIGHT)][MaxI64(0,(tmpb->p.x/MAP_SCALE)%MAP_WIDTH)];
+	  tmpb->é+=2*ã*ms/1000/10;
 	  tmpb=tmpb->next;
 	}
       }
@@ -1107,7 +1116,7 @@ U0 Init()
 
   strip_height=128;
 
-  è	=-90.0*pi/180.0;
+  è	=-90.0*ã/180.0;
   roll	=0;
   heading=0;
   speed =2.5;
@@ -1120,7 +1129,7 @@ U0 Init()
 
   xx=x/(MAP_SCALE*COORDINATE_SCALE);
   yy=y/(MAP_SCALE*COORDINATE_SCALE);
-  z+=elevations[yy%MAP_HEIGHT][xx%MAP_WIDTH]*COORDINATE_SCALE;
+  z+=elevations[yy][xx]*COORDINATE_SCALE;
 
   for (i=0;i<mp_cnt;i++)
     QueInit(&b_head[i]);
@@ -1130,8 +1139,8 @@ U0 Init()
     tmpb->p.x=Rand*MAP_WIDTH*MAP_SCALE;
     tmpb->p.y=Rand*MAP_HEIGHT*MAP_SCALE;
     tmpb->p.z=BIRD_ELEVATION*MAP_SCALE+
-	  elevations[tmpb->p.y/MAP_SCALE%MAP_HEIGHT][tmpb->p.x/MAP_SCALE%MAP_WIDTH];
-    tmpb->é=2*pi*Rand;
+	  elevations[tmpb->p.y/MAP_SCALE][tmpb->p.x/MAP_SCALE];
+    tmpb->é=2*ã*Rand;
     QueIns(tmpb,b_head[i%mp_cnt].last);
   }
 

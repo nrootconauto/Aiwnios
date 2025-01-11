@@ -326,7 +326,6 @@ enum {
   IC_SQR_U64,
   IC_SQR,
   IC_ABS,
-  IC_SQRT,
   IC_SIN,
   IC_COS,
   IC_TAN,
@@ -338,6 +337,7 @@ enum {
   IC_FS,
   IC_GS,
   IC_TO_BOOL,
+  IC_SQRT,
   IC_CNT, // MUST BE THE LAST ITEM
 };
 typedef struct CICArg {
@@ -620,6 +620,7 @@ HC_IC_BINDINGH(HC_ICAdd_GetVaArgsPtr)
 HC_IC_BINDINGH(HC_ICAdd_Pow)
 HC_IC_BINDINGH(HC_ICAdd_Eq)
 HC_IC_BINDINGH(HC_ICAdd_Div)
+HC_IC_BINDINGH(HC_ICAdd_Sqrt)
 HC_IC_BINDINGH(HC_ICAdd_Sub)
 HC_IC_BINDINGH(HC_ICAdd_Mul)
 HC_IC_BINDINGH(HC_ICAdd_Add)

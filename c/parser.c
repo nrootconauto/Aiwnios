@@ -321,6 +321,7 @@ CRPN *ICFwd(CRPN *rpn) {
     abort();
     break;
   case IC_NEG:
+  case IC_SQRT:
   unop:
     return ICFwd(rpn->base.next);
     break;
@@ -983,10 +984,13 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     rpn = ParserDumpIR(rpn, indent + 1);
     goto ret;
     break;
+  case IC_SQRT:
+    printf("SQRT");
+    goto unop;
+    break;
   case IC_NEG:
     printf("-");
     goto unop;
-    break;
   case IC_POS:
     printf("+");
   unop:
@@ -1014,6 +1018,7 @@ static int64_t IsRightAssoc(int64_t ic) {
   case IC_LNOT:
   case IC_POS:
   case IC_NEG:
+  case IC_SQRT:
   case IC_EQ:
   case IC_ADD_EQ:
   case IC_SUB_EQ:
@@ -2873,6 +2878,10 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
   if (rpn->raw_type)
     return rpn->raw_type;
   switch (rpn->type) {
+	  case IC_SQRT:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_F64;
     break;
   case IC_MAX_I64:
   case IC_MIN_I64:
@@ -4039,6 +4048,7 @@ HC_IC_BINDING(HC_ICAdd_Lock, IC_LOCK);
 HC_IC_BINDING(HC_ICAdd_Pow, IC_POW);
 HC_IC_BINDING(HC_ICAdd_Eq, IC_EQ);
 HC_IC_BINDING(HC_ICAdd_Div, IC_DIV);
+HC_IC_BINDING(HC_ICAdd_Sqrt, IC_SQRT);
 HC_IC_BINDING(HC_ICAdd_Sub, IC_SUB);
 HC_IC_BINDING(HC_ICAdd_Mul, IC_MUL);
 HC_IC_BINDING(HC_ICAdd_Add, IC_ADD);

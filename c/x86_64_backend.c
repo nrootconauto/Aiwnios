@@ -942,6 +942,34 @@ static int64_t X86RoundSD(char *to, int64_t a, int64_t b, int64_t mode) {
   return len;
 }
 
+static int64_t X86SqrtSIB(char *to,int64_t a, int64_t s, int64_t i,
+                             int64_t b, int64_t off) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0xf2);
+ SIB_BEGIN(0, a, s, i, b, off);
+ ADD_U8(0x0f);
+  ADD_U8(0x51);
+  SIB_END();
+  return len;
+}
+static int64_t X86SqrtReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0xf2);
+  if ((a & 0b1000) || (b & 0b1000))
+    ADD_U8(ErectREX(0, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x51);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+
+
 static int64_t X86MulSDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];
@@ -955,6 +983,7 @@ static int64_t X86MulSDReg(char *to, int64_t a, int64_t b) {
   ADD_U8(MODRMRegReg(a, b));
   return len;
 }
+
 
 static int64_t X86MulSDSIB64(char *to, int64_t a, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
@@ -2148,6 +2177,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   case IC_TO_F64:
   case IC_TO_I64:
   case IC_NEG:
+  case IC_SQRT:
   case IC_TO_BOOL:
   unop:
     return SpillsTmpRegs(rpn->base.next);
@@ -2811,6 +2841,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_PAREN:
     goto unop;
     break;
+    case IC_SQRT:
   case IC_NEG:
     goto unop;
     break;
@@ -6000,6 +6031,7 @@ static void SetKeepTmps(CRPN *rpn) {
   case IC_TYPECAST:
   case IC_TO_F64:
   case IC_TO_I64:
+  case IC_SQRT:
   case IC_NEG:
   case IC_LNOT:
   case IC_BNOT:
@@ -6137,6 +6169,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_GLOBAL] = &&ic_global,
       [IC_NOP] = &&ic_nop,
       [IC_NEG] = &&ic_neg,
+      [IC_SQRT] = &&ic_sqrt,
       [IC_POS] = &&ic_pos,
       [IC_STR] = &&ic_str,
       [IC_CHR] = &&ic_chr,
@@ -6706,6 +6739,27 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     // Bungis
     break;
     abort();
+    break;
+    ic_sqrt:
+    into_reg=0;
+    if(rpn->res.mode==MD_REG)
+		into_reg=rpn->res.reg;
+    next=rpn->base.next;
+    code_off=__OptPassFinal(cctrl,next,bin,code_off);
+    if(ModeIsDerefToSIB(next)) {
+        code_off = DerefToICArg(cctrl, &derefed, next,
+                                AIWNIOS_TMP_IREG_POOP2, bin, code_off); 
+        AIWNIOS_ADD_CODE(X86SqrtSIB, MFR(cctrl,into_reg), derefed.__SIB_scale, derefed.reg2,
+                 derefed.reg, derefed.off);
+       
+	} else {
+		code_off=PutICArgIntoReg(cctrl,&next->res,RT_F64,into_reg,bin,code_off);
+		AIWNIOS_ADD_CODE(X86SqrtReg,MFR(cctrl,into_reg),next->res.reg);
+	}
+	tmp.mode=MD_REG;
+	tmp.reg=into_reg;
+	tmp.raw_type=RT_F64;
+	code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);
     break;
   ic_neg:
 #define BACKEND_UNOP(flt_op, int_op)                                           \
@@ -8318,7 +8372,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   ic_sqr_u64:
   ic_sqr:
   ic_abs:
-  ic_sqrt:
   ic_cos:
   ic_sin:
   ic_tan:

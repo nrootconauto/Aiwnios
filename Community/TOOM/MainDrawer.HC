@@ -18,7 +18,7 @@ doom_scrn->flags|=DCF_NO_TRANSPARENTS;
 #include "FastTrig.HC";
 #include "Wad.HC";
 #include "Intermission.HC";
-CTask *doom_task=Fs;
+CTask *doom_task=Fs;
 #include "Thinker.HC";
 #include "Music.HC";
 #define MUZZLE_FLASH_LIGHT 50

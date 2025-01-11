@@ -11,6 +11,7 @@ import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
 import U0 __HC_ICSetLine(U8*,I64);
+import U8 *__HC_ICAdd_Sqrt(U8 *);
 import U8 *__HC_ICAdd_Max_I64(U8 *);
 import U8 *__HC_ICAdd_Min_I64(U8 *);
 import U8 *__HC_ICAdd_Max_U64(U8 *);
@@ -1899,6 +1900,8 @@ break;case IC_ASM:
     new=__HC_ICAdd_LNot(cc2);
     break;case IC_UNARY_MINUS:
     new=__HC_ICAdd_Neg(cc2);
+    break;case IC_SQRT:
+    new=__HC_ICAdd_Sqrt(cc2);
     break;case IC_DEREF:
     new=__HC_ICAdd_Deref(cc2,cur->ic_class->raw_type,0);
     //break;case IC_DEREF_PP //NOT USED BY AIWINIOS
