@@ -2765,6 +2765,7 @@ class CMemUnused
   CMemUnused *lasts;
   CHeapCtrl *hc;
   U8 *caller1,*caller2;
+  I64 which_arena;
   I64	size;
 };
 class CMemUsed:CMemUnused
@@ -2822,16 +2823,21 @@ public class CBlkPool
 #define HClf_LOCKED		0
 
 #define HEAP_CTRL_SIGNATURE_VAL	'HcSV'
-//See aiwn.h
+//See aiwn_mem.h
+class CHeapCtrlArena {
+	U8 *heap_hash[5];
+	CQue used_mem;
+	U8 *malloc_free_lst;
+};
 public class CHeapCtrl
 {
   U8 *pad;
   U32	hc_signature,is_code_heap;
   I64	locked_flags,alloced_u8s,used_u8s;
   CTask *mem_task;
-  CMemUnused *malloc_free_lst,*heap_hash[MEM_HEAP_HASH_SIZE/sizeof(U8 *)+1];
+  I64 arena_lock;
+  CHeapCtrlArena arenas[16];
   CQue blks;
-  CQue used_mem; //CMemUsed
 };
 
 public class CDevGlbls

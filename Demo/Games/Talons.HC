@@ -275,10 +275,8 @@ U0 MPDoPanels(CTask *task)
   Panel *tmpp,*start_ptr=NULL,*end_ptr=NULL;
   CD3I32 *poly;
   Obj *tmpo;
-//  lo=Gs->num*(MAP_HEIGHT-1)/mp_cnt;
-//  hi=(Gs->num+1)*(MAP_HEIGHT-1)/mp_cnt;
-  lo=0;
-  hi=MAP_HEIGHT-1;
+  lo=Gs->num*(MAP_HEIGHT-1)/mp_cnt;
+  hi=(Gs->num+1)*(MAP_HEIGHT-1)/mp_cnt;
   for (threshold=8;threshold>=1;threshold--)
     for (j=lo;j<hi;j++) {
       for (i=0;i<MAP_WIDTH-1;i++) {
@@ -443,13 +441,13 @@ for each spot.
   panel_head=NULL;
   mp.init_not_done_flags=1<<mp_cnt-1;
 //Dont dead-lock on lots of cores.
-/*  for (i=1;i<mp_cnt;i++) {
+  for (i=1;i<mp_cnt;i++) {
     JobQue(&MPDoPanels,Fs,i);
-  }*/
+  }
   MPDoPanels(Fs);
-/*  while (mp.init_not_done_flags) {
+  while (mp.init_not_done_flags) {
     Sleep(1);
-  }*/
+  }
 }
 
 F64 claws_down;

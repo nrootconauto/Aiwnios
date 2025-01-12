@@ -569,18 +569,23 @@ U0 HeapWho() {
 //Dont use current heapctrl for the poo poo suace(we will modify the heap possibly during print)
   CHeapCtrl *old=Fs->data_heap;
   CHeapCtrl *dummy=HeapCtrlInit(NULL,Fs,0);
+  CHeapCtrlArena *arena;
+  I64 a;
   CDoc *poop=DocNew; //MAke a dummy document because we are "swapping" CHeapCtrls
   CMemUsed *used,*head;
   Fs->data_heap=dummy;
-  head=&old->used_mem;
-  used=head->next;
-  while(LBts(&old->locked_flags,0))
+  while(LBts(&old->locked_flags,1))
     Sleep(1);
-  while(used!=head) {
-    DocPrint(poop,"%X(%d) from %P,%P\n",used+1,used->size,used->caller1,used->caller2);
-    used=used->next;
+  for(a=0;a!=16;a++) {
+    arena=&old->arenas[a];
+    head=&arena->used_mem;
+    used=head->next;
+    while(used!=head) {
+      DocPrint(poop,"%X(%d) from %P,%P\n",used+1,used->size,used->caller1,used->caller2);
+      used=used->next;
+    }
   }
-  LBtr(&old->locked_flags,0);
+  LBtr(&old->locked_flags,1);
   Fs->data_heap=old;
   DocInsDoc(DocPut(Fs),poop);
   HeapCtrlDel(dummy);

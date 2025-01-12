@@ -34,11 +34,21 @@
 //
 int64_t bc_enable = 0;
 static char *bc_good_bitmap;
-
+static int64_t NextPower2(uint64_t v) {
+  // https://stackoverflow.com/questions/466204/rounding-up-to-next-power-of-2
+  v--;
+  v |= v >> 1;
+  v |= v >> 2;
+  v |= v >> 4;
+  v |= v >> 8;
+  v |= v >> 16;
+  v++;
+  return v;
+}
+static void **new_nul = &new_nul;
 #if defined(__APPLE__)
 static CQue code_pages = {0};
 _Thread_local int is_write_np = 123;
-
 void InvalidateCache() {
   CMemBlk *blk;
   CQue *head, *cur, cnt;
@@ -95,7 +105,6 @@ static void *GetAvailRegion32(int64_t b);
 #else
 static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec);
 #endif
-
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
@@ -170,26 +179,10 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (ret == MAP_FAILED)
     return NULL;
 #endif
-  int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt;
-  CMemUnused **unm, *tmp, *tmp2;
+  int64_t threshold = MEM_HEAP_HASH_SIZE >> 4, cnt, something_happened;
+  CMemUnused *unm, *tmp, *tmp2, *got;
   QueIns(&ret->base, hc->mem_blks.last);
   ret->pags = pags;
-  // Move silly willies malloc_free_lst,in to the heap_hash
-  do {
-    cnt = 0;
-    unm = &hc->malloc_free_lst;
-    while (tmp = *unm) {
-      if (tmp->sz < threshold) {
-        *unm = tmp->next;
-        tmp->next = hc->heap_hash[tmp->sz / 8];
-        hc->heap_hash[tmp->sz / 8] = tmp;
-      } else {
-        cnt++;
-        unm = tmp;
-      }
-    }
-    threshold <<= 1;
-  } while (cnt > 8 && threshold <= MEM_HEAP_HASH_SIZE);
   hc->alloced_u8s += pags * MEM_PAG_SIZE;
 #if defined(__APPLE__)
   if (!code_pages.next) {
@@ -198,7 +191,35 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
 #endif
   return ret;
 }
-
+static CHeapCtrlArena *PickArena(CHeapCtrl *hc) {
+  int64_t a;
+again:
+  for (a = 0; a != 16; a++) {
+    if (!Misc_LBts(&hc->arena_lock, a))
+      return &hc->arenas[a];
+  }
+  PAUSE;
+  goto again;
+}
+static int64_t WhichBucket(int64_t cnt) {
+  switch (cnt) {
+  default:
+  case 64:
+    return 0;
+    break;
+  case 128:
+    return 1;
+    break;
+  case 256:
+    return 2;
+    break;
+  case 512:
+    return 3;
+    break;
+  case 1024:
+    return 4;
+  }
+}
 void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!cnt)
     return NULL;
@@ -206,60 +227,71 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (!t)
     t = Fs->heap;
   int64_t orig = cnt;
+  cnt += sizeof(CMemUnused);
   if (bc_enable)
     cnt += 16;
   CHeapCtrl *hc = t;
   int64_t pags;
-  CMemUnused *ret;
+  int64_t which_bucket = 0;
+  CMemUnused *ret, *got;
   if (hc->hc_signature != 'H')
     hc = ((CTask *)hc)->heap;
   if (hc->hc_signature != 'H')
     throw('BadMAll');
-  // Rounnd up to 8
-  cnt += 7 + sizeof(CMemUnused);
-  cnt &= (int8_t)0xf8;
-  // HClF_LOCKED is 1
-  while (Misc_LBts(&hc->locked_flags, 1))
-    PAUSE;
+  CHeapCtrlArena *arena = PickArena(hc);
+  // During MemPagTaskAlloc,i splt up the malloc_free_lst into power of 2
+  // things,so use power of two to use them
+  if (cnt <= MEM_HEAP_HASH_SIZE)
+    cnt = NextPower2(cnt);
   if (hc->is_code_heap)
     goto big;
   if (cnt > MEM_HEAP_HASH_SIZE)
     goto big;
-  if (hc->heap_hash[cnt / 8]) {
-    ret = hc->heap_hash[cnt / 8];
-    hc->heap_hash[cnt / 8] = ret->next;
-    goto almost_done;
-  } else
-    ret = hc->malloc_free_lst;
-  if (!ret) {
+  which_bucket = WhichBucket(cnt);
+again:;
+  ret = arena->heap_hash[which_bucket];
+  if (ret != &new_nul) {
+    arena->heap_hash[which_bucket] = ret->next;
+  } else {
+    ret = arena->malloc_free_lst;
+  }
+  if (ret == &new_nul) {
   new_lunk:
-    // Make a new lunk
+    while (Misc_LBts(&hc->locked_flags, 1))
+      PAUSE;
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
     if (!ret) {
-      Misc_LBtr(&hc->locked_flags, 1);
+      Misc_LBtr(&hc->locked_flags, 2);
       SetWriteNP(old_wnp);
       return NULL;
     }
     ret = (char *)ret + sizeof(CMemBlk);
     ret->sz = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
-    hc->malloc_free_lst = ret;
+    arena->malloc_free_lst = ret;
+    Misc_LBtr(&hc->locked_flags, 1);
   }
   // Chip off
   //
   // We must make sure there is room for another CMemUnused
   //
-  if ((int64_t)(ret->sz - sizeof(CMemUnused)) >= cnt) {
-    hc->malloc_free_lst = (char *)ret + cnt;
-    hc->malloc_free_lst->sz = ret->sz - cnt;
+chip_off:;
+  ret = arena->malloc_free_lst;
+  if (ret->sz >= cnt) {
+    CMemUnused *new = (char *)arena->malloc_free_lst + cnt;
+    new->sz = ret->sz - cnt;
     ret->sz = cnt;
+    arena->malloc_free_lst = new;
     goto almost_done;
-  } else
+  } else {
     goto new_lunk;
+  }
 big:
+  while (Misc_LBts(&hc->locked_flags, 1))
+    PAUSE;
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
+  Misc_LBtr(&hc->locked_flags, 1);
   if (!ret) {
-    Misc_LBtr(&hc->locked_flags, 1);
     SetWriteNP(old_wnp);
     return NULL;
   }
@@ -267,6 +299,11 @@ big:
   ret->sz = cnt;
   goto almost_done;
 almost_done:
+  QueIns(&ret->next, &arena->used_next);
+  Misc_LBtr(&hc->arena_lock, arena - (CHeapCtrlArena *)&hc->arenas);
+  if (cnt <= MEM_HEAP_HASH_SIZE) {
+    ret->which_bucket = arena - (CHeapCtrlArena *)&hc->arenas;
+  }
   hc->used_u8s += cnt;
   ret->hc = hc;
   ret++;
@@ -278,9 +315,6 @@ almost_done:
       orig = 8 + orig & ~7ll;
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
-  if (ret - 1 != NULL)
-    QueIns(&ret[-1].next, hc->used_mem.last);
-  Misc_LBtr(&hc->locked_flags, 1);
   SetWriteNP(old_wnp);
   return ret;
 }
@@ -288,7 +322,7 @@ almost_done:
 void __AIWNIOS_Free(void *ptr) {
   CMemUnused *un = ptr, *hash;
   CHeapCtrl *hc;
-  int64_t cnt;
+  int64_t cnt, which_bucket, which_bucket2;
   if (!ptr)
     return;
   int oldwnp = SetWriteNP(0);
@@ -305,24 +339,24 @@ void __AIWNIOS_Free(void *ptr) {
     memset(&bc_good_bitmap[(int64_t)ptr / 8], 0, cnt / 8);
   }
   hc = un->hc;
-  while (Misc_LBts(&hc->locked_flags, 1))
-    PAUSE;
-  QueRem(&un->next); // Remove from used mem
-  un->last = NULL;
   hc->used_u8s -= un->sz;
+  which_bucket = un->which_bucket;
+  while (Misc_LBts(&hc->arena_lock, which_bucket))
+    PAUSE;
+  QueRem(&un->next);
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
-    hash = hc->heap_hash[un->sz / 8];
-    un->next = hash;
-    hc->heap_hash[un->sz / 8] = un;
-    un->hc = NULL;
+    cnt = un->sz;
+    which_bucket2 = WhichBucket(cnt);
+    un->next = hc->arenas->heap_hash[which_bucket2];
+    hc->arenas[which_bucket].heap_hash[which_bucket2] = un;
   } else {
     // CMemUnused
     // CMemBlk
     // page start
     MemPagTaskFree((char *)(un) - sizeof(CMemBlk), hc);
   }
+  Misc_LBtr(&hc->arena_lock, which_bucket);
 fin:
-  Misc_LBtr(&hc->locked_flags, 1);
   SetWriteNP(oldwnp);
 }
 
@@ -358,9 +392,14 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
   ct->is_code_heap = is_code_heap;
   ct->hc_signature = 'H';
   ct->mem_task = task;
-  ct->malloc_free_lst = NULL;
   QueInit(&ct->mem_blks);
-  QueInit(&ct->used_mem);
+  int64_t a, b;
+  for (a = 0; a != 16; a++) {
+    for (b = 0; b < 5; b++)
+      ct->arenas[a].heap_hash[b] = &new_nul;
+    ct->arenas[a].malloc_free_lst = &new_nul;
+    QueInit(&ct->arenas[a].used_next);
+  }
   return ct;
 }
 

@@ -17,19 +17,25 @@ typedef struct CTask {
 } CTask;
 
 struct CHashTable;
+struct CMemUnused;
 #define HClF_LOCKED        1
 #define MEM_HEAP_HASH_SIZE 1024
 #define MEM_PAG_BITS       (12)
 #define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
+typedef struct CHeapCtrlArena {
+	struct CMemUnused *heap_hash[5];
+	struct CMemUnused *used_next,*used_last;
+	struct CMemUnused *malloc_free_lst;
+} CHeapCtrlArena;
 typedef struct CHeapCtrl {
   void *pad; // Needed
   int32_t hc_signature;
   int32_t is_code_heap;
   int64_t locked_flags, alloced_u8s, used_u8s;
   struct CTask *mem_task;
-  struct CMemUnused *malloc_free_lst, *heap_hash[MEM_HEAP_HASH_SIZE / 8 + 1];
+  int64_t arena_lock;
+  CHeapCtrlArena arenas[16];
   CQue mem_blks;
-  CQue used_mem;
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
@@ -42,6 +48,7 @@ typedef struct __attribute__((packed)) CMemUnused {
   struct CMemUnused *last; // Used for used memory only
   CHeapCtrl *hc;
   void *caller1, *caller2; // Used for used memory only
+  int64_t which_bucket;
   int64_t sz;              // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 
