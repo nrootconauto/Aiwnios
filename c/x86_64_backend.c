@@ -2990,7 +2990,7 @@ add_dft:
 		cctrl->backend_user_data3=old_fcnt;
 	   CRPN *clear_to=ICFwd(orig),*cur=orig;
 	   while(cur!=clear_to) {
-		   cur->flags=0;
+		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }
@@ -3118,7 +3118,7 @@ add_dft:
 		cctrl->backend_user_data3=old_fcnt;
 	   CRPN *clear_to=ICFwd(orig),*cur=orig;
 	   while(cur!=clear_to) {
-		   cur->flags=0;
+		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }
@@ -4692,8 +4692,8 @@ enter:;
     code_off = PutICArgIntoReg(                                                \
         cctrl, &next->res, use_f64 ? RT_F64 : next->res.raw_type,              \
         use_f64 ? 0 : AIWNIOS_TMP_IREG_POOP, bin, code_off);                   \
-    next->flags = ICF_PRECOMPUTED;                                             \
-    next2->flags = ICF_PRECOMPUTED;                                            \
+    next->flags |= ICF_PRECOMPUTED;                                             \
+    next2->flags |= ICF_PRECOMPUTED;                                            \
     rpn->res.mode = MD_REG;                                                    \
     rpn->res.reg = use_f64 ? 1 : RAX;                                          \
     if (use_f64)                                                               \
@@ -8240,12 +8240,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     {
       // You need to always jump to epilog to avoid pass-through(A function with
       // no registers can stil have multiple returns)
-      if (bin)
+      if (bin) {
         if (!(rpn->flags & ICF_NO_JUMP)) {
           AIWNIOS_ADD_CODE(X86Jmp, 0);
           CodeMiscAddRef(cctrl->epilog_label, bin + code_off - 4)->from_ic =
               rpn;
-        }
+        } 
+	  }
     }
     break;
   ic_base_ptr:
@@ -8558,7 +8559,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
 		  //Clear previous attributes	
       	   CRPN *clear_to=ICFwd(r),*cur=r;
 	   while(cur!=clear_to) {
-		   cur->flags=0;
+	       cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }
