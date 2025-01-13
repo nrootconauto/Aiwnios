@@ -213,22 +213,9 @@ I64 SrcLineNum(U8 *addr,I64 cnt=1)
 	num_lines=dbg_info->max_line-dbg_info->min_line+1;
 	body=dbg_info->body;
 
-	//find first nonzero
-	first_line=0;
-	while (!body[first_line]) {
-	  first_line++;
-	  if (first_line>=num_lines)
-	    return -1;
-	}
-
-	//find last nonzero
-	last_line=num_lines-1;
-	while (!body[last_line] && last_line>first_line)
-	  last_line--;
-
-	//Reworked by Nrootconauto,his codegen is not so good at genrating good debug info
-	cur_line=best_ln=first_line;
-        while(cur_line<=last_line) {
+	cur_line=0;
+	best_ln=0;
+        while(cur_line<num_lines) {
 	  if(body[cur_line])
 	    if(AbsI64(addr-body[cur_line])<best_dist) 
 	      best_dist=AbsI64(addr-body[cur_line]),best_ln=cur_line;

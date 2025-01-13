@@ -252,6 +252,7 @@ again:;
   ret = arena->heap_hash[which_bucket];
   if (ret != &new_nul) {
     arena->heap_hash[which_bucket] = ret->next;
+    goto almost_done;
   } else {
     ret = arena->malloc_free_lst;
   }
@@ -346,8 +347,8 @@ void __AIWNIOS_Free(void *ptr) {
   QueRem(&un->next);
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
     cnt = un->sz;
-    which_bucket2 = WhichBucket(cnt);
-    un->next = hc->arenas->heap_hash[which_bucket2];
+    which_bucket2 = WhichBucket(NextPower2(cnt));
+    un->next = hc->arenas[which_bucket].heap_hash[which_bucket2];
     hc->arenas[which_bucket].heap_hash[which_bucket2] = un;
   } else {
     // CMemUnused

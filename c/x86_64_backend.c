@@ -6150,7 +6150,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (!i)
         cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] =
             bin + code_off;
-      else if ((int64_t)bin + code_off < i)
+      else
         cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] =
             bin + code_off;
     }
