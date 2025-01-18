@@ -2161,37 +2161,43 @@ static int64_t ConstVal(CRPN *rpn) {
 //
 static int64_t SpillsTmpRegs(CRPN *rpn) {
   int64_t idx;
+  if(rpn->flags&ICF_SPILLS_TMP_REGS)
+    return 1;
+  if(rpn->flags&ICF_DOESNT_SPILL_TMP_REGS)
+    return 0;
   switch (rpn->type) {
   case IC_FS:
   case IC_GS:
-    return 0;
+    goto fail;
   case __IC_CALL:
   case IC_CALL:
-    return 1;
+    goto pass;
     break;
   case __IC_VARGS:
     for (idx = 0; idx != rpn->length; idx++)
       if (SpillsTmpRegs(ICArgN(rpn, idx)))
-        return 1;
-    return 0;
+        goto pass;
+    goto fail;
   case IC_TO_F64:
   case IC_TO_I64:
   case IC_NEG:
   case IC_SQRT:
   case IC_TO_BOOL:
   unop:
-    return SpillsTmpRegs(rpn->base.next);
+    if(SpillsTmpRegs(rpn->base.next))
+		goto pass;
+	else goto fail;
     break;
   case IC_POS:
     goto unop;
     break;
   case IC_POW:
-    return 1; // calls pow
+    goto pass; // calls pow
   binop:
     if (SpillsTmpRegs(rpn->base.next))
-      return 1;
+      goto pass;
     if (SpillsTmpRegs(ICFwd(rpn->base.next)))
-      return 1;
+      goto pass;
     break;
   case IC_ADD:
     goto binop;
@@ -2318,8 +2324,12 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   case IC_TYPECAST:
     goto unop;
   }
+fail:;
+  rpn->flags|=ICF_DOESNT_SPILL_TMP_REGS;
   return 0;
+pass:
 t:
+  rpn->flags|=ICF_SPILLS_TMP_REGS;
   return 1;
 }
 
@@ -2805,7 +2815,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       PushTmp(cctrl, r);
     else
       PushSpilledTmp(cctrl, r);
-    return 1;
+    return 1;    
   }
   int64_t a, argc, old_icnt = cctrl->backend_user_data2,
                    old_fcnt = cctrl->backend_user_data3, i, i2, tmp,
@@ -2990,7 +3000,7 @@ add_dft:
 		cctrl->backend_user_data3=old_fcnt;
 	   CRPN *clear_to=ICFwd(orig),*cur=orig;
 	   while(cur!=clear_to) {
-		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
+		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP|ICF_DOESNT_SPILL_TMP_REGS|ICF_SPILLS_TMP_REGS;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }
@@ -3118,7 +3128,7 @@ add_dft:
 		cctrl->backend_user_data3=old_fcnt;
 	   CRPN *clear_to=ICFwd(orig),*cur=orig;
 	   while(cur!=clear_to) {
-		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
+		   cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP|ICF_DOESNT_SPILL_TMP_REGS|ICF_SPILLS_TMP_REGS;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }
@@ -7100,6 +7110,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next = ICArgN(rpn, 1);
     next2 = ICArgN(rpn, 0);
     orig_dst = next->res;
+    //Just store result in register if register operan
+    if(next->type==IC_IREG||next->type==IC_FREG) {
+			if(next2->res.mode==MD_REG&&
+				(next2->res.raw_type==RT_F64)==(next->res.raw_type==RT_F64))
+				next2->res=next->res;
+		}
     code_off = __OptPassFinal(cctrl, next2, bin, code_off);
     if (next->type == IC_TYPECAST) {
       TYPECAST_ASSIGN_BEGIN(next, next2);
@@ -8559,7 +8575,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
 		  //Clear previous attributes	
       	   CRPN *clear_to=ICFwd(r),*cur=r;
 	   while(cur!=clear_to) {
-	       cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP;
+	       cur->flags&=ICF_DEAD_CODE|ICF_IS_BOOL|ICF_LOCK_EXPR|ICF_NO_JUMP|ICF_DOESNT_SPILL_TMP_REGS|ICF_SPILLS_TMP_REGS;
 		   cur->res.mode=0;
 		   cur=cur->base.next;
 	   }

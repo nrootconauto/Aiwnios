@@ -301,13 +301,11 @@ big:
   goto almost_done;
 almost_done:
   QueIns(&ret->next, &arena->used_next);
-  Misc_LBtr(&hc->arena_lock, arena - (CHeapCtrlArena *)&hc->arenas);
-  if (cnt <= MEM_HEAP_HASH_SIZE) {
-    ret->which_bucket = arena - (CHeapCtrlArena *)&hc->arenas;
-  }
+  ret->which_bucket = arena - (CHeapCtrlArena *)&hc->arenas;
   hc->used_u8s += cnt;
   ret->hc = hc;
   ret++;
+  Misc_LBtr(&hc->arena_lock, arena - (CHeapCtrlArena *)&hc->arenas);
   if (bc_enable) {
     assert((int64_t)ret < (1ll << 31));
     if (orig < 8)
@@ -354,7 +352,10 @@ void __AIWNIOS_Free(void *ptr) {
     // CMemUnused
     // CMemBlk
     // page start
+    while(Misc_LBts(&hc->locked_flags,1))
+      PAUSE;
     MemPagTaskFree((char *)(un) - sizeof(CMemBlk), hc);
+    Misc_LBtr(&hc->locked_flags,1);
   }
   Misc_LBtr(&hc->arena_lock, which_bucket);
 fin:

@@ -398,6 +398,8 @@ enum {
   ICF_LOCK_EXPR = 128,   // Used with lock {}
   ICF_IS_BOOL = 256,
   ICF_NO_JUMP = 512, // Used for eliminating jumps to next instruction
+  ICF_SPILLS_TMP_REGS=1024,
+  ICF_DOESNT_SPILL_TMP_REGS=2048,
 };
 struct CRPN {
   CQue base;
