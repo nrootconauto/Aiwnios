@@ -342,6 +342,7 @@ void __AIWNIOS_Free(void *ptr) {
   which_bucket = un->which_bucket;
   while (Misc_LBts(&hc->arena_lock, which_bucket))
     PAUSE;
+  un->hc=NULL;
   QueRem(&un->next);
   if (un->sz <= MEM_HEAP_HASH_SIZE) {
     cnt = un->sz;

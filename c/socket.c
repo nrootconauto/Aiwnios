@@ -200,7 +200,7 @@ int64_t NetUDPSocketNew(int64_t ipv) {
   // https://stackoverflow.com/questions/15941005/making-recvfrom-function-non-blocking
   struct timeval read_timeout;
   read_timeout.tv_sec = 0;
-  read_timeout.tv_usec = 15000;
+  read_timeout.tv_usec = 3000;
   setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
   // On FreeBSD the port will stay in use for awhile after death,so reuse the
   // address

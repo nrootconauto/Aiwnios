@@ -106,12 +106,9 @@ U0 FClose(CFile *f)
   if (!f) return;
   if (f->flags & FF_VIRT) {
     VFsFClose(f->fd);
-    if (dirc=DirContextNew(f->de.full_name)) {
-      VFsSetDrv(Fs->cur_dv->drv_let);
-      VFsSetPwd(Fs->cur_dir); //+2 to ingore T:
-      VFsFTrunc(f->de.name,f->de.size);
-      DirContextDel(dirc,FALSE);
-    }
+    VFsSetDrv(Fs->cur_dv->drv_let);
+    VFsSetPwd(Fs->cur_dir); //+2 to ingore T:
+    VFsFTrunc(f->de.name,f->de.size);
     goto en;
   }
   if (f->flags & FF_BUF_DIRTY) {
