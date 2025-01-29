@@ -22,7 +22,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CConnection *con=Fs->user_data;
   if(v=GetQueryValue(url->query,"view")) {
     tmp_str=ChrootFile(v,SERVER_WWW"/Videos");
-    if(FileFind(tmp_str)) {
+    if(FileFind(tmp_str)) {
 //Predefined(maybe change this in the future)
       tmp_doc=DocRead(tmp_str);
 //Load Comments

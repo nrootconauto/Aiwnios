@@ -413,8 +413,6 @@ int64_t VFsTrunc(char *fn, int64_t sz) {
     return 0;
   int fail = truncate(fn, sz);
   free(fn);
-  if (fail)
-    throw(*(uint64_t *)"TruncErr");
   return 1;
 }
 

@@ -33,7 +33,7 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   }
   U8 *f,*mime,*dot=FileExtDot2(link),*et;
   I64 len;
-  if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
+  if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
     if(!StrICmp(dot,".GIF")||!StrICmp(dot,".GIF.Z")) mime="image/gif";
     else if(!StrICmp(dot,".JPEG")||!StrICmp(dot,".JPEG.Z")) mime="image/jpeg";
     else if(!StrICmp(dot,".JPG")||!StrICmp(dot,".JPG.Z")) mime="image/jpg";
@@ -122,7 +122,6 @@ U0 Dir_ISOC_Get(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     Free(url->abs_path);
     url->abs_path=tmp;
     FileExtRem(url->abs_path); //Remove .ISO.C
-    Free(tmp);
   }
   fp=ChrootFile(url->abs_path);
   if(!FileFind(fp,&dent)) {
