@@ -5,6 +5,8 @@
 #include "c/aiwn_tui.h"
 #include "c/aiwn_windows.h"
 #include "c/lzw.h"
+#include <string.h>
+#include <stdio.h>
 #include <SDL.h>
 #include <SDL_pixels.h>
 #include <SDL_render.h>

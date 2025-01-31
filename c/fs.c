@@ -5,7 +5,9 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 // clang-format off
 #include <sys/types.h>

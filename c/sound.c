@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <math.h>
 
 static SDL_AudioDeviceID output;
 static int64_t sample, freq;
@@ -83,7 +84,7 @@ void InitSound() {
   SDL_AudioSpec want;
   if (0>SDL_Init(SDL_INIT_AUDIO))
     return;
-  memset(&want, 0, sizeof(SDL_AudioSpec));
+  want = (SDL_AudioSpec){0};
   want.freq = 24000;
   want.format = AUDIO_F32;
   want.channels = 2;
