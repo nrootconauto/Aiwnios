@@ -264,12 +264,13 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
-  DocPrint(html_doc,"<div style=\"position: absolute\">",digits);
-  DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
-        max_x-min_x+1,
-        max_y-min_y+1,
-        );
-  DocPrint(html_doc,"</div>");
+  //https://stackoverflow.com/a/6040258
+  DocPrint(html_doc,"<div style=\"position:relative;width:0;height:0\"><div style=\"position:absolute;left:%drem^E\">",digits);
+   DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
+         max_x-min_x+1,
+         max_y-min_y+1,
+         );
+  DocPrint(html_doc,"</div></div>");
   DCDel(res);
   Free(fp),Free(to),Free(filename),Free(tmp2);
 }
