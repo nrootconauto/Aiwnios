@@ -105,6 +105,26 @@ static void *GetAvailRegion32(int64_t b);
 #else
 static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec);
 #endif
+#ifdef _WIN64
+typedef BOOL (*fp_GetProcessMitigationPolicy_t)(
+	HANDLE,
+	PROCESS_MITIGATION_POLICY ,
+	PVOID,
+	size_t
+	);
+fp_GetProcessMitigationPolicy_t *DynamicFptr_GetProcessMitigationPolicy() {
+  static int init=0;
+  static fp_GetProcessMitigationPolicy_t ret=NULL;
+  if(!init) {
+	  HANDLE *k32_dll=GetModuleHandleA("kernel32.dll");
+	  ret=GetProcAddress(k32_dll,
+		"GetProcessMitigationPolicy"
+			);
+	init=1; 
+  }
+  return ret;
+}
+#endif  
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
@@ -118,13 +138,16 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     GetSystemInfo(&si);
     ag = si.dwAllocationGranularity;
     proc = GetCurrentProcess();
-    PROCESS_MITIGATION_DYNAMIC_CODE_POLICY wxallowed;
-    /* Disable ACG */
-    GetProcessMitigationPolicy(proc, ProcessDynamicCodePolicy, &wxallowed,
-                               sizeof wxallowed);
-    wxallowed.ProhibitDynamicCode = 0;
-    SetProcessMitigationPolicy(ProcessDynamicCodePolicy, &wxallowed,
-                               sizeof wxallowed);
+    fp_GetProcessMitigationPolicy_t fp_GetProcessMitigationPolicy=DynamicFptr_GetProcessMitigationPolicy();
+    if(fp_GetProcessMitigationPolicy) {
+		PROCESS_MITIGATION_DYNAMIC_CODE_POLICY wxallowed;
+		/* Disable ACG */
+		fp_GetProcessMitigationPolicy(proc, ProcessDynamicCodePolicy, &wxallowed,
+								   sizeof wxallowed);
+		wxallowed.ProhibitDynamicCode = 0;
+		fp_GetProcessMitigationPolicy(proc,ProcessDynamicCodePolicy, &wxallowed,
+								   sizeof wxallowed);
+    }
     init = true;
   }
   int64_t b = (pags * MEM_PAG_SIZE) / ag * ag, _try, addr;
@@ -467,10 +490,14 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
     ag = si.dwAllocationGranularity;
     HANDLE proc = GetCurrentProcess();
     PROCESS_MITIGATION_ASLR_POLICY aslr;
+    fp_GetProcessMitigationPolicy_t fptr=DynamicFptr_GetProcessMitigationPolicy();
     /* If DEP is disabled, don't let RW pages pile on RWX pages to avoid OOM */
-    GetProcessMitigationPolicy(proc, ProcessASLRPolicy, &aslr, sizeof aslr);
-    if (!aslr.EnableBottomUpRandomization)
-      topdown = true;
+    if(fptr) {
+	  fptr(proc, ProcessASLRPolicy, &aslr, sizeof aslr);
+      if (!aslr.EnableBottomUpRandomization)
+        topdown = true;
+    } else
+      topdown=true;
     init = true;
   }
   void *ret;

@@ -1798,8 +1798,8 @@ static void AiwniosBye() {
   static int64_t done = 0;
   if (!done) {
     done = 1;
-    DeinitSound();
     DeinitVideo();
+    DeinitSound();
     SDL_Quit();
   }
 }
