@@ -7139,6 +7139,7 @@ class CNetAddr {
   U8 *hostname;
   I64 port;
 };
+extern U32 NetIP4ByHost(U8 *);
 extern CNetAddr *NetAddrNew(U8 *hn=NULL,I64,I64 ipv=4);
 extern U0 NetAddrDel(CNetAddr *);
 extern I64 NetPollForHangup(I64 argc,I64 *argv);

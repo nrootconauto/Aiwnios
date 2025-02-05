@@ -1252,6 +1252,10 @@ static int64_t STK_NetPollForHangup(int64_t *stk) {
   return NetPollForHangup(stk[0], stk[1]);
 }
 
+static int64_t STK_NetIP4ByHost(char **stk) {
+	return NetIP4ByHost(stk[0]);
+}
+
 static int64_t STK_NetPollForWrite(int64_t *stk) {
   return NetPollForWrite(stk[0], stk[1]);
 }
@@ -1656,6 +1660,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetUDPRecvFrom", STK_NetUDPRecvFrom, 4);
     PrsAddSymbol("NetUDPSendTo", STK_NetUDPSendTo, 4);
     PrsAddSymbol("NetUDPAddrDel", STK_NetUDPAddrDel, 1);
+    PrsAddSymbol("NetIP4ByHost", STK_NetIP4ByHost,1);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
     PrsAddSymbol("NetAccept", STK_NetAccept, 2);

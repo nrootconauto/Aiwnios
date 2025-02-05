@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define _BSD_SOURCE
 #ifndef _WIN64
 #  include <arpa/inet.h>
 #  include <netdb.h>
@@ -39,6 +40,12 @@ typedef struct CInAddr {
 typedef struct CNetAddr {
   struct addrinfo *ai;
 } CNetAddr;
+int64_t NetIP4ByHost(char *host) {
+	CNetAddr *addr=NetAddrNew(host,0,4);
+	char *a=inet_ntoa(((struct sockaddr_in*)addr->ai->ai_addr)->sin_addr);
+	NetAddrDel(addr);
+	return inet_addr(a);
+}
 // ipv is either 4 or 6
 int64_t NetSocketNew(int64_t ipv) {
 #ifdef _WIN32
@@ -60,6 +67,10 @@ int64_t NetSocketNew(int64_t ipv) {
   setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 #endif
   return s;
+}
+
+int64_t BigEndianIPAddrByHostname(CNetAddr *addr) {
+	int64_t ret=-1;
 }
 
 // ipv is 4 or 6
