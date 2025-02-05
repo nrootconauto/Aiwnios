@@ -264,12 +264,13 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
     Sprite3(res,-min_x,-min_y,0,doc->bin_data->data);
   EnsurePathExists(to);
   BMPWrite(to,res);
-  DocPrint(html_doc,"<div style=\"position: absolute;left:%drem\">",digits);
-  DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
-        max_x-min_x+1,
-        max_y-min_y+1,
-        );
-  DocPrint(html_doc,"</div>");
+  //https://stackoverflow.com/a/6040258
+  DocPrint(html_doc,"<div style=\"position:relative;width:0;height:0\"><div style=\"position:absolute;left:%drem^E\">",digits);
+   DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
+         max_x-min_x+1,
+         max_y-min_y+1,
+         );
+  DocPrint(html_doc,"</div></div>");
   DCDel(res);
   Free(fp),Free(to),Free(filename),Free(tmp2);
 }
@@ -321,7 +322,17 @@ public CDoc *Doc2Html(CDoc *doc_in,U8 *html_header=NULL,U8 *body_header=NULL,
 		  "html * {\n"
 		  "\tfont-size: 10pt !important;\n"
 		  "\tfont-family: monospace, \"Cascadia Mono\", \"IBM Plex Mono\", \"Roboto\" !important;\n"
-		  "}\n");
+		  "}\n"
+		  "html {\n"
+		  "    display: table;\n"
+		  "    margin: auto;\n"
+		  "}\n"
+		  "\n"
+		  "body {\n"
+		  "    display: table-cell;\n"
+		  "    vertical-align: middle;\n"
+		  "}\n"
+		  "\n");
   style=doc_out->cur_entry->last;
   DocPutS(doc_out,
         "</style>\n"
