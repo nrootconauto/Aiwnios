@@ -265,7 +265,7 @@ U0 ConvertSpriteToBmp(CDoc *html_doc,U8 *filename,CDocEntry *doc,I64 digits) {
   EnsurePathExists(to);
   BMPWrite(to,res);
   //https://stackoverflow.com/a/6040258
-  DocPrint(html_doc,"<div style=\"position:relative;width:0;height:0\"><div style=\"position:absolute;left:%drem^E\">",digits);
+  DocPrint(html_doc,"<div style=\"position:relative;width:0;height:0\"><div style=\"position:absolute;left:%drem\">",digits);
    DocPrint(html_doc,"<img src=\"%Q\" width=\"%d\" height=\"%d\">",fp,
          max_x-min_x+1,
          max_y-min_y+1,
