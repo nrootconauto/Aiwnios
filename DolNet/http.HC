@@ -297,6 +297,7 @@ U0 SendRequest(I64 s) {
   }
   tmp=MStrPrint(
         "HTTP/1.1 %s\x0d\n"
+	"Server: DolNet\x0d\n"
         "Content-Type: %s\x0d\n"
         ,msg,con->response_mime,con->response_length
         );
