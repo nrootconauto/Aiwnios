@@ -22,7 +22,7 @@ extern void DoNothing();
 #define RISCV_FASSIGN_TMP     12
 #define RISCV_IASSIGN_TMP     12
 #define RISCV_ASSIGN_ADDR_TMP 13
-#define RISCV_PTR_TMP         14
+#define RISCV_PTR_TMP         31
 #define RISCV_IIMM_TMP        15
 
 static int64_t MIR(CCmpCtrl *cc, int64_t r) {
@@ -771,8 +771,6 @@ int64_t ITmpRegToReg(int64_t r) {
     return 29;
   case 2:
     return 30;
-  case 3:
-    return 31;
   default:
     abort();
   }
