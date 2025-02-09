@@ -56,7 +56,9 @@ static int64_t ModeIsDerefToSIB(CRPN *m) {
     // Temporary registers may get destroyed
     if (next->res.mode == MD_REG && IsSavedIReg(next->res.reg))
       return 1;
-  } else if (m->type == IC_BASE_PTR)
+  } else if (m->type == IC_BASE_PTR||(m->res.mode==MD_FRAME&&
+		m->res.keep_in_tmp==0 /* Dont allow to keep in tmp,we want the frame	*/
+		))
     return 1;
   return 0;
 }
@@ -4117,7 +4119,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
 	if(rpn->type==IC_BASE_PTR) {
       res->raw_type = rpn->raw_type;
       res->mode = __MD_X86_64_SIB;
-      res->reg = RBP;
+      res->reg = X86_64_BASE_REG;
       res->reg2 = -1;
       res->off = -rpn->integer;
       res->__SIB_scale = -1;
@@ -4127,7 +4129,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
     if (rpn->res.mode == MD_FRAME) {
       res->raw_type = rpn->raw_type;
       res->mode = __MD_X86_64_SIB;
-      res->reg = RBP;
+      res->reg = X86_64_BASE_REG;
       res->reg2 = -1;
       res->off = -rpn->res.off;
       res->__SIB_scale = -1;
@@ -6102,6 +6104,7 @@ static void SetKeepTmps(CRPN *rpn) {
       right->res.keep_in_tmp = 1;
       break;
     }
+    break;
   // These get strange(compound compare)
   case IC_LE:
   case IC_GE:
@@ -6987,7 +6990,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     orig_dst = next->res;                                                      \
     if (ModeIsDerefToSIB(next2) &&                                             \
         ((next2->raw_type == RT_F64) == (rpn->raw_type == RT_F64))) {          \
-      if (!(next->raw_type != RT_F64 && next->res.mode != MD_REG) &&           \
+      if (next->raw_type != RT_F64 &&           \
           RawTypeIs64(next2->raw_type)) {                                      \
         code_off = __OptPassFinal(cctrl, next, bin, code_off);                 \
         code_off = DerefToICArg(cctrl, &derefed, next2,                        \
