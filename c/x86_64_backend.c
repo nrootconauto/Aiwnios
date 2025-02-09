@@ -3229,19 +3229,30 @@ add_dft:
     //
     //  arg is same as *(arg->next)
     // WE WILL NEED TO KEEP arg->next loaded in a register and such
+    d=NULL;
+    PushTmpDepthFirst(cctrl, arg2, SpillsTmpRegs(arg));
     if (arg->type == IC_DEREF) {
-      if (SpillsTmpRegs(arg2))
-        PushSpilledTmp(cctrl, arg);
-      else
-        PushTmp(cctrl, arg);
-      PushTmpDepthFirst(cctrl, arg->base.next, SpillsTmpRegs(arg2));
+      PushTmpDepthFirst(cctrl, d=arg->base.next, 0);
+      i2=0;
+      while(b=__AddSIBOffset(d,&i2)) {
+		  d=b;
+	  }
+      if(d->type==IC_IREG) {
+		  arg->res.mode=MD_INDIR_REG;
+		  arg->res.reg=d->res.reg;
+		  arg->res.off=i2;
+		  arg->res.raw_type=arg->raw_type;
+		  arg=NULL;
+	  } else {
+        PushTmpDepthFirst(cctrl, arg, 0);
+      }
     } else
-      PushTmpDepthFirst(cctrl, arg, SpillsTmpRegs(arg2));
-    PushTmpDepthFirst(cctrl, arg2, 0);
+      PushTmpDepthFirst(cctrl, arg, 0);
+    if(arg)
+		PopTmp(cctrl, arg);
+    if (d)
+        PopTmp(cctrl, d);
     PopTmp(cctrl, arg2);
-    if (arg->type == IC_DEREF)
-      PopTmp(cctrl, arg->base.next);
-    PopTmp(cctrl, arg);
     goto fin;
     break;
   case IC_ADD_EQ:
