@@ -3235,19 +3235,7 @@ add_dft:
     PushTmpDepthFirst(cctrl, arg2, SpillsTmpRegs(arg));
     if (arg->type == IC_DEREF) {
       PushTmpDepthFirst(cctrl, d=arg->base.next, 0);
-      i2=0;
-      while(b=__AddSIBOffset(d,&i2)) {
-		  d=b;
-	  }
-      if(d->type==IC_IREG) {
-		  arg->res.mode=MD_INDIR_REG;
-		  arg->res.reg=d->res.reg;
-		  arg->res.off=i2;
-		  arg->res.raw_type=arg->raw_type;
-		  arg=NULL;
-	  } else {
-        PushTmpDepthFirst(cctrl, arg, 0);
-      }
+      PushTmpDepthFirst(cctrl, arg, 0);
     } else
       PushTmpDepthFirst(cctrl, arg, 0);
     if(arg)
@@ -4700,8 +4688,8 @@ enter:;
     code_off = ICMov(cctrl, &old, &rpn->res, bin, code_off);                   \
     break;                                                                     \
   case IC_DEREF:                                                               \
-    code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);          \
     code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
+    code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);          \
     dummy = ((CRPN *)next->base.next)->res;                                    \
     old2 = dummy;                                                              \
     code_off =                                                                 \
@@ -4798,24 +4786,24 @@ enter:;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
           if (next->res.mode == __MD_X86_64_SIB) {
-            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                    bin, code_off);
             code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
 
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
           } else {
             old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);
             ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
             ((CRPN *)next->base.next)->flags = old_flags3;
           }
         } else {
-          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           old_flags3 = next->flags;
           next->flags |= ICF_PRECOMPUTED;
           code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
@@ -4975,24 +4963,24 @@ enter:;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
           if (next->res.mode == __MD_X86_64_SIB) {
-            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
-                                    bin, code_off);
             code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
+            code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
+                                    bin, code_off);
 
           } else {
             old_flags3 = ((CRPN *)next->base.next)->flags;
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);
             ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
             ((CRPN *)next->base.next)->flags = old_flags3;
           }
         } else {
-          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           old_flags3 = next->flags;
           next->flags |= ICF_PRECOMPUTED;
           code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
@@ -5066,24 +5054,24 @@ enter:;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
           if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
 
           } else {
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             old_flags3 = ((CRPN *)next->base.next)->flags;
             code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);
             ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
             ((CRPN *)next->base.next)->flags = old_flags3;
           }
         } else {
-          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           old_flags3 = next->flags;
           next->flags |= ICF_PRECOMPUTED;
           code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
@@ -5157,24 +5145,24 @@ enter:;
       } else if (rpn->res.raw_type != RT_I8i && rpn->res.raw_type != RT_U8i) {
         if (next->type == IC_DEREF) {
           if (next->res.mode == __MD_X86_64_SIB) {
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
 
           } else {
+            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             old_flags3 = ((CRPN *)next->base.next)->flags;
             code_off = __OptPassFinal(cctrl, next->base.next, bin, code_off);
             ((CRPN *)next->base.next)->flags |= ICF_PRECOMPUTED;
-            code_off = __OptPassFinal(cctrl, next2, bin, code_off);
             code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
                                     bin, code_off);
             ((CRPN *)next->base.next)->flags = old_flags3;
           }
         } else {
-          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           code_off = __OptPassFinal(cctrl, next2, bin, code_off);
+          code_off = __OptPassFinal(cctrl, next, bin, code_off);
           old_flags3 = next->flags;
           next->flags |= ICF_PRECOMPUTED;
           code_off = DerefToICArg(cctrl, &dummy, next, AIWNIOS_TMP_IREG_POOP2,
