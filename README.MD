@@ -43,9 +43,7 @@ cd ..;
 
 If you want to create a cool package for your system, you can use [CPack](https://cmake.org/cmake/help/book/mastering-cmake/chapter/Packaging%20With%20CPack.html). Ill probably do this for you. The `cpack` is tested on Windows(NSIS). If you want to generate a FreeBSD `.pkg`,you'll need build cmake from source of FreeBSD because cpack has *experimental*  support for FreeBSD. Make sure you enable it.
 
-### Windows
-
-#### 10 & 11
+### Windows 10/11
 
 1. Install [msys2](https://msys2.org)
 2. Run "MSYS2 MINGW64" (***MUST*** BE MINGW64)
@@ -61,7 +59,7 @@ cd ..
 ```
 5. You will see the `aiwnios` binary in the directory
 
-#### 7
+#### Windows 7
 
 1. Download [WinLibs](https://winlibs.com/) and add to PATH: Make sure the mingw32/bin or mingw64/bin folder from the extracted download is in your PATH and its location doesn't contain any spaces
 2. Download and extract devel mingw [SDL2](https://github.com/libsdl-org/SDL/releases)
