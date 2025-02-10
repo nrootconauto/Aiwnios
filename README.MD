@@ -45,6 +45,8 @@ If you want to create a cool package for your system, you can use [CPack](https:
 
 ### Windows
 
+#### 10 & 11
+
 1. Install [msys2](https://msys2.org)
 2. Run "MSYS2 MINGW64" (***MUST*** BE MINGW64)
 3. `pacman -Sy git mingw-w64-x86_64-{gcc,SDL2,cmake}`
@@ -58,6 +60,20 @@ ninja
 cd ..
 ```
 5. You will see the `aiwnios` binary in the directory
+
+#### 7
+
+1. Download [WinLibs](https://winlibs.com/) and add to PATH: Make sure the mingw32/bin or mingw64/bin folder from the extracted download is in your PATH and its location doesn't contain any spaces
+2. Download and extract devel mingw [SDL2](https://github.com/libsdl-org/SDL/releases)
+3. Clone this repository and navigate to it
+```
+mkdir build
+cd build
+cmake -DSDL2_DIR=C:\Path\To\SDL2-devel-2.32.0-mingw\SDL2-2.32.0\x86_64-w64-mingw32\lib\cmake\SDL2 ..
+ninja
+cd ..
+```
+4. You will see the `aiwnios` binary in the directory
 
 ### MacOS
 
