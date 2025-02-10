@@ -77,6 +77,25 @@ static int64_t STK_PrintF(double *);
 static int64_t STK_PrintPtr(int64_t *stk) {
   PrintPtr((char *)(stk[0]), (void *)stk[1]);
 }
+static int64_t STK_DolDocDumpIR(int64_t *stk) {
+	int64_t len=0,ir_cnt,idx;
+	CCmpCtrl *cctrl=(CCmpCtrl*)(stk[2]);
+	CRPN *c,*head=cctrl->code_ctrl->ir_code,**array;
+	ir_cnt=0;
+	for(c=head->base.next;c!=head;c=ICFwd(c)) {
+		ir_cnt++;
+	}
+	array=A_MALLOC(ir_cnt*sizeof(void*),NULL);
+	idx=0;
+	//REVERSE polish notation
+	for(c=head->base.next;c!=head;c=ICFwd(c)) {
+		array[ir_cnt-++idx]=c;
+	}
+	for(idx=0;idx!=ir_cnt;idx++)
+	  len=DolDocDumpIR((char*)stk[0],len,array[idx]);
+	A_FREE(array);
+	return len;
+}
 static void ExitAiwnios(int64_t *);
 static void PrsAddSymbol(char *name, void *ptr, int64_t arity) {
   PrsBindCSymbol(name, ptr, arity);
@@ -1399,6 +1418,7 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("DolDocDumpIR",STK_DolDocDumpIR,3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
     PrsAddSymbol("GetVolume", STK_AiwniosGetVolume, 0);

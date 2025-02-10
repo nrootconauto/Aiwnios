@@ -62,7 +62,6 @@ extern I64 Cmp(U8 *filename,
 extern U8 *U(U8 *rip,I64 cnt=20,I64 seg_size=64);
 extern U0 Ui(U8 *buf,U8 **_rip,I64 seg_size=64,
 	I64 *_jmp_dst=NULL,Bool just_ins=FALSE);
-extern I64 Un(U8 *rip,I64 cnt=0x80,I64 seg_size=64);
 extern CUAsmGlbls uasm;
 
 extern I64 HashEntrySize(CHashSrcSym *tmph);

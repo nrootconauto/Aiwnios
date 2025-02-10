@@ -298,3 +298,9 @@ public U0 Uf(U8 *st)
       ;//U(HashVal(tmpf));
   }
 }
+public U0 Un(U8 *st,I64 len,U64 seg=64) {
+  U8 *en=st+len;
+  while(st<en)  {
+    st=DisasOpc(DocPut,st);
+  }
+}

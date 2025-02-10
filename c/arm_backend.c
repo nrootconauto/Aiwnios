@@ -2805,6 +2805,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   rpn->res.set_flags = 0;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
       ***range_fail_addrs;
+  if(cctrl->code_ctrl->final_pass)
+	rpn->start_ptr=bin+code_off;
   if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass &&
       rpn->ic_line) { // Final run
     if (MSize(cctrl->code_ctrl->dbg_info) / 8 >
@@ -4586,6 +4588,8 @@ ret:;
     old_rpn->changes_fregs2 |= rpn->changes_fregs | rpn->changes_fregs2;
     cctrl->cur_rpn = old_rpn;
   }
+  if(cctrl->code_ctrl->final_pass)
+	rpn->end_ptr=bin+code_off;
   cctrl->backend_user_data5 = old_fail_addr;
   cctrl->backend_user_data6 = old_pass_addr;
   cctrl->aarch64_atomic_loop_start = old_lock_start;

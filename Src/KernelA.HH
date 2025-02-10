@@ -3832,6 +3832,7 @@ class CProgress
 
 #ifdef IMPORT_AIWNIOS_SYMS
 //From AIWNIOS
+import U8 *DolDocDumpIR(U8 *to,I64 len,U8 *c_rpn);
 import U8 *AiwniosPackBootCommand();
 import U8 *AiwniosPackRamDisk(I64 *len=NULL);
 import Bool IsFastFail();
@@ -3989,6 +3990,7 @@ import I64 GetRBP();
 import U0 AiwniosTUIEnable();
 import U0 TermSize(I64 *c,I64 *r);
 #else
+extern U8 *DolDocDumpIR(U8 *to,I64 len,U8 *c_rpn);
 extern U8 *AiwniosPackBootCommand();
 extern U8 *AiwniosPackRamDisk(I64 *len=NULL);
 extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
@@ -7139,7 +7141,7 @@ class CNetAddr {
   U8 *hostname;
   I64 port;
 };
-extern U32 NetIP4ByHost(U8 *);
+extern U32 NetIP4ByHost(U8 *);
 extern CNetAddr *NetAddrNew(U8 *hn=NULL,I64,I64 ipv=4);
 extern U0 NetAddrDel(CNetAddr *);
 extern I64 NetPollForHangup(I64 argc,I64 *argv);
@@ -7182,3 +7184,4 @@ extern U0 Dr(CTask *t=NULL);
 //See Src/AiwniosPack.HC
 extern U0 AiwniosPack(U8 *result_name,U8 *boot_command=NULL,U8 *root,U8 *hcrt_bin="/HCRT2.BIN");
 extern U0 AiwniosPackLoad();
+public extern U0 Un(U8 *st,I64 len,U64 seg=64);

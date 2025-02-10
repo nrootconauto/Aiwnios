@@ -1287,7 +1287,6 @@ next_ic:
   I64SetDel(changed1);
   I64SetDel(changed2);
 }
-
 //
 // Turns my CRPN from the parser into the IC for the C side
 //
@@ -2057,6 +2056,18 @@ break;case IC_ASM:
   } else 
 	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
+
+  if(cc->pass_trace) {
+     U8 *dumb_dump=NULL;
+     I64 dump_len=DolDocDumpIR(NULL,0,acc);
+     dumb_dump=CAlloc(dump_len);
+     dump_len=DolDocDumpIR(dumb_dump,0,acc);
+     DocPutS(DocPut,dumb_dump);
+     Free(dumb_dump);
+  }
+
+
+
   if(res_sz) *res_sz=idx;
   if(info&&aiwnios_dbg_info) {
     if(reported_min_ln!=I16_MAX&&reported_min_ln>=cc->min_line) {

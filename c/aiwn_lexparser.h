@@ -425,6 +425,7 @@ struct CRPN {
   uint32_t changes_iregs, changes_fregs;
   uint32_t changes_iregs2, changes_fregs2;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
+  void  *start_ptr,*end_ptr;
   char stuff_in_reg;
 };
 
@@ -744,3 +745,4 @@ void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
 CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);
 
 void CacheRPNArgs(CCmpCtrl *cctrl);
+extern int64_t DolDocDumpIR(char *to,int64_t,CRPN*);
