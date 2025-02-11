@@ -6149,6 +6149,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   cctrl->backend_user_data5 = 0;
   cctrl->backend_user_data6 = 0;
   rpn->res.set_flags = 0;
+  if(cctrl->code_ctrl->final_pass==2)
+	rpn->start_ptr=bin+code_off;
   if (rpn->flags & ICF_PRECOMPUTED)
     goto ret;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
@@ -8483,6 +8485,8 @@ ret:
     old_rpn->changes_iregs2 |= rpn->changes_iregs;
     old_rpn->changes_fregs2 |= rpn->changes_fregs;
   }
+  if(cctrl->code_ctrl->final_pass==2)
+ 	rpn->end_ptr=bin+code_off; 
   cctrl->cur_rpn = old_rpn;
   return code_off;
 }

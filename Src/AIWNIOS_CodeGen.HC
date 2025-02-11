@@ -2057,12 +2057,14 @@ break;case IC_ASM:
 	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
 
-  if(cc->pass_trace) {
+  if(cc->pass_trace&&cc->htc.fun) {
      U8 *dumb_dump=NULL;
      I64 dump_len=DolDocDumpIR(NULL,0,acc);
      dumb_dump=CAlloc(dump_len);
+     DocPrint(DocPut,"$$GREEN$$FUNC::%s$$FD$$\n$$ID,2$$",cc->htc.fun->str);
      dump_len=DolDocDumpIR(dumb_dump,0,acc);
      DocPutS(DocPut,dumb_dump);
+     DocPrint(DocPut,"$$ID,-2$$\n");
      Free(dumb_dump);
   }
 
