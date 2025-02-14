@@ -180,6 +180,8 @@ typedef struct {
 #elif defined(__FreeBSD__)
 #  include <sys/types.h>
 #  include <sys/umtx.h>
+#elif defined(__OpenBSD__)
+#  include <sys/futex.h>
 #elif defined(__APPLE__)
 #  include <dlfcn.h>
 #  define PRIVATE 1
@@ -385,7 +387,9 @@ void MPSleepHP(int64_t ns) {
   ts.tv_nsec = (ns % 1000000) * 1000U;
   ts.tv_sec = ns / 1000000;
   Misc_LBts(&cores[core_num].wake_futex, 0);
-#  if defined(__linux__)
+#if defined(__OpenBSD__)
+  futex(&cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL);
+#  elif defined(__linux__)
   syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
 #  endif
 #  if defined(__FreeBSD__)
@@ -416,7 +420,9 @@ void MPSleepHP(int64_t ns) {
 
 void MPAwake(int64_t core) {
   if (Misc_Bt(&cores[core].wake_futex, 0)) {
-#  if defined(__linux__)
+#if defined(__OpenBSD__)
+  futex(&cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL);
+#  elif defined(__linux__)
     syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
 #  elif defined(__FreeBSD__)
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
