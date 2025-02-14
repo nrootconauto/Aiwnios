@@ -109,7 +109,8 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #  include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-  int32_t *blob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
+  int32_t *Xblob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
+  int32_t *blob=MemGetWritePtr(Xblob); //OpenBSD sexy mapping
   int64_t arg, fill;
   int64_t pop = 0, pad = 0;
   int old = SetWriteNP(0);
@@ -139,7 +140,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   *(void **)(blob + ptr) = fptr; // 16 aligned
   blob[fill] = ARM_ldrLabelX(8, (ptr - fill) * 4);
   SetWriteNP(old);
-  return blob;
+  return Xblob;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;

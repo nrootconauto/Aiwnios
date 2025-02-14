@@ -20,13 +20,17 @@
   "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
                       // the important TIDs(cores))
 #define DBG_MSG_OK "OK"
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__OpenBSD__)||defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 #  include <poll.h>
-#  include <sys/ptrace.h>
 #  include <sys/types.h>
+#  include <sys/ptrace.h>
 #  include <sys/wait.h>
-#  include <ucontext.h>
 #  include <unistd.h>
+#if ! defined(__OpenBSD__)
+#  include <ucontext.h>
+#else
+#  include <machine/reg.h>
+#endif
 #  if defined(__FreeBSD__)
 #    include <machine/reg.h>
 #  endif
@@ -52,7 +56,7 @@ typedef struct CFuckup {
 #  define PTRACE_TRACEME PT_TRACE_ME
 #  define gettid         getpid
 #endif
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 typedef struct CFuckup {
   struct CQue base;
   int64_t signal;
@@ -215,6 +219,10 @@ static void WriteMsg(char const *fmt, ...) {
   va_end(l);
   write(debugger_pipe[1], "", 1);
 }
+#if defined(__OpenBSD__)
+#include <poll.h>
+#define POLL_IN POLLIN
+#endif
 static int64_t MsgPoll() {
   struct pollfd poll_for;
   memset(&poll_for, 0, sizeof(struct pollfd));
@@ -712,6 +720,24 @@ static void UnblockSignals() {
   sigprocmask(SIG_UNBLOCK, &set, NULL);
 #endif
 }
+#if defined(__OpenBSD__)
+static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
+  UnblockSignals();
+  CHashExport *exp;
+  void *fp;
+  int64_t actx[64];
+  // AiwniosDbgCB will return 1 for singlestep
+  if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+    fp = exp->val;
+    FFI_CALL_TOS_2(fp, sig, actx);
+  } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+  call_exit:
+    fp = exp->val;
+    FFI_CALL_TOS_0(fp);
+  } else
+    abort();
+}
+#endif
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 #  if defined(__APPLE__)
 #    include <arm/_mcontext.h>

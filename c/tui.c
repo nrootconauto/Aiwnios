@@ -150,7 +150,7 @@ static int64_t K2SC(char ch) {
 }
 
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
 #  include <SDL.h>
 #  include <sys/ioctl.h>
 #  include <termios.h>

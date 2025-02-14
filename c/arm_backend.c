@@ -5055,7 +5055,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                    CHeapCtrl *heap) {
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
-  char *bin = NULL;
+  char *bin = NULL,*obin;
   char *ptr;
   CCodeMisc *misc;
   CHashImport *import;
@@ -5110,7 +5110,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
            r = r->base.last) {
         SetKeepTmps(r);
       }
-      bin = A_MALLOC(code_off + 1024, heap ? heap : Fs->code_heap);
+      obin = A_MALLOC(code_off + 1024, heap ? heap : Fs->code_heap);
+      bin=MemGetWritePtr(obin); //For OpenBSD sexy mapping(see mem.c or ask nroot)
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);
@@ -5177,11 +5178,11 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           code_off += 8 - code_off % 8;
         misc->addr = bin + code_off;
         if (misc->patch_addr)
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         if (bin) {
           for (idx = 0; idx <= misc->hi - misc->lo; idx++)
             *(void **)(bin + code_off + idx * 8) =
-                (char *)misc->jmp_tab[idx]->addr;
+                MemGetExecPtr((char *)misc->jmp_tab[idx]->addr);
         }
         code_off += (misc->hi - misc->lo + 1) * 8;
         goto fill_in_refs;
@@ -5191,7 +5192,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         break;
       case CMT_SHORT_ADDR:
         if (run && misc->patch_addr) {
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         }
         break;
       case CMT_RELOC_U64:
@@ -5217,7 +5218,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           HashAdd(import, Fs->hash_table);
         }
         if (run && misc->patch_addr) {
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         }
         goto fill_in_refs;
         break;
@@ -5264,15 +5265,15 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   SetWriteNP(old_wnp);
 #if defined(__APPLE__)
   if (old_wnp)
-    sys_icache_invalidate(bin, MSize(bin));
+    sys_icache_invalidate(obin, MSize(obin));
 #else
-  __builtin___clear_cache(bin, bin + MSize(bin));
+  __builtin___clear_cache(obin, obin + MSize(obin));
 #endif
   if (dbg_info) {
     cnt = MSize(dbg_info) / 8;
-    dbg_info[0] = bin;
+    dbg_info[0] = obin;
   }
   if (res_sz)
     *res_sz = final_size;
-  return bin;
+  return obin;
 }

@@ -547,7 +547,7 @@ enum {
 #  define AIWNIOS_TMP_FREG_START 3
 #  define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
 #  define AIWNIOS_FREG_CNT       (15 - 6 + 1)
-#elif (defined(__linux__) || defined(__FreeBSD__)) &&                          \
+#elif (defined(__OpenBSD__) || defined(__linux__) || defined(__FreeBSD__)) &&                          \
     (defined(_M_ARM64) || defined(__aarch64__))
 #  define AIWNIOS_IREG_START     19
 #  define AIWNIOS_IREG_CNT       (27 - 19 + 1)

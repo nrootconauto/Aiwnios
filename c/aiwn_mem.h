@@ -36,11 +36,18 @@ typedef struct CHeapCtrl {
   int64_t arena_lock;
   CHeapCtrlArena arenas[16];
   CQue mem_blks;
+  #if defined(__OpenBSD__)
+  int code_shm_fd;
+  #endif
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
   CQue base2;
   int64_t pags;
+  #if defined(__OpenBSD__)
+  void *rx;
+  void *rw;
+  #endif
 } CMemBlk;
 typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
@@ -79,3 +86,6 @@ extern int64_t bc_enable;
 extern void *BoundsCheck(void *ptr, int64_t *after);
 int64_t IsValidPtr(char *chk);
 void InitBoundsChecker();
+extern int64_t WriteProtectMemCpy(char *dst,char *src,int64_t len);
+void *MemGetWritePtr(void *ptr);
+void *MemGetExecPtr(void *ptr);

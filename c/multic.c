@@ -238,7 +238,9 @@ static void *threadrt(void *_pair) {
   CorePair *pair = _pair;
   __bootstrap_tls();
 #ifndef _WIN64
+#if !defined(__OpenBSD__)
   pthread_setname_np(pthread_self(), pair->name);
+  #endif
   stack_t stk = {
       .ss_sp = malloc(SIGSTKSZ),
       .ss_size = SIGSTKSZ,
@@ -283,10 +285,16 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
   CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+  #if defined(__OpenBSD__)
+  #else
   mcontext_t *ctx = &_ctx->uc_mcontext;
+  #endif
   void (*fp)();
   if (y) {
     fp = y->val;
+#if defined(__OpenBSD__)
+    FFI_CALL_TOS_2(fp, NULL,NULL);
+#endif
 #  if defined(__FreeBSD__) && defined(__x86_64__)
     FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
 #  elif defined(__linux__) && defined(__x86_64__)

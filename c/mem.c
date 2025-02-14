@@ -46,6 +46,121 @@ static int64_t NextPower2(uint64_t v) {
   return v;
 }
 static void **new_nul = &new_nul;
+#if defined(__OpenBSD__)
+typedef struct CMemPair {
+	struct CMemPair *last,*next;
+	int64_t len;
+	int fd;
+	char *rw;
+	char *rx;
+} CMemPair;
+CMemPair mem_pairs={&mem_pairs,&mem_pairs};
+int64_t mem_pairs_lock;
+static CMemPair *GetMemPairForPtrRX(void *ptr) {
+  while(Misc_LBts(&mem_pairs_lock,0))
+	PAUSE;
+  CMemPair *cur=mem_pairs.next;
+  while(cur!=&mem_pairs) {
+	  if(cur->rx<=ptr)
+		if(cur->rx+cur->len>ptr) {
+			goto end;
+		}
+	  cur=cur->next;
+  }
+  cur=NULL;
+end:
+  Misc_LBtr(&mem_pairs_lock,0);		
+  return cur;
+}
+
+static CMemPair *GetMemPairForPtrRW(void *ptr) {
+  while(Misc_LBts(&mem_pairs_lock,0))
+	PAUSE;
+  CMemPair *cur=mem_pairs.next;
+  while(cur!=&mem_pairs) {
+	  if(cur->rw<=ptr)
+		if(cur->rw+cur->len>ptr) {
+			goto end;
+		}
+	  cur=cur->next;
+  }
+  cur=NULL;
+end:
+  Misc_LBtr(&mem_pairs_lock,0);		
+  return cur;
+}
+
+static void OBSD_SexyDelShm(void *rx) {
+	CMemPair *mp=GetMemPairForPtrRX(rx);
+	if(!mp) return; //???
+	while(Misc_LBts(&mem_pairs_lock,0))
+		PAUSE;
+	QueRem(mp);
+	Misc_LBtr(&mem_pairs_lock,0);
+	free(mp);	
+}  
+static void *OBSD_SexyGetLow32(int64_t len,int fd) {
+	static int64_t ps=0;
+	static void *low;
+    if (!ps) {
+      ps = sysconf(_SC_PAGE_SIZE);
+      low=(void*)ps;
+    }
+	while(MAP_FAILED==mquery(low,len,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_FIXED,fd,0)) {
+		if(low>(void*)(1ull<<31)) {
+			low=(void*)ps;
+			return NULL;
+		}
+		low=(char*)low+ps;
+	}
+	return low;
+}
+#include <sys/stat.h>
+static int OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,int fd) {
+	char the_name[0x100];
+	int new=0;
+	if(fd==0) {
+		new=1;
+		strcpy(the_name,"/tmp/AiwnPhysXXXXXXX");
+		fd=shm_mkstemp(the_name);
+	}
+	void *the_addy,*p1,*p2;
+	static int64_t ps=0;
+    if (!ps)
+      ps = sysconf(_SC_PAGE_SIZE);    
+    if(len%ps)
+      len=(len/ps+1)*ps;
+	if(fd<0) {
+		if(low32_rx) *low32_rx=NULL;
+		if(low32_rx) *rw=NULL;
+	} else {
+		struct stat sb;
+		fstat(fd,&sb);
+		ftruncate(fd,len+sb.st_size);
+		the_addy=OBSD_SexyGetLow32(len,fd);
+		p1=mmap(the_addy,len,PROT_READ|PROT_EXEC,MAP_SHARED|MAP_FIXED,fd,sb.st_size);
+		p2=mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,sb.st_size);
+		if(p1==MAP_FAILED) {
+			//Fuck,your on your own.
+			p1=mmap(NULL,len,PROT_READ|PROT_EXEC,MAP_SHARED,fd,sb.st_size);
+     	}
+     	if(low32_rx) *low32_rx=p1;
+     	if(rw) *rw=p2;
+		CMemPair *mp=malloc(sizeof(CMemPair));
+		mp->rx=p1;
+		mp->rw=p2;
+		mp->len=len;
+		mp->fd=fd;
+		while(Misc_LBts(&mem_pairs_lock,0))
+		  PAUSE;
+		QueIns(mp,&mem_pairs);
+		Misc_LBtr(&mem_pairs_lock,0);
+		if(new) shm_unlink(the_name); //OpenBSD keeps them until all fd's are closed
+		//We unlink the shm file then we close later ,got it
+	}
+	return fd;
+}
+#endif
 #if defined(__APPLE__)
 static CQue code_pages = {0};
 _Thread_local int is_write_np = 123;
@@ -80,8 +195,29 @@ void InitBoundsChecker() {
   bc_good_bitmap = calloc(want, 1);
   bc_enable = 1;
 }
-
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
+#ifndef _WIN64
+  static int64_t ps;
+  int64_t b;
+  if (!ps)
+    ps = sysconf(_SC_PAGE_SIZE);
+  b = (blk->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
+
+#endif
+#if defined(__OpenBSD__)
+  CMemBlk *rw,*rx;
+  blk=blk->rw;
+  hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
+  rw=blk;
+  rx=blk->rx;
+  QueRem(rw);
+  memset(rw,0xff,b);
+  munmap(rw,b);
+  if(rx&&rx!=rw)
+	munmap(rx,b);
+   OBSD_SexyDelShm(rx);
+  return;
+#endif
   QueRem(blk);
   hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
 #ifdef _WIN64
@@ -91,11 +227,6 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   if (blk->base2.next)
     QueRem(&blk->base2);
 #  endif
-  static int64_t ps;
-  int64_t b;
-  if (!ps)
-    ps = sysconf(_SC_PAGE_SIZE);
-  b = (blk->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   munmap(blk, b);
 #endif
 }
@@ -125,6 +256,35 @@ fp_GetProcessMitigationPolicy_t *DynamicFptr_GetProcessMitigationPolicy() {
   return ret;
 }
 #endif  
+#if defined(__OpenBSD__) 
+static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
+  if (!hc)
+    hc = Fs->heap;
+  int64_t b;
+  static int64_t ps=0;
+  CMemBlk *ret;
+  CMemBlk *rw=NULL,*rx=NULL;
+  int fd=-1;
+  if (!ps)
+    ps = sysconf(_SC_PAGESIZE);
+  b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
+  if(hc->is_code_heap) {
+		hc->code_shm_fd=OBSD_SexyShmAlloc(&rx,&rw,b,hc->code_shm_fd);
+	ret=rx;
+  } else {
+	  ret = mmap(NULL, b,PROT_READ | PROT_WRITE,
+               MAP_PRIVATE | MAP_ANONYMOUS|MAP_STACK, -1, 0);
+      rw=rx=ret;
+  }
+  QueIns(&rw->base, hc->mem_blks.last);
+  rw->pags = pags;
+  rw->rw=rw;
+  rw->rx=rx;
+  hc->alloced_u8s += pags * MEM_PAG_SIZE;
+  return ret;
+}
+#endif
+#if !defined(__OpenBSD__)
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
@@ -214,6 +374,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
 #endif
   return ret;
 }
+#endif
 static CHeapCtrlArena *PickArena(CHeapCtrl *hc) {
   int64_t a;
 again:
@@ -268,7 +429,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
     cnt = NextPower2(cnt);
   if (hc->is_code_heap)
     goto big;
-  if (cnt > MEM_HEAP_HASH_SIZE)
+  if (cnt > MEM_HEAP_HASH_SIZE)	
     goto big;
   which_bucket = WhichBucket(cnt);
 again:;
@@ -285,6 +446,9 @@ again:;
       PAUSE;
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
+    #if defined(__OpenBSD__)
+    ret=((CMemBlk*)ret)->rw;
+    #endif
     if (!ret) {
       Misc_LBtr(&hc->locked_flags, 2);
       SetWriteNP(old_wnp);
@@ -314,6 +478,9 @@ big:
   while (Misc_LBts(&hc->locked_flags, 1))
     PAUSE;
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
+  #if defined(__OpenBSD__)
+  ret=((CMemBlk*)ret)->rw;
+  #endif
   Misc_LBtr(&hc->locked_flags, 1);
   if (!ret) {
     SetWriteNP(old_wnp);
@@ -338,6 +505,28 @@ almost_done:
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
   SetWriteNP(old_wnp);
+  #if defined(__OpenBSD__)
+  if(hc->is_code_heap) {
+  //Translate back to rx if code_heap
+    while (Misc_LBts(&hc->locked_flags, 1))
+      PAUSE;
+      	static int64_t ps=0;
+    if (!ps)
+      ps = sysconf(_SC_PAGE_SIZE);    
+
+    CMemBlk *mm=hc->mem_blks.next;
+    while(mm!=&hc->mem_blks) {
+		if((char*)mm->rw<=(char*)ret)
+			if((char*)mm->rw+mm->pags*ps>(char*)ret) {
+				int64_t off=(char*)ret-(char*)mm->rw;
+				ret=(char*)mm->rx+off;
+				break;
+			}
+			mm=mm->base.next;
+	}	
+    Misc_LBtr(&hc->locked_flags,1);
+  }
+  #endif
   return ret;
 }
 
@@ -363,6 +552,27 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   hc->used_u8s -= un->sz;
   which_bucket = un->which_bucket;
+    if(hc->is_code_heap) {
+  //Translate back to rx if code_heap
+    while (Misc_LBts(&hc->locked_flags, 1))
+      PAUSE;
+      	static int64_t ps=0;
+    if (!ps)
+      ps = sysconf(_SC_PAGE_SIZE);    
+
+    CMemBlk *mm=hc->mem_blks.next;
+    while(mm!=&hc->mem_blks) {
+		if((char*)mm->rx<=(char*)un)
+			if((char*)mm->rx+mm->pags*ps>(char*)un) {
+				int64_t off=(char*)un-(char*)mm->rx;
+				un=(char*)mm->rw+off;
+				break;
+			}
+			mm=mm->base.next;
+	}
+    Misc_LBtr(&hc->locked_flags,1);
+  }
+
   while (Misc_LBts(&hc->arena_lock, which_bucket))
     PAUSE;
   un->hc=NULL;
@@ -448,6 +658,9 @@ void HeapCtrlDel(CHeapCtrl *ct) {
       QueRem(&m->base2);
     munmap(m, b);
 #endif
+  #if defined(__OpenBSD__)
+  if(ct->code_shm_fd) close(ct->code_shm_fd);
+  #endif
   }
   free(ct);
   SetWriteNP(old);
@@ -667,4 +880,39 @@ void *BoundsCheck(void *ptr, int64_t *after) {
   if (after)
     *after = optr - (int64_t)(ptr + waste) - 8;
   return NULL;
+}
+
+int64_t WriteProtectMemCpy(char *dst,char *src,int64_t len) {
+	#if defined(__OpenBSD__)
+  CMemPair *mp=GetMemPairForPtrRX(dst);
+  if(mp) {
+	  return (int64_t*)memcpy(mp->rw+(dst-mp->rx),src,len);
+  }	
+  #elif defined(__APPLE__)
+  int old=SetWriteNP(0);
+  int64_t r=(int64_t)memcpy(dst,src,len);
+  SetWriteNP(old);
+  return r;
+  #else
+  return (int64_t)memcpy(dst,src,len);
+  #endif
+}
+
+void *MemGetWritePtr(void *ptr) {
+	#if defined(__OpenBSD__)
+	CMemPair *mp=GetMemPairForPtrRX(ptr);
+	if(!mp) return ptr;
+	size_t off=(char*)ptr-mp->rx;
+	return mp->rw+off;
+	#endif
+	return ptr;
+}
+void *MemGetExecPtr(void *ptr) {
+	#if defined(__OpenBSD__)
+	CMemPair *mp=GetMemPairForPtrRW(ptr);
+	if(!mp) return ptr;
+	size_t off=(char*)ptr-mp->rw;
+	return mp->rx+off;
+	#endif
+	return ptr;
 }

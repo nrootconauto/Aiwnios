@@ -1381,16 +1381,15 @@ int64_t CmdLineBootFileCnt() {
 static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
-static int64_t WriteProtectMemCpy(int64_t *stk) {
-  int old = SetWriteNP(0);
-  int64_t r = (int64_t)memcpy((void *)stk[0], (void *)stk[1], stk[2]);
-  SetWriteNP(old);
+static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
+  char *ptr=(void*)stk[0];
+  int64_t r=(int64_t)WriteProtectMemCpy(ptr,(char*)stk[1],stk[2]);
 #if defined(__APPLE__)
   if (old)
-    sys_icache_invalidate(stk[0], stk[2]);
+    sys_icache_invalidate(ptr, stk[2]);
 #else
-  __builtin___clear_cache(stk[0], stk[0] + stk[2]);
-#endif
+  __builtin___clear_cache(ptr, stk[0] + stk[2]);
+#endif 
   return r;
 }
 static int64_t is_fast_fail = 0;
@@ -1518,7 +1517,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", GetHolyFs, 0);
-    PrsAddSymbol("WriteProtectMemCpy", WriteProtectMemCpy, 3);
+    PrsAddSymbol("WriteProtectMemCpy", STK_WriteProtectMemCpy, 3);
     PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function

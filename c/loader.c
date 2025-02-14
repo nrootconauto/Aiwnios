@@ -97,12 +97,12 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 #define REL(T)                                                                 \
   {                                                                            \
     size_t off = OFF(T);                                                       \
-    memcpy(ptr2, &off, sizeof(T));                                             \
+    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                                             \
     __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
 #define IMM(T)                                                                 \
   {                                                                            \
-    memcpy(ptr2, &i, sizeof(T));                                               \
+    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                                               \
     __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
     if (tmpex) {
@@ -234,7 +234,8 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         int64_t off = 0;
         memcpy(&off, ptr2, sizeof(int64_t));
         off += (intptr_t)module_base;
-        memcpy(ptr2, &off, sizeof(int64_t));
+        
+        memcpy(MemGetWritePtr(ptr2), &off, sizeof(int64_t)); //MemGetWritePtr for OpenBSD sexy mapping,ask nroot
       }
       break;
     case IET_CODE_HEAP:
@@ -260,7 +261,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         int64_t off = READ_NUM(src, int32_t);
         src += 4;
         off += (int64_t)ptr3;
-        memcpy(ptr2, &off, sizeof(int64_t));
+        memcpy(MemGetWritePtr(ptr2), &off, sizeof(int64_t)); //MemGetWritePtr for OpenBSD
       }
       break;
     case IET_DATA_HEAP:
@@ -268,7 +269,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       cnt = READ_NUM(src, int64_t);
       ptr3 = A_CALLOC(cnt, NULL);
       src += 8;
-      memcpy(ptr3, src, cnt);
+      memcpy(MemGetWritePtr(ptr3), src, cnt); //MemGetWritePtr For openBSD
       src += cnt;
       goto end;
     }
@@ -340,7 +341,7 @@ char *Load(char *fbuf,int64_t size) { // Load a .BIN  module from RAM into memor
   CHeapCtrl *hc = HeapCtrlInit(NULL, Fs, 1);
   SetWriteNP(0);
   bfh = A_MALLOC(size, hc);
-  memcpy(bfh, fbuf, size);
+  memcpy(MemGetWritePtr(bfh), fbuf, size); //MemGetWritePtr(obfh) for 
 
   // See $LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$
   module_align = 1 << bfh->module_align_bits;
