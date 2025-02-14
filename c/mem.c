@@ -58,6 +58,7 @@ typedef struct CMemPair {
 } CMemPair;
 static CMemPair *mem_pairs=NULL;
 static int64_t mem_pairs_lock,mem_pairs_len;
+static _Thread_local int64_t mem_pair_last_idx; 
 static void AddMemPair(void *rw,void *rx,int64_t mlen,int fd) {
   	int64_t ptr,len,ptr2;
   	char *last=NULL;
@@ -66,20 +67,21 @@ static void AddMemPair(void *rw,void *rx,int64_t mlen,int fd) {
   while(Misc_LBts(&mem_pairs_lock,0))
 	PAUSE;
 again:;
+  last=NULL;
   len=mem_pairs_len;
   cur=mem_pairs;
   for(ptr=0;ptr!=len;ptr++) {
-	  if(cur->rx&&cur->rx<=ptr) {
+	  if(cur->rx&&cur->rx<=rx) {
 		  last=cur->rx+cur->len;
 	  }
-	  if(last<=ptr&&!cur->rx) {
+	  if(last<=rx&&!cur->rx) {
 		  cur->rx=rx;
 		  cur->rw=rw;
 		  cur->len=mlen;
 		  cur->fd=fd;
 		  goto end;
 	  }
-	  if(last>ptr)
+	  if(last>rx)
 		break;
 	  cur++;
   }
@@ -91,15 +93,14 @@ again:;
 			density++;
 	  cur++;
   }
-  mem_pairs_len=NextPower2((density<<3)+32);
+  mem_pairs_len=(density<<1)+32;
   cur=mem_pairs;
   
   mem_pairs=calloc(sizeof(CMemPair),mem_pairs_len);
-  printf("MP:%d\n",mem_pairs_len);
   for(ptr2=ptr=0;ptr!=len;ptr++) {
 	  CMemPair *old=&cur[ptr];
 	  if(old->rx) {
-		  mem_pairs[ptr2++<<3]=*old;
+		  mem_pairs[(ptr2++<<1)+1]=*old;
 	  }
   }
   free(cur);
@@ -108,16 +109,28 @@ again:;
   Misc_LBtr(&mem_pairs_lock,0);		
 }
 static CMemPair *GetMemPairForPtrRX(void *rx) {
-	int64_t ptr,len;
+	int64_t ptr=0,len;
   while(Misc_LBts(&mem_pairs_lock,0))
 	PAUSE;
 	len=mem_pairs_len;
   CMemPair *cur=mem_pairs;
-  for(ptr=0;ptr!=len;ptr++) {
+  if(mem_pair_last_idx<len) {
+	  CMemPair *last=&mem_pairs[mem_pair_last_idx];
+	  if(last->rw) {
+		  if(last->rx<=rx) {
+			if(last->rx+last->len>rx) {
+				cur=last;
+				goto end;
+			}
+	  }
+	}
+  }
+  for(;ptr!=len;ptr++) {
 	  if(!cur->rw)
 		continue;
 	  if(cur->rx<=rx) {
 		if(cur->rx+cur->len>rx) {
+			mem_pair_last_idx=ptr;
 			goto end;
 		}
       }else { 
