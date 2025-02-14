@@ -47,25 +47,84 @@ static int64_t NextPower2(uint64_t v) {
 }
 static void **new_nul = &new_nul;
 #if defined(__OpenBSD__)
+/* THESE ARE MOTHERFUCKIN SORTED BY ->rx
+ * Keep it that way or the computer will get confused.
+ * */
 typedef struct CMemPair {
-	struct CMemPair *last,*next;
 	int64_t len;
 	int fd;
 	char *rw;
 	char *rx;
 } CMemPair;
-CMemPair mem_pairs={&mem_pairs,&mem_pairs};
-int64_t mem_pairs_lock;
-static CMemPair *GetMemPairForPtrRX(void *ptr) {
+static CMemPair *mem_pairs=NULL;
+static int64_t mem_pairs_lock,mem_pairs_len;
+static void AddMemPair(void *rw,void *rx,int64_t mlen,int fd) {
+  	int64_t ptr,len,ptr2;
+  	char *last=NULL;
+  	CMemPair *cur=mem_pairs,*copy;
+  	int64_t density;
   while(Misc_LBts(&mem_pairs_lock,0))
 	PAUSE;
-  CMemPair *cur=mem_pairs.next;
-  while(cur!=&mem_pairs) {
-	  if(cur->rx<=ptr)
-		if(cur->rx+cur->len>ptr) {
+again:;
+  len=mem_pairs_len;
+  cur=mem_pairs;
+  for(ptr=0;ptr!=len;ptr++) {
+	  if(cur->rx&&cur->rx<=ptr) {
+		  last=cur->rx+cur->len;
+	  }
+	  if(last<=ptr&&!cur->rx) {
+		  cur->rx=rx;
+		  cur->rw=rw;
+		  cur->len=mlen;
+		  cur->fd=fd;
+		  goto end;
+	  }
+	  if(last>ptr)
+		break;
+	  cur++;
+  }
+  //Resize with spacing
+  cur=mem_pairs;
+  density=0;
+  for(ptr=0;ptr!=len;ptr++) {
+	  if(cur->rx)
+			density++;
+	  cur++;
+  }
+  mem_pairs_len=NextPower2((density<<3)+32);
+  cur=mem_pairs;
+  
+  mem_pairs=calloc(sizeof(CMemPair),mem_pairs_len);
+  printf("MP:%d\n",mem_pairs_len);
+  for(ptr2=ptr=0;ptr!=len;ptr++) {
+	  CMemPair *old=&cur[ptr];
+	  if(old->rx) {
+		  mem_pairs[ptr2++<<3]=*old;
+	  }
+  }
+  free(cur);
+  goto again;
+  end:
+  Misc_LBtr(&mem_pairs_lock,0);		
+}
+static CMemPair *GetMemPairForPtrRX(void *rx) {
+	int64_t ptr,len;
+  while(Misc_LBts(&mem_pairs_lock,0))
+	PAUSE;
+	len=mem_pairs_len;
+  CMemPair *cur=mem_pairs;
+  for(ptr=0;ptr!=len;ptr++) {
+	  if(!cur->rw)
+		continue;
+	  if(cur->rx<=rx) {
+		if(cur->rx+cur->len>rx) {
 			goto end;
 		}
-	  cur=cur->next;
+      }else { 
+		cur=NULL;
+			break; //Sorted
+	  }
+	  cur++;
   }
   cur=NULL;
 end:
@@ -73,16 +132,21 @@ end:
   return cur;
 }
 
-static CMemPair *GetMemPairForPtrRW(void *ptr) {
+static CMemPair *GetMemPairForPtrRW(void *rw) {
+	int64_t ptr,len;
   while(Misc_LBts(&mem_pairs_lock,0))
 	PAUSE;
-  CMemPair *cur=mem_pairs.next;
-  while(cur!=&mem_pairs) {
-	  if(cur->rw<=ptr)
-		if(cur->rw+cur->len>ptr) {
+	len=mem_pairs_len;
+  CMemPair *cur=mem_pairs;
+  for(ptr=0;ptr!=len;ptr++) {
+	  if(!cur->rw)
+		continue;
+	  if(cur->rw<=rw) {
+		if(cur->rw+cur->len>rw) {
 			goto end;
 		}
-	  cur=cur->next;
+      }
+	  cur++;
   }
   cur=NULL;
 end:
@@ -90,15 +154,6 @@ end:
   return cur;
 }
 
-static void OBSD_SexyDelShm(void *rx) {
-	CMemPair *mp=GetMemPairForPtrRX(rx);
-	if(!mp) return; //???
-	while(Misc_LBts(&mem_pairs_lock,0))
-		PAUSE;
-	QueRem(mp);
-	Misc_LBtr(&mem_pairs_lock,0);
-	free(mp);	
-}  
 static void *OBSD_SexyGetLow32(int64_t len,int fd) {
 	static int64_t ps=0;
 	static void *low;
@@ -116,13 +171,52 @@ static void *OBSD_SexyGetLow32(int64_t len,int fd) {
 	return low;
 }
 #include <sys/stat.h>
-static int OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,int fd) {
+static int64_t OBSD_SexyBuddyAlloc(int64_t pags,CHeapCtrl *hc) {
+	int64_t bits=0,tmp=0,tmp2;
+	pags=NextPower2(pags);
+	for(tmp=0;tmp<0x10000;tmp+=pags) {
+		if(!Misc_Bt(&hc->code_shm_free_bits,tmp)) {
+			for(tmp2=tmp+1;tmp2!=tmp+pags;tmp2++)
+				if(Misc_Bt(&hc->code_shm_free_bits,tmp2))
+					goto next;
+			for(tmp2=tmp;tmp2!=tmp+pags;tmp2++)
+				Misc_LBts(&hc->code_shm_free_bits,tmp2);
+			return tmp;
+		}
+		next:;
+	}
+	return -1;
+};
+static void OBSD_SexyBuddyFree(int64_t off,int64_t pags,CHeapCtrl *hc) {
+	int64_t bits=0,tmp2;
+	pags=NextPower2(pags);
+	for(tmp2=off;tmp2!=pags+off;tmp2++)
+		Misc_Btr(&hc->code_shm_free_bits,tmp2);
+	return;
+};
+
+
+static void OBSD_SexyDelShm(CHeapCtrl *hc,void *rx) {
+	CMemPair *mp=GetMemPairForPtrRX(rx);
+	CMemBlk *blk=rx;
+	if(!mp) return; //???
+	OBSD_SexyBuddyFree(blk->shm_pag,blk->pags,hc);
+	while(Misc_LBts(&mem_pairs_lock,0))
+		PAUSE;
+    mp->rw=NULL;
+    mp->rx=NULL;
+	Misc_LBtr(&mem_pairs_lock,0);
+}  
+//RETURNS pag in shm file
+static int64_t OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,CHeapCtrl *hc) {
+	int fd=hc->code_shm_fd;
+	int64_t foffset=0;
 	char the_name[0x100];
 	int new=0;
 	if(fd==0) {
 		new=1;
 		strcpy(the_name,"/tmp/AiwnPhysXXXXXXX");
-		fd=shm_mkstemp(the_name);
+		fd=hc->code_shm_fd=shm_mkstemp(the_name);
 	}
 	void *the_addy,*p1,*p2;
 	static int64_t ps=0;
@@ -134,31 +228,27 @@ static int OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,int fd) {
 		if(low32_rx) *low32_rx=NULL;
 		if(low32_rx) *rw=NULL;
 	} else {
+		foffset=OBSD_SexyBuddyAlloc(len/ps,hc)*ps;
+		int64_t flen;
 		struct stat sb;
 		fstat(fd,&sb);
-		ftruncate(fd,len+sb.st_size);
+		flen=sb.st_size;
+		flen=flen>=foffset+len?flen:foffset+len;
+		ftruncate(fd,flen);
 		the_addy=OBSD_SexyGetLow32(len,fd);
-		p1=mmap(the_addy,len,PROT_READ|PROT_EXEC,MAP_SHARED|MAP_FIXED,fd,sb.st_size);
-		p2=mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,sb.st_size);
+		p1=mmap(the_addy,len,PROT_READ|PROT_EXEC,MAP_SHARED|MAP_FIXED,fd,foffset);
+		p2=mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,foffset);
 		if(p1==MAP_FAILED) {
 			//Fuck,your on your own.
-			p1=mmap(NULL,len,PROT_READ|PROT_EXEC,MAP_SHARED,fd,sb.st_size);
+			p1=mmap(NULL,len,PROT_READ|PROT_EXEC,MAP_SHARED,fd,foffset);
      	}
      	if(low32_rx) *low32_rx=p1;
      	if(rw) *rw=p2;
-		CMemPair *mp=malloc(sizeof(CMemPair));
-		mp->rx=p1;
-		mp->rw=p2;
-		mp->len=len;
-		mp->fd=fd;
-		while(Misc_LBts(&mem_pairs_lock,0))
-		  PAUSE;
-		QueIns(mp,&mem_pairs);
-		Misc_LBtr(&mem_pairs_lock,0);
+     	AddMemPair(p2,p1,len,fd);
 		if(new) shm_unlink(the_name); //OpenBSD keeps them until all fd's are closed
 		//We unlink the shm file then we close later ,got it
 	}
-	return fd;
+	return foffset/ps;
 }
 #endif
 #if defined(__APPLE__)
@@ -211,11 +301,10 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   rw=blk;
   rx=blk->rx;
   QueRem(rw);
-  memset(rw,0xff,b);
+  OBSD_SexyDelShm(hc,rx);
   munmap(rw,b);
   if(rx&&rx!=rw)
 	munmap(rx,b);
-   OBSD_SexyDelShm(rx);
   return;
 #endif
   QueRem(blk);
@@ -262,6 +351,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     hc = Fs->heap;
   int64_t b;
   static int64_t ps=0;
+  int64_t pag=-1;
   CMemBlk *ret;
   CMemBlk *rw=NULL,*rx=NULL;
   int fd=-1;
@@ -269,7 +359,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
     ps = sysconf(_SC_PAGESIZE);
   b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   if(hc->is_code_heap) {
-		hc->code_shm_fd=OBSD_SexyShmAlloc(&rx,&rw,b,hc->code_shm_fd);
+		pag=OBSD_SexyShmAlloc(&rx,&rw,b,hc);
 	ret=rx;
   } else {
 	  ret = mmap(NULL, b,PROT_READ | PROT_WRITE,
@@ -280,6 +370,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   rw->pags = pags;
   rw->rw=rw;
   rw->rx=rx;
+  rw->shm_pag=pag;
   hc->alloced_u8s += pags * MEM_PAG_SIZE;
   return ret;
 }

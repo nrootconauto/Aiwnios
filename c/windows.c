@@ -61,8 +61,8 @@ static void _DrawWindowNew() {
   SDL_FreeSurface(window_icon_proto);
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
-  SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
-                          SDL_HINT_OVERRIDE);
+  //SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
+  //                        SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;

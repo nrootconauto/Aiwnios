@@ -2202,7 +2202,6 @@ break;case IC_ASM:
         tmpabs->type=AAT_ADD_U64;
         table_ptr=misc->addr2(U8*)+8*idx;
         foff=cc->aotc->rip+(*table_ptr-machine_code(I64));
-        PrintI("foff",*table_ptr-machine_code(I64));
         WriteProtectMemCpy(table_ptr,&foff,8);
         tmpabs->rip=cc->aotc->rip+((misc->addr2(U8*)+8*idx)-machine_code);
         cc->aotc->abss=tmpabs;	

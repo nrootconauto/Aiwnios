@@ -38,6 +38,7 @@ typedef struct CHeapCtrl {
   CQue mem_blks;
   #if defined(__OpenBSD__)
   int code_shm_fd;
+  uint8_t code_shm_free_bits[0x10000]; //2GB/4KB/8==0x10000,used for MiscBt(->code_shm_free_bits,pag).
   #endif
 } CHeapCtrl;
 typedef struct CMemBlk {
@@ -47,6 +48,7 @@ typedef struct CMemBlk {
   #if defined(__OpenBSD__)
   void *rx;
   void *rw;
+  int64_t shm_pag;
   #endif
 } CMemBlk;
 typedef struct __attribute__((packed)) CMemUnused {
