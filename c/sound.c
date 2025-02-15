@@ -83,7 +83,7 @@ void SndFreq(int64_t f) {
 static int audio_init=0; 
 void InitSound() {
   SDL_AudioSpec want;
-  if (0>=SDL_Init(SDL_INIT_AUDIO))
+  if (0>SDL_Init(SDL_INIT_AUDIO))
     return;
   audio_init = 1;
   want = (SDL_AudioSpec){0};
