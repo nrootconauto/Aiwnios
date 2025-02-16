@@ -15,7 +15,9 @@
 #  ifndef _WIN32
 #    include <setjmp.h>
 #    include <sys/syscall.h>
+#	ifndef __OpenBSD__
 #    include <ucontext.h>
+#endif
 #    ifdef __FreeBSD__
 #      include <machine/sysarch.h>
 #    endif
@@ -50,10 +52,18 @@
  * Linux/FreeBSD use FS for TLS, but we will allocate space on
  * %gs for compatibility with windows ABI. (__bootstrap_tls())
  ***************************************************************/
+#ifdef __OpenBSD__
+#include <tib.h>
+#  define FS_OFF   0xF0
+#  define GS_OFF   0xF8
+#  define ThreadFs (*(void *__seg_fs *)FS_OFF)
+#  define ThreadGs (*(void *__seg_fs *)GS_OFF)
+#else
 #  define FS_OFF   0xF0
 #  define GS_OFF   0xF8
 #  define ThreadFs (*(void *__seg_gs *)FS_OFF)
 #  define ThreadGs (*(void *__seg_gs *)GS_OFF)
+#endif
 #elif defined(__aarch64__)
 static _Thread_local void *__fsgs[2];
 #  define FS_OFF   0
@@ -116,6 +126,13 @@ static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
+	#ifdef __OpenBSD__
+  struct tib *old=TCB_TO_TIB(__get_tcb());
+  struct tib *new=_dl_allocate_tib(TIB_EXTRA_ALIGN+0x100); //Fs x Gs pointers end at 0xf8
+  memcpy(new,old,sizeof(struct tib)+TIB_EXTRA_ALIGN);
+  new->__tib_self=(void*)new;
+  __set_tcb(TIB_TO_TCB(new));
+	#else
   static bool init, fsgsbase;
   if (!init) {
     int ebx;
@@ -149,16 +166,18 @@ void __bootstrap_tls(void) {
     // this is a harsh exit that ignores atexit
     _Exit(-1);
   }
+  #endif
 }
 
 static int __setgs(void *gs) {
   int ret = -1;
+ 
 #  ifdef __linux__
   asm("syscall"   //    (not defined in musl)
       : "=a"(ret) //         ARCH_SET_GS
       : "0"(SYS_arch_prctl), "D"(0x1001), "S"(gs)
       : "rcx", "r11", "memory");
-#  else
+#  elif defined(__FreeBSD__)
   ret = amd64_set_gsbase(gs);
 #  endif
   return ret;

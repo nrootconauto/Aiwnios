@@ -1477,7 +1477,7 @@ static void BootAiwnios(char *bootstrap_text) {
     X(StrCpy, 2);
     X(StrICmp, 2);
     X(StrNICmp, 3);
-#if defined(__x86_64__)
+#if defined(__x86_64__) && ! defined(__OpenBSD__)
     X(OutU8, 2);
     X(OutU16, 2);
     X(OutU32, 2);

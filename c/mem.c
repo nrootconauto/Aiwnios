@@ -170,18 +170,26 @@ end:
 static void *OBSD_SexyGetLow32(int64_t len,int fd) {
 	static int64_t ps=0;
 	static void *low;
+	int attempt;
     if (!ps) {
       ps = sysconf(_SC_PAGE_SIZE);
-      low=(void*)ps;
+       		low=(void*)ps;
+		
     }
-	while(MAP_FAILED==mquery(low,len,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_FIXED,fd,0)) {
+    for(attempt=0;attempt!=2;attempt++) {
+		while(MAP_FAILED==mquery(low,len,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_FIXED,fd,0)) {
+			if(low>(void*)(1ull<<31)) {
+				break;
+			}
+			low=(char*)low+ps;
+		}		  
 		if(low>(void*)(1ull<<31)) {
-			low=(void*)ps;
-			return NULL;
+				low=(void*)ps;
+				continue;
 		}
-		low=(char*)low+ps;
+		return low;
 	}
-	return low;
+	return NULL;
 }
 #include <sys/stat.h>
 static int64_t OBSD_SexyBuddyAlloc(int64_t pags,CHeapCtrl *hc) {
@@ -249,7 +257,10 @@ static int64_t OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,CHeapCtrl
 		flen=flen>=foffset+len?flen:foffset+len;
 		ftruncate(fd,flen);
 		the_addy=OBSD_SexyGetLow32(len,fd);
-		p1=mmap(the_addy,len,PROT_READ|PROT_EXEC,MAP_SHARED|MAP_FIXED,fd,foffset);
+		if(the_addy!=NULL)
+			p1=mmap(the_addy,len,PROT_READ|PROT_EXEC,MAP_SHARED|MAP_FIXED,fd,foffset);
+		else
+			p1=mmap(NULL,len,PROT_READ|PROT_EXEC,MAP_SHARED,fd,foffset);
 		p2=mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,foffset);
 		if(p1==MAP_FAILED) {
 			//Fuck,your on your own.
@@ -664,16 +675,7 @@ void __AIWNIOS_Free(void *ptr) {
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);    
 
-    CMemBlk *mm=hc->mem_blks.next;
-    while(mm!=&hc->mem_blks) {
-		if((char*)mm->rx<=(char*)un)
-			if((char*)mm->rx+mm->pags*ps>(char*)un) {
-				int64_t off=(char*)un-(char*)mm->rx;
-				un=(char*)mm->rw+off;
-				break;
-			}
-			mm=mm->base.next;
-	}
+    un=(CMemUnused*)MemGetWritePtr(un);
     Misc_LBtr(&hc->locked_flags,1);
   }
 
@@ -719,7 +721,7 @@ int64_t MSize(void *ptr) {
 void *__AIWNIOS_CAlloc(int64_t cnt, void *t) {
   void *ret = __AIWNIOS_MAlloc(cnt, t);
   int oldwnp = SetWriteNP(0);
-  memset(ret, 0, cnt);
+  memset(MemGetWritePtr(ret), 0, cnt);
   SetWriteNP(oldwnp);
   return ret;
 }

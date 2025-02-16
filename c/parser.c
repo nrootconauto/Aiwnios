@@ -5082,7 +5082,7 @@ void __HC_CodeMiscInterateThroughRefs(CCodeMisc *cm,
   CCodeMiscRef *refs = cm->refs;
   int old = SetWriteNP(1);
   while (refs) {
-    FFI_CALL_TOS_2(fptr, refs->add_to, user_data);
+    FFI_CALL_TOS_2(fptr, MemGetExecPtr(refs->add_to), user_data);
     refs = refs->next;
   }
   SetWriteNP(old);

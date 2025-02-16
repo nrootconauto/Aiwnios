@@ -233,6 +233,10 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
   //For MacOS RWX protections. 
   cc->opts|=1<<OPTf_GLBLS_ON_DATA_HEAP;
   #endif
+  #ifdef TARGET_X86
+  //For OpenBSD
+  cc->opts|=1<<OPTf_GLBLS_ON_DATA_HEAP;
+  #endif
   QueIns(cc,Fs->last_cc);
   res=CmpJoin(cc,CMPF_LEX_FIRST,map_name,mapfile_drv_let);
   if (error_cnt)   *error_cnt=cc->error_cnt;

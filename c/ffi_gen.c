@@ -52,10 +52,10 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   }
   return bin;
 }
-#  elif defined(__linux__) || defined(__FreeBSD__)
+#  elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
-  uint8_t *bin = NULL;
+  uint8_t *bin = NULL,*xbin=NULL;
   int64_t reg;
   while (1) {
     A(X86PushReg, RBP);
@@ -85,23 +85,25 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
     A(X86Ret, arity * 8);
     if (bin)
       break;
-    bin = A_MALLOC(code_off, Fs->code_heap);
+    xbin = A_MALLOC(code_off, Fs->code_heap);
+    bin=MemGetWritePtr(xbin);
     code_off = 0;
   }
-  return bin;
+  return xbin;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   int64_t code_off = 0;
-  uint8_t *bin = NULL;
+  uint8_t *bin = NULL,*xbin=NULL;
   while (1) {
     A(X86MovImm, RAX, fptr);
     A(X86JmpReg, RAX);
     if (bin)
       break;
-    bin = A_MALLOC(code_off, Fs->code_heap);
+    xbin = A_MALLOC(code_off, Fs->code_heap);
+    bin=MemGetWritePtr(xbin);
     code_off = 0;
   }
-  return bin;
+  return xbin;
 }
 #  endif
 #endif

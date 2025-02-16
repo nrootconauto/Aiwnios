@@ -3754,8 +3754,9 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         ((src->raw_type == RT_F64) != (dst->raw_type == RT_F64)))
       goto dft;
     use_reg = src->reg;
-    if (Is32Bit((char *)dst->off - (bin + code_off))) {
-      indir_off = (char *)dst->off - (bin + code_off);
+    
+    if (Is32Bit((char *)dst->off - (char*)MemGetExecPtr(bin + code_off))) {
+      indir_off = (char *)dst->off - (char*)MemGetExecPtr(bin + code_off);
       use_reg2 = RIP;
       goto store_r2;
     }
@@ -3922,44 +3923,44 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       } else if ((src->raw_type == RT_F64) ^ (RT_F64 == dst->raw_type)) {
         goto dft;
       }
-      if (Is32Bit((char *)src->integer - (bin + code_off))) {
+      if (Is32Bit((char *)src->integer - (char*)MemGetExecPtr(bin + code_off))) {
         switch (src->raw_type) {
         case RT_U0:
           break;
         case RT_U8i:
           AIWNIOS_ADD_CODE(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, (char *)src->integer - (bin + code_off));
+                           RIP, (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_I8i:
           AIWNIOS_ADD_CODE(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, (char *)src->integer - (bin + code_off));
+                           RIP, (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_U16i:
           AIWNIOS_ADD_CODE(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, (char *)src->integer - (bin + code_off));
+                           RIP, (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_I16i:
           AIWNIOS_ADD_CODE(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, (char *)src->integer - (bin + code_off));
+                           RIP, (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_U32i:
           AIWNIOS_ADD_CODE(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer - (bin + code_off));
+                           (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_I32i:
           AIWNIOS_ADD_CODE(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, (char *)src->integer - (bin + code_off));
+                           RIP, (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_U64i:
         case RT_PTR:
         case RT_FUNC:
         case RT_I64i:
           AIWNIOS_ADD_CODE(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer - (bin + code_off));
+                           (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
           break;
         case RT_F64:
           AIWNIOS_ADD_CODE(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer - (bin + code_off));
+                           (char *)src->integer - (char*)MemGetExecPtr(bin + code_off));
         }
       } else {
         use_reg2 = (cctrl->flags & CCF_ICMOV_NO_USE_RAX)
@@ -6163,10 +6164,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                         ->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln]);
       if (!i)
         cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] =
-            bin + code_off;
+            MemGetExecPtr(bin + code_off);
       else
         cctrl->code_ctrl->dbg_info[rpn->ic_line - cctrl->code_ctrl->min_ln] =
-            bin + code_off;
+            MemGetExecPtr(bin + code_off);
     }
   }
   static const void *poop_ants[IC_CNT] = {
@@ -6322,7 +6323,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   segment:
     // %gs is used as a TLS reg for all OS'es
     into_reg = 0;
+    #ifdef __OpenBSD__
+    AIWNIOS_ADD_CODE(SEG_FS, 0);
+    #else
     AIWNIOS_ADD_CODE(SEG_GS, 0);
+    #endif
     if (rpn->res.mode == MD_REG && next->type == IC_I64 &&
         Is32Bit(next->integer)) {
       into_reg = rpn->res.reg;
@@ -7416,7 +7421,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       else
         into_reg = 0;
       AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP,
-                       (char *)rpn->integer - (bin + code_off));
+                       (char *)rpn->integer - (char*)(bin + code_off));
       goto restore_reg;
     case IC_GLOBAL:
     get_glbl_ptr:
@@ -7439,9 +7444,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               0)); // X86MovRegIndirI64 will return inst size
         CodeMiscAddRef(misc, bin + code_off - 4);
         goto restore_reg;
-      } else if (Is32Bit(enter_addr - (bin + code_off))) {
+      } else if (Is32Bit(enter_addr - (char*)MemGetExecPtr(bin + code_off))) {
         AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP,
-                         enter_addr - (bin + code_off));
+                         enter_addr - (char*)MemGetExecPtr(bin + code_off));
         goto restore_reg;
       }
       code_off =
@@ -8503,7 +8508,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   CacheRPNArgs(cctrl);
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
-  char *bin = NULL;
+  char *bin = NULL,*xbin=NULL; 
   char *ptr;
   CCodeMisc *misc;
   CCodeMiscRef *cm_ref, *cm_ref_tmp;
@@ -8556,7 +8561,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin = NULL;
     } else if (run == 1) {
       
-      bin = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      bin=MemGetWritePtr(xbin);
       code_off = 0;
     } else if (run == 2) {
       // Final run,be sure to set SetKeepTmps(we see the changed reigsters in
@@ -8567,7 +8573,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         SetKeepTmps(r);
       }
       A_FREE(bin);
-      bin = A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      bin=MemGetWritePtr(xbin);
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);
@@ -8625,7 +8632,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
             if (cm_ref->is_abs64) {
               // Filled in by HolyC side
               if (misc->patch_addr)
-                *misc->patch_addr = cm_ref->add_to;
+                *misc->patch_addr = MemGetExecPtr(cm_ref->add_to);
             } else
               *cm_ref->add_to = (char *)misc->addr - (char *)cm_ref->add_to -
                                 4 + cm_ref->offset;
@@ -8656,25 +8663,25 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           code_off += 8 - code_off % 8;
         misc->addr = bin + code_off;
         if (misc->patch_addr)
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         if (bin) {
           for (idx = 0; idx <= misc->hi - misc->lo; idx++)
             *(void **)(bin + code_off + idx * 8) =
-                (char *)misc->jmp_tab[idx]->addr;
+                (char *)MemGetExecPtr(misc->jmp_tab[idx]->addr);
         }
         code_off += (misc->hi - misc->lo + 1) * 8;
         goto fill_in_refs;
         break;
       case CMT_LABEL:
         if (misc->patch_addr)
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         // We assign the statics offset later
         if (misc == cctrl->statics_label)
           break;
         goto fill_in_refs;
       case CMT_SHORT_ADDR:
         if (run == 2 && misc->patch_addr) {
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         } else if (run != 2) {
           for (cm_ref = misc->refs; cm_ref; cm_ref = cm_ref_tmp) {
             cm_ref_tmp = cm_ref->next;
@@ -8688,7 +8695,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           code_off += 8 - code_off % 8;
         misc->addr = bin + code_off;
         if (bin)
-          *(void **)(bin + code_off) = &DoNothing;
+          *(void **)((char*)MemGetWritePtr(bin) + code_off) = &DoNothing;
         code_off += 8;
         if (run == 2) {
           *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
@@ -8702,7 +8709,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           HashAdd(import, Fs->hash_table);
         }
         if (run == 2 && misc->patch_addr) {
-          *misc->patch_addr = misc->addr;
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         }
         goto fill_in_refs;
         break;
@@ -8712,7 +8719,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
             code_off += 8 - code_off % 8;
           misc->addr = bin + code_off;
           if (bin)
-            memcpy(bin + code_off, misc->str, misc->str_len);
+            memcpy(MemGetWritePtr(bin) + code_off, misc->str, misc->str_len);
           code_off += misc->str_len;
         } else {
           if (run == 2) {
@@ -8734,7 +8741,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
            r = r->base.next) {
         if (r->type == __IC_SET_STATIC_DATA) {
-          memcpy(bin + cctrl->code_ctrl->statics_offset + r->code_misc->integer,
+          memcpy(MemGetWritePtr(bin) + cctrl->code_ctrl->statics_offset + r->code_misc->integer,
                  r->code_misc->str, r->code_misc->str_len);
         }
       }
@@ -8752,9 +8759,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   final_size = code_off;
   if (dbg_info) {
     cnt = MSize(dbg_info) / 8;
-    dbg_info[0] = bin;
+    dbg_info[0] = xbin;
   }
   if (res_sz)
     *res_sz = final_size;
-  return bin;
+  return xbin;
 }
