@@ -329,6 +329,9 @@ typedef struct __attribute__((packed)) CBinFile {
   int8_t module_align_bits, reserved;
   char bin_signature[4];
   int64_t org, patch_table_offset, file_size;
+  //This is X86OBSD,X86,ARM,RISCV
+  //This is because OpenBSD uses FS instread of GS for HolyFs/HolyFs and needs to be rewritten
+  char which_abi[8];
   char data[];
 } CBinFile;
 

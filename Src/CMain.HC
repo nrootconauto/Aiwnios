@@ -385,6 +385,17 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
     bfh->module_align_bits=tmpaot->max_align_bits;
     bfh->patch_table_offset=sizeof(CBinFile)+aot_U8s;
     bfh->file_size=size;
+#ifdef TARGET_X86
+    bfh->which_abi='X86';
+    if(HOST_ABI=='OpenBSD')
+      bfh->which_abi='X86OBSD';
+#endif
+#ifdef TARGET_AARCH64
+    bfh->which_abi='ARM';
+#endif
+#ifdef TARGET_RISCV
+    bfh->which_abi='RISCV';
+#endif
     MemCpy(bfh(U8 *)+sizeof(CBinFile),tmpaot->buf,aot_U8s);
     MemCpy(bfh(U8 *)+sizeof(CBinFile)+aot_U8s,patch_table,
 	  size-aot_U8s-sizeof(CBinFile));

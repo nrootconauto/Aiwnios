@@ -1796,7 +1796,9 @@ normal:;
 #elif defined(__x86_64__)
 #  if defined(_WIN32) || defined(WIN32)
     host_abi = "Win";
-#  else
+#  elif defined(__OpenBSD__)
+    host_abi = "OpenBSD";
+#else
     host_abi = "SysV";
 #  endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
