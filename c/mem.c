@@ -192,36 +192,87 @@ static void *OBSD_SexyGetLow32(int64_t len,int fd) {
 	return NULL;
 }
 #include <sys/stat.h>
-static int64_t OBSD_SexyBuddyAlloc(int64_t pags,CHeapCtrl *hc) {
+static void OBSD_SexyBuddyDel0(CBuddyPair *bp) {
+	if(!bp) return;
+	OBSD_SexyBuddyDel0(bp->left);
+	OBSD_SexyBuddyDel0(bp->right);
+	free(bp);
+}
+static int64_t OBSD_SexyBuddyAlloc(int64_t use,int64_t want,int64_t order,CBuddyPair *root) {
 	int64_t bits=0,tmp=0,tmp2;
-	pags=NextPower2(pags);
-	for(tmp=0;tmp<0x10000;tmp+=pags) {
-		if(!Misc_Bt(&hc->code_shm_free_bits,tmp)) {
-			for(tmp2=tmp+1;tmp2!=tmp+pags;tmp2++)
-				if(Misc_Bt(&hc->code_shm_free_bits,tmp2))
-					goto next;
-			for(tmp2=tmp;tmp2!=tmp+pags;tmp2++)
-				Misc_LBts(&hc->code_shm_free_bits,tmp2);
+	want=NextPower2(want);
+	int64_t pags=1ul<<order;
+	CBuddyPair *new;
+	if(pags<want)
+		return -1;
+    if(root->occupied)
+		return -1;
+	if(pags==want) {
+		if(root->left!=NULL||root->right!=NULL) 
+			return -1;
+		root->occupied=1;
+		return use;
+	} 
+	
+	if(!root->left) {
+new_left:
+		new=root->left=calloc(1,sizeof (CBuddyPair));
+		new->offset_l=root->offset_l;
+		new->offset_r=root->offset_l+(1ul<<(order-1));
+		return OBSD_SexyBuddyAlloc(new->offset_l,want,order-1,new);
+	}
+	if(root->left) {
+		if(1) {
+		tmp=OBSD_SexyBuddyAlloc(new->offset_l,want,order-1,root->left);
+		if(0<=tmp) {
 			return tmp;
 		}
-		next:;
+		}
+	}
+	if(!root->right) {
+new_right:
+		new=root->right=calloc(1,sizeof (CBuddyPair));
+		new->offset_l=root->offset_r;
+		new->offset_r=root->offset_r+(1ul<<(order-1));
+		return OBSD_SexyBuddyAlloc(new->offset_r,want,order-1,new);
+	}
+	if(root->right) {
+		if(1) {
+		tmp=OBSD_SexyBuddyAlloc(new->offset_r,want,order-1,root->right);
+		if(0<=tmp) {
+			return tmp;
+		}
+	}
 	}
 	return -1;
 };
-static void OBSD_SexyBuddyFree(int64_t off,int64_t pags,CHeapCtrl *hc) {
-	int64_t bits=0,tmp2;
-	pags=NextPower2(pags);
-	for(tmp2=off;tmp2!=pags+off;tmp2++)
-		Misc_Btr(&hc->code_shm_free_bits,tmp2);
-	return;
+static int OBSD_SexyBuddyFree(int64_t off,int64_t pags,int64_t order,CBuddyPair *root) {
+	  pags=NextPower2(pags);
+	 if(pags==(1u<<order)) {
+		 OBSD_SexyBuddyDel0(root);
+		 return 1;
+	 }
+	 if(off<root->offset_r&&root->left)
+		 if(OBSD_SexyBuddyFree(off,pags,order-1,root->left))
+			root->left=NULL;
+	 if(root->right&&off>=root->offset_r)
+		if(OBSD_SexyBuddyFree(off,pags,order-1,root->right))
+			root->right=NULL;
+	 if(!root->left&&!root->right) {
+		 OBSD_SexyBuddyDel0(root);
+		 return 1;
+	  }
+	 return 0;
 };
-
 
 static void OBSD_SexyDelShm(CHeapCtrl *hc,void *rx) {
 	CMemPair *mp=GetMemPairForPtrRX(rx);
 	CMemBlk *blk=rx;
 	if(!mp) return; //???
-	OBSD_SexyBuddyFree(blk->shm_pag,blk->pags,hc);
+	if(OBSD_SexyBuddyFree(blk->shm_pag,blk->pags,31,hc->buddies)) {
+		hc->buddies=calloc(1,sizeof(CBuddyPair));
+		hc->buddies->offset_r=(1ul<<31)/2;
+	}
 	while(Misc_LBts(&mem_pairs_lock,0))
 		PAUSE;
     mp->rw=NULL;
@@ -249,7 +300,7 @@ static int64_t OBSD_SexyShmAlloc(void **low32_rx,void **rw,int64_t len,CHeapCtrl
 		if(low32_rx) *low32_rx=NULL;
 		if(low32_rx) *rw=NULL;
 	} else {
-		foffset=OBSD_SexyBuddyAlloc(len/ps,hc)*ps;
+		foffset=OBSD_SexyBuddyAlloc(0,len/ps,31,hc->buddies)*ps;
 		int64_t flen;
 		struct stat sb;
 		fstat(fd,&sb);
@@ -542,8 +593,6 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // things,so use power of two to use them
   if (cnt <= MEM_HEAP_HASH_SIZE)
     cnt = NextPower2(cnt);
-  if (hc->is_code_heap)
-    goto big;
   if (cnt > MEM_HEAP_HASH_SIZE)	
     goto big;
   which_bucket = WhichBucket(cnt);
@@ -742,6 +791,10 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
     ct->arenas[a].malloc_free_lst = &new_nul;
     QueInit(&ct->arenas[a].used_next);
   }
+  #ifdef __OpenBSD__
+  ct->buddies=calloc(1,sizeof(CBuddyPair));
+  ct->buddies->offset_r=(1ul<<31)/2;
+  #endif
   return ct;
 }
 
@@ -764,10 +817,11 @@ void HeapCtrlDel(CHeapCtrl *ct) {
       QueRem(&m->base2);
     munmap(m, b);
 #endif
+  }
   #if defined(__OpenBSD__)
   if(ct->code_shm_fd) close(ct->code_shm_fd);
+  OBSD_SexyBuddyDel0(ct->buddies);
   #endif
-  }
   free(ct);
   SetWriteNP(old);
 }

@@ -27,6 +27,11 @@ typedef struct CHeapCtrlArena {
 	struct CMemUnused *used_next,*used_last;
 	struct CMemUnused *malloc_free_lst;
 } CHeapCtrlArena;
+typedef struct CBuddyPair {
+	int64_t offset_l,offset_r;
+	struct CBuddyPair *left,*right;
+	char occupied,partial;
+} CBuddyPair;
 typedef struct CHeapCtrl {
   void *pad; // Needed
   int32_t hc_signature;
@@ -38,7 +43,7 @@ typedef struct CHeapCtrl {
   CQue mem_blks;
   #if defined(__OpenBSD__)
   int code_shm_fd;
-  uint8_t code_shm_free_bits[0x10000]; //2GB/4KB/8==0x10000,used for MiscBt(->code_shm_free_bits,pag).
+  CBuddyPair *buddies;
   #endif
 } CHeapCtrl;
 typedef struct CMemBlk {
