@@ -593,6 +593,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // things,so use power of two to use them
   if (cnt <= MEM_HEAP_HASH_SIZE)
     cnt = NextPower2(cnt);
+  if(hc->is_code_heap)
+	goto big;
   if (cnt > MEM_HEAP_HASH_SIZE)	
     goto big;
   which_bucket = WhichBucket(cnt);
