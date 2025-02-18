@@ -57,10 +57,11 @@ static __inline mach_port_name_t ulock_owner_value_to_port_name(uint32_t uval) {
 
 #  ifndef KERNEL
 
-extern int
+__attribute__((weak)) extern int
 __ulock_wait(uint32_t operation, void *addr, uint64_t value,
              uint32_t timeout); /* timeout is specified in microseconds */
-extern int __ulock_wake(uint32_t operation, void *addr, uint64_t wake_value);
+__attribute__((weak)) extern int __ulock_wake(uint32_t operation, void *addr,
+                                              uint64_t wake_value);
 
 #  endif /* !KERNEL */
 

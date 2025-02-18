@@ -202,7 +202,6 @@ typedef struct {
 #elif defined(__OpenBSD__)
 #  include <sys/futex.h>
 #elif defined(__APPLE__)
-#  include <dlfcn.h>
 #  define PRIVATE 1
 #  include "c/ulock.h" //Not canoical
 #  undef PRIVATE
@@ -415,14 +414,8 @@ void MPSleepHP(int64_t ns) {
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
 #  endif
 #  if defined(__APPLE__)
-  static typeof(__ulock_wait) *ulWait = 0;
-  static int init = 0;
-  if (!init) {
-    init = 1;
-    ulWait = dlsym(RTLD_DEFAULT, "__ulock_wait");
-  }
-  if (ulWait != NULL) {
-    (*ulWait)(UL_COMPARE_AND_WAIT_SHARED, &cores[core_num].wake_futex, 1, ns);
+  if (__ulock_wait) {
+    __ulock_wait(UL_COMPARE_AND_WAIT_SHARED, &cores[core_num].wake_futex, 1, ns);
   } else {
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_nsec += (ns % 1000000) * 1000U;
@@ -447,14 +440,8 @@ void MPAwake(int64_t core) {
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
 #  endif
 #  if defined(__APPLE__)
-    static typeof(__ulock_wake) *ulWake = 0;
-    static int init = 0;
-    if (!init) {
-      init = 1;
-      ulWake = dlsym(RTLD_DEFAULT, "__ulock_wake");
-    }
-    if (ulWake) {
-      ulWake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL, &cores[core].wake_futex,
+    if (__ulock_wake) {
+      __ulock_wake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL, &cores[core].wake_futex,
              1);
     } else {
       pthread_cond_signal(&cores[core].wake_cond);
