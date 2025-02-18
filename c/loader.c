@@ -97,12 +97,12 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 #define REL(T)                                                                 \
   {                                                                            \
     size_t off = OFF(T);                                                       \
-    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                                             \
+    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                             \
     __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
 #define IMM(T)                                                                 \
   {                                                                            \
-    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                                               \
+    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                               \
     __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
     if (tmpex) {
@@ -234,8 +234,9 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         int64_t off = 0;
         memcpy(&off, ptr2, sizeof(int64_t));
         off += (intptr_t)module_base;
-        
-        memcpy(MemGetWritePtr(ptr2), &off, sizeof(int64_t)); //MemGetWritePtr for OpenBSD sexy mapping,ask nroot
+
+        // MemGetWritePtr for OpenBSD sexy mapping,ask nroot
+        memcpy(MemGetWritePtr(ptr2), &off, sizeof(int64_t));
       }
       break;
     case IET_CODE_HEAP:
@@ -261,7 +262,8 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
         int64_t off = READ_NUM(src, int32_t);
         src += 4;
         off += (int64_t)ptr3;
-        memcpy(MemGetWritePtr(ptr2), &off, sizeof(int64_t)); //MemGetWritePtr for OpenBSD
+        memcpy(MemGetWritePtr(ptr2), &off,
+               sizeof(int64_t)); // MemGetWritePtr for OpenBSD
       }
       break;
     case IET_DATA_HEAP:
@@ -269,7 +271,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
       cnt = READ_NUM(src, int64_t);
       ptr3 = A_CALLOC(cnt, NULL);
       src += 8;
-      memcpy(MemGetWritePtr(ptr3), src, cnt); //MemGetWritePtr For openBSD
+      memcpy(MemGetWritePtr(ptr3), src, cnt); // MemGetWritePtr For openBSD
       src += cnt;
       goto end;
     }
@@ -327,15 +329,64 @@ Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$ file_size;
 typedef struct __attribute__((packed)) CBinFile {
   uint16_t jmp;
   int8_t module_align_bits, reserved;
-  char bin_signature[4];
+  // This is OX86,OARM,ARM\0,X86\0,RV64, used to be bin_signature (TOSB)
+  // This is because OpenBSD uses FS instread of GS for HolyFs/HolyGs and needs
+  // to be rewritten, if it's none of the above, it's a previous version of the
+  // binary
+  union {
+    char abi[4];
+    uint32_t bin_signature;
+  };
   int64_t org, patch_table_offset, file_size;
-  //This is X86OBSD,X86,ARM,RISCV
-  //This is because OpenBSD uses FS instread of GS for HolyFs/HolyFs and needs to be rewritten
-  char which_abi[8];
   char data[];
 } CBinFile;
 
-char *Load(char *fbuf,int64_t size) { // Load a .BIN  module from RAM into memory.
+#if defined(__OpenBSD__) && defined(__x86_64__)
+#include <emmintrin.h>
+typedef char xmm __attribute__((vector_size(16), aligned(1)));
+_Static_assert('e' == 0x65);
+
+// this takes less time than you think it does
+static void RewriteSegments(CBinFile *bin) {
+  // [header][code][patch table]
+  char *start = bin->data, *end = bin->data + bin->patch_table_offset;
+  char *p;
+  uint64_t w;
+  int m, n;
+  // 9 byte instruction
+  for (p = start; p + 9 <= end; p += n) {
+    while (p + 9 + 16 <= end) {
+      //                                     why is it eeeeeeeing
+      //                                 1. why wouldn't it (eeeeeee)
+      //                     2. if you were smart, you'd be doing the same thing
+      if ((m = _mm_movemask_epi8(*(xmm *)p == *(xmm *)"eeeeeeeeeeeeeeee"))) {
+        m = __builtin_ctzll(m);
+        p += m;
+        break;
+      } else {
+        p += 16;
+      }
+    }
+
+    //   we're checking for the following expression in non-obsd hcrt's:
+    // 0x65 ==  p[0]         && // gs segment register prefix
+    // 0x48 == (p[1] & 0xFB) && // rex.w (and ignore rex.r w/ mask)
+    // 0x8B ==  p[2]         && // movq reg/mem -> reg
+    // 0x04 == (p[3] & 0xFC) && // mod/rm: sib -> reg
+    // 0x25 ==  p[4]         && // sib disp32
+    // 0xF0 == (p[5] & 0xF0) && // Fs displacement is F0, Gs is F8
+    // ... rest of disp32 little-endian (0)
+    w = READ_NUM(p, uint64_t) & __builtin_bswap64(0xFFFBFFC7FFF0FFFF);
+    if (w == __builtin_bswap64(0x65488B0425F00000) && !p[8])
+      *p = 0x64, n = 9; // rewrite gs to fs, skip instruction
+    else
+      n = 1;
+  }
+}
+#endif
+
+// Load a .BIN  module from RAM into memory.
+char *Load(char *fbuf, int64_t size) {
   // bfh_addr==INVALID_PTR means don't care what load addr.
   char *module_base, *absname;
   int64_t module_align, misalignment;
@@ -344,7 +395,13 @@ char *Load(char *fbuf,int64_t size) { // Load a .BIN  module from RAM into memor
   CHeapCtrl *hc = HeapCtrlInit(NULL, Fs, 1);
   SetWriteNP(0);
   bfh = A_MALLOC(size, hc);
-  memcpy(MemGetWritePtr(bfh), fbuf, size); //MemGetWritePtr(obfh) for 
+  memcpy(MemGetWritePtr(bfh), fbuf, size); // MemGetWritePtr(obfh) for
+
+#if defined(__OpenBSD__) && defined(__x86_64__)
+  // OX86, gcc multicharacter literals are big endian
+  if (bfh->bin_signature != '68XO')
+    RewriteSegments(MemGetWritePtr(bfh));
+#endif
 
   // See $LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$
   module_align = 1 << bfh->module_align_bits;

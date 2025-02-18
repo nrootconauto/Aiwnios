@@ -62,7 +62,7 @@ set(COMP_OPTS
   -fcf-protection=none)
 target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
 if (ARCH STREQUAL "x86_64")
-  list(APPEND COMP_OPTS -mno-shstk -fno-plt)
+  list(APPEND COMP_OPTS -mno-shstk -fno-plt -mno-red-zone)
 endif ()
 if (ARCH STREQUAL "arm64")
   list(APPEND COMP_OPTS -ffixed-x28)

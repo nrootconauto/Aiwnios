@@ -375,11 +375,10 @@ class CBinFile
   U16	jmp;
   U8	module_align_bits,
 	reserved;
-  U32	bin_signature;
+  U32	bin_signature; //used as ABI detector(OX86,X86,OARM,ARM,RV64)
   I64	org,
 	patch_table_offset, //$LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$
 	file_size;
-  U64	which_abi; //Added by Nroot(ARM/X86/X86OBSD/RISCV)
 };
 
 class CPatchTableAbsAddr

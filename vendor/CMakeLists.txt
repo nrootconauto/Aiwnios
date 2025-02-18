@@ -23,6 +23,13 @@ target_compile_options(c_opts
 #    -mno-red-zone
     -fcf-protection=none)
 
+if (ARCH STREQUAL x86_64)
+  list(APPEND c_opts -mno-plt -mno-red-zone)
+endif ()
+if (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+  list(APPEND c_opts -fno-ret-protector)
+endif ()
+
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
     OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
