@@ -22,7 +22,7 @@ void HashDel(CHash *h) {
 
 CHashTable *HashTableNew(int64_t sz, void *task) {
   CHash **body = A_CALLOC(sz * sizeof(CHash *), task);
-  CHashTable *ret = A_MALLOC(sizeof(CHashTable), task);
+  CHashTable *ret = A_CALLOC(sizeof(CHashTable), task);
   ret->body = body;
   ret->mask = sz - 1;
   return ret;

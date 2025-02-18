@@ -359,6 +359,11 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
 }
 void DebuggerBegin() {
   pid_t tid = 0;
+#ifdef __OpenBSD__
+//OpenBSD ptrace is poopy
+  return;
+#endif
+
 #if defined(_WIN32) || defined(WIN32)
   static int64_t init = 0;
   tid = init; // SIMULATE fork sort of

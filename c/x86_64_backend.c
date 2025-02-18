@@ -8561,7 +8561,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin = NULL;
     } else if (run == 1) {
       
-      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(256 + code_off, heap ?: Fs->code_heap);
       bin=MemGetWritePtr(xbin);
       code_off = 0;
     } else if (run == 2) {
@@ -8573,7 +8573,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         SetKeepTmps(r);
       }
       A_FREE(bin);
-      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(256 + code_off, heap ?: Fs->code_heap);
       bin=MemGetWritePtr(xbin);
       code_off = 0;
     }

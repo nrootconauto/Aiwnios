@@ -67,23 +67,17 @@ static void AddMemPair(void *rw,void *rx,int64_t mlen,int fd) {
   while(Misc_LBts(&mem_pairs_lock,0))
 	PAUSE;
 again:;
-  last=NULL;
+  last=(1ull<<31);
   len=mem_pairs_len;
-  cur=mem_pairs;
-  for(ptr=0;ptr!=len;ptr++) {
-	  if(cur->rx&&cur->rx<=rx) {
-		  last=cur->rx+cur->len;
-	  }
-	  if(last<=rx&&!cur->rx) {
+  for(ptr=len-1;ptr>=0;ptr--) {
+	  cur=mem_pairs+ptr;
+	  if(!cur->rw&&!cur->rx) {
 		  cur->rx=rx;
 		  cur->rw=rw;
 		  cur->len=mlen;
 		  cur->fd=fd;
 		  goto end;
 	  }
-	  if(last>rx)
-		break;
-	  cur++;
   }
   //Resize with spacing
   cur=mem_pairs;
@@ -93,15 +87,15 @@ again:;
 			density++;
 	  cur++;
   }
-  mem_pairs_len=(density<<1)+32;
+  mem_pairs_len=density+32;
   cur=mem_pairs;
   
   mem_pairs=calloc(sizeof(CMemPair),mem_pairs_len);
   for(ptr2=ptr=0;ptr!=len;ptr++) {
 	  CMemPair *old=&cur[ptr];
 	  if(old->rx) {
-		  mem_pairs[(ptr2++<<1)+1]=*old;
-	  }
+		  mem_pairs[ptr2++]=*old;
+	  }	
   }
   free(cur);
   goto again;
@@ -122,10 +116,10 @@ static CMemPair *GetMemPairForPtrRX(void *rx) {
 				cur=last;
 				goto end;
 			}
-	  }
+  	  }
 	}
   }
-  for(;ptr!=len;ptr++) {
+  for(cur=mem_pairs;ptr!=len;ptr++,cur++) {
 	  if(!cur->rw)
 		continue;
 	  if(cur->rx<=rx) {
@@ -133,11 +127,7 @@ static CMemPair *GetMemPairForPtrRX(void *rx) {
 			mem_pair_last_idx=ptr;
 			goto end;
 		}
-      }else { 
-		cur=NULL;
-			break; //Sorted
-	  }
-	  cur++;
+      }
   }
   cur=NULL;
 end:
@@ -151,7 +141,7 @@ static CMemPair *GetMemPairForPtrRW(void *rw) {
 	PAUSE;
 	len=mem_pairs_len;
   CMemPair *cur=mem_pairs;
-  for(ptr=0;ptr!=len;ptr++) {
+  for(ptr=0;ptr!=len;ptr++,cur++) {
 	  if(!cur->rw)
 		continue;
 	  if(cur->rw<=rw) {
@@ -159,7 +149,6 @@ static CMemPair *GetMemPairForPtrRW(void *rw) {
 			goto end;
 		}
       }
-	  cur++;
   }
   cur=NULL;
 end:
@@ -173,8 +162,7 @@ static void *OBSD_SexyGetLow32(int64_t len,int fd) {
 	int attempt;
     if (!ps) {
       ps = sysconf(_SC_PAGE_SIZE);
-       		low=(void*)ps;
-		
+       low=(void*)ps;
     }
     for(attempt=0;attempt!=2;attempt++) {
 		while(MAP_FAILED==mquery(low,len,PROT_READ|PROT_WRITE,MAP_SHARED|MAP_FIXED,fd,0)) {
@@ -277,6 +265,7 @@ static void OBSD_SexyDelShm(CHeapCtrl *hc,void *rx) {
 		PAUSE;
     mp->rw=NULL;
     mp->rx=NULL;
+    mp->len=0;
 	Misc_LBtr(&mem_pairs_lock,0);
 }  
 //RETURNS pag in shm file
@@ -593,8 +582,10 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // things,so use power of two to use them
   if (cnt <= MEM_HEAP_HASH_SIZE)
     cnt = NextPower2(cnt);
+  #ifndef __x86_64__
   if(hc->is_code_heap)
 	goto big;
+  #endif
   if (cnt > MEM_HEAP_HASH_SIZE)	
     goto big;
   which_bucket = WhichBucket(cnt);
