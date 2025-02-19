@@ -729,8 +729,19 @@ static void UnblockSignals() {
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   UnblockSignals();
   CHashExport *exp;
+  ucontext_t *ctx=__ctx;
   void *fp;
   int64_t actx[64];
+  actx[0] = ctx->sc_rip;
+  actx[1] = ctx->sc_rsp;
+  actx[2] = ctx->sc_rbp;
+  actx[3] = ctx->sc_rbx;
+  actx[4] = ctx->sc_r10;
+  actx[5] = ctx->sc_r11;
+  actx[6] = ctx->sc_r12;
+  actx[7] = ctx->sc_r13;
+  actx[8] = ctx->sc_r14;
+  actx[9] = ctx->sc_r15;
   // AiwniosDbgCB will return 1 for singlestep
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     fp = exp->val;
@@ -796,7 +807,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     ctx->gregs[0] = exp->val;
   } else
     abort();
-  setcontext(_ctx);
+  return; // returning calls setcontext
 #    elif defined(__FreeBSD__)
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
@@ -818,7 +829,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     ctx->mc_rip = exp->val;
   } else
     abort();
-  setcontext(_ctx);
+  return;
 #    endif
 #  elif defined(__aarch64__) || defined(_M_ARM64)
   mcontext_t *ctx = &_ctx->uc_mcontext;
@@ -964,8 +975,10 @@ void InstallDbgSignalsForThread() {
       .sa_sigaction = SigHandler,
   };
   int sigs[] = {SIGSEGV, SIGBUS, SIGTRAP, SIGILL, -1};
-  for (int *sigp = sigs; *sigp != -1; sigp++)
-    sigaction(*sigp, &sa, 0);
+  extern _Bool BeingDebuggedOnOpenbsd;
+  if (!BeingDebuggedOnOpenbsd) // get yourself a real os, kid
+    for (int *sigp = sigs; *sigp != -1; sigp++)
+      sigaction(*sigp, &sa, 0);
 #else
   /* If the First parameter is nonzero, the handler is the first handler to be
    * called until a subsequent call to AddVectoredExceptionHandler is used to

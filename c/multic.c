@@ -223,6 +223,7 @@ typedef struct {
   struct itimerval profile_timer;
 #  ifdef __OpenBSD__
   struct tib *otib;
+  pid_t tid;
 #  endif
 #  ifdef __APPLE__
   pthread_cond_t wake_cond;
@@ -252,7 +253,7 @@ typedef struct {
 } CCPU;
 static int64_t nproc;
 #endif
-static _Thread_local core_num = 0;
+static _Thread_local core_num = -1;
 static CCPU cores[128];
 CHashTable *glbl_table;
 
@@ -268,8 +269,8 @@ static void *threadrt(void *_pair) {
   pthread_setname_np(pthread_self(), pair->name);
 #  else
   cores[core_num].otib = TCB_TO_TIB(__get_tcb());
+  cores[core_num].tid = TCB_TO_TIB(__get_tcb())->tib_tid;
 #  endif
-
   stack_t stk = {
 #  ifndef __OpenBSD__
       .ss_sp = malloc(SIGSTKSZ),
@@ -290,8 +291,10 @@ static void *threadrt(void *_pair) {
       {SIGPROF, {.sa_sigaction = ProfRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
       {-1},
   };
-  for (struct Sig *sg = sigs; sg->sig != -1; sg++)
-    sigaction(sg->sig, &sg->sa, 0);
+  extern _Bool BeingDebuggedOnOpenbsd;
+  if (!BeingDebuggedOnOpenbsd)
+    for (struct Sig *sg = sigs; sg->sig != -1; sg++)
+      sigaction(sg->sig, &sg->sa, 0);
 #endif
   InstallDbgSignalsForThread();
   DebuggerClientWatchThisTID();
@@ -307,12 +310,17 @@ static void *threadrt(void *_pair) {
 }
 #ifndef _WIN32
 
+#ifdef __OpenBSD__
+static _Atomic(pid_t) which_interupt;
+#endif
+
 void InteruptCore(int64_t core) {
 #  ifndef __OpenBSD__
   pthread_kill(cores[core].pt, SIGUSR1);
 #  else
   // we changed the address of the tib so we'll have to pass it ourselves
   CCPU *c = cores + core;
+  which_interupt = c->tid;
   thrkill(c->otib->tib_tid, SIGUSR1, c->otib);
 #  endif
 }
@@ -323,15 +331,20 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
-#  ifndef __OpenBSD__
+  #  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
+#else
+  if (TCB_TO_TIB(__get_tcb())->tib_tid != which_interupt) {
+    fprintf(stderr, "Report to nroot, OpenBSD is acting poopy\n");
+    abort();
+  }
 #  endif
+  CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
   void (*fp)();
   if (y) {
     fp = y->val;
 #  if defined(__OpenBSD__)
-    FFI_CALL_TOS_2(fp, NULL, NULL);
+    FFI_CALL_TOS_2(fp, _ctx->sc_rip, _ctx->sc_rbp);
 #  endif
 #  if defined(__FreeBSD__) && defined(__x86_64__)
     FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
