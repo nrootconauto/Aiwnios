@@ -2648,16 +2648,13 @@ static void PopTmp(CCmpCtrl *cctrl, CRPN *rpn) {
         assert(cctrl->backend_user_data2 >= 0);
       } else {
         --cctrl->backend_user_data2;
-        assert(cctrl->backend_user_data2 >= 0);
       }
     } else {
       if (rpn->flags & (ICF_SIB | ICF_INDIR_REG))
         goto indir;
       --cctrl->backend_user_data3;
-      assert(cctrl->backend_user_data3 >= 0);
     }
   }
-  assert(cctrl->backend_user_data1 >= 0);
 }
 
 static CRPN *__AddScale(CRPN *r, int64_t *const_val) {

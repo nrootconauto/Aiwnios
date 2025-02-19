@@ -211,7 +211,7 @@ new_left:
 	}
 	if(root->left) {
 		if(1) {
-		tmp=OBSD_SexyBuddyAlloc(new->offset_l,want,order-1,root->left);
+		tmp=OBSD_SexyBuddyAlloc(root->offset_l,want,order-1,root->left);
 		if(0<=tmp) {
 			return tmp;
 		}
@@ -226,7 +226,7 @@ new_right:
 	}
 	if(root->right) {
 		if(1) {
-		tmp=OBSD_SexyBuddyAlloc(new->offset_r,want,order-1,root->right);
+		tmp=OBSD_SexyBuddyAlloc(root->offset_r,want,order-1,root->right);
 		if(0<=tmp) {
 			return tmp;
 		}
