@@ -15,9 +15,9 @@
 #  ifndef _WIN32
 #    include <setjmp.h>
 #    include <sys/syscall.h>
-#	ifndef __OpenBSD__
-#    include <ucontext.h>
-#endif
+#    ifndef __OpenBSD__
+#      include <ucontext.h>
+#    endif
 #    ifdef __FreeBSD__
 #      include <machine/sysarch.h>
 #    endif
@@ -52,18 +52,18 @@
  * Linux/FreeBSD use FS for TLS, but we will allocate space on
  * %gs for compatibility with windows ABI. (__bootstrap_tls())
  ***************************************************************/
-#ifdef __OpenBSD__
-#include <tib.h>
-#  define FS_OFF   0xF0
-#  define GS_OFF   0xF8
-#  define ThreadFs (*(void *__seg_fs *)FS_OFF)
-#  define ThreadGs (*(void *__seg_fs *)GS_OFF)
-#else
-#  define FS_OFF   0xF0
-#  define GS_OFF   0xF8
-#  define ThreadFs (*(void *__seg_gs *)FS_OFF)
-#  define ThreadGs (*(void *__seg_gs *)GS_OFF)
-#endif
+#  ifdef __OpenBSD__
+#    include <tib.h>
+#    define FS_OFF   0xF0
+#    define GS_OFF   0xF8
+#    define ThreadFs (*(void *__seg_fs *)FS_OFF)
+#    define ThreadGs (*(void *__seg_fs *)GS_OFF)
+#  else
+#    define FS_OFF   0xF0
+#    define GS_OFF   0xF8
+#    define ThreadFs (*(void *__seg_gs *)FS_OFF)
+#    define ThreadGs (*(void *__seg_gs *)GS_OFF)
+#  endif
 #elif defined(__aarch64__)
 static _Thread_local void *__fsgs[2];
 #  define FS_OFF   0
@@ -126,13 +126,14 @@ static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
-	#ifdef __OpenBSD__
-  struct tib *old=TCB_TO_TIB(__get_tcb());
-  struct tib *new=_dl_allocate_tib(TIB_EXTRA_ALIGN+0x100); //Fs x Gs pointers end at 0xf8
-  memcpy(new,old,sizeof(struct tib)+TIB_EXTRA_ALIGN);
-  new->__tib_self=(void*)new;
+#  ifdef __OpenBSD__
+  struct tib *old = TCB_TO_TIB(__get_tcb());
+  struct tib *new =
+      _dl_allocate_tib(TIB_EXTRA_ALIGN + 0x100); // Fs x Gs pointers end at 0xf8
+  memcpy(new, old, sizeof(struct tib) + TIB_EXTRA_ALIGN);
+  new->__tib_self = (void *)new;
   __set_tcb(TIB_TO_TCB(new));
-	#else
+#  else
   static bool init, fsgsbase;
   if (!init) {
     int ebx;
@@ -166,12 +167,12 @@ void __bootstrap_tls(void) {
     // this is a harsh exit that ignores atexit
     _Exit(-1);
   }
-  #endif
+#  endif
 }
 
 static int __setgs(void *gs) {
   int ret = -1;
- 
+
 #  ifdef __linux__
   asm("syscall"   //    (not defined in musl)
       : "=a"(ret) //         ARCH_SET_GS
@@ -209,6 +210,7 @@ typedef struct {
 
 #ifndef _WIN64
 #  include <pthread.h>
+#  include <sys/mman.h>
 #  include <sys/syscall.h>
 #  include <sys/time.h>
 #  include <time.h>
@@ -219,6 +221,9 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
+#  ifdef __OpenBSD__
+  struct tib *otib;
+#  endif
 #  ifdef __APPLE__
   pthread_cond_t wake_cond;
 #  endif
@@ -256,13 +261,22 @@ CHashTable *glbl_table;
 #endif
 static void *threadrt(void *_pair) {
   CorePair *pair = _pair;
+  core_num = pair->num;
   __bootstrap_tls();
 #ifndef _WIN64
-#if !defined(__OpenBSD__)
+#  ifndef __OpenBSD__
   pthread_setname_np(pthread_self(), pair->name);
-  #endif
+#  else
+  cores[core_num].otib = TCB_TO_TIB(__get_tcb());
+#  endif
+
   stack_t stk = {
+#  ifndef __OpenBSD__
       .ss_sp = malloc(SIGSTKSZ),
+#  else
+      .ss_sp = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
+                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0),
+#  endif
       .ss_size = SIGSTKSZ,
   };
   sigaltstack(&stk, 0);
@@ -286,7 +300,6 @@ static void *threadrt(void *_pair) {
   TaskInit(Fs, NULL, 0);
   Fs->hash_table->next = pair->parent_table;
   SetHolyGs(pair->gs);
-  core_num = pair->num;
   void (*fp)();
   fp = pair->fp;
   free(pair);
@@ -295,7 +308,13 @@ static void *threadrt(void *_pair) {
 #ifndef _WIN32
 
 void InteruptCore(int64_t core) {
+#  ifndef __OpenBSD__
   pthread_kill(cores[core].pt, SIGUSR1);
+#  else
+  // we changed the address of the tib so we'll have to pass it ourselves
+  CCPU *c = cores + core;
+  thrkill(c->otib->tib_tid, SIGUSR1, c->otib);
+#  endif
 }
 static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   (void)sig, (void)info;
@@ -305,16 +324,15 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
   CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
-  #if defined(__OpenBSD__)
-  #else
+#  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
-  #endif
+#  endif
   void (*fp)();
   if (y) {
     fp = y->val;
-#if defined(__OpenBSD__)
-    FFI_CALL_TOS_2(fp, NULL,NULL);
-#endif
+#  if defined(__OpenBSD__)
+    FFI_CALL_TOS_2(fp, NULL, NULL);
+#  endif
 #  if defined(__FreeBSD__) && defined(__x86_64__)
     FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
 #  elif defined(__linux__) && defined(__x86_64__)
@@ -405,7 +423,7 @@ void MPSleepHP(int64_t ns) {
   ts.tv_nsec = (ns % 1000000) * 1000U;
   ts.tv_sec = ns / 1000000;
   Misc_LBts(&cores[core_num].wake_futex, 0);
-#if defined(__OpenBSD__)
+#  if defined(__OpenBSD__)
   futex(&cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL);
 #  elif defined(__linux__)
   syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
@@ -415,7 +433,8 @@ void MPSleepHP(int64_t ns) {
 #  endif
 #  if defined(__APPLE__)
   if (__ulock_wait) {
-    __ulock_wait(UL_COMPARE_AND_WAIT_SHARED, &cores[core_num].wake_futex, 1, ns);
+    __ulock_wait(UL_COMPARE_AND_WAIT_SHARED, &cores[core_num].wake_futex, 1,
+                 ns);
   } else {
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_nsec += (ns % 1000000) * 1000U;
@@ -432,8 +451,8 @@ void MPSleepHP(int64_t ns) {
 
 void MPAwake(int64_t core) {
   if (Misc_Bt(&cores[core].wake_futex, 0)) {
-#if defined(__OpenBSD__)
-  futex(&cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL);
+#  if defined(__OpenBSD__)
+    futex(&cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL);
 #  elif defined(__linux__)
     syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
 #  elif defined(__FreeBSD__)
@@ -441,8 +460,8 @@ void MPAwake(int64_t core) {
 #  endif
 #  if defined(__APPLE__)
     if (__ulock_wake) {
-      __ulock_wake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL, &cores[core].wake_futex,
-             1);
+      __ulock_wake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL,
+                   &cores[core].wake_futex, 1);
     } else {
       pthread_cond_signal(&cores[core].wake_cond);
     }
@@ -450,7 +469,12 @@ void MPAwake(int64_t core) {
   }
 }
 void __ShutdownCore(int core) {
+#ifndef __OpenBSD__
   pthread_kill(cores[core].pt, SIGUSR2);
+#else
+  CCPU *c = cores + core;
+  thrkill(c->otib->tib_tid, SIGUSR2, c->otib);
+#endif
   pthread_join(cores[core].pt, NULL);
 }
 
