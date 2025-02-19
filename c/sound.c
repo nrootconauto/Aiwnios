@@ -80,10 +80,12 @@ void SndFreq(int64_t f) {
   } else
     SDL_PauseAudioDevice(output, 0);
 }
+static int audio_init=0; 
 void InitSound() {
   SDL_AudioSpec want;
   if (0>SDL_Init(SDL_INIT_AUDIO))
     return;
+  audio_init = 1;
   want = (SDL_AudioSpec){0};
   want.freq = 24000;
   want.format = AUDIO_F32;
@@ -96,6 +98,8 @@ void InitSound() {
 }
 
 void DeinitSound() {
+  if(!audio_init)
+    return;
   SDL_PauseAudioDevice(output, 1);
   SDL_CloseAudioDevice(output);
 }
