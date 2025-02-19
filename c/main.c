@@ -30,7 +30,6 @@
 #ifndef _WIN64
 #  include <sys/resource.h>
 #endif
-_Bool BeingDebuggedOnOpenbsd;
 void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
@@ -1855,18 +1854,6 @@ static int64_t IsAiwniosPackApp() {
 	}
 	return 0;
 }
-#ifdef __OpenBSD__
-#include <sys/types.h>
-#include <sys/ptrace.h>
-// bless whoever came up with this
-static int isdbg(void) {
-  if (ptrace(PT_TRACE_ME, 0, (void *)1, 0) < 0)
-    return 1;
-  else
-    ptrace(PT_DETACH, 0, (void *)1, 0);
-  return 0;
-}
-#endif
 int main(int argc, char **argv) {
 	SDL_SetMainReady();
 	exe_name=argv[0];
@@ -1877,9 +1864,6 @@ int main(int argc, char **argv) {
   getrlimit(RLIMIT_NOFILE, &rl);
   rl.rlim_cur = rl.rlim_max;
   setrlimit(RLIMIT_NOFILE, &rl);
-#ifdef __OpenBSD__
-  BeingDebuggedOnOpenbsd = isdbg();
-#endif
 #endif
   __bootstrap_tls();
   void *argtable[] = {

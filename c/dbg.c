@@ -975,8 +975,6 @@ void InstallDbgSignalsForThread() {
       .sa_sigaction = SigHandler,
   };
   int sigs[] = {SIGSEGV, SIGBUS, SIGTRAP, SIGILL, -1};
-  extern _Bool BeingDebuggedOnOpenbsd;
-  if (!BeingDebuggedOnOpenbsd) // get yourself a real os, kid
     for (int *sigp = sigs; *sigp != -1; sigp++)
       sigaction(*sigp, &sa, 0);
 #else
