@@ -7184,4 +7184,4 @@ extern U0 Dr(CTask *t=NULL);
 //See Src/AiwniosPack.HC
 extern U0 AiwniosPack(U8 *result_name,U8 *boot_command=NULL,U8 *root,U8 *hcrt_bin="/HCRT2.BIN");
 extern U0 AiwniosPackLoad();
-public extern U0 Un(U8 *st,I64 len,U64 seg=64);
+public extern U0 Un(U8 *st,I64 len,U64 seg=64);

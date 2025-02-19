@@ -714,7 +714,7 @@ void DebuggerBegin() {
   }
 }
 static void UnblockSignals() {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGILL);

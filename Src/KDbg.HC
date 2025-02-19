@@ -185,6 +185,12 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   I64 idx;
   #ifdef TARGET_X86
   I64 oip=gps[0],rbp=gps[2]; 
+  if(HOST_ABI=='OpenBSD') {
+    rbp=GetRBP;
+    oip=Caller(0);
+    gps[0]=oip;
+    gps[2]=rbp;
+  }
   #endif
   #ifdef TARGET_AARCH64
   I64 oip=gps[22],rbp=gps[11]; 
