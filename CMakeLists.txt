@@ -56,7 +56,7 @@ target_include_directories(aiwnios PUBLIC ${SDL2_INCLUDE_DIRS})
 
 if (ARCH STREQUAL arm64)
   target_link_directories(aiwnios PUBLIC /usr/local/lib)
-  target_link_libraries(aiwnios PRIVATE SDL2)
+  target_link_libraries(aiwnios PRIVATE SDL2::SDL2)
 elseif (ARCH STREQUAL x86_64)
   if (NOT WIN32)
     if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
