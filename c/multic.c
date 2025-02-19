@@ -293,7 +293,6 @@ static void *threadrt(void *_pair) {
   };
     for (struct Sig *sg = sigs; sg->sig != -1; sg++)
       sigaction(sg->sig, &sg->sa, 0);
-  }
 #endif
   InstallDbgSignalsForThread();
   DebuggerClientWatchThisTID();
@@ -320,7 +319,7 @@ void InteruptCore(int64_t core) {
   // we changed the address of the tib so we'll have to pass it ourselves
   CCPU *c = cores + core;
   which_interupt = c->tid;
-  printf("%d\n",thrkill(c->otib->tib_tid, SIGUSR1, c->otib));
+  thrkill(c->otib->tib_tid, SIGUSR1, c->otib);
 #  endif
 }
 static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
