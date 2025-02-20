@@ -8558,7 +8558,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin = NULL;
     } else if (run == 1) {
       
-      xbin=A_CALLOC(256 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
       bin=MemGetWritePtr(xbin);
       code_off = 0;
     } else if (run == 2) {
@@ -8570,7 +8570,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         SetKeepTmps(r);
       }
       A_FREE(bin);
-      xbin=A_CALLOC(256 + code_off, heap ?: Fs->code_heap);
+      xbin=A_CALLOC(1024 + code_off, heap ?: Fs->code_heap);
       bin=MemGetWritePtr(xbin);
       code_off = 0;
     }
@@ -8712,8 +8712,6 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         break;
       case CMT_STRING:
         if (!(cctrl->flags & CCF_STRINGS_ON_HEAP)) {
-          if (code_off % 8)
-            code_off += 8 - code_off % 8;
           misc->addr = bin + code_off;
           if (bin)
             memcpy(MemGetWritePtr(bin) + code_off, misc->str, misc->str_len);

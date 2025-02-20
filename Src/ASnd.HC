@@ -311,18 +311,7 @@ U0 CurSongTask()
 }
 
 #help_index "Snd"
-
-#define SE_NOISE	0
-#define SE_SWEEP	1
-
-class CSoundEffectFrame
-{
-  I32	type;
-  I8	ona1,ona2;
-  F64	duration;
-};
-
-U0 SoundEffectEndTaskCB()
+U0 SoundEffectEndTaskCB()
 {
   Free(FramePtr("CSoundEffectFrame"));
   music.mute--;

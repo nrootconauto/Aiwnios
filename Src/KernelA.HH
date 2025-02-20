@@ -7185,3 +7185,15 @@ extern U0 Dr(CTask *t=NULL);
 extern U0 AiwniosPack(U8 *result_name,U8 *boot_command=NULL,U8 *root,U8 *hcrt_bin="/HCRT2.BIN");
 extern U0 AiwniosPackLoad();
 public extern U0 Un(U8 *st,I64 len,U64 seg=64);
+
+#define SE_NOISE	0
+#define SE_SWEEP	1
+
+class CSoundEffectFrame
+{
+  I32	type;
+  I8	ona1,ona2;
+  F64	duration;
+};
+
+
