@@ -370,7 +370,7 @@ typedef struct CICArg {
   int8_t reg, reg2, fallback_reg;
   // True on enter of things that want to set the flags
   // True/False if the result of the thing set the flags or not
-  char want_use_flags; //This is reset by __OptPassFinal
+  char want_use_flags; // This is reset by __OptPassFinal
   char set_flags;
   // keep the value in a temp location,good for removing reundant stores
   char keep_in_tmp;
@@ -398,8 +398,8 @@ enum {
   ICF_LOCK_EXPR = 128,   // Used with lock {}
   ICF_IS_BOOL = 256,
   ICF_NO_JUMP = 512, // Used for eliminating jumps to next instruction
-  ICF_SPILLS_TMP_REGS=1024,
-  ICF_DOESNT_SPILL_TMP_REGS=2048,
+  ICF_SPILLS_TMP_REGS = 1024,
+  ICF_DOESNT_SPILL_TMP_REGS = 2048,
 };
 struct CRPN {
   CQue base;
@@ -425,7 +425,7 @@ struct CRPN {
   uint32_t changes_iregs, changes_fregs;
   uint32_t changes_iregs2, changes_fregs2;
   // Will be stored into this reg if ICF_STUFF_IN_REG is set
-  void  *start_ptr,*end_ptr;
+  void *start_ptr, *end_ptr;
   char stuff_in_reg;
 };
 
@@ -547,7 +547,7 @@ enum {
 #  define AIWNIOS_TMP_FREG_START 3
 #  define AIWNIOS_TMP_FREG_CNT   (5 - 3 + 1)
 #  define AIWNIOS_FREG_CNT       (15 - 6 + 1)
-#elif (defined(__OpenBSD__) || defined(__linux__) || defined(__FreeBSD__)) &&                          \
+#elif (defined(__OpenBSD__) || defined(__linux__) || defined(__FreeBSD__)) &&  \
     (defined(_M_ARM64) || defined(__aarch64__))
 #  define AIWNIOS_IREG_START     19
 #  define AIWNIOS_IREG_CNT       (27 - 19 + 1)
@@ -722,7 +722,7 @@ CRPN *__HC_ICAdd_StaticData(CCmpCtrl *cmp, CCodeCtrl *cc, int64_t at, char *d,
 CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
                            int64_t ptrs);
 CRPN *__HC_ICAdd_SetStaticsSize(CCodeCtrl *cc, int64_t len);
-char *Load(char *fbuf,int64_t size);
+char *Load(char *fbuf, int64_t size);
 CRPN *__HC_ICAdd_ShortAddr(CCmpCtrl *, CCodeCtrl *cc, char *name,
                            CCodeMisc *ptr);
 
@@ -745,4 +745,4 @@ void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
 CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);
 
 void CacheRPNArgs(CCmpCtrl *cctrl);
-extern int64_t DolDocDumpIR(char *to,int64_t,CRPN*);
+extern int64_t DolDocDumpIR(char *to, int64_t, CRPN *);

@@ -20,17 +20,18 @@
   "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
                       // the important TIDs(cores))
 #define DBG_MSG_OK "OK"
-#if defined(__OpenBSD__)||defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__OpenBSD__) || defined(__linux__) || defined(__FreeBSD__) ||      \
+    defined(__APPLE__)
 #  include <poll.h>
-#  include <sys/types.h>
 #  include <sys/ptrace.h>
+#  include <sys/types.h>
 #  include <sys/wait.h>
 #  include <unistd.h>
-#if ! defined(__OpenBSD__)
-#  include <ucontext.h>
-#else
-#  include <machine/reg.h>
-#endif
+#  if !defined(__OpenBSD__)
+#    include <ucontext.h>
+#  else
+#    include <machine/reg.h>
+#  endif
 #  if defined(__FreeBSD__)
 #    include <machine/reg.h>
 #  endif
@@ -219,10 +220,10 @@ static void WriteMsg(char const *fmt, ...) {
   va_end(l);
   write(debugger_pipe[1], "", 1);
 }
-#if defined(__OpenBSD__)
-#include <poll.h>
-#define POLL_IN POLLIN
-#endif
+#  if defined(__OpenBSD__)
+#    include <poll.h>
+#    define POLL_IN POLLIN
+#  endif
 static int64_t MsgPoll() {
   struct pollfd poll_for;
   memset(&poll_for, 0, sizeof(struct pollfd));
@@ -360,7 +361,7 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
 void DebuggerBegin() {
   pid_t tid = 0;
 #ifdef __OpenBSD__
-//OpenBSD ptrace is poopy
+  // OpenBSD ptrace is poopy
   return;
 #endif
 
@@ -593,7 +594,7 @@ void DebuggerBegin() {
 
 #if defined(_M_ARM64) || defined(__aarch64__)
 #  if defined(__linux__)
-				//???	
+                //???
 #  elif defined(__FreeBSD__)
 #  endif
 #endif
@@ -714,7 +715,8 @@ void DebuggerBegin() {
   }
 }
 static void UnblockSignals() {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) ||        \
+    defined(__OpenBSD__)
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGILL);
@@ -729,7 +731,7 @@ static void UnblockSignals() {
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   UnblockSignals();
   CHashExport *exp;
-  ucontext_t *ctx=__ctx;
+  ucontext_t *ctx = __ctx;
   void *fp;
   int64_t actx[64];
   actx[0] = ctx->sc_rip;
@@ -855,7 +857,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
 // file actx[i-18]=ctx->__ss.__x[i];
 #    endif
 #    if defined(__linux__)
-	actx[22]=ctx->pc;
+  actx[22] = ctx->pc;
 #    elif defined(__FreeBSD__)
 #    endif
 #    if defined(__linux__)
@@ -873,18 +875,17 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     if (FFI_CALL_TOS_2(fp, sig, actx)) { // Returns 1 for single step
 #    if defined(__x86_64__)
 #      if defined(__FreeBSD__)
-      
-  ctx->mc_rip=actx[0]  ;
-  ctx->mc_rsp=actx[1]  ;
-  ctx->mc_rbp=actx[2]  ;
-  ctx->mc_rbx=actx[3] ;
-  ctx->mc_r10=actx[4];
-  ctx->mc_r11=actx[5];
-  ctx->mc_r12=actx[6] ;
-  ctx->mc_r13=actx[7];
-  ctx->mc_r14=actx[8];
-  ctx->mc_r15=actx[9]
-      ctx->mc_eflags |= 1 << 8;
+
+      ctx->mc_rip = actx[0];
+      ctx->mc_rsp = actx[1];
+      ctx->mc_rbp = actx[2];
+      ctx->mc_rbx = actx[3];
+      ctx->mc_r10 = actx[4];
+      ctx->mc_r11 = actx[5];
+      ctx->mc_r12 = actx[6];
+      ctx->mc_r13 = actx[7];
+      ctx->mc_r14 = actx[8];
+      ctx->mc_r15 = actx[9] ctx->mc_eflags |= 1 << 8;
 #      elif defined(__linux__)
       ctx->gregs[REG_RIP] = actx[0];
       ctx->gregs[REG_RSP] = actx[1];
@@ -975,8 +976,8 @@ void InstallDbgSignalsForThread() {
       .sa_sigaction = SigHandler,
   };
   int sigs[] = {SIGSEGV, SIGBUS, SIGTRAP, SIGILL, -1};
-    for (int *sigp = sigs; *sigp != -1; sigp++)
-      sigaction(*sigp, &sa, 0);
+  for (int *sigp = sigs; *sigp != -1; sigp++)
+    sigaction(*sigp, &sa, 0);
 #else
   /* If the First parameter is nonzero, the handler is the first handler to be
    * called until a subsequent call to AddVectoredExceptionHandler is used to

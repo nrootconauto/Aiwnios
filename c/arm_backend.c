@@ -945,7 +945,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(ARM_fmovI64F64(i, i));                                \
       }                                                                        \
       \		 
-                                                                                                                                                                                                                 \
+                                                                                                                                                                                                                                                                                      \
     }                                                                          \
   }
   // Arm mandates 16 byte align
@@ -2805,8 +2805,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   rpn->res.set_flags = 0;
   char *enter_addr2, *enter_addr, *exit_addr, **fail1_addr, **fail2_addr,
       ***range_fail_addrs;
-  if(cctrl->code_ctrl->final_pass)
-	rpn->start_ptr=bin+code_off;
+  if (cctrl->code_ctrl->final_pass)
+    rpn->start_ptr = bin + code_off;
   if (cctrl->code_ctrl->dbg_info && cctrl->code_ctrl->final_pass &&
       rpn->ic_line) { // Final run
     if (MSize(cctrl->code_ctrl->dbg_info) / 8 >
@@ -4588,8 +4588,8 @@ ret:;
     old_rpn->changes_fregs2 |= rpn->changes_fregs | rpn->changes_fregs2;
     cctrl->cur_rpn = old_rpn;
   }
-  if(cctrl->code_ctrl->final_pass)
-	rpn->end_ptr=bin+code_off;
+  if (cctrl->code_ctrl->final_pass)
+    rpn->end_ptr = bin + code_off;
   cctrl->backend_user_data5 = old_fail_addr;
   cctrl->backend_user_data6 = old_pass_addr;
   cctrl->aarch64_atomic_loop_start = old_lock_start;
@@ -5055,7 +5055,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                    CHeapCtrl *heap) {
   int64_t code_off, run, idx, cnt = 0, cnt2, final_size, is_terminal;
   int64_t min_ln = 0, max_ln = 0, statics_sz = 0;
-  char *bin = NULL,*obin;
+  char *bin = NULL, *obin;
   char *ptr;
   CCodeMisc *misc;
   CHashImport *import;
@@ -5111,7 +5111,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         SetKeepTmps(r);
       }
       obin = A_MALLOC(code_off + 1024, heap ? heap : Fs->code_heap);
-      bin=MemGetWritePtr(obin); //For OpenBSD sexy mapping(see mem.c or ask nroot)
+      bin = MemGetWritePtr(
+          obin); // For OpenBSD sexy mapping(see mem.c or ask nroot)
       code_off = 0;
     }
     code_off = FuncProlog(cctrl, bin, code_off);
