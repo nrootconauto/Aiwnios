@@ -23,14 +23,14 @@ struct CMemUnused;
 #define MEM_PAG_BITS       (12)
 #define MEM_PAG_SIZE       (1 << MEM_PAG_BITS)
 typedef struct CHeapCtrlArena {
-	struct CMemUnused *heap_hash[5];
-	struct CMemUnused *used_next,*used_last;
-	struct CMemUnused *malloc_free_lst;
+  struct CMemUnused *heap_hash[5];
+  struct CMemUnused *used_next, *used_last;
+  struct CMemUnused *malloc_free_lst;
 } CHeapCtrlArena;
 typedef struct CBuddyPair {
-	int64_t offset_l,offset_r;
-	struct CBuddyPair *left,*right;
-	char occupied,partial;
+  int64_t offset_l, offset_r;
+  struct CBuddyPair *left, *right;
+  char occupied, partial;
 } CBuddyPair;
 typedef struct CHeapCtrl {
   void *pad; // Needed
@@ -41,20 +41,20 @@ typedef struct CHeapCtrl {
   int64_t arena_lock;
   CHeapCtrlArena arenas[16];
   CQue mem_blks;
-  #if defined(__OpenBSD__)
+#if defined(__OpenBSD__)
   int code_shm_fd;
   CBuddyPair *buddies;
-  #endif
+#endif
 } CHeapCtrl;
 typedef struct CMemBlk {
   CQue base;
   CQue base2;
   int64_t pags;
-  #if defined(__OpenBSD__)
+#if defined(__OpenBSD__)
   void *rx;
   void *rw;
   int64_t shm_pag;
-  #endif
+#endif
 } CMemBlk;
 typedef struct __attribute__((packed)) CMemUnused {
   // MUST BE FIRST MEMBER
@@ -63,7 +63,7 @@ typedef struct __attribute__((packed)) CMemUnused {
   CHeapCtrl *hc;
   void *caller1, *caller2; // Used for used memory only
   int64_t which_bucket;
-  int64_t sz;              // MUST BE LAST MEMBER FOR MAllocAligned
+  int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;
 
 #define A_FREE              __AIWNIOS_Free
@@ -93,6 +93,6 @@ extern int64_t bc_enable;
 extern void *BoundsCheck(void *ptr, int64_t *after);
 int64_t IsValidPtr(char *chk);
 void InitBoundsChecker();
-extern int64_t WriteProtectMemCpy(char *dst,char *src,int64_t len);
+extern int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len);
 void *MemGetWritePtr(void *ptr);
 void *MemGetExecPtr(void *ptr);

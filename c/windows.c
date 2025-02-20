@@ -5,13 +5,13 @@
 #include "c/aiwn_tui.h"
 #include "c/aiwn_windows.h"
 #include "c/lzw.h"
-#include <string.h>
-#include <stdio.h>
 #include <SDL.h>
 #include <SDL_pixels.h>
 #include <SDL_render.h>
 #include <SDL_surface.h>
 #include <SDL_video.h>
+#include <stdio.h>
+#include <string.h>
 static SDL_Palette *sdl_p;
 static SDL_Surface *screen;
 static SDL_Surface *window_icon;
@@ -61,8 +61,8 @@ static void _DrawWindowNew() {
   SDL_FreeSurface(window_icon_proto);
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
-  //SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
-  //                        SDL_HINT_OVERRIDE);
+  // SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
+  //                         SDL_HINT_OVERRIDE);
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;

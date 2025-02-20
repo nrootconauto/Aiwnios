@@ -1011,81 +1011,83 @@ static int64_t AddBytes(char *to, int64_t len, char *fmt, ...) {
   va_list va;
   va_start(va, fmt);
   if (to)
-    len += vsnprintf(to+len, 1 << 16, fmt, va);
+    len += vsnprintf(to + len, 1 << 16, fmt, va);
   else
     len += vsnprintf(NULL, 0, fmt, va);
   va_end(va);
   return len;
 }
-static int64_t DolDocDumpDim(char *to,int64_t len,CArrayDim *dim) {
+static int64_t DolDocDumpDim(char *to, int64_t len, CArrayDim *dim) {
   if (dim->next)
-    len=DolDocDumpDim(to,len,dim->next);
-  len=AddBytes(to,len,"[%ld]", dim->cnt);
+    len = DolDocDumpDim(to, len, dim->next);
+  len = AddBytes(to, len, "[%ld]", dim->cnt);
   return len;
 }
 
-static int64_t DolDocDumpType(char *to,int64_t len,CRPN *rpn) {
-	  int64_t stars;
-	  len=AddBytes(to,len,"$LTBLUE$");
+static int64_t DolDocDumpType(char *to, int64_t len, CRPN *rpn) {
+  int64_t stars;
+  len = AddBytes(to, len, "$LTBLUE$");
   if (rpn->ic_class) {
     stars = rpn->ic_class->ptr_star_cnt;
     if (rpn->ic_class->raw_type != RT_FUNC)
-      len=AddBytes(to,len,"%s", rpn->ic_class[-stars].base.str);
+      len = AddBytes(to, len, "%s", rpn->ic_class[-stars].base.str);
     while (--stars >= 0)
-      len=AddBytes(to,len,"*");
+      len = AddBytes(to, len, "*");
   }
-  if(rpn->ic_dim)
-	len=DolDocDumpDim(len,to,rpn->ic_dim);
+  if (rpn->ic_dim)
+    len = DolDocDumpDim(len, to, rpn->ic_dim);
   switch (rpn->raw_type) {
     break;
   case RT_UNDEF:
     break;
   case RT_F64:
-    len=AddBytes(to,len,"(RT_F64)");
+    len = AddBytes(to, len, "(RT_F64)");
     break;
   case RT_FUNC:
-    len=AddBytes(to,len,"(RT_FUNC)");
+    len = AddBytes(to, len, "(RT_FUNC)");
     break;
   case RT_U0:
-    len=AddBytes(to,len,"(RT_U0)");
+    len = AddBytes(to, len, "(RT_U0)");
     break;
   case RT_I8i:
-    len=AddBytes(to,len,"(RT_I8i)");
+    len = AddBytes(to, len, "(RT_I8i)");
     break;
   case RT_I16i:
-    len=AddBytes(to,len,"(RT_I16i)");
+    len = AddBytes(to, len, "(RT_I16i)");
     break;
   case RT_I32i:
-    len=AddBytes(to,len,"(RT_I32i)");
+    len = AddBytes(to, len, "(RT_I32i)");
     break;
   case RT_I64i:
-    len=AddBytes(to,len,"(RT_I64i)");
+    len = AddBytes(to, len, "(RT_I64i)");
     break;
   case RT_U8i:
-    len=AddBytes(to,len,"(RT_U8i)");
+    len = AddBytes(to, len, "(RT_U8i)");
     break;
   case RT_U16i:
-    len=AddBytes(to,len,"(RT_U16i)");
+    len = AddBytes(to, len, "(RT_U16i)");
     break;
   case RT_U32i:
-    len=AddBytes(to,len,"(RT_U32i)");
+    len = AddBytes(to, len, "(RT_U32i)");
     break;
   case RT_U64i:
-    len=AddBytes(to,len,"(RT_U64i)");
+    len = AddBytes(to, len, "(RT_U64i)");
     break;
   case RT_PTR:
-    len=AddBytes(to,len,"(RT_PTR)");
+    len = AddBytes(to, len, "(RT_PTR)");
   }
-  len=AddBytes(to,len,"$FD$\n");
+  len = AddBytes(to, len, "$FD$\n");
   return len;
 }
-static int64_t DolDocUnMacro(char *to, int64_t len,CRPN *rpn) {
-	if(rpn->start_ptr<rpn->end_ptr) {
-		len=AddBytes(to,len,"$MA,\"Un\",LM=\"Un(0x%llx,0x%llx);\\n\"$\n",rpn->start_ptr,(char*)rpn->end_ptr-(char*)rpn->start_ptr);
-	}
-	return len;
+static int64_t DolDocUnMacro(char *to, int64_t len, CRPN *rpn) {
+  if (rpn->start_ptr < rpn->end_ptr) {
+    len =
+        AddBytes(to, len, "$MA,\"Un\",LM=\"Un(0x%llx,0x%llx);\\n\"$\n",
+                 rpn->start_ptr, (char *)rpn->end_ptr - (char *)rpn->start_ptr);
+  }
+  return len;
 }
-int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
+int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
   int64_t idx;
   CRPN *orig_rpn = rpn;
   switch (rpn->type) {
@@ -1112,14 +1114,14 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     goto unop;
   case IC_RAW_BYTES:
     len = AddBytes(to, len, "$PURPLE$RAW_BYTES:(%p)$FD$\n", rpn->length);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
   bytes:
     len = AddBytes(to, len, "$ID,2$\n");
     for (idx = 0; idx != rpn->length; idx++) {
-      len = AddBytes(to,len,"%02X,", rpn->raw_bytes[idx]);
+      len = AddBytes(to, len, "%02X,", rpn->raw_bytes[idx]);
     }
     len = AddBytes(to, len, "$ID,-2$");
-     goto ret;
+    goto ret;
   case __IC_STATICS_SIZE:
     len = AddBytes(to, len, "$PURPLE$STATICS_SIZE(%p)$FD$\n", rpn->integer);
     goto ret;
@@ -1135,11 +1137,11 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
   case IC_SHORT_ADDR:
     len =
         AddBytes(to, len, "$PURPLE$SHORT_ADDR(%s):$FD$\n", rpn->code_misc->str);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     return len;
   case IC_RELOC:
     len = AddBytes(to, len, "$PURPLE$RELOC(%s):$FD$\n", rpn->code_misc->str);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     return len;
   case IC_TO_BOOL:
     len = AddBytes(to, len, "$PURPLE$TO_BOOL$FD$\n");
@@ -1149,11 +1151,11 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     return len;
   case __IC_VARGS:
     len = AddBytes(to, len, "$PURPLE$VARGS$FD$\n");
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     rpn = rpn->base.next;
     for (idx = 0; idx != orig_rpn->length; idx++) {
-      len = DolDocDumpIR(to,len,rpn);
+      len = DolDocDumpIR(to, len, rpn);
       rpn = ICFwd(rpn);
     }
     len = AddBytes(to, len, "$ID,-2$");
@@ -1168,17 +1170,17 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     break;
   case __IC_ARG:
     len = AddBytes(to, len, "$PURPLE$ARG(%p)$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
     return len;
     break;
   case IC_STATIC:
     len = AddBytes(to, len, "$PURPLE$STATIC(%p)$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
     return len;
   case IC_TYPECAST:
     len = AddBytes(to, len, "$PURPLE$TYPECAST$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
+    len = DolDocUnMacro(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     len = DolDocDumpIR(to, len, rpn->base.next);
     len = AddBytes(to, len, "$ID,-2$");
@@ -1186,23 +1188,23 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     break;
   case IC_SUB_RET:
     len = AddBytes(to, len, "$PURPLE$SUB_RET$FD$\n", rpn->integer);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     goto ret;
     break;
   case IC_SUB_PROLOG:
     len = AddBytes(to, len, "$PURPLE$SUB_PROLOG$FD$\n", rpn->integer);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     goto ret;
     break;
   case IC_SUB_CALL:
     len = AddBytes(to, len, "$PURPLE$SUB_CALL$FD$\n", rpn->integer);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     goto ret;
     break;
   case IC_UNBOUNDED_SWITCH:
     len = AddBytes(to, len, "$PURPLE$Switch[]$FD$\n", rpn->integer);
   swit:
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     len = DolDocDumpIR(to, len, rpn->base.next);
     len = AddBytes(to, len, "$ID,-2$");
@@ -1216,7 +1218,7 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     goto unop;
     break;
   case IC_BOUNDED_SWITCH:
-    len=AddBytes(to,len,"$PURPLE$SWITCH$FD$\n");
+    len = AddBytes(to, len, "$PURPLE$SWITCH$FD$\n");
     goto swit;
     break;
   case IC_GS:
@@ -1228,8 +1230,8 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
   case __IC_CALL:
   case IC_CALL:
     len = AddBytes(to, len, "$PURPLE$CALL:$FD$\n");
-    len=DolDocUnMacro(to,len,rpn);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
+    len = DolDocDumpType(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     rpn = rpn->base.next;
     for (idx = 0; idx != orig_rpn->length; idx++) {
@@ -1267,17 +1269,17 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     goto binop;
   case IC_BASE_PTR:
     len = AddBytes(to, len, "$PURPLE$FRAME(%p)$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
     goto ret;
     break;
   case IC_IREG:
     len = AddBytes(to, len, "$PURPLE$IREG(%p)$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
     goto ret;
     break;
   case IC_FREG:
     len = AddBytes(to, len, "$PURPLE$FREG(%p)$FD$\n", rpn->integer);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocDumpType(to, len, rpn);
     goto ret;
     break;
   case IC_RET:
@@ -1286,8 +1288,8 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     break;
   case IC_GOTO:
     len = AddBytes(to, len, "$PURPLE$GOTO(%p):$FD$\n", rpn->code_misc);
-    len=DolDocUnMacro(to,len,rpn);
-     goto ret;
+    len = DolDocUnMacro(to, len, rpn);
+    goto ret;
     break;
   case IC_LABEL:
     len = AddBytes(to, len, "$PURPLE$LABEL(%p):$FD$\n", rpn->code_misc);
@@ -1296,12 +1298,12 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
   case IC_GLOBAL:
     len = AddBytes(to, len, "$PURPLE$GLOBAL(%p):$FD$\n",
                    rpn->global_var->base.str);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     goto ret;
     break;
   case IC_LOCAL:
     len = AddBytes(to, len, "$PURPLE$LOCAL(%p):$FD$\n", rpn->local_mem->str);
-    len=DolDocUnMacro(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
     goto ret;
     break;
   case IC_NOP:
@@ -1470,10 +1472,11 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     len = AddBytes(to, len, "$PURPLE$%%=$FD$\n");
     goto binop;
   case IC_I64:
-    len = AddBytes(to, len, "$PURPLE$INT($LK,\"0x%llx\",A=\"AD:%lld\"$)$FD$\n", rpn->integer,rpn->integer);
+    len = AddBytes(to, len, "$PURPLE$INT($LK,\"0x%llx\",A=\"AD:%lld\"$)$FD$\n",
+                   rpn->integer, rpn->integer);
     goto ret;
   case IC_STR:
-    len = AddBytes(to, len, "$PURPLE$STRING(%p)$FD$\n",rpn->code_misc->str);
+    len = AddBytes(to, len, "$PURPLE$STRING(%p)$FD$\n", rpn->code_misc->str);
     goto bytes;
   case IC_CHR:
     len = AddBytes(to, len, "$PURPLE$CHAR(%02x)$FD$\n", rpn->integer);
@@ -1483,8 +1486,8 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
     goto ret;
   case IC_ARRAY_ACC:
   binop:
-  len=DolDocUnMacro(to,len,rpn);
-	len=DolDocDumpType(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
+    len = DolDocDumpType(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     rpn = rpn->base.next;
     for (idx = 0; idx != 2; idx++) {
@@ -1503,8 +1506,8 @@ int64_t DolDocDumpIR(char *to, int64_t len,CRPN *rpn) {
   case IC_POS:
     len = AddBytes(to, len, "$PURPLE$+a$FD$\n");
   unop:
-    len=DolDocUnMacro(to,len,rpn);
-    len=DolDocDumpType(to,len,rpn);
+    len = DolDocUnMacro(to, len, rpn);
+    len = DolDocDumpType(to, len, rpn);
     len = AddBytes(to, len, "$ID,2$");
     rpn = rpn->base.next;
     len = DolDocDumpIR(to, len, rpn);

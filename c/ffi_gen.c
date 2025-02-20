@@ -55,7 +55,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #  elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
-  uint8_t *bin = NULL,*xbin=NULL;
+  uint8_t *bin = NULL, *xbin = NULL;
   int64_t reg;
   while (1) {
     A(X86PushReg, RBP);
@@ -86,21 +86,21 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
     if (bin)
       break;
     xbin = A_MALLOC(code_off, Fs->code_heap);
-    bin=MemGetWritePtr(xbin);
+    bin = MemGetWritePtr(xbin);
     code_off = 0;
   }
   return xbin;
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   int64_t code_off = 0;
-  uint8_t *bin = NULL,*xbin=NULL;
+  uint8_t *bin = NULL, *xbin = NULL;
   while (1) {
     A(X86MovImm, RAX, fptr);
     A(X86JmpReg, RAX);
     if (bin)
       break;
     xbin = A_MALLOC(code_off, Fs->code_heap);
-    bin=MemGetWritePtr(xbin);
+    bin = MemGetWritePtr(xbin);
     code_off = 0;
   }
   return xbin;
@@ -112,7 +112,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
 #  include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int32_t *Xblob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
-  int32_t *blob=MemGetWritePtr(Xblob); //OpenBSD sexy mapping
+  int32_t *blob = MemGetWritePtr(Xblob); // OpenBSD sexy mapping
   int64_t arg, fill;
   int64_t pop = 0, pad = 0;
   int old = SetWriteNP(0);

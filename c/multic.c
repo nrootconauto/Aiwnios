@@ -291,8 +291,8 @@ static void *threadrt(void *_pair) {
       {SIGPROF, {.sa_sigaction = ProfRt, .sa_flags = SA_ONSTACK | SA_SIGINFO}},
       {-1},
   };
-    for (struct Sig *sg = sigs; sg->sig != -1; sg++)
-      sigaction(sg->sig, &sg->sa, 0);
+  for (struct Sig *sg = sigs; sg->sig != -1; sg++)
+    sigaction(sg->sig, &sg->sa, 0);
 #endif
   InstallDbgSignalsForThread();
   DebuggerClientWatchThisTID();
@@ -308,9 +308,9 @@ static void *threadrt(void *_pair) {
 }
 #ifndef _WIN32
 
-#ifdef __OpenBSD__
+#  ifdef __OpenBSD__
 static _Atomic(pid_t) which_interupt;
-#endif
+#  endif
 
 void InteruptCore(int64_t core) {
 #  ifndef __OpenBSD__
@@ -329,9 +329,9 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
-  #  ifndef __OpenBSD__
+#  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
-#else
+#  else
   if (TCB_TO_TIB(__get_tcb())->tib_tid != which_interupt) {
     fprintf(stderr, "Report to nroot, OpenBSD is acting poopy\n");
     abort();
@@ -480,12 +480,12 @@ void MPAwake(int64_t core) {
   }
 }
 void __ShutdownCore(int core) {
-#ifndef __OpenBSD__
+#  ifndef __OpenBSD__
   pthread_kill(cores[core].pt, SIGUSR2);
-#else
+#  else
   CCPU *c = cores + core;
   thrkill(c->otib->tib_tid, SIGUSR2, c->otib);
-#endif
+#  endif
   pthread_join(cores[core].pt, NULL);
 }
 

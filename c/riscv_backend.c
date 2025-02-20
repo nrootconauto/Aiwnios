@@ -43,7 +43,7 @@ static int64_t MFR(CCmpCtrl *cc, int64_t r) {
 static int64_t CanKeepInTmp(CRPN *me, CRPN *have, CRPN *other,
                             int64_t is_left_side) {
   int64_t mask;
-  if(me->flags&ICF_SPILLED)
+  if (me->flags & ICF_SPILLED)
     return 0;
   if (have->res.mode == MD_I64 || have->res.mode == MD_F64)
     return 0; // No need to stuff in tmp
@@ -731,7 +731,7 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
     res->off = rpn->integer;
     return;
   }
-  res->keep_in_tmp=0; //Dont use tmp registers
+  res->keep_in_tmp = 0; // Dont use tmp registers
   rpn->flags |= ICF_SPILLED;
   res->is_tmp = 1;
   if (raw_type != RT_F64) {
@@ -856,7 +856,7 @@ static void PushTmp(CCmpCtrl *cctrl, CRPN *rpn, CICArg *inher_from) {
     }
   }
 use_defacto:
-   if (raw_type != RT_F64) {
+  if (raw_type != RT_F64) {
     if (cctrl->backend_user_data2 < AIWNIOS_TMP_IREG_CNT) {
       res->mode = MD_REG;
       res->raw_type = raw_type;
@@ -1045,8 +1045,8 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       PushTmpDepthFirst(cctrl, d->base.next, 1);
       d = ICFwd(d->base.next);
     }
-    array[argc++]=d;
-    PushTmpDepthFirst(cctrl, array[argc-1], 1);
+    array[argc++] = d;
+    PushTmpDepthFirst(cctrl, array[argc - 1], 1);
     while (argc--)
       PopTmp(cctrl, array[argc]);
     A_FREE(array);
@@ -1385,7 +1385,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(RISCV_FMV_X_D(10 + i, 10 + i));                       \
       }                                                                        \
       \		 
-                                                                       \
+                                                                                                                                            \
     }                                                                          \
   }
   int64_t mutated = 0;
@@ -3924,8 +3924,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       i2 = RT_I64i;
       i2 = next->res.raw_type > i2 ? next->res.raw_type : i2;
       i2 = next2->res.raw_type > i2 ? next2->res.raw_type : i2;
-      code_off = PutICArgIntoReg(cctrl, &tmp, i2, use_flt_cmp?RISCV_FPOOP2:RISCV_IPOOP2, bin, code_off);
-      code_off = PutICArgIntoReg(cctrl, &tmp2, i2, use_flt_cmp?RISCV_FPOOP1:RISCV_IPOOP1, bin, code_off);
+      code_off = PutICArgIntoReg(cctrl, &tmp, i2,
+                                 use_flt_cmp ? RISCV_FPOOP2 : RISCV_IPOOP2, bin,
+                                 code_off);
+      code_off = PutICArgIntoReg(cctrl, &tmp2, i2,
+                                 use_flt_cmp ? RISCV_FPOOP1 : RISCV_IPOOP1, bin,
+                                 code_off);
       //
       // We use the opposite compare because if fail we jump to the fail
       // zone

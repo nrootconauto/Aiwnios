@@ -20,10 +20,10 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <math.h>
-#include <string.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -78,23 +78,23 @@ static int64_t STK_PrintPtr(int64_t *stk) {
   PrintPtr((char *)(stk[0]), (void *)stk[1]);
 }
 static int64_t STK_DolDocDumpIR(int64_t *stk) {
-	int64_t len=0,ir_cnt,idx;
-	CCmpCtrl *cctrl=(CCmpCtrl*)(stk[2]);
-	CRPN *c,*head=cctrl->code_ctrl->ir_code,**array;
-	ir_cnt=0;
-	for(c=head->base.next;c!=head;c=ICFwd(c)) {
-		ir_cnt++;
-	}
-	array=A_MALLOC(ir_cnt*sizeof(void*),NULL);
-	idx=0;
-	//REVERSE polish notation
-	for(c=head->base.next;c!=head;c=ICFwd(c)) {
-		array[ir_cnt-++idx]=c;
-	}
-	for(idx=0;idx!=ir_cnt;idx++)
-	  len=DolDocDumpIR((char*)stk[0],len,array[idx]);
-	A_FREE(array);
-	return len;
+  int64_t len = 0, ir_cnt, idx;
+  CCmpCtrl *cctrl = (CCmpCtrl *)(stk[2]);
+  CRPN *c, *head = cctrl->code_ctrl->ir_code, **array;
+  ir_cnt = 0;
+  for (c = head->base.next; c != head; c = ICFwd(c)) {
+    ir_cnt++;
+  }
+  array = A_MALLOC(ir_cnt * sizeof(void *), NULL);
+  idx = 0;
+  // REVERSE polish notation
+  for (c = head->base.next; c != head; c = ICFwd(c)) {
+    array[ir_cnt - ++idx] = c;
+  }
+  for (idx = 0; idx != ir_cnt; idx++)
+    len = DolDocDumpIR((char *)stk[0], len, array[idx]);
+  A_FREE(array);
+  return len;
 }
 static void ExitAiwnios(int64_t *);
 static void PrsAddSymbol(char *name, void *ptr, int64_t arity) {
@@ -877,7 +877,6 @@ static int64_t STK___HC_ICAdd_Sqrt(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Sqrt((CCodeCtrl *)stk[0]);
 }
 
-
 static int64_t STK___HC_ICAdd_SubProlog(int64_t *stk) {
   return (int64_t)__HC_ICAdd_SubProlog((CCodeCtrl *)stk[0]);
 }
@@ -1272,7 +1271,7 @@ static int64_t STK_NetPollForHangup(int64_t *stk) {
 }
 
 static int64_t STK_NetIP4ByHost(char **stk) {
-	return NetIP4ByHost(stk[0]);
+  return NetIP4ByHost(stk[0]);
 }
 
 static int64_t STK_NetPollForWrite(int64_t *stk) {
@@ -1382,14 +1381,14 @@ static int64_t STK__HC_ICAdd_ToBool(void **stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
 static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
-  char *ptr=(void*)stk[0];
-  int64_t r=(int64_t)WriteProtectMemCpy(ptr,(char*)stk[1],stk[2]);
+  char *ptr = (void *)stk[0];
+  int64_t r = (int64_t)WriteProtectMemCpy(ptr, (char *)stk[1], stk[2]);
 #if defined(__APPLE__)
   if (old)
     sys_icache_invalidate(ptr, stk[2]);
 #else
   __builtin___clear_cache(ptr, stk[0] + stk[2]);
-#endif 
+#endif
   return r;
 }
 static int64_t is_fast_fail = 0;
@@ -1417,7 +1416,7 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
-    PrsAddSymbol("DolDocDumpIR",STK_DolDocDumpIR,3);
+    PrsAddSymbol("DolDocDumpIR", STK_DolDocDumpIR, 3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
     PrsAddSymbol("GetVolume", STK_AiwniosGetVolume, 0);
@@ -1460,8 +1459,8 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
-    PrsAddSymbol("AiwniosPackRamDisk",AiwniosPackRamDiskPtr,1);
-    PrsAddSymbol("AiwniosPackBootCommand",AiwniosPackBootCommand,0);
+    PrsAddSymbol("AiwniosPackRamDisk", AiwniosPackRamDiskPtr, 1);
+    PrsAddSymbol("AiwniosPackBootCommand", AiwniosPackBootCommand, 0);
 #define X(a, b) PrsAddSymbol(#a, STK_##a, b)
     X(MemCpy, 3);
     X(MemSet, 3);
@@ -1477,7 +1476,7 @@ static void BootAiwnios(char *bootstrap_text) {
     X(StrCpy, 2);
     X(StrICmp, 2);
     X(StrNICmp, 3);
-#if defined(__x86_64__) && ! defined(__OpenBSD__)
+#if defined(__x86_64__) && !defined(__OpenBSD__)
     X(OutU8, 2);
     X(OutU16, 2);
     X(OutU32, 2);
@@ -1679,7 +1678,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetUDPRecvFrom", STK_NetUDPRecvFrom, 4);
     PrsAddSymbol("NetUDPSendTo", STK_NetUDPSendTo, 4);
     PrsAddSymbol("NetUDPAddrDel", STK_NetUDPAddrDel, 1);
-    PrsAddSymbol("NetIP4ByHost", STK_NetIP4ByHost,1);
+    PrsAddSymbol("NetIP4ByHost", STK_NetIP4ByHost, 1);
     PrsAddSymbol("NetBindIn", STK_NetBindIn, 2);
     PrsAddSymbol("NetListen", STK_NetListen, 2);
     PrsAddSymbol("NetAccept", STK_NetAccept, 2);
@@ -1703,24 +1702,24 @@ static void BootAiwnios(char *bootstrap_text) {
   LexerDel(lex);
 }
 static const char *t_drive;
-static const char *exe_name=NULL;
-static char *ramdisk_ptr=NULL;
-static int64_t ramdisk_size=0;
-static char *boot_command=NULL;
-//See Src/AiwniosPack
+static const char *exe_name = NULL;
+static char *ramdisk_ptr = NULL;
+static int64_t ramdisk_size = 0;
+static char *boot_command = NULL;
+// See Src/AiwniosPack
 static char *AiwniosPackRamDiskPtr(int64_t **stk) {
-	int64_t *sz=stk[0];
-	if(sz)
-		*sz=ramdisk_size;
-	return ramdisk_ptr;
+  int64_t *sz = stk[0];
+  if (sz)
+    *sz = ramdisk_size;
+  return ramdisk_ptr;
 }
-//See Src/AiwniosPack
+// See Src/AiwniosPack
 static char *AiwniosPackBootCommand(int64_t **stk) {
-	return boot_command;
+  return boot_command;
 }
 
 typedef struct CAiwniosPack {
-//Non-absolute paths are relative to home directory
+  // Non-absolute paths are relative to home directory
   int64_t ramdisk_size;
   int64_t hcrt_size;
   int64_t hcrt_offset;
@@ -1729,45 +1728,45 @@ typedef struct CAiwniosPack {
   char save_directory[144];
 } CAiwniosPack;
 static void Boot() {
-  int64_t len,size,hcrt_size;
-  char *fbuf,*hcrt;
+  int64_t len, size, hcrt_size;
+  char *fbuf, *hcrt;
   Fs = calloc(sizeof(CTask), 1);
   TaskInit(Fs, NULL, 0);
-    char *host_abi;
-  if(exe_name) {
-	uint64_t offset;
-    //See AiwniosPack/Embed.HC
-    if(!(fbuf=FileRead(exe_name,&size))) {
-		goto normal;
-	}
-	if(size<16) {
-		abort();
-	}
-	if(strncmp(fbuf+size-16,"AiwnPack",8)) {
-		A_FREE(fbuf);
-		goto normal;
-	}
-	offset=*(int64_t*)(fbuf+size-8);
-	if(!(offset>0&&offset<size)) {
-		A_FREE(fbuf);
-		goto normal;
-	}
-	CAiwniosPack *cpack=fbuf+offset;
-	hcrt=fbuf+cpack->hcrt_offset;
-	hcrt_size=cpack->hcrt_size;
-    ramdisk_ptr=fbuf+cpack->ramdisk_offset;
-    ramdisk_size=cpack->ramdisk_size;
-    boot_command=cpack->boot_command;
-    printf("PACK_HCRT:%p,%d\n",cpack->hcrt_offset,cpack->hcrt_size);
-    printf("PACK_RAMDISK:%p,%d\n",cpack->ramdisk_offset,cpack->ramdisk_size);
-    printf("PACK_BOOTCOMD:%s\n",cpack->boot_command);
+  char *host_abi;
+  if (exe_name) {
+    uint64_t offset;
+    // See AiwniosPack/Embed.HC
+    if (!(fbuf = FileRead(exe_name, &size))) {
+      goto normal;
+    }
+    if (size < 16) {
+      abort();
+    }
+    if (strncmp(fbuf + size - 16, "AiwnPack", 8)) {
+      A_FREE(fbuf);
+      goto normal;
+    }
+    offset = *(int64_t *)(fbuf + size - 8);
+    if (!(offset > 0 && offset < size)) {
+      A_FREE(fbuf);
+      goto normal;
+    }
+    CAiwniosPack *cpack = fbuf + offset;
+    hcrt = fbuf + cpack->hcrt_offset;
+    hcrt_size = cpack->hcrt_size;
+    ramdisk_ptr = fbuf + cpack->ramdisk_offset;
+    ramdisk_size = cpack->ramdisk_size;
+    boot_command = cpack->boot_command;
+    printf("PACK_HCRT:%p,%d\n", cpack->hcrt_offset, cpack->hcrt_size);
+    printf("PACK_RAMDISK:%p,%d\n", cpack->ramdisk_offset, cpack->ramdisk_size);
+    printf("PACK_BOOTCOMD:%s\n", cpack->boot_command);
   } else {
-normal:;
+  normal:;
     char bin[strlen("HCRT2.BIN") + strlen(t_drive) + 1 + 1];
     strcpy(bin, t_drive);
     strcat(bin, "/HCRT2.BIN");
-    hcrt=FileRead(bin,&size);
-    hcrt_size=size;
+    hcrt = FileRead(bin, &size);
+    hcrt_size = size;
   }
   InstallDbgSignalsForThread();
   VFsMountDrive('T', t_drive);
@@ -1798,7 +1797,7 @@ normal:;
     host_abi = "Win";
 #  elif defined(__OpenBSD__)
     host_abi = "OpenBSD";
-#else
+#  else
     host_abi = "SysV";
 #  endif
     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
@@ -1817,7 +1816,7 @@ normal:;
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
   if (hcrt)
-    Load(hcrt,hcrt_size);
+    Load(hcrt, hcrt_size);
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {
@@ -1842,21 +1841,21 @@ static void ExitAiwnios(int64_t *stk) {
   }
 }
 static int64_t IsAiwniosPackApp() {
-	char signature[9];
-	signature[8]=0;
-	if(exe_name) {
-		FILE *f=fopen(exe_name,"rb");
-		fseek(f,-16,SEEK_END);
-		fread(signature,1,8,f);
-		fclose(f);
-		if(!strcmp(signature,"AiwnPack"))
-		  return 1;
-	}
-	return 0;
+  char signature[9];
+  signature[8] = 0;
+  if (exe_name) {
+    FILE *f = fopen(exe_name, "rb");
+    fseek(f, -16, SEEK_END);
+    fread(signature, 1, 8, f);
+    fclose(f);
+    if (!strcmp(signature, "AiwnPack"))
+      return 1;
+  }
+  return 0;
 }
 int main(int argc, char **argv) {
-	SDL_SetMainReady();
-	exe_name=argv[0];
+  SDL_SetMainReady();
+  exe_name = argv[0];
   setlocale(LC_ALL, "C");
   atexit(&AiwniosBye);
 #ifndef _WIN64
@@ -1966,74 +1965,76 @@ int main(int argc, char **argv) {
     t_drive = arg_t_dir->filename[0];
   else if (arg_bootstrap_bin->count)
     t_drive = "."; // Bootstrap in current directory
-  if(IsAiwniosPackApp()&&!arg_t_dir->count) {
-	  t_drive=ResolveBootDir(".",0,NULL);
+  if (IsAiwniosPackApp() && !arg_t_dir->count) {
+    t_drive = ResolveBootDir(".", 0, NULL);
   } else {
 #if !defined(WIN32) && !defined(_WIN32)
-  struct passwd *pwd = getpwuid(getuid());
-  const char *dft = "/.local/share/aiwnios/T";
-  char *home = ".";
-  if (pwd)
-    home = pwd->pw_dir;
-  char template_dir[strlen(dft) + strlen(home) + 1];
-  strcpy(template_dir, home);
-  strcat(template_dir, dft);
-  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count) &&
-      !arg_bootstrap_bin->count)
-    t_drive = ResolveBootDir(!t_drive ? template_dir : t_drive,
-                             arg_new_boot_dir->count, AIWNIOS_TEMPLATE_DIR);
+    struct passwd *pwd = getpwuid(getuid());
+    const char *dft = "/.local/share/aiwnios/T";
+    char *home = ".";
+    if (pwd)
+      home = pwd->pw_dir;
+    char template_dir[strlen(dft) + strlen(home) + 1];
+    strcpy(template_dir, home);
+    strcat(template_dir, dft);
+    if ((!arg_t_dir->count || arg_overwrite->count ||
+         arg_new_boot_dir->count) &&
+        !arg_bootstrap_bin->count)
+      t_drive = ResolveBootDir(!t_drive ? template_dir : t_drive,
+                               arg_new_boot_dir->count, AIWNIOS_TEMPLATE_DIR);
 #else
-  int64_t has_installed = 0;
-  char installed_at[MAX_PATH];
-  installed_at[0] = 0;
-  long reg_size = 0;
-  RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
-               RRF_RT_REG_MULTI_SZ, NULL, NULL, &reg_size);
-  if (reg_size > 0) {
-    char inst_dir[reg_size + 1];
+    int64_t has_installed = 0;
+    char installed_at[MAX_PATH];
+    installed_at[0] = 0;
+    long reg_size = 0;
     RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
-                 RRF_RT_REG_MULTI_SZ, NULL, inst_dir, &reg_size);
-    strcpy(installed_at, inst_dir);
-    has_installed = 1;
-  }
-  char home_dir[MAX_PATH];
-  strcpy(home_dir, "");
-  SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
-  // Dumb haCk
-  // Windows doesnt know how to do lowerase C anymore. I dont know what I fuked
-  // up
-  sprintf(home_dir + strlen(home_dir), "\\.local\\share\\aiwnios\\T");
-  if ((!arg_t_dir->count || arg_overwrite->count || arg_new_boot_dir->count) &&
-      !arg_bootstrap_bin->count) {
-    t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,
-                             arg_new_boot_dir->count, installed_at);
-    // Dont use system wide directory we are installed in(the place we start
-    // running aiwnios in when installed on windows)
-    if (has_installed && t_drive) {
-      char poo1[MAX_PATH];
-      char poo2[MAX_PATH];
-      GetFullPathNameA(installed_at, MAX_PATH, poo1, NULL);
-      GetFullPathNameA(t_drive, MAX_PATH, poo2, NULL);
-      if (!strcmp(poo1, poo2)) {
-        // Same file
-        t_drive = ResolveBootDir(home_dir, 1, installed_at);
+                 RRF_RT_REG_MULTI_SZ, NULL, NULL, &reg_size);
+    if (reg_size > 0) {
+      char inst_dir[reg_size + 1];
+      RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Aiwnios", "InstallAt",
+                   RRF_RT_REG_MULTI_SZ, NULL, inst_dir, &reg_size);
+      strcpy(installed_at, inst_dir);
+      has_installed = 1;
+    }
+    char home_dir[MAX_PATH];
+    strcpy(home_dir, "");
+    SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, home_dir);
+    // Dumb haCk
+    // Windows doesnt know how to do lowerase C anymore. I dont know what I
+    // fuked up
+    sprintf(home_dir + strlen(home_dir), "\\.local\\share\\aiwnios\\T");
+    if ((!arg_t_dir->count || arg_overwrite->count ||
+         arg_new_boot_dir->count) &&
+        !arg_bootstrap_bin->count) {
+      t_drive = ResolveBootDir(!t_drive ? home_dir : t_drive,
+                               arg_new_boot_dir->count, installed_at);
+      // Dont use system wide directory we are installed in(the place we start
+      // running aiwnios in when installed on windows)
+      if (has_installed && t_drive) {
+        char poo1[MAX_PATH];
+        char poo2[MAX_PATH];
+        GetFullPathNameA(installed_at, MAX_PATH, poo1, NULL);
+        GetFullPathNameA(t_drive, MAX_PATH, poo2, NULL);
+        if (!strcmp(poo1, poo2)) {
+          // Same file
+          t_drive = ResolveBootDir(home_dir, 1, installed_at);
+        }
       }
     }
-  }
 #endif
   }
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
   InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
-	if (0 > SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS)) {
-      char *p=SDL_GetError();
-      if(!p) p="???";
-      int64_t l=snprintf(NULL,0,"Failed to init SDL(%s)",p);
-      char buf[l+1];
-      sprintf(buf,"Failed to init SDL(%s)",p);
-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
-                             buf, NULL);
+    if (0 > SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
+      char *p = SDL_GetError();
+      if (!p)
+        p = "???";
+      int64_t l = snprintf(NULL, 0, "Failed to init SDL(%s)", p);
+      char buf[l + 1];
+      sprintf(buf, "Failed to init SDL(%s)", p);
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS", buf, NULL);
       exit(EXIT_FAILURE);
     }
     user_ev_num = SDL_RegisterEvents(1);

@@ -342,7 +342,7 @@ typedef struct __attribute__((packed)) CBinFile {
 } CBinFile;
 
 #if defined(__OpenBSD__) && defined(__x86_64__)
-#include <emmintrin.h>
+#  include <emmintrin.h>
 typedef char xmm __attribute__((vector_size(16), aligned(1)));
 _Static_assert('e' == 0x65);
 
