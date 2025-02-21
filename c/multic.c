@@ -16,6 +16,7 @@
 #    include <setjmp.h>
 #    include <sys/syscall.h>
 #    ifndef __OpenBSD__
+#      define OPENBSD_POOP_TLS "1998"
 #      include <ucontext.h>
 #    endif
 #    ifdef __FreeBSD__
@@ -126,7 +127,7 @@ static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
-#  ifdef __OpenBSD__
+#  ifdef OPENBSD_POOP_TLS
   struct tib *old = TCB_TO_TIB(__get_tcb());
   struct tib *new =
       _dl_allocate_tib(TIB_EXTRA_ALIGN + 0x100); // Fs x Gs pointers end at 0xf8
@@ -221,7 +222,7 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
-#  ifdef __OpenBSD__
+#  ifdef OPENBSD_POOP_TLS
   struct tib *otib;
   pid_t tid;
 #  endif
@@ -267,7 +268,7 @@ static void *threadrt(void *_pair) {
 #ifndef _WIN64
 #  ifndef __OpenBSD__
   pthread_setname_np(pthread_self(), pair->name);
-#  else
+#  elif defined(OPENBSD_POOP_TLS)
   cores[core_num].otib = TCB_TO_TIB(__get_tcb());
   cores[core_num].tid = TCB_TO_TIB(__get_tcb())->tib_tid;
 #  endif
@@ -313,7 +314,7 @@ static _Atomic(pid_t) which_interupt;
 #  endif
 
 void InteruptCore(int64_t core) {
-#  ifndef __OpenBSD__
+#  ifndef OPENBSD_POOP_TLS
   pthread_kill(cores[core].pt, SIGUSR1);
 #  else
   // we changed the address of the tib so we'll have to pass it ourselves
@@ -331,7 +332,7 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 #  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
-#  else
+#  elif defined(OPENBSD_POOP_TLS)
   if (TCB_TO_TIB(__get_tcb())->tib_tid != which_interupt) {
     fprintf(stderr, "Report to nroot, OpenBSD is acting poopy\n");
     abort();
@@ -341,7 +342,7 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   void (*fp)();
   if (y) {
     fp = y->val;
-#  if defined(__OpenBSD__)
+#  if defined(__OpenBSD__) && defined(__x86_64__)
     FFI_CALL_TOS_2(fp, _ctx->sc_rip, _ctx->sc_rbp);
 #  endif
 #  if defined(__FreeBSD__) && defined(__x86_64__)
@@ -355,6 +356,8 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
     FFI_CALL_TOS_2(fp, NULL, ctx->__gregs[8]);
 #  elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
     FFI_CALL_TOS_2(fp, NULL, ctx->regs[29]);
+#  elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__OpenBSD__)
+    FFI_CALL_TOS_2(fp, NULL, NULL);
 #  endif
   }
 }
@@ -480,7 +483,7 @@ void MPAwake(int64_t core) {
   }
 }
 void __ShutdownCore(int core) {
-#  ifndef __OpenBSD__
+#  ifndef OPENBSD_POOP_TLS
   pthread_kill(cores[core].pt, SIGUSR2);
 #  else
   CCPU *c = cores + core;
