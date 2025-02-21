@@ -731,19 +731,9 @@ static void UnblockSignals() {
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   UnblockSignals();
   CHashExport *exp;
-  ucontext_t *ctx = __ctx;
+//OpenBSD doesnt put anything juicy in the __ctx ,do man 2 sigaction
   void *fp;
-  int64_t actx[64];
-  actx[0] = ctx->sc_rip;
-  actx[1] = ctx->sc_rsp;
-  actx[2] = ctx->sc_rbp;
-  actx[3] = ctx->sc_rbx;
-  actx[4] = ctx->sc_r10;
-  actx[5] = ctx->sc_r11;
-  actx[6] = ctx->sc_r12;
-  actx[7] = ctx->sc_r13;
-  actx[8] = ctx->sc_r14;
-  actx[9] = ctx->sc_r15;
+  int64_t actx[32];
   // AiwniosDbgCB will return 1 for singlestep
   if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     fp = exp->val;
