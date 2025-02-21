@@ -1384,8 +1384,7 @@ static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
   char *ptr = (void *)stk[0];
   int64_t r = (int64_t)WriteProtectMemCpy(ptr, (char *)stk[1], stk[2]);
 #if defined(__APPLE__)
-  if (old)
-    sys_icache_invalidate(ptr, stk[2]);
+  sys_icache_invalidate(ptr, stk[2]);
 #else
   __builtin___clear_cache(ptr, stk[0] + stk[2]);
 #endif
