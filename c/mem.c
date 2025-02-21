@@ -717,6 +717,7 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   hc->used_u8s -= un->sz;
   which_bucket = un->which_bucket;
+  #ifdef __OpenBSD__
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
     while (Misc_LBts(&hc->locked_flags, 1))
@@ -728,7 +729,7 @@ void __AIWNIOS_Free(void *ptr) {
     un = (CMemUnused *)MemGetWritePtr(un);
     Misc_LBtr(&hc->locked_flags, 1);
   }
-
+#endif
   while (Misc_LBts(&hc->arena_lock, which_bucket))
     PAUSE;
   un->hc = NULL;
