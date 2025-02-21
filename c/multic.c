@@ -16,8 +16,9 @@
 #    include <setjmp.h>
 #    include <sys/syscall.h>
 #    ifndef __OpenBSD__
-#      define OPENBSD_POOP_TLS "1998"
 #      include <ucontext.h>
+#    else
+#      define OPENBSD_POOP_TLS "Living in 1998"
 #    endif
 #    ifdef __FreeBSD__
 #      include <machine/sysarch.h>
@@ -127,7 +128,7 @@ static void __sigillhndlr(int sig) {
 }
 
 void __bootstrap_tls(void) {
-#  ifdef OPENBSD_POOP_TLS
+#  if defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__) 
   struct tib *old = TCB_TO_TIB(__get_tcb());
   struct tib *new =
       _dl_allocate_tib(TIB_EXTRA_ALIGN + 0x100); // Fs x Gs pointers end at 0xf8
@@ -222,7 +223,7 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
-#  ifdef OPENBSD_POOP_TLS
+#  if defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__)
   struct tib *otib;
   pid_t tid;
 #  endif
@@ -268,7 +269,7 @@ static void *threadrt(void *_pair) {
 #ifndef _WIN64
 #  ifndef __OpenBSD__
   pthread_setname_np(pthread_self(), pair->name);
-#  elif defined(OPENBSD_POOP_TLS)
+#  elif defined(OPENBSD_POOP_TLS) &&defined(__OpenBSD__)
   cores[core_num].otib = TCB_TO_TIB(__get_tcb());
   cores[core_num].tid = TCB_TO_TIB(__get_tcb())->tib_tid;
 #  endif
@@ -314,7 +315,7 @@ static _Atomic(pid_t) which_interupt;
 #  endif
 
 void InteruptCore(int64_t core) {
-#  ifndef OPENBSD_POOP_TLS
+#  ifndef defined(OPENBSD_POOP_TLS)
   pthread_kill(cores[core].pt, SIGUSR1);
 #  else
   // we changed the address of the tib so we'll have to pass it ourselves
@@ -332,7 +333,7 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 #  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
-#  elif defined(OPENBSD_POOP_TLS)
+#  elif defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__)
   if (TCB_TO_TIB(__get_tcb())->tib_tid != which_interupt) {
     fprintf(stderr, "Report to nroot, OpenBSD is acting poopy\n");
     abort();
