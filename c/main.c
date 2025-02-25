@@ -35,6 +35,7 @@ extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
 #if defined(WIN32) || defined(_WIN32)
 #  include <shlobj.h>
+#include <bcrypt.h>
 #else
 #  include <pwd.h>
 #  include <sys/types.h>
@@ -512,6 +513,35 @@ RepOut(32);
 #  undef RepIn
 #  undef RepOut
 #endif
+#ifdef _WIN32
+#  define Initrand(h) h = 0
+#  define Getrand(h, b, i) BCRYPT_SUCCESS(BCryptGenRandom(h, b, i, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+#else
+#  define Initrand(h) h = open("/dev/urandom", O_RDONLY)
+#  define Getrand(h, b, i) (i == read(h, b, i))
+#endif
+static int64_t STK_CSPRNG(int64_t *stk) {
+  int64_t sz = stk[1];
+  char *buf = (char *)stk[0];
+  static int fd = -1;
+  static char tmp[1024];
+  static int64_t cur;
+  if (fd == -1)
+    Initrand(fd);
+  if (!buf || sz < 0)
+    return 0;
+  else if (!sz)
+    return 1;
+  else if (sz <= sizeof tmp) {
+    int64_t ret = 1;
+    if (!cur || sizeof tmp < cur + sz)
+      cur = 0, ret = Getrand(fd, tmp, sizeof tmp);
+    memcpy(buf, tmp + cur, sz);
+    cur += sz;
+    return ret;
+  } else
+    return Getrand(fd, buf, sz);
+}
 static int64_t MemCmp(char *a, char *b, int64_t s) {
   return memcmp(a, b, s);
 }
@@ -1696,6 +1726,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("IsCmdLineMode2", IsCmdLineMode2, 0); // Sexy text mode
     PrsAddSymbol("TermSize", STK_TermSize, 2);
     PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
+    PrsAddSymbol("CSPRNG", STK_CSPRNG, 2);
   }
   CmpCtrlDel(ccmp);
   LexerDel(lex);

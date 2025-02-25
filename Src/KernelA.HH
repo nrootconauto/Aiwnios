@@ -3989,6 +3989,7 @@ import I64 ScreenUpdateInProgress();
 import I64 GetRBP();
 import U0 AiwniosTUIEnable();
 import U0 TermSize(I64 *c,I64 *r);
+import Bool CSPRNG(U8 *,I64);
 #else
 extern U8 *DolDocDumpIR(U8 *to,I64 len,U8 *c_rpn);
 extern U8 *AiwniosPackBootCommand();
@@ -3996,6 +3997,7 @@ extern U8 *AiwniosPackRamDisk(I64 *len=NULL);
 extern U8 *HeapCtrlInit(U8 *DO_NOT_USE=NULL,CTask *,I64 is_code);
 extern U0 AIWNIOS_SetCaptureMouse(I64);
 extern I64 GetRBP();
+extern Bool CSPRNG(U8 *,I64);
 extern U0 WriteProtectMemCpy(U8*,U8*,I64);
 extern F64 GetVolume();
 extern U0 SetVolume(F64);
@@ -7196,4 +7198,3 @@ class CSoundEffectFrame
   F64	duration;
 };
 
-
