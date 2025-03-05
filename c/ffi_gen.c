@@ -136,6 +136,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   blob[ptr++] = ARM_ldpPostImmX(29, 30, 31, 16);
   if (pop)
     blob[ptr++] = ARM_addImmX(31, 31, pop);
+  blob[ptr++]=ARM_fmovF64I64(0,0);
   blob[ptr++] = ARM_ret();
   if (ptr & 1)
     ptr++;                       // Align to 8
