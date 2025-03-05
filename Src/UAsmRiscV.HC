@@ -246,6 +246,12 @@ Bool DisasJType(U32 data,U8 *name,I64 opcode,I64 opt1='i') {
   FramePtrDel(FP_UPPER_BITS);
   return TRUE;
 }
+Bool DisasPause(U32 data) {
+  Bool b=data==0x0100000f;
+  if (b) "PAUSE";
+  "\n";
+  return b;
+}
 U32 *DisasOpc(CDoc *doc,U32 *data) {
   "%P\t",data;
   U32 d=*data;
@@ -325,6 +331,7 @@ U32 *DisasOpc(CDoc *doc,U32 *data) {
   if(DisasI2Type(d,"FMV.X.D",0b111000100000,0,0b1010011)) return data+1;
   if(DisasI2Type(d,"FCVT.L.D",0b110000100010,ROUND_MODE,0b1010011)) return data+1;
   if(DisasI2Type(d,"FCVT.D.L",0b110100100010,ROUND_MODE,0b1010011)) return data+1;
+  if(DisasPause(d)) return data+1;
   "BAD\n";
   return data+1;
 }

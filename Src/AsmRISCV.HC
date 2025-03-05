@@ -208,6 +208,10 @@ I64 RISCV_J(I64 imm_wtf, I64 d, I64 opc) {
   imm_wtf = (b20 << 31) | (b10_1 << 21) | (b11 << (20)) | (b19_12 << 12);
   return imm_wtf | MaskN(d, 7, 5) | MaskN(opc, 0, 7);
 }
+I64 RISCV_FENCE(I64 fm,I64 pred,I64 succ,I64 s1,I64 f3,I64 d,I64 opc) {
+  return MaskN(fm, 28, 4) | MaskN(pred, 24, 4) | MaskN(succ, 20, 4) |
+         MaskN(s1, 15, 5) | MaskN(f3, 12, 3) | MaskN(d, 7, 5) | MaskN(opc, 0, 7);
+}
 
 U0 AddrModeDel(CAddrMode *md) {
   if(md->local_asm_undef_hash)
@@ -449,6 +453,15 @@ CRiscVOpcode *AO(U8 *name,U32 o,U64 f3,U64 f7,U64 type,U64 r2_style=0) {
   HashAdd(opc,riscv_opcs);
   return opc;
 }
+CRiscVOpcode *APause(U8 *name,U32 o) {
+  CRiscVOpcode *opc=CAlloc(sizeof CRiscVOpcode);
+  opc->str=StrNew(name);
+  opc->type=HTT_OPCODE;
+  opc->op_type='PS';
+  opc->opc=o;
+  HashAdd(opc,riscv_opcs);
+  return opc;
+}
 CRiscVOpcode *AOf(U8 *name,U32 o,U64 f3,U64 f7,U64 type,U64 r2_style=0) {
   CRiscVOpcode *opc=AO(name,o,f3,f7,type,r2_style);
   opc->is_flt_style=TRUE;
@@ -496,7 +509,10 @@ U0 InitOpcodes()  {
   AO("SRA",0b0110011,0b101,0b100000,'R');
   AO("OR",0b0110011,0b110,0b000000,'R');
   AO("AND",0b0110011,0b111,0b000000,'R');
-	
+
+//TODO:proper Zifencei
+  APause("PAUSE",0b0001111);
+
 //ECALL
 //EBREAK
 
@@ -657,6 +673,9 @@ I64 AsmOpcode(CCmpCtrl *cc,CAiwniosAOTBlob *blob) {
       break;
     case 'J':
       want=2;
+      break;
+    case 'PS':
+      want=0;
       break;
   }
   Lex(cc);
@@ -830,6 +849,9 @@ I64 AsmOpcode(CCmpCtrl *cc,CAiwniosAOTBlob *blob) {
       if(have->type!='Imm')
         LexExcept(cc,"Expected a number operand.");
       ret=RISCV_J(poo[1]->value,poo[0]->reg,opc->opc);
+      goto imm;
+    case 'PS':
+      ret=RISCV_FENCE(0,1,0,0,0,0,opc->opc);
 imm:
       for(argc=0;argc!=want;argc++) {
         have=poo[argc];
@@ -879,6 +901,9 @@ I64 AsmOpcode0(CAiwniosAOTBlob *blob,CRiscVOpcode *opc,CAddrMode **poo) {
       break;
     case 'J':
       ret=RISCV_J(poo[1]->value,poo[0]->reg,opc->opc);
+      break;
+    case 'PS':
+      ret=RISCV_FENCE(0,1,0,0,0,0,opc->opc);
       break;
   } 
   return ret;
@@ -1035,6 +1060,7 @@ U8 *AsmTest() {
   CAiwniosAOTBlob *blob;
   CCmpCtrl *cctrl=CmpCtrlNew(
 "asm {\n"
+"PAUSE\n"
 "LUI a0,123\n"
 "AUIPC a0,123\n"
 "JAL a0,POO\n"
