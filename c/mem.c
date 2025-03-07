@@ -30,7 +30,7 @@
 // All allocations will be in first 32bits
 // There will be a bitmap of "good" 8bytes(this is ok as most accesses are 8
 // bytes wide) Beacuse the address space will be 2 GB,we can have a fixed length
-// bitmap of 2GB/8/64 int64_t's and i can Misc_Bt it to check if it is valid
+// bitmap of 2GB/8/64 int64_t's and i can Bt it to check if it is valid
 //
 int64_t bc_enable = 0;
 static char *bc_good_bitmap;
@@ -46,7 +46,7 @@ static int64_t NextPower2(uint64_t v) {
   return v;
 }
 static void **new_nul = &new_nul;
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
 /* THESE ARE MOTHERFUCKIN SORTED BY ->rx
  * Keep it that way or the computer will get confused.
  * */
@@ -64,7 +64,7 @@ static void AddMemPair(void *rw, void *rx, int64_t mlen, int fd) {
   char *last = NULL;
   CMemPair *cur = mem_pairs, *copy;
   int64_t density;
-  while (Misc_LBts(&mem_pairs_lock, 0))
+  while (LBts(&mem_pairs_lock, 0))
     PAUSE;
 again:;
   last = (1ull << 31);
@@ -100,11 +100,11 @@ again:;
   free(cur);
   goto again;
 end:
-  Misc_LBtr(&mem_pairs_lock, 0);
+  LBtr(&mem_pairs_lock, 0);
 }
 static CMemPair *GetMemPairForPtrRX(void *rx) {
   int64_t ptr = 0, len;
-  while (Misc_LBts(&mem_pairs_lock, 0))
+  while (LBts(&mem_pairs_lock, 0))
     PAUSE;
   len = mem_pairs_len;
   CMemPair *cur = mem_pairs;
@@ -131,13 +131,13 @@ static CMemPair *GetMemPairForPtrRX(void *rx) {
   }
   cur = NULL;
 end:
-  Misc_LBtr(&mem_pairs_lock, 0);
+  LBtr(&mem_pairs_lock, 0);
   return cur;
 }
 
 static CMemPair *GetMemPairForPtrRW(void *rw) {
   int64_t ptr, len;
-  while (Misc_LBts(&mem_pairs_lock, 0))
+  while (LBts(&mem_pairs_lock, 0))
     PAUSE;
   len = mem_pairs_len;
   CMemPair *cur = mem_pairs;
@@ -152,9 +152,12 @@ static CMemPair *GetMemPairForPtrRW(void *rw) {
   }
   cur = NULL;
 end:
-  Misc_LBtr(&mem_pairs_lock, 0);
+  LBtr(&mem_pairs_lock, 0);
   return cur;
 }
+
+#endif
+#ifdef __OpenBSD__
 
 static void *OBSD_SexyGetLow32(int64_t len, int fd) {
   static int64_t ps = 0;
@@ -266,12 +269,12 @@ static void OBSD_SexyDelShm(CHeapCtrl *hc, void *rx) {
     hc->buddies = calloc(1, sizeof(CBuddyPair));
     hc->buddies->offset_r = (1ul << 31) / 2;
   }
-  while (Misc_LBts(&mem_pairs_lock, 0))
+  while (LBts(&mem_pairs_lock, 0))
     PAUSE;
   mp->rw = NULL;
   mp->rx = NULL;
   mp->len = 0;
-  Misc_LBtr(&mem_pairs_lock, 0);
+  LBtr(&mem_pairs_lock, 0);
 }
 // RETURNS pag in shm file
 static int64_t OBSD_SexyShmAlloc(void **low32_rx, void **rw, int64_t len,
@@ -382,6 +385,26 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   if (rx && rx != rw)
     munmap(rx, b);
   return;
+#elif defined(__NetBSD__)
+  CMemBlk *rw, *rx;
+  blk = blk->rw;
+  hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
+  rw = blk;
+  rx = blk->rx;
+  QueRem(rw);
+  CMemPair *mp = GetMemPairForPtrRX(rx);
+  if (!mp)
+    return; //???
+  while (LBts(&mem_pairs_lock, 0))
+    PAUSE;
+  mp->rw = NULL;
+  mp->rx = NULL;
+  mp->len = 0;
+  LBtr(&mem_pairs_lock, 0);
+  munmap(rw, b);
+  if (rx && rx != rw)
+    munmap(rx, b);
+  return;
 #endif
   QueRem(blk);
   hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
@@ -445,8 +468,59 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   hc->alloced_u8s += pags * MEM_PAG_SIZE;
   return ret;
 }
-#endif
-#if !defined(__OpenBSD__)
+#elif defined(__NetBSD__)
+
+static void GetAvail32(int64_t sz, void **_rw, void **_rx) {
+  static uintptr_t cur, ps;
+  if (!cur)
+    ps = cur = sysconf(_SC_PAGESIZE);
+  void *p, *rx, *rw;
+  while (MAP_FAILED ==
+         (p = mmap((void *)cur, sz,
+                   PROT_MPROTECT(PROT_EXEC | PROT_READ | PROT_WRITE),
+                   MAP_PRIVATE | MAP_ANON, -1, 0)))
+    cur += ps;
+  cur += sz;
+  if (cur > 1ull << 31)
+    abort();
+  rx = p;
+  rw = mremap(p, sz, 0, sz, MAP_REMAPDUP);
+  if (-1 == mprotect(rw, sz, PROT_READ | PROT_WRITE))
+    abort();
+  if (-1 == mprotect(rx, sz, PROT_READ | PROT_EXEC))
+    abort();
+  AddMemPair(rw, rx, sz, -1);
+  *_rw = rw;
+  *_rx = rx;
+}
+
+static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
+  if (!hc)
+    hc = Fs->heap;
+  int64_t b;
+  static int64_t ps;
+  int64_t pag = -1;
+  CMemBlk *ret;
+  CMemBlk *rw = 0, *rx = 0;
+  if (!ps)
+    ps = sysconf(_SC_PAGESIZE);
+  b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
+  if (hc->is_code_heap) {
+    GetAvail32(b, &rw, &rx);
+    ret = rx;
+  } else {
+    ret = mmap(NULL, b, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1,
+               0);
+    rw = rx = ret;
+  }
+  QueIns(&rw->base, hc->mem_blks.last);
+  rw->pags = pags;
+  rw->rw = rw;
+  rw->rx = rx;
+  hc->alloced_u8s += pags * MEM_PAG_SIZE;
+  return ret;
+}
+#else // !__OpenBSD__ && !__NetBSD__
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
@@ -542,7 +616,7 @@ static CHeapCtrlArena *PickArena(CHeapCtrl *hc) {
   int64_t a;
 again:
   for (a = 0; a != 16; a++) {
-    if (!Misc_LBts(&hc->arena_lock, a))
+    if (!LBts(&hc->arena_lock, a))
       return &hc->arenas[a];
   }
   PAUSE;
@@ -590,7 +664,8 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   // things,so use power of two to use them
   if (cnt <= MEM_HEAP_HASH_SIZE)
     cnt = NextPower2(cnt);
-#ifndef __x86_64__
+    // XXX TODO arm64 OpenBSD optpassfinal
+#if !defined(__x86_64__) && defined(__OpenBSD__)
   if (hc->is_code_heap)
     goto big;
 #endif
@@ -607,22 +682,22 @@ again:;
   }
   if (ret == &new_nul) {
   new_lunk:
-    while (Misc_LBts(&hc->locked_flags, 1))
+    while (LBts(&hc->locked_flags, 1))
       PAUSE;
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
     ret = ((CMemBlk *)ret)->rw;
 #endif
     if (!ret) {
-      Misc_LBtr(&hc->locked_flags, 2);
+      LBtr(&hc->locked_flags, 2);
       SetWriteNP(old_wnp);
       return NULL;
     }
     ret = (char *)ret + sizeof(CMemBlk);
     ret->sz = (pags << MEM_PAG_BITS) - sizeof(CMemBlk);
     arena->malloc_free_lst = ret;
-    Misc_LBtr(&hc->locked_flags, 1);
+    LBtr(&hc->locked_flags, 1);
   }
   // Chip off
   //
@@ -640,13 +715,13 @@ chip_off:;
     goto new_lunk;
   }
 big:
-  while (Misc_LBts(&hc->locked_flags, 1))
+  while (LBts(&hc->locked_flags, 1))
     PAUSE;
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
   ret = ((CMemBlk *)ret)->rw;
 #endif
-  Misc_LBtr(&hc->locked_flags, 1);
+  LBtr(&hc->locked_flags, 1);
   if (!ret) {
     SetWriteNP(old_wnp);
     return NULL;
@@ -660,7 +735,7 @@ almost_done:
   hc->used_u8s += cnt;
   ret->hc = hc;
   ret++;
-  Misc_LBtr(&hc->arena_lock, arena - (CHeapCtrlArena *)&hc->arenas);
+  LBtr(&hc->arena_lock, arena - (CHeapCtrlArena *)&hc->arenas);
   if (bc_enable) {
     assert((int64_t)ret < (1ll << 31));
     if (orig < 8)
@@ -670,10 +745,10 @@ almost_done:
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
   SetWriteNP(old_wnp);
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
-    while (Misc_LBts(&hc->locked_flags, 1))
+    while (LBts(&hc->locked_flags, 1))
       PAUSE;
     static int64_t ps = 0;
     if (!ps)
@@ -689,7 +764,7 @@ almost_done:
         }
       mm = mm->base.next;
     }
-    Misc_LBtr(&hc->locked_flags, 1);
+    LBtr(&hc->locked_flags, 1);
   }
 #endif
   return ret;
@@ -717,20 +792,20 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   hc->used_u8s -= un->sz;
   which_bucket = un->which_bucket;
-  #ifdef __OpenBSD__
+#if __OpenBSD__ + __NetBSD__ > 0
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
-    while (Misc_LBts(&hc->locked_flags, 1))
+    while (LBts(&hc->locked_flags, 1))
       PAUSE;
     static int64_t ps = 0;
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);
 
     un = (CMemUnused *)MemGetWritePtr(un);
-    Misc_LBtr(&hc->locked_flags, 1);
+    LBtr(&hc->locked_flags, 1);
   }
 #endif
-  while (Misc_LBts(&hc->arena_lock, which_bucket))
+  while (LBts(&hc->arena_lock, which_bucket))
     PAUSE;
   un->hc = NULL;
   QueRem(&un->next);
@@ -743,12 +818,12 @@ void __AIWNIOS_Free(void *ptr) {
     // CMemUnused
     // CMemBlk
     // page start
-    while (Misc_LBts(&hc->locked_flags, 1))
+    while (LBts(&hc->locked_flags, 1))
       PAUSE;
     MemPagTaskFree((char *)(un) - sizeof(CMemBlk), hc);
-    Misc_LBtr(&hc->locked_flags, 1);
+    LBtr(&hc->locked_flags, 1);
   }
-  Misc_LBtr(&hc->arena_lock, which_bucket);
+  LBtr(&hc->arena_lock, which_bucket);
 fin:
   SetWriteNP(oldwnp);
 }
@@ -803,7 +878,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
 void HeapCtrlDel(CHeapCtrl *ct) {
   CMemBlk *next, *m;
   int old = SetWriteNP(0);
-  while (Misc_Bt(&ct->locked_flags, 1))
+  while (Bt(&ct->locked_flags, 1))
     PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
     next = m->base.next;
@@ -878,8 +953,8 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
     init = true;
   }
   void *ret;
-  while (Misc_LBts(&running, 0))
-    while (Misc_Bt(&running, 0))
+  while (LBts(&running, 0))
+    while (Bt(&running, 0))
       __builtin_ia32_pause();
   if (low32) {
     MEMORY_BASIC_INFORMATION mbi;
@@ -899,7 +974,7 @@ static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
   ret = VALLOC(NULL, sz, MEM | (MEM_TOP_DOWN * topdown),
                exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 ret:
-  Misc_LBtr(&running, 0);
+  LBtr(&running, 0);
   return ret;
 }
 
@@ -977,9 +1052,8 @@ static void *GetAvailRegion32(int64_t len) {
 #  elif defined(__linux__)
 static void *GetAvailRegion32(int64_t len) {
   static int64_t ps;
-  if (!ps) {
+  if (!ps)
     ps = sysconf(_SC_PAGESIZE);
-  }
   void *last_gap_end = 0x10000;
   void *start;
   void *retv = NULL, *ptr;
@@ -1047,7 +1121,7 @@ void *BoundsCheck(void *ptr, int64_t *after) {
 }
 
 int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len) {
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
   CMemPair *mp = GetMemPairForPtrRX(dst);
   if (mp) {
     return (int64_t *)memcpy(mp->rw + (dst - mp->rx), src, len);
@@ -1062,8 +1136,8 @@ int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len) {
 #endif
 }
 
-void *MemGetWritePtr(void *ptr) {
-#if defined(__OpenBSD__)
+void *(MemGetWritePtr)(void *ptr) {
+#if __OpenBSD__ + __NetBSD__ > 0
   CMemPair *mp = GetMemPairForPtrRX(ptr);
   if (!mp)
     return ptr;
@@ -1072,8 +1146,8 @@ void *MemGetWritePtr(void *ptr) {
 #endif
   return ptr;
 }
-void *MemGetExecPtr(void *ptr) {
-#if defined(__OpenBSD__)
+void *(MemGetExecPtr)(void *ptr) {
+#if __OpenBSD__ + __NetBSD__ > 0
   CMemPair *mp = GetMemPairForPtrRW(ptr);
   if (!mp)
     return ptr;

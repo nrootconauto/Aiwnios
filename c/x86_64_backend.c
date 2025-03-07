@@ -5264,7 +5264,7 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
         if (r->type == IC_IREG && r->raw_type != RT_F64) {
           if (!to_push[r->integer])
             if (IsSavedIReg(r->integer)) {
-              Misc_Bts(&cctrl->used_iregs_bmp, r->integer);
+              Bts(&cctrl->used_iregs_bmp, r->integer);
               to_push[r->integer] = 1;
               cnt++;
             }
@@ -5273,7 +5273,7 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
       cctrl->found_used_iregs = 1;
     } else {
       for (idx = 0; idx != 16; idx++) {
-        if (Misc_Bt(&cctrl->used_iregs_bmp, idx)) {
+        if (Bt(&cctrl->used_iregs_bmp, idx)) {
           to_push[idx] = 1;
           cnt++;
         }
@@ -5307,15 +5307,15 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
           if (!to_push[r->integer])
             if (IsSavedFReg(r->integer)) {
               to_push[r->integer] = 1;
-              Misc_Bts(&cctrl->backend_user_data8, r->integer);
-              Misc_Bts(&cctrl->used_fregs_bmp, r->integer);
+              Bts(&cctrl->backend_user_data8, r->integer);
+              Bts(&cctrl->used_fregs_bmp, r->integer);
               cnt++;
             }
         }
       }
     } else {
       for (idx = 0; idx != 16; idx++) {
-        if (Misc_Bt(&cctrl->used_fregs_bmp, idx)) {
+        if (Bt(&cctrl->used_fregs_bmp, idx)) {
           to_push[idx] = 1;
           cnt++;
         }
@@ -5327,7 +5327,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
     if (lst->reg != REG_NONE && lst->member_class->raw_type == RT_F64) {
       assert(lst->reg >= 0);
       to_push[lst->reg] = 1;
-      Misc_Bts(&cctrl->backend_user_data8, lst->reg);
+      Bts(&cctrl->backend_user_data8, lst->reg);
       cnt++;
     }
   }
@@ -6338,7 +6338,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   segment:
     // %gs is used as a TLS reg for all OS'es
     into_reg = 0;
-#ifdef __OpenBSD__
+#if __OpenBSD__ + __NetBSD__ > 0
     AIWNIOS_ADD_CODE(SEG_FS, 0);
 #else
     AIWNIOS_ADD_CODE(SEG_GS, 0);

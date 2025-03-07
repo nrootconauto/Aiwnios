@@ -2269,7 +2269,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
         if (!to_push[r->integer])
           if (IsSavedFReg(r->integer)) {
             to_push[r->integer] = 1;
-            Misc_Bts(&cctrl->backend_user_data8, r->integer);
+            Bts(&cctrl->backend_user_data8, r->integer);
             cnt++;
           }
       }
@@ -2280,7 +2280,7 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
     if (lst->reg != REG_NONE && lst->member_class->raw_type == RT_F64) {
       assert(lst->reg >= 0);
       to_push[lst->reg] = 1;
-      Misc_Bts(&cctrl->backend_user_data8, lst->reg);
+      Bts(&cctrl->backend_user_data8, lst->reg);
       cnt++;
     }
   }

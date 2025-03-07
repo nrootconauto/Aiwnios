@@ -52,7 +52,7 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   }
   return bin;
 }
-#  elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#  elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
   uint8_t *bin = NULL, *xbin = NULL;

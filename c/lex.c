@@ -653,6 +653,7 @@ re_enter:;
           rtrn->type = IC_RET;
           QueIns(rtrn, cc->code_ctrl->ir_code);
           if (code = Compile(cc, NULL, NULL, NULL)) {
+		  printf("poo1 %p\n",code);
             ret = FFI_CALL_TOS_0(code);
           }
           A_FREE(code);

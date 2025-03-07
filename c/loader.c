@@ -341,8 +341,7 @@ typedef struct __attribute__((packed)) CBinFile {
   char data[];
 } CBinFile;
 
-#if defined(__OpenBSD__) && defined(__x86_64__)
-#  include <emmintrin.h>
+#if defined(__x86_64__) && (__NetBSD__ + __OpenBSD__ > 0)
 typedef char xmm __attribute__((vector_size(16), aligned(1)));
 _Static_assert('e' == 0x65);
 
@@ -359,7 +358,8 @@ static void RewriteSegments(CBinFile *bin) {
       //                                     why is it eeeeeeeing
       //                                 1. why wouldn't it (eeeeeee)
       //                     2. if you were smart, you'd be doing the same thing
-      if ((m = _mm_movemask_epi8(*(xmm *)p == *(xmm *)"eeeeeeeeeeeeeeee"))) {
+      if ((m = __builtin_ia32_pmovmskb128(*(xmm *)p ==
+                                          *(xmm *)"eeeeeeeeeeeeeeee"))) {
         m = __builtin_ctzll(m);
         p += m;
         break;
@@ -397,7 +397,7 @@ char *Load(char *fbuf, int64_t size) {
   bfh = A_MALLOC(size, hc);
   memcpy(MemGetWritePtr(bfh), fbuf, size); // MemGetWritePtr(obfh) for
 
-#if defined(__OpenBSD__) && defined(__x86_64__)
+#if defined(__x86_64__) && (__OpenBSD__ + __NetBSD__ > 0)
   // OX86, gcc multicharacter literals are big endian
   if (bfh->bin_signature != '68XO')
     RewriteSegments(MemGetWritePtr(bfh));
@@ -416,7 +416,6 @@ lo_skip:
   LoadPass2((char *)bfh_addr + bfh_addr->patch_table_offset, bfh_addr->data);
   return bfh_addr;
 }
-#undef READ_NUM
 
 void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
   int64_t idx = 0;
