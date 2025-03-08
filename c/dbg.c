@@ -916,7 +916,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
   call_exit:
     fp2 = exp->val;
-		  printf("poo1 %p\n",code);
     FFI_CALL_TOS_0(fp2);
   } else
     abort();

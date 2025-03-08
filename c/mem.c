@@ -478,10 +478,10 @@ static void GetAvail32(int64_t sz, void **_rw, void **_rx) {
   while (MAP_FAILED ==
          (p = mmap((void *)cur, sz,
                    PROT_MPROTECT(PROT_EXEC | PROT_READ | PROT_WRITE),
-                   MAP_PRIVATE | MAP_ANON, -1, 0)))
+                   MAP_TRYFIXED | MAP_PRIVATE | MAP_ANON, -1, 0)))
     cur += ps;
-  cur += sz;
-  if (cur > 1ull << 31)
+  cur = (uintptr_t)p + sz;
+  if ((uintptr_t)p > 1ull << 31)
     abort();
   rx = p;
   rw = mremap(p, sz, 0, sz, MAP_REMAPDUP);
