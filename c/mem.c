@@ -58,7 +58,22 @@ typedef struct CMemPair {
 } CMemPair;
 static CMemPair *mem_pairs = NULL;
 static int64_t mem_pairs_lock, mem_pairs_len;
-static _Thread_local int64_t mem_pair_last_idx;
+static _Thread_local int64_t mem_pair_last_idx_rx;
+static _Thread_local int64_t mem_pair_last_idx_rw;
+static int PtrCmp(const CMemPair *a,const CMemPair *b) {
+	if(a->rx>b->rx)
+	  return 1;
+	if(b->rx>a->rx)
+	   return -1;
+	return 0;
+}
+static int PtrCmp2(const CMemPair *a,const CMemPair *b) {
+    if(a->rw>b->rw)
+	return 1;
+    if(b->rw>a->rw)
+	return -1;
+    return 0;
+}
 static void AddMemPair(void *rw, void *rx, int64_t mlen, int fd) {
   int64_t ptr, len, ptr2;
   char *last = NULL;
@@ -67,8 +82,8 @@ static void AddMemPair(void *rw, void *rx, int64_t mlen, int fd) {
   while (LBts(&mem_pairs_lock, 0))
     PAUSE;
 again:;
-  last = (1ull << 31);
   len = mem_pairs_len;
+  last = (1ull << 31);
   for (ptr = len - 1; ptr >= 0; ptr--) {
     cur = mem_pairs + ptr;
     if (!cur->rw && !cur->rx) {
@@ -79,6 +94,7 @@ again:;
       goto end;
     }
   }
+rs:;
   // Resize with spacing
   cur = mem_pairs;
   density = 0;
@@ -90,7 +106,7 @@ again:;
   mem_pairs_len = density + 32;
   cur = mem_pairs;
 
-  mem_pairs = calloc(sizeof(CMemPair), mem_pairs_len);
+  mem_pairs = calloc(sizeof(CMemPair), mem_pairs_len*2);
   for (ptr2 = ptr = 0; ptr != len; ptr++) {
     CMemPair *old = &cur[ptr];
     if (old->rx) {
@@ -100,6 +116,10 @@ again:;
   free(cur);
   goto again;
 end:
+  qsort(mem_pairs,mem_pairs_len,sizeof(CMemPair),&PtrCmp);
+//Sort by RW at end
+  memcpy(mem_pairs+mem_pairs_len,mem_pairs,mem_pairs_len*sizeof(CMemPair));
+  qsort(mem_pairs+mem_pairs_len,mem_pairs_len,sizeof(CMemPair),&PtrCmp2);
   LBtr(&mem_pairs_lock, 0);
 }
 static CMemPair *GetMemPairForPtrRX(void *rx) {
@@ -108,25 +128,25 @@ static CMemPair *GetMemPairForPtrRX(void *rx) {
     PAUSE;
   len = mem_pairs_len;
   CMemPair *cur = mem_pairs;
-  if (mem_pair_last_idx < len) {
-    CMemPair *last = &mem_pairs[mem_pair_last_idx];
-    if (last->rw) {
-      if (last->rx <= rx) {
-        if (last->rx + last->len > rx) {
-          cur = last;
+  if(mem_pair_last_idx_rx<len) {
+      cur=mem_pairs+mem_pair_last_idx_rx;
+      if (cur->rx <= rx) {
+        if (cur->rx + cur->len > rx) {
           goto end;
         }
       }
-    }
   }
   for (cur = mem_pairs; ptr != len; ptr++, cur++) {
     if (!cur->rw)
       continue;
     if (cur->rx <= rx) {
       if (cur->rx + cur->len > rx) {
-        mem_pair_last_idx = ptr;
+	mem_pair_last_idx_rx=ptr;
         goto end;
       }
+    } else if(cur->rx>rx) {
+	cur=NULL;
+	goto end;
     }
   }
   cur = NULL;
@@ -140,14 +160,29 @@ static CMemPair *GetMemPairForPtrRW(void *rw) {
   while (LBts(&mem_pairs_lock, 0))
     PAUSE;
   len = mem_pairs_len;
-  CMemPair *cur = mem_pairs;
+  CMemPair *cur = mem_pairs+len;
+  if(mem_pair_last_idx_rx<len) {
+      cur=mem_pairs+mem_pair_last_idx_rw;
+      if (cur->rw <= rw) {
+        if (cur->rw + cur->len > rw) {
+          goto end;
+        }
+      }
+  }
+
+  cur=mem_pairs+len;
   for (ptr = 0; ptr != len; ptr++, cur++) {
     if (!cur->rw)
       continue;
     if (cur->rw <= rw) {
       if (cur->rw + cur->len > rw) {
-        goto end;
+        LBtr(&mem_pairs_lock,0);
+        mem_pair_last_idx_rw=ptr;
+        return GetMemPairForPtrRX(cur->rx);
       }
+    } else if(cur->rw>rw) {
+      cur=NULL;
+      goto end;
     }
   }
   cur = NULL;
@@ -271,8 +306,19 @@ static void OBSD_SexyDelShm(CHeapCtrl *hc, void *rx) {
   }
   while (LBts(&mem_pairs_lock, 0))
     PAUSE;
-  mp->rw = NULL;
-  mp->rx = NULL;
+  int64_t ptraa;
+  for(ptraa=0;ptraa!=mem_pairs_len;ptraa++) {
+   if(mp->rx==mem_pairs[ptraa+mem_pairs_len].rx
+	&&mp->rw==mem_pairs[ptraa+mem_pairs_len].rw) {
+	CMemPair *del=&mem_pairs[ptraa+mem_pairs_len];
+	del->rx=0;
+	del->rw=0;
+        del->len=0;
+	break;
+   }
+  }
+  mp->rw = 0;
+  mp->rx = 0;
   mp->len = 0;
   LBtr(&mem_pairs_lock, 0);
 }
@@ -397,14 +443,28 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
     return; //???
   while (LBts(&mem_pairs_lock, 0))
     PAUSE;
-  mp->rw = NULL;
-  mp->rx = NULL;
+    int64_t ptraa;
+  for(ptraa=0;ptraa!=mem_pairs_len;ptraa++) {
+   if(mp->rx==mem_pairs[ptraa+mem_pairs_len].rx
+	&&mp->rw==mem_pairs[ptraa+mem_pairs_len].rw) {
+	CMemPair *del=&mem_pairs[ptraa+mem_pairs_len];
+	del->rx=0;
+	del->rw=0;
+	del->len=0;
+	break;
+   }
+  }
+
+  mp->rw = 0;
+  mp->rx = 0;
   mp->len = 0;
+
   LBtr(&mem_pairs_lock, 0);
   munmap(rw, b);
   if (rx && rx != rw)
     munmap(rx, b);
-  return;
+
+return;
 #endif
   QueRem(blk);
   hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
