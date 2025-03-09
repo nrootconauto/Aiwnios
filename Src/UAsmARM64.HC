@@ -1,38 +1,4 @@
 #ifndef BOOTSTRAP
-#define ARM64_OP_IMM9 1
-#define ARM64_OP_IMM7 2
-#define ARM64_OP_IMM19 3
-#define ARM64_OP_REG 5
-#define ARM64_OP_B5 6
-#define ARM64_OP_B40 7
-#define ARM64_OP_IMM14 8
-#define ARM64_OP_COND 9
-#define ARM64_OP_R 10
-#define ARM64_OP_IMM26 11
-#define ARM64_OP_IMMLO 12
-#define ARM64_OP_IMMHI 13
-#define ARM64_OP_IMMS 14
-#define ARM64_OP_IMMR 15
-#define ARM64_OP_OPTION 16
-#define ARM64_OP_SHIFT 17
-#define ARM64_OP_IMM5 18
-#define ARM64_OP_NZCV 19
-#define ARM64_OP_IMM4 20
-#define ARM64_OP_Q 21
-#define ARM64_OP_IMM16 22
-#define ARM64_OP_IMM12 23
-#define ARM64_OP_S 24
-class CArm64Operand {
-  I32 offset;
-  I32 type;
-};
-class CArm64Opc:CHash {
-  I64 flags;
-  I64 num;
-  U32 value;
-  U32 mask;
-  CArm64Operand operands[16]; 
-};
 I64 Sext(I64 v,I64 bits) {
   if(v&(1<<(bits-1)))
     return -(1<<bits-v);
@@ -91,6 +57,86 @@ I64 Arm64GetValue(CArm64Opc *opc,U32 inst,I64 which,I64 occ=1) {
     }
   }
   return -1;
+}
+I64 Arm64SetValue(CArm64Opc *opc,U32 inst,I64 which,I64 value,I64 occ=1) {
+  I64 ret=inst;
+  I64 o;
+  I64 off;
+  for(o=0;o!=16;o++) {
+    if(opc->operands[o].type==which) {
+      if(!--occ) {
+        if(opc->operands[o].offset)
+	  off=opc->operands[o].offset;
+        else
+	  off=0;
+        switch(which) {
+	  case ARM64_OP_IMM9:
+	    value&=1<<9-1;
+	    break;
+	  case ARM64_OP_IMM7:
+	    value&=1<<7-1;
+	    break;
+	  case ARM64_OP_IMM19:
+	    value&=1<<19-1;
+	    break;
+	  case ARM64_OP_REG:
+	    value&=1<<5-1;
+	    break;
+	  case ARM64_OP_B5:
+bt:
+	    if(value)
+	      Bts(&ret,off);
+	    else
+	      Btr(&ret,off);
+	    goto fin;
+	  case ARM64_OP_B40:
+	    value&=0b1111;
+	    break;
+	  case ARM64_OP_IMM14:
+	    value&=1<<14-1;
+	    break;
+	  case ARM64_OP_COND:
+	    value&=0b1111;
+	    break;
+	  case ARM64_OP_R:
+	  case ARM64_OP_IMM26:
+	    value&=1<<26-1;
+	    break;
+	  case ARM64_OP_IMMLO:
+	    value&=1<<2-1;
+	    break;
+	  case ARM64_OP_IMMHI:
+	    value=1<<19-1;
+	    break;
+	  case ARM64_OP_IMMS:
+	  case ARM64_OP_IMMR:
+	  case ARM64_OP_OPTION:
+	  case ARM64_OP_SHIFT:
+	    value&=0b11;
+	    break;
+	  case ARM64_OP_S:
+	    goto bt;
+	  case ARM64_OP_IMM5:
+	    value&=1<<5-1;
+	    break;
+	  case ARM64_OP_NZCV:
+	  case ARM64_OP_IMM4:
+	    value&=1<<4-1;
+	    break;
+	  case ARM64_OP_Q:
+	  case ARM64_OP_IMM16:
+	    value&=1<<16-1;
+	    break;
+	  case ARM64_OP_IMM12:
+	    value&=1<<12-1;
+	    break;
+        }
+        ret|=value<<off;
+      }
+    }
+  }
+fin:;
+  return ret;
 }
 U8 *ReadALine(U8 **_ptr) {
   U8 *ptr=*_ptr;
@@ -160,7 +206,7 @@ U0 LoadOpcodes() {
     append=ReadAFeild(&ln);
     opc=CAlloc(sizeof CArm64Opc);
     opc->num=num;
-    opc->str=MStrPrint("%s%s%s",name,prepend,append);
+    opc->str=MStrPrint("%s",name);
     opc->type=HTT_OPCODE;
     *store_at++=opc;
     HashAdd(opc,cmp.asm_hash);

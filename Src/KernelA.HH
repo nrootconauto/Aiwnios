@@ -6865,6 +6865,7 @@ _intern IC_MIN_U64 U64 MinU64(U64,U64);
 #ifdef TARGET_AARCH64
 _intern IC_FS CTask *Fs();
 _intern IC_GS CCPU *Gs();
+_intern IC_SQR F64 Sqr(F64);
 _intern IC_MAX_I64 I64 MaxI64(I64,I64);
 _intern IC_MIN_I64 I64 MinI64(I64,I64);
 _intern IC_MAX_U64 U64 MaxU64(U64,U64);
@@ -7198,3 +7199,37 @@ class CSoundEffectFrame
   F64	duration;
 };
 
+#define ARM64_OP_IMM9 1
+#define ARM64_OP_IMM7 2
+#define ARM64_OP_IMM19 3
+#define ARM64_OP_REG 5
+#define ARM64_OP_B5 6
+#define ARM64_OP_B40 7
+#define ARM64_OP_IMM14 8
+#define ARM64_OP_COND 9
+#define ARM64_OP_R 10
+#define ARM64_OP_IMM26 11
+#define ARM64_OP_IMMLO 12
+#define ARM64_OP_IMMHI 13
+#define ARM64_OP_IMMS 14
+#define ARM64_OP_IMMR 15
+#define ARM64_OP_OPTION 16
+#define ARM64_OP_SHIFT 17
+#define ARM64_OP_IMM5 18
+#define ARM64_OP_NZCV 19
+#define ARM64_OP_IMM4 20
+#define ARM64_OP_Q 21
+#define ARM64_OP_IMM16 22
+#define ARM64_OP_IMM12 23
+#define ARM64_OP_S 24
+class CArm64Operand {
+  I32 offset;
+  I32 type;
+};
+class CArm64Opc:CHash {
+  I64 flags;
+  I64 num;
+  U32 value;
+  U32 mask;
+  CArm64Operand operands[16]; 
+};

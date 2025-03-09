@@ -906,6 +906,10 @@ static int64_t STK___HC_ICAdd_SubCall(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Sqrt(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Sqrt((CCodeCtrl *)stk[0]);
 }
+static int64_t STK___HC_ICAdd_Sqr(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Sqr((CCodeCtrl *)stk[0]);
+}
+
 
 static int64_t STK___HC_ICAdd_SubProlog(int64_t *stk) {
   return (int64_t)__HC_ICAdd_SubProlog((CCodeCtrl *)stk[0]);
@@ -1698,6 +1702,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SetKBCallback", STK_SetKBCallback, 1);
     PrsAddSymbol("SndFreq", STK_SndFreq, 1);
     PrsAddSymbol("__HC_ICAdd_Sqrt", STK___HC_ICAdd_Sqrt, 1);
+    PrsAddSymbol("__HC_ICAdd_Sqr", STK___HC_ICAdd_Sqr, 1);
     PrsAddSymbol("SetMSCallback", STK_SetMSCallback, 1);
     PrsAddSymbol("InteruptCore", STK_InteruptCore, 1);
     PrsAddSymbol("ExitAiwnios", ExitAiwnios, 1);

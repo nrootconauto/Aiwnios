@@ -55,7 +55,7 @@ U0 throw(I64 ch=0,Bool no_log=FALSE)
   Fs->except_ch=ch;
   for (i=0;i<TASK_EXCEPT_CALLERS;i++)
     Fs->except_callers[i]=Caller(i+2);
-  Fs->catch_except=FALSE;
+  Fs->catch_except=FALSE;
   if (!no_log)
     ;
     /*AdamLog("Except:%c:%p:%p:%p:%p:%p:%p\n",ch,Fs->except_callers[0], TODO RESTORE

@@ -94,7 +94,7 @@ U0 LexExcept(CCmpCtrl *cc,U8 *str=NULL)
   throw('Compiler');
 }
 
-U0 UndefinedExtern()
+U0 UndefinedExtern()
 {
   PrintErr("Undefined Extern at %P\n",Caller);
   throw('UndefExt');

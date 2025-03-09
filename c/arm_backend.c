@@ -157,6 +157,7 @@ static void SetKeepTmps(CRPN *rpn) {
     if (right->tmp_res.mode)
       right->res.keep_in_tmp = 1;
     break;
+  case IC_SQR:
   case IC_POS:
     goto unop;
     break;
@@ -1656,6 +1657,7 @@ static int64_t SpillsTmpRegs(CRPN *rpn) {
   unop:
     return SpillsTmpRegs(rpn->base.next);
     break;
+  case IC_SQR:
   case IC_POS:
     goto unop;
     break;
@@ -3156,7 +3158,21 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   case IC_POS:
     BACKEND_UNOP(ARM_fmovReg, ARM_movRegX);
     break;
-  case IC_NAME:
+	case IC_SQR:
+    next = ICArgN(rpn, 0);
+    code_off = __OptPassFinal(cctrl, next, bin, code_off);
+    code_off=PutICArgIntoReg(cctrl,&next->res,RT_F64,0,bin,code_off); //Fallback to reg 0
+    if(rpn->res.mode==MD_REG) {
+		AIWNIOS_ADD_CODE(ARM_fmulReg(rpn->res.reg,next->res.reg,next->res.reg));
+	} else {
+		tmp.mode=MD_REG;
+		tmp.raw_type=RT_F64;
+		tmp.reg=MFR(cctrl,0); //MAKE SURE TO MARK THE VARIABLE AS modified
+		AIWNIOS_ADD_CODE(ARM_fmulReg(tmp.reg,next->res.reg,next->res.reg));
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);//Move tmp into result.
+	}
+    break;
+      case IC_NAME:
     abort();
     break;
   case IC_STR:
@@ -4779,6 +4795,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     goto unop;
     break;
   case IC_POS:
+  case IC_SQR:
     goto unop;
     break;
   case IC_LT:

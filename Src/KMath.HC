@@ -135,7 +135,7 @@ F64 Sign(F64 a) {
     return -1;
 }
 
-F64 Sqr(F64 a) {
+F64 Sqr(F64 a) {
   return a*a;
 }
 

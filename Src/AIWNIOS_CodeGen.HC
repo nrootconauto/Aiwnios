@@ -6,6 +6,7 @@
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
+import U8 *__HC_ICAdd_Sqr(U8 *);
 import U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
 import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
@@ -1219,7 +1220,7 @@ use_outgoing:
 	  break;
         case IC_RET:
 	  break;
-        case IC_JMP:
+	    case IC_JMP:
 	  if(first_run) {
 	    jump_to=LabelToRPN(cc,rpn->ic_data);
 	    if(jump_to) {
@@ -1947,7 +1948,10 @@ break;case IC_ASM:
     new=__HC_ICAdd_LBTC(cc2);
     break;case IC_LBTR:
     new=__HC_ICAdd_LBTR(cc2);
-    break;case IC_ADD:
+    case IC_SQR:
+	  new=__HC_ICAdd_Sqr(cc2);
+	  break;
+	break;case IC_ADD:
     new=__HC_ICAdd_Add(cc2);
     break;case IC_SUB:
     new=__HC_ICAdd_Sub(cc2);

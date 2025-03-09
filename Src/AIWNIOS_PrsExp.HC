@@ -60,7 +60,7 @@ I64 RPNPtrWidth(CRPN *r) {
   //Is a function pointer???
   return 1*mul;
 }
-CHashClass *AssignRawTypeToNode(CRPN *r) {
+CHashClass *AssignRawTypeToNode(CRPN *r) {
   CHashClass *cls;
   I64 rt1,rt2;
   if(r->ic_class)
@@ -185,6 +185,7 @@ binop_dft:
     break;case IC_SHR_CONST:
     goto binop;
     break;case IC_POWER:
+    case IC_SQR:
     return r->ic_class=cmp.internal_types[RT_F64];
     break;case IC_MUL:
     goto binop;

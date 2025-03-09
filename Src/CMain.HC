@@ -69,8 +69,9 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
         case IC_CALL_EXTERN:
         case IC_COMMA:
         case IC_TO_BOOL:
+	case IC_SQR:
 	  RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(rpn),FALSE);
-	  break;defualt:
+	  break;default:
 	  RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
 	  RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
       }
@@ -116,7 +117,7 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
   cc->aot=res;
 
   res->next_ie=res->last_ie=&res->next_ie;
-  cc->aotc=aotc=CAlloc(sizeof(CAOTCtrl));
+  cc->aotc=aotc=CAlloc(sizeof(CAOTCtrl));
   cc->aot_depth++;
 
   aotc->bin=CAlloc(sizeof(CAOTBinBlk));

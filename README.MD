@@ -154,7 +154,123 @@ U0 Main () {
 Main;
 ```
 
+## Extending Aiwnios
+### Make an IC_intern
+```c
+_intern IC_SQR F64 Sqr(F64);
+``` 
+### Add IR_code in aiwn_lexparser.h/parser.c
+`aiwn_lexparser.h`
+```c
+enum {
+/*Insert new IR code here */
+IC_GOTO,
+//...
+};
+//Later
+HC_IC_BINDINGH(HC_ICAdd_Sqr)
+```
 
+`parser.c`
+```c
+//Add this
+HC_IC_BINDING(HC_ICAdd_Sqr, IC_SQR);
+```
+### Add entires for the IR code in frontend and backend
+
+  Add entires in these functions
+`parser.c`
+```c
+CRPN *ICFwd(CRPN *rpn) {
+   //...
+   case IC_SQR:
+	goto unop;
+   //...
+}
+CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
+	//...
+	case IC_SQR:
+	printf("`2");
+	//...
+}
+int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) ;
+int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
+	//...
+	case IC_SQR:
+    AssignRawTypeToNode(ccmp, rpn->base.next);
+    //Is a F64,use HashFind
+    rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = rpn->ic_class->raw_type;
+    break;
+	//...
+}
+```
+
+`x86_64_backend.c`
+```c
+static int64_t SpillsTmpRegs(CRPN *rpn) {
+	//...
+	case IC_POS:
+	case IC_SQR:
+	//....
+}
+static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
+	//...
+	  case IC_SQR:
+    goto unop;
+
+	//...
+}
+static void SetKeepTmps(CRPN *rpn) {
+	//...
+	case IC_POS:
+	case IC_SQR: //Is a unop
+	//... 
+}
+static int64_t __OptPassFinal(...) {
+	case IC_SQR:
+	next = ICArgN(rpn, 0);
+    code_off = __OptPassFinal(cctrl, next, bin, code_off);
+    code_off=PutICArgIntoReg(cctrl,&next->arg,RT_F64,0,bin,code_off); //Fallback to reg 0
+    if(rpn->res.mode==MD_REG) {
+		AIWNIOS_ADD_CODE(ARM_fmulReg(rpn->res.reg,next->arg.reg,next->arg.reg));
+	} else {
+		tmp.mode=MD_REG;
+		tmp.raw_type=RT_F64;
+		tmp.reg=MFR(cctrl,0); //MAKE SURE TO MARK THE VARIABLE AS modified
+		AIWNIOS_ADD_CODE(ARM_fmulReg(tmp.reg,rpn->res.reg,next->arg.reg,next->arg.reg));
+		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);//Move tmp into result.
+	}
+    break;
+}
+```
+
+`Src/AIWNIOS_CodeGen.HC`
+```c
+//At Start of file
+#ifdef IMPORT_AIWNIOS_SYMS
+import U8 *__HC_ICAdd_Sqr(U8 *);
+#else
+extern  U8 *__HC_ICAdd_Sqr(U8 *);
+#endif
+U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
+//...
+    case IC_SQR:
+	  new=__HC_ICAdd_Sqr(cc2);
+	  break;
+//...
+}
+```
+
+`main.c`
+
+```
+static int64_t STK___HC_ICAdd_Sqr(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Sqr((CCodeCtrl *)stk[0]);
+}
+// main()
+PrsAddSymbol("__HC_ICAdd_Sqr", STK___HC_ICAdd_Sqr, 1);
+```
 ## Credits
 
 - [argtable3](https://github.com/argtable/argtable3)

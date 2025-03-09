@@ -325,6 +325,7 @@ CRPN *ICFwd(CRPN *rpn) {
   unop:
     return ICFwd(rpn->base.next);
     break;
+  case IC_SQR:
   case IC_POS:
     goto unop;
     break;
@@ -1498,6 +1499,10 @@ int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
     goto ret;
   case IC_SQRT:
     len = AddBytes(to, len, "$PURPLE$SQRT$FD$\n");
+    goto unop;
+    break;
+  case IC_SQR:
+    len = AddBytes(to, len, "$PURPLE$SQR$FD$\n");
     goto unop;
     break;
   case IC_NEG:
@@ -3654,6 +3659,11 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
   case IC_AND:
     goto binop;
     break;
+  case IC_SQR:
+    AssignRawTypeToNode(ccmp, rpn->base.next);
+    rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = rpn->ic_class->raw_type;
+    break;
   case IC_DOT:
     AssignRawTypeToNode(ccmp, rpn->base.next);
     if (((CRPN *)rpn->base.next)->ic_class->ptr_star_cnt ||
@@ -4559,6 +4569,7 @@ void PrsTests() {
     QueIns(rpn, cc->ir_code);                                                  \
     return rpn;                                                                \
   }
+HC_IC_BINDING(HC_ICAdd_Sqr, IC_SQR);
 HC_IC_BINDING(HC_ICAdd_Lock, IC_LOCK);
 HC_IC_BINDING(HC_ICAdd_Pow, IC_POW);
 HC_IC_BINDING(HC_ICAdd_Eq, IC_EQ);
