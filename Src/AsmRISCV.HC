@@ -402,7 +402,8 @@ I64 Name2FReg(U8 *name) {
 
 CAddrMode *PrsAddrMode(CCmpCtrl *cc,Bool flt_style=FALSE) { 
   CAddrMode *am=CAlloc(sizeof CAddrMode);
-  I64 r;
+  I64 r,i;
+  U8 *s;
   if(cc->token==TK_IDENT) {
     if(flt_style) {
       if(0<=(r=Name2FReg(cc->cur_str))) {
@@ -417,6 +418,17 @@ CAddrMode *PrsAddrMode(CCmpCtrl *cc,Bool flt_style=FALSE) {
         am->reg=r;
         Lex(cc);
         return am;
+      }
+      s=cc->cur_str;
+      while(*s&&StrOcc("iorw",*s++));
+      if(!*s) {
+        am->type='Iorw';
+        am->reg=(!!StrOcc(cc->cur_str,'i'))<<3|
+		(!!StrOcc(cc->cur_str,'o'))<<2|
+		(!!StrOcc(cc->cur_str,'r'))<<1|
+		(!!StrOcc(cc->cur_str,'w'))<<0;
+	Lex(cc);
+	return am;
       }
     }
   }  
@@ -458,6 +470,15 @@ CRiscVOpcode *APause(U8 *name,U32 o) {
   opc->str=StrNew(name);
   opc->type=HTT_OPCODE;
   opc->op_type='PS';
+  opc->opc=o;
+  HashAdd(opc,riscv_opcs);
+  return opc;
+}
+CRiscVOpcode *AFence(U8 *name,U32 o) {
+  CRiscVOpcode *opc=CAlloc(sizeof CRiscVOpcode);
+  opc->str=StrNew(name);
+  opc->type=HTT_OPCODE;
+  opc->op_type='FE';
   opc->opc=o;
   HashAdd(opc,riscv_opcs);
   return opc;
@@ -510,8 +531,8 @@ U0 InitOpcodes()  {
   AO("OR",0b0110011,0b110,0b000000,'R');
   AO("AND",0b0110011,0b111,0b000000,'R');
 
-//TODO:proper Zifencei
   APause("PAUSE",0b0001111);
+  AFence("FENCE",0b0001111);
 
 //ECALL
 //EBREAK
@@ -676,6 +697,9 @@ I64 AsmOpcode(CCmpCtrl *cc,CAiwniosAOTBlob *blob) {
       break;
     case 'PS':
       want=0;
+      break;
+    case 'FE':
+      want=2;
       break;
   }
   Lex(cc);
@@ -850,6 +874,15 @@ I64 AsmOpcode(CCmpCtrl *cc,CAiwniosAOTBlob *blob) {
         LexExcept(cc,"Expected a number operand.");
       ret=RISCV_J(poo[1]->value,poo[0]->reg,opc->opc);
       goto imm;
+    case 'FE':
+      have=poo[0];
+      if(have->type!='Iorw')
+        LexExcept(cc,"Expected an iorw operand.");
+      have=poo[1];
+      if(have->type!='Iorw')
+        LexExcept(cc,"Expected an iorw operand.");
+      ret=RISCV_FENCE(0,poo[0]->reg,poo[1]->reg,0,0,0,opc->opc);
+      goto imm;
     case 'PS':
       ret=RISCV_FENCE(0,1,0,0,0,0,opc->opc);
 imm:
@@ -901,6 +934,9 @@ I64 AsmOpcode0(CAiwniosAOTBlob *blob,CRiscVOpcode *opc,CAddrMode **poo) {
       break;
     case 'J':
       ret=RISCV_J(poo[1]->value,poo[0]->reg,opc->opc);
+      break;
+    case 'FE':
+      ret=RISCV_FENCE(0,poo[0]->reg,poo[1]->reg,0,0,0,opc->opc);
       break;
     case 'PS':
       ret=RISCV_FENCE(0,1,0,0,0,0,opc->opc);

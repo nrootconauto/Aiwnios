@@ -246,11 +246,40 @@ Bool DisasJType(U32 data,U8 *name,I64 opcode,I64 opt1='i') {
   FramePtrDel(FP_UPPER_BITS);
   return TRUE;
 }
-Bool DisasPause(U32 data) {
-  Bool b=data==0x0100000f;
-  if (b) "PAUSE";
+Bool DisasFence(U32 data,I64 opcode) {
+  I64 i;
+  if(MaskN(data,0,7)!=opcode)
+    return FALSE;
+  if(MaskN(data,28,4)!=0||MaskN(data,15,5)!=0||MaskN(data,12,3)!=0||MaskN(data,7,5)!=0)
+    return FALSE;
+  I64 pred=MaskN(data,24,4),succ=MaskN(data,20,4);
+  if(pred==1&&!succ) {
+    "PAUSE\n";
+    return TRUE;
+  }
+  if(!data&&!succ) {
+    return FALSE;
+  }
+  "FENCE ";
+  if(pred&1<<3)
+    "i";
+  if(pred&1<<2)
+    "o";
+  if(pred&1<<1)
+    "r";
+  if(pred&1)
+    "w";
+  ",";
+  if(succ&1<<3)
+    "i";
+  if(succ&1<<2)
+    "o";
+  if(succ&1<<1)
+    "r";
+  if(succ&1)
+    "w";
   "\n";
-  return b;
+  return TRUE;
 }
 U32 *DisasOpc(CDoc *doc,U32 *data) {
   "%P\t",data;
@@ -331,7 +360,7 @@ U32 *DisasOpc(CDoc *doc,U32 *data) {
   if(DisasI2Type(d,"FMV.X.D",0b111000100000,0,0b1010011)) return data+1;
   if(DisasI2Type(d,"FCVT.L.D",0b110000100010,ROUND_MODE,0b1010011)) return data+1;
   if(DisasI2Type(d,"FCVT.D.L",0b110100100010,ROUND_MODE,0b1010011)) return data+1;
-  if(DisasPause(d)) return data+1;
+  if(DisasFence(d,0b0001111)) return data+1;
   "BAD\n";
   return data+1;
 }
