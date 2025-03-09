@@ -1948,6 +1948,7 @@ break;case IC_ASM:
     new=__HC_ICAdd_LBTC(cc2);
     break;case IC_LBTR:
     new=__HC_ICAdd_LBTR(cc2);
+    break;
     case IC_SQR:
 	  new=__HC_ICAdd_Sqr(cc2);
 	  break;
