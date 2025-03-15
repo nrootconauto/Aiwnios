@@ -59,7 +59,7 @@ cd ..
 ```
 5. You will see the `aiwnios` binary in the directory
 
-#### Windows 7
+### Windows 7
 
 1. Download [WinLibs](https://winlibs.com/) and add to PATH: Make sure the mingw32/bin or mingw64/bin folder from the extracted download is in your PATH and its location doesn't contain any spaces
 2. Download and extract devel mingw [SDL2](https://github.com/libsdl-org/SDL/releases)
