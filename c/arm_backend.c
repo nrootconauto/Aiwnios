@@ -286,6 +286,19 @@ static void SetKeepTmps(CRPN *rpn) {
   abinop:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
+    left->res.keep_in_tmp=0;
+    right->res.keep_in_tmp=0;
+    right->tmp_res.mode=0; //Default to unused  
+    left->tmp_res.mode=0;
+    /* DUMB hack
+     *  assigning into a IC_DEREF bypasses the deref(uses deref->next)
+     *  MAKE SURE deref->next is not a temporarry
+     */
+    if(left->type==IC_DEREF) {
+		CRPN *arg=left->base.next;
+		arg->res.keep_in_tmp=0;
+		arg->tmp_res.mode=0;
+	}
     if (left->type == IC_IREG || left->type == IC_FREG ||
         left->type == IC_BASE_PTR) {
       // Only act on accumulator for now in "safe" spots.
@@ -3414,7 +3427,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       shift_cnt = ConstVal(next3);                                                                                                                           \
       shift_op##shift                                                                                                                                        \
           : if (shift_cnt < (1 << 6) &&                                                                                                                      \
-                !(next->res.keep_in_tmp || next4->res.keep_in_tmp)) {                                                                                        \
+                !(next->res.keep_in_tmp || next4->res.keep_in_tmp)&&!SpillsTmpRegs(next)) {                                                                                        \
         if (!(next4->res.mode == __MD_ARM_SHIFT || next->res                                                                                                 \
                                                            .mode == __MD_ARM_SHIFT) /* Things get weird(shift and shift means lots of registers mutati)*/) { \
           code_off = __OptPassFinal(cctrl, next4, bin, code_off);                                                                                            \
