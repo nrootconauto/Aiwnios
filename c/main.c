@@ -56,6 +56,11 @@ extern int64_t user_ev_num;
 #  include <windows.h>
 #  include <processthreadsapi.h>
 #endif
+ typedef union {
+  double d;
+  uint64_t i;
+} dbl2u64;
+
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_cmd_line2 = NULL, *arg_fork, *arg_no_debug,
@@ -350,8 +355,10 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
 static void STK_AiwniosSetVolume(double *stk) {
   AiwniosSetVolume(*stk);
 }
-double STK_AiwniosGetVolume(double *stk) {
-  return AiwniosGetVolume();
+static int64_t STK_AiwniosGetVolume(double *stk) {
+  dbl2u64 un;
+  un.d=AiwniosGetVolume();
+  return un.i;
 }
 static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
   while (--cnt >= 0) {
@@ -606,11 +613,6 @@ static int64_t STK_CmpCtrlDel(void **stk) {
 }
 
 _Static_assert(sizeof(double) == sizeof(uint64_t));
-typedef union {
-  double d;
-  uint64_t i
-} dbl2u64;
-
 #define MATHFUNDEF(x)                                                          \
   static uint64_t STK_##x(double *stk) {                                       \
     return ((dbl2u64)x(stk[0])).i;                                             \
