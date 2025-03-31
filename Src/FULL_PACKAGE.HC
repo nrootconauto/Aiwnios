@@ -416,6 +416,8 @@ U0 CmdLine(I64) {
 //TRick into thinking it is a valid CMD_LINE
        "Fs->last_cc->flags|=CCF_CMD_LINE;"
        "#include \"%s\";;",CmdLineBootFiles[cnt]);
+  if (CmdLineBootFileCnt)
+    ExePrint2("Exit;\n");
   Fs->task_end_cb=NULL;
 //
 //  Properly handle __CMD_LINE__
