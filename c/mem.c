@@ -32,7 +32,21 @@
 // bytes wide) Beacuse the address space will be 2 GB,we can have a fixed length
 // bitmap of 2GB/8/64 int64_t's and i can Misc_Bt it to check if it is valid
 //
-int64_t bc_enable = 0;
+
+// Dear reader,you may be wondering what the fuck this is - it is a godless
+// abomination I am forced to call by the law of language, "code". From what I
+// can see GCC 12 and 13 has a bug I am not even sure about what to name it, it
+// seems to have been fixed in GCC 14 but some of the less fortunate of
+// my colleagues are stuck on older versions. This will serve as a historical
+// relic that https://blog.plover.com/2017/11/12/ - a feeble attempt at
+// defending the infalliability of compilers - must forever be ridiculed for its
+// naivety.
+#if !defined(__clang__) && __GNUC__ < 14 // we only use either gcc or clang
+static volatile int64_t bc_enable = 0, *volatile bc_enablep = &bc_enable;
+#  define bc_enable (*bc_enablep)
+#else
+static int64_t bc_enable = 0;
+#endif
 static char *bc_good_bitmap;
 static int64_t NextPower2(uint64_t v) {
   // https://stackoverflow.com/questions/466204/rounding-up-to-next-power-of-2
@@ -717,7 +731,7 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   hc->used_u8s -= un->sz;
   which_bucket = un->which_bucket;
-  #ifdef __OpenBSD__
+#ifdef __OpenBSD__
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
     while (Misc_LBts(&hc->locked_flags, 1))

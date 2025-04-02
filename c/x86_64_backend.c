@@ -23,6 +23,12 @@ extern void DoNothing();
 // I am putting in the pooping computed goto's May 27,2023
 //
 
+static int64_t IsRBPDeref(CRPN *r) {
+  if (!r)
+    return 0;
+  CRPN *next = r->base.next;
+  return r->type == IC_ADDR_OF && next->type == IC_BASE_PTR;
+}
 // Mark Regioster
 static int64_t MIR(CCmpCtrl *cc, int64_t r) {
   CRPN *rpn = cc->cur_rpn;
@@ -2738,7 +2744,7 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
                            int64_t *scale, int64_t allow_put_in_reg) {
   CRPN *b = NULL, *idx = NULL;
   int64_t tmp, i = 0, i2 = -1, is_sib = 0;
-  CRPN *arg = r;
+  CRPN *arg = r, *next = NULL;
   while (__AddSIBOffset(arg, &tmp)) {
     arg = __AddSIBOffset(arg, &tmp);
     i += tmp;
@@ -2752,6 +2758,11 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
       b = ICArgN(arg, 0), idx = ICArgN(arg, 1), i2 = 1;
     }
     is_sib = 1;
+  } else if (IsRBPDeref(arg)) {
+    next = arg->base.next;
+    is_sib = 1;
+    b = arg;
+    i -= next->res.off;
   } else if (arg->type == IC_IREG) {
     b = arg;
     is_sib = 1;
@@ -2796,7 +2807,6 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
 static int64_t IsGoodIReg(r) {
   return IsSavedIReg(r) || r == R9 || r == RBX;
 }
-
 // Returns 1 if we hit the bottom
 static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   switch (r->type) {
@@ -2920,8 +2930,30 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     tmp = 0;
     if (r->raw_type != RT_F64) {
       if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
-        if (b)
+        if (b) {
+          if (IsRBPDeref(b) && idx) {
+			  if(!(idx->type==IC_IREG&&idx->integer==13))
+            if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 >= 0) {
+          CRPN *next = b->base.next;
+			  i -= next->integer;
+              PushTmpDepthFirst(cctrl, idx, 0);
+              PopTmp(cctrl, idx);
+              orig->flags |= ICF_INDIR_REG;
+              orig->res.mode = __MD_X86_64_LEA_SIB;
+              orig->res.__SIB_scale = idx ? i2 : -1;
+              orig->res.off = i;
+              orig->res.__sib_idx_rpn = idx;
+              orig->res.__sib_base_rpn = b;
+              orig->res.reg = RBP;
+              orig->res.reg2 = idx->res.reg;
+              orig->res.raw_type = r->raw_type;
+              orig->res.pop_n_tmp_regs = 1;
+              orig->res.fallback_reg = TmpRegToReg(cctrl->backend_user_data2++);
+              return 1;
+            }
+          }
           PushTmpDepthFirst(cctrl, b, 0);
+        }
         if (idx)
           PushTmpDepthFirst(cctrl, idx, 0);
         if (b && idx) {
@@ -2934,7 +2966,6 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
             goto add_dft;
           if (SpillsTmpRegs(idx))
             goto add_dft;
-
         lea_sib:
           if (idx)
             PopTmp(cctrl, idx);
@@ -2958,7 +2989,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
           orig->res.__sib_idx_rpn = idx;
           orig->res.__sib_base_rpn = b;
           orig->res.raw_type = r->raw_type;
-          if (b) {
+          if (b && !IsRBPDeref(b)) {
             if (b->res.mode == __MD_X86_64_LEA_SIB)
               orig->res.reg = b->res.fallback_reg;
             else
@@ -2966,7 +2997,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
             // Watch out for  SetKeepTmps
             if (!IsGoodIReg(orig->res.reg))
               goto add_dft;
-          } else
+          }else
             orig->res.reg = -1;
 
           orig->res.pop_n_tmp_regs = 1;
@@ -3046,8 +3077,11 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
     tmp = 0;
     arg = r->base.next;
     if (!spilled && GetSIBParts(arg, &i, &b, &idx, &i2, 0)) {
-      if (b)
+      if (b) {
+        if (IsRBPDeref(b))
+          r->res.reg = RBP;
         PushTmpDepthFirst(cctrl, b, 0);
+      }
       if (idx)
         PushTmpDepthFirst(cctrl, idx, 0);
       if (b && idx) {
@@ -3067,8 +3101,10 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       sib:
         if (idx)
           PopTmp(cctrl, idx);
-        if (b)
-          PopTmp(cctrl, b);
+        if (b) {
+          if (!IsRBPDeref(b))
+            PopTmp(cctrl, b);
+        }
         if (cctrl->backend_user_data2 + 1 > AIWNIOS_TMP_IREG_CNT)
           goto deref_norm;
         orig->flags |= ICF_SIB;
@@ -3088,7 +3124,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
         orig->res.raw_type = r->raw_type;
         orig->res.__sib_base_rpn = b;
         orig->res.__sib_idx_rpn = idx;
-        if (b) {
+        if (b && !IsRBPDeref(b)) {
           if (b->res.mode == __MD_X86_64_LEA_SIB)
             orig->res.reg = b->res.fallback_reg;
           else
@@ -3096,7 +3132,9 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
           // Watch out for  SetKeepTmps
           if (!IsGoodIReg(orig->res.reg))
             goto deref_norm;
-        } else
+        } else if (IsRBPDeref(b))
+          orig->res.reg = RBP;
+        else
           orig->res.reg = -1;
         orig->res.pop_n_tmp_regs = 1;
         orig->res.fallback_reg = TmpRegToReg(cctrl->backend_user_data2++);
@@ -4106,11 +4144,17 @@ ret:
 static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
                             int64_t base_reg_fallback, char *bin,
                             int64_t code_off) {
+  CRPN *base;
   if (rpn->res.mode == __MD_X86_64_SIB) {
+    if (IsRBPDeref(rpn->res.__sib_base_rpn)) {
+      rpn->res.reg = RBP;
+      goto skip_base;
+    }
     if (rpn->res.__sib_base_rpn) {
       code_off = __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
       rpn->res.reg = rpn->res.__sib_base_rpn->res.reg;
     }
+  skip_base:;
     if (rpn->res.__sib_idx_rpn) {
       code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
       rpn->res.reg2 = rpn->res.__sib_idx_rpn->res.reg;
@@ -4143,7 +4187,7 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
   }
   int64_t r = rpn->raw_type, rsz, off, mul, lea = 0, reg;
   CRPN *next = rpn->base.next, *next2, *next3, *next4, *tmp;
-  CRPN *base, *index;
+  CRPN *index;
   switch (r) {
     break;
   case RT_I8i:
@@ -4177,11 +4221,13 @@ static int64_t DerefToICArg(CCmpCtrl *cctrl, CICArg *res, CRPN *rpn,
       goto defacto;
     res->reg2 = -1;
     res->reg = -1;
-    if (base) {
+    if (base && !IsRBPDeref(base)) {
       code_off = __OptPassFinal(cctrl, base, bin, code_off);
       code_off = PutICArgIntoReg(cctrl, &base->res, RT_I64i, base_reg_fallback,
                                  bin, code_off);
       res->reg = base->res.reg;
+    } else if (IsRBPDeref(base)) {
+      res->reg = RBP;
     }
     res->mode = __MD_X86_64_SIB;
     res->off = off;
@@ -6964,8 +7010,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   ic_add:
     if (rpn->res.mode == __MD_X86_64_LEA_SIB) {
       if (rpn->res.__sib_base_rpn) {
-        code_off =
-            __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
+        if (!IsRBPDeref(rpn->res.__sib_base_rpn))
+          code_off =
+              __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
       }
       if (rpn->res.__sib_idx_rpn) {
         code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
@@ -7365,7 +7412,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     break;
   ic_deref:
     if (rpn->flags & ICF_SIB) {
-      if (rpn->res.__sib_base_rpn)
+      if (!IsRBPDeref(rpn->res.__sib_base_rpn))
         code_off =
             __OptPassFinal(cctrl, rpn->res.__sib_base_rpn, bin, code_off);
       if (rpn->res.__sib_idx_rpn)
@@ -8324,7 +8371,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   b = ICArgN(rpn, 0);                                                          \
   if (IsConst(b) && ConstVal(b) <= 63) {                                       \
     if (a->res.mode == __MD_X86_64_LEA_SIB) {                                  \
-      if (a->res.__sib_base_rpn) {                                             \
+      if (!IsRBPDeref(a->res.__sib_base_rpn)) {                                \
         code_off =                                                             \
             __OptPassFinal(cctrl, a->res.__sib_base_rpn, bin, code_off);       \
         a->res.reg = a->res.__sib_base_rpn->res.reg;                           \
@@ -8349,7 +8396,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   } else {                                                                     \
     code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
     if (a->res.mode == __MD_X86_64_LEA_SIB) {                                  \
-      if (a->res.__sib_base_rpn) {                                             \
+      if (!IsRBPDeref(a->res.__sib_base_rpn)) {                                \
         code_off =                                                             \
             __OptPassFinal(cctrl, a->res.__sib_base_rpn, bin, code_off);       \
         a->res.reg = a->res.__sib_base_rpn->res.reg;                           \

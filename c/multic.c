@@ -219,7 +219,7 @@ typedef struct {
 #  include <unistd.h>
 typedef struct {
   pthread_t pt;
-  int wake_futex;
+  int  wake_futex,no_sleep;
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
@@ -248,7 +248,7 @@ static void ExitCoreRt(int sig);
 typedef struct {
   HANDLE thread, tid;
   CONTEXT ctx;
-  int64_t sleep;
+  int64_t sleep,no_sleep;
   void *profiler_int;
   int64_t profiler_freq, next_prof_int;
   uint8_t *alt_stack;
@@ -434,6 +434,8 @@ int64_t mp_cnt() {
 
 #  include <errno.h>
 void MPSleepHP(int64_t ns) {
+  if(Misc_LBtr(&cores[core_num].no_sleep, 0))
+     return;
   struct timespec ts = {0};
   ts.tv_nsec = (ns % 1000000) * 1000U;
   ts.tv_sec = ns / 1000000;
@@ -465,7 +467,8 @@ void MPSleepHP(int64_t ns) {
 }
 
 void MPAwake(int64_t core) {
-  if (Misc_Bt(&cores[core].wake_futex, 0)) {
+   Misc_LBts(&cores[core].no_sleep,0);
+   if (Misc_Bt(&cores[core].wake_futex, 0)) {
 #  if defined(__OpenBSD__)
     futex(&cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL);
 #  elif defined(__linux__)
@@ -563,6 +566,8 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
   nproc++;
 }
 void MPSleepHP(int64_t us) {
+  if(Misc_LBtr(&cores[core_num].no_sleep, 0))
+     return;
   Misc_LBts(&cores[core_num].sleep, 0);
   LARGE_INTEGER delay = {.QuadPart = -us * 10};
   NtDelayExecution(TRUE, &delay);
@@ -608,6 +613,7 @@ static void nopf(uint64_t i) {
 // http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Thread/NtDelayExecution.html
 // https://learn.microsoft.com/en-us/windows/win32/fileio/alertable-i-o
 void MPAwake(int64_t c) {
+  Misc_LBts(&cores[c].no_sleep,0);
   if (!Misc_LBtr(&cores[c].sleep, 0))
     return;
   QueueUserAPC(nopf, cores[c].thread, 0);
