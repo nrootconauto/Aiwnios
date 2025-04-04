@@ -3,20 +3,19 @@
 #ifdef _WIN32
 extern void Misc_ForceYield();
 #endif
-extern int64_t Misc_Bt(void *ptr, int64_t);
-extern int64_t Misc_Btc(void *ptr, int64_t);
-extern int64_t Misc_Btr(void *ptr, int64_t);
-extern int64_t Misc_Bts(void *ptr, int64_t);
-extern int64_t Misc_LBt(void *ptr, int64_t);
-extern int64_t Misc_LBtc(void *ptr, int64_t);
-extern int64_t Misc_LBtr(void *ptr, int64_t);
-extern int64_t Misc_LBts(void *ptr, int64_t);
+extern int64_t Bt(void *ptr, int64_t);
+extern int64_t Btc(void *ptr, int64_t);
+extern int64_t Btr(void *ptr, int64_t);
+extern int64_t Bts(void *ptr, int64_t);
+extern int64_t LBt(void *ptr, int64_t);
+extern int64_t LBtc(void *ptr, int64_t);
+extern int64_t LBtr(void *ptr, int64_t);
+extern int64_t LBts(void *ptr, int64_t);
 extern void *Misc_BP();
 extern int64_t Bsr(int64_t v);
 extern int64_t Bsf(int64_t v);
 
 void *Misc_Caller(int64_t c);
-int64_t LBtc(char *, int64_t);
 extern void AIWNIOS_setcontext(void *);
 extern int64_t AIWNIOS_getcontext(void *);
 extern int64_t AIWNIOS_makecontext(void *, void *, void *);

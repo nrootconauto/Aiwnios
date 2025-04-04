@@ -50,7 +50,7 @@ typedef struct CMemBlk {
   CQue base;
   CQue base2;
   int64_t pags;
-#if defined(__OpenBSD__)
+#if __OpenBSD__ + __NetBSD__ > 0
   void *rx;
   void *rw;
   int64_t shm_pag;
@@ -95,3 +95,7 @@ void InitBoundsChecker();
 extern int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len);
 void *MemGetWritePtr(void *ptr);
 void *MemGetExecPtr(void *ptr);
+#if !(__OpenBSD__ + __NetBSD__ > 0)
+#  define MemGetWritePtr(x) (x)
+#  define MemGetExecPtr(x) (x)
+#endif

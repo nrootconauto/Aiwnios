@@ -20,17 +20,17 @@
   "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message for
                       // the important TIDs(cores))
 #define DBG_MSG_OK "OK"
-#if defined(__OpenBSD__) || defined(__linux__) || defined(__FreeBSD__) ||      \
+#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__linux__) || defined(__FreeBSD__) ||      \
     defined(__APPLE__)
 #  include <poll.h>
 #  include <sys/ptrace.h>
 #  include <sys/types.h>
 #  include <sys/wait.h>
 #  include <unistd.h>
-#  if !defined(__OpenBSD__)
-#    include <ucontext.h>
-#  else
+#  ifdef __OpenBSD__
 #    include <machine/reg.h>
+#  else
+#    include <ucontext.h>
 #  endif
 #  if defined(__FreeBSD__)
 #    include <machine/reg.h>
@@ -57,7 +57,7 @@ typedef struct CFuckup {
 #  define PTRACE_TRACEME PT_TRACE_ME
 #  define gettid         getpid
 #endif
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 typedef struct CFuckup {
   struct CQue base;
   int64_t signal;
@@ -180,7 +180,7 @@ static void GrabDebugger(int64_t code) {
 found:
   fault_codes[tr] = code;
 
-  while (!Misc_LBts(&something_happened, tr)) {
+  while (!LBts(&something_happened, tr)) {
     YieldProcessor(); // Wait for our "signal" to go through
   }
   SuspendThread(h);
@@ -220,7 +220,7 @@ static void WriteMsg(char const *fmt, ...) {
   va_end(l);
   write(debugger_pipe[1], "", 1);
 }
-#  if defined(__OpenBSD__)
+#  if __OpenBSD__ + __NetBSD__ > 0
 #    include <poll.h>
 #    define POLL_IN POLLIN
 #  endif
@@ -262,7 +262,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
   int64_t s, tid;
   CFuckup *fu;
   for (s = 0; s != HARD_CORE_CNT; s++) {
-    if (Misc_LBtr(&something_happened, s)) {
+    if (LBtr(&something_happened, s)) {
       tid = GetThreadId(active_threads[s]);
       if (fu = GetFuckupByPid(head, tid))
         ;
@@ -360,7 +360,7 @@ static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
 }
 void DebuggerBegin() {
   pid_t tid = 0;
-#ifdef __OpenBSD__
+#if __OpenBSD__ + __NetBSD__ > 0
   // OpenBSD ptrace is poopy
   return;
 #endif
@@ -716,7 +716,7 @@ void DebuggerBegin() {
 }
 static void UnblockSignals() {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) ||        \
-    defined(__OpenBSD__)
+    defined(__OpenBSD__) || defined(__NetBSD__)
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGILL);
@@ -746,7 +746,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
 }
 #endif
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__)
 #  if defined(__APPLE__)
 #    include <arm/_mcontext.h>
 #  endif
@@ -804,6 +804,28 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];
+  actx[0] = ctx->__gregs[_REG_RIP];
+  actx[1] = ctx->__gregs[_REG_RSP];
+  actx[2] = ctx->__gregs[_REG_RBP];
+  actx[3] = ctx->__gregs[_REG_RBX];
+  actx[4] = ctx->__gregs[_REG_R10];
+  actx[5] = ctx->__gregs[_REG_R11];
+  actx[6] = ctx->__gregs[_REG_R12];
+  actx[7] = ctx->__gregs[_REG_R13];
+  actx[8] = ctx->__gregs[_REG_R14];
+  actx[9] = ctx->__gregs[_REG_R15];
+  CHashExport *exp;
+  if (exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+    FFI_CALL_TOS_2(exp->val, sig, actx);
+  } else if (exp = HashFind("Exit", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
+    ctx->__gregs[_REG_RIP] = exp->val;
+  } else
+    abort();
+  return;
+#elif defined(__FreeBSD__)
+  UnblockSignals();
+  mcontext_t *ctx = &_ctx->uc_mcontext;
+  int64_t actx[32];
   actx[0] = ctx->mc_rip;
   actx[1] = ctx->mc_rsp;
   actx[2] = ctx->mc_rbp;
@@ -822,6 +844,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   } else
     abort();
   return;
+
 #    endif
 #  elif defined(__aarch64__) || defined(_M_ARM64)
   mcontext_t *ctx = &_ctx->uc_mcontext;
