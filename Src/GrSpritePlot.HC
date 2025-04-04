@@ -15,7 +15,7 @@ making CSprite by hand.  It uses $LK,"SPT_MESH",A="MN:SPT_MESH"$,
 one of the most complicated.
 */
 
-public U0 Sprite3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,
+public U0 Sprite3(CDC *dc=0,I64 x,I64 y,I64 z,U8 *elems,
 	Bool just_one_elem=FALSE)
 {//Plot a sprite into a CDC.
   if(!dc) dc=gr.dc;

@@ -2061,7 +2061,7 @@ break;case IC_ASM:
   } else 
 	aiwnios_dbg_info=NULL;
   machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
-
+
   if(cc->pass_trace&&cc->htc.fun) {
      U8 *dumb_dump=NULL;
      I64 dump_len=DolDocDumpIR(NULL,0,acc);

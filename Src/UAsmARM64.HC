@@ -127,7 +127,7 @@ bt:
 	  case ARM64_OP_IMM16:
 	    value&=1<<16-1;
 	    break;
-	  case ARM64_OP_IMM12:
+	  case ARM64_OP_IMM12:
 	    value&=1<<12-1;
 	    break;
         }

@@ -311,7 +311,7 @@ U0 CurSongTask()
 }
 
 #help_index "Snd"
-U0 SoundEffectEndTaskCB()
+U0 SoundEffectEndTaskCB()
 {
   Free(FramePtr("CSoundEffectFrame"));
   music.mute--;

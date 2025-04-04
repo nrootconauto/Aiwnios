@@ -117,7 +117,7 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
   cc->aot=res;
 
   res->next_ie=res->last_ie=&res->next_ie;
-  cc->aotc=aotc=CAlloc(sizeof(CAOTCtrl));
+  cc->aotc=aotc=CAlloc(sizeof(CAOTCtrl));
   cc->aot_depth++;
 
   aotc->bin=CAlloc(sizeof(CAOTBinBlk));

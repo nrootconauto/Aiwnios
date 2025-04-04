@@ -7220,7 +7220,7 @@ class CSoundEffectFrame
 #define ARM64_OP_IMM4 20
 #define ARM64_OP_Q 21
 #define ARM64_OP_IMM16 22
-#define ARM64_OP_IMM12 23
+#define ARM64_OP_IMM12 23
 #define ARM64_OP_S 24
 class CArm64Operand {
   I32 offset;

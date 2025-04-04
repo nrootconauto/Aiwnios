@@ -32,27 +32,13 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
       LexExcept(cc,"Missing '}' at ");
     Lex(cc);
   } else {
-    /*if (tmpc->ptr_stars_cnt==1 &&
+    if (tmpc->ptr_stars_cnt==1 &&
 	  ((tmpc-1)->raw_type==RT_I8 || (tmpc-1)->raw_type==RT_U8) &&
 	  !tmpad && cc->token==TK_STR)
       is_str=TRUE;
     else
       is_str=FALSE;
-    if (cc->flags&CCF_AOT_COMPILE  && is_str && 0) {
-      LexPopNoRestore(cc);
-      machine_code=LexExtStr(cc,&i);
-      if (pass==2) {
-	tmpa=CAlloc(sizeof(CAOTAbsAddr));
-	tmpa->next=aotc->abss;
-	tmpa->type=AAT_ADD_U64;
-	aotc->abss=tmpa;
-	tmpa->rip=data_addr_rip+dst-*_base;
-	*dst(I64 *)=aotc->rip;
-	for (j=0;j<i;j++)
-	  AOTStoreCodeU8(cc,machine_code(U8*)[j]);
-      }
-      Free(machine_code);
-    } else */{
+      {
       old_flags=cc->flags;
       cc->flags=CCF_NO_ABSS | cc->flags &
 	    ~(CCF_AOT_COMPILE|CCF_HAS_MISC_DATA|CCF_NOT_CONST);
@@ -104,7 +90,8 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	  throw('Compiler');
 	r=(*machine_code)();
 	if (!(cc->flags & CCF_HAS_MISC_DATA)||pass==1)
-	  Free(machine_code);
+	  if(!is_str)
+	    Free(machine_code);
 
 	if (type==RT_F64 &&
 	      tmpc->raw_type!=RT_F64)
@@ -670,11 +657,14 @@ pvl_restart3:
 		if (type==RT_F64)
 		  tmpm->dft_val=tmpm->dft_val(F64);
 	      }
+	//Aiwnios LexEcpression doesnt preserve flags
+	      /*
 	      if (cc->flags & CCF_HAS_MISC_DATA) {
 		tmpm->dft_val=StrNew(tmpm->dft_val);
 		tmpm->flags|=MLF_STR_DFT_AVAILABLE;
 	      }
 	      Free(machine_code);
+	      */
 	      cc->flags|=old_flags2&CCF_HAS_MISC_DATA;
 	    }
 	    tmpm->flags|=MLF_DFT_AVAILABLE;
