@@ -15,12 +15,18 @@
 #  ifndef _WIN32
 #    include <setjmp.h>
 #    include <sys/syscall.h>
-#    ifndef __OpenBSD__
-#      include <ucontext.h>
+#    if defined(__OpenBSD__)
+#      include <tib.h>
+#define POOP_TLS
+#    elif defined(__NetBSD__)
+#      include <link.h>
+#      include <libelf.h>
+#      include <sys/tls.h>
+#      include <sys/param.h>
 #    else
-#      define OPENBSD_POOP_TLS "Living in 1998"
+#      include <ucontext.h>
 #    endif
-#    ifdef __FreeBSD__
+#    if __FreeBSD__ + __NetBSD__ > 0
 #      include <machine/sysarch.h>
 #    endif
 #  endif
@@ -54,8 +60,7 @@
  * Linux/FreeBSD use FS for TLS, but we will allocate space on
  * %gs for compatibility with windows ABI. (__bootstrap_tls())
  ***************************************************************/
-#  ifdef __OpenBSD__
-#    include <tib.h>
+#  if __OpenBSD__ + __NetBSD__ > 0
 #    define FS_OFF   0xF0
 #    define GS_OFF   0xF8
 #    define ThreadFs (*(void *__seg_fs *)FS_OFF)
@@ -127,14 +132,40 @@ static void __sigillhndlr(int sig) {
   longjmp(jmpb, 1);
 }
 
+#ifdef __NetBSD__
+int cb(struct dl_phdr_info *data, size_t len, void *user) {
+  int64_t *ip = user;
+  const Elf_Phdr *phdr = data->dlpi_phdr;
+  const Elf_Phdr *phlimit = data->dlpi_phdr + data->dlpi_phnum;
+  for (; phdr < phlimit; ++phdr)
+    if (phdr->p_type == PT_TLS)
+      *ip += roundup2(phdr->p_memsz, phdr->p_align);
+  return 0;
+}
+#endif
+
 void __bootstrap_tls(void) {
-#  if defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__) 
+#  ifdef __OpenBSD__
   struct tib *old = TCB_TO_TIB(__get_tcb());
   struct tib *new =
       _dl_allocate_tib(TIB_EXTRA_ALIGN + 0x100); // Fs x Gs pointers end at 0xf8
   memcpy(new, old, sizeof(struct tib) + TIB_EXTRA_ALIGN);
   new->__tib_self = (void *)new;
   __set_tcb(TIB_TO_TCB(new));
+#  elif defined(__NetBSD__)
+  // https://maskray.me/blog/2021-02-14-all-about-thread-local-storage
+  // /usr/src/lib/libc/tls/tls.c
+  // [library tls][binary tls][tcb][Holy{F,G}s]
+  // -                        ^%fs            +
+  static int sz = 0;
+  if (sz == 0)
+    dl_iterate_phdr(cb, &sz);
+  struct tls_tcb *old = *(void *__seg_fs *)0;
+  struct tls_tcb *new = calloc(1, sz + sizeof *new + 0x100);
+  memcpy(new, (char *)old - sz, sz + sizeof *old);
+  new = (struct tls_tcb *)((char *)new + sz);
+  new->tcb_self = new;
+  _lwp_setprivate(new); // netbsd resets sysarch after a signal handler
 #  else
   static bool init, fsgsbase;
   if (!init) {
@@ -202,7 +233,7 @@ typedef struct {
 #elif defined(__FreeBSD__)
 #  include <sys/types.h>
 #  include <sys/umtx.h>
-#elif defined(__OpenBSD__)
+#elif __OpenBSD__ + __NetBSD__ > 0
 #  include <sys/futex.h>
 #elif defined(__APPLE__)
 #  define PRIVATE 1
@@ -223,7 +254,7 @@ typedef struct {
   void (*profiler_int)(void *fs);
   int64_t profiler_freq;
   struct itimerval profile_timer;
-#  if defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__)
+#  if defined(POOP_TLS) && defined(__OpenBSD__)
   struct tib *otib;
   pid_t tid;
 #  endif
@@ -261,6 +292,8 @@ CHashTable *glbl_table;
 
 #ifdef __APPLE__
 #  define pthread_setname_np(a, b) pthread_setname_np(b)
+#elif __NetBSD__
+#  define pthread_setname_np(a, b) pthread_setname_np(a, b, 0)
 #endif
 static void *threadrt(void *_pair) {
   CorePair *pair = _pair;
@@ -269,7 +302,7 @@ static void *threadrt(void *_pair) {
 #ifndef _WIN64
 #  ifndef __OpenBSD__
   pthread_setname_np(pthread_self(), pair->name);
-#  elif defined(OPENBSD_POOP_TLS) &&defined(__OpenBSD__)
+#  elif defined(POOP_TLS) && defined(__OpenBSD__)
   cores[core_num].otib = TCB_TO_TIB(__get_tcb());
   cores[core_num].tid = TCB_TO_TIB(__get_tcb())->tib_tid;
 #  endif
@@ -315,7 +348,7 @@ static _Atomic(pid_t) which_interupt;
 #  endif
 
 void InteruptCore(int64_t core) {
-#  ifndef defined(OPENBSD_POOP_TLS)
+#  ifndef defined(POOP_TLS)
   pthread_kill(cores[core].pt, SIGUSR1);
 #  else
   // we changed the address of the tib so we'll have to pass it ourselves
@@ -333,7 +366,7 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 #  ifndef __OpenBSD__
   mcontext_t *ctx = &_ctx->uc_mcontext;
-#  elif defined(OPENBSD_POOP_TLS) && defined(__OpenBSD__)
+#  elif defined(POOP_TLS) && defined(__OpenBSD__)
   if (TCB_TO_TIB(__get_tcb())->tib_tid != which_interupt) {
     fprintf(stderr, "Report to nroot, OpenBSD is acting poopy\n");
     abort();
@@ -343,22 +376,28 @@ static void InteruptRt(int sig, siginfo_t *info, void *__ctx) {
   void (*fp)();
   if (y) {
     fp = y->val;
-#  if defined(__OpenBSD__) && defined(__x86_64__)
+#  ifdef __x86_64__
+#    if defined(__OpenBSD__)
     FFI_CALL_TOS_2(fp, _ctx->sc_rip, _ctx->sc_rbp);
-#  endif
-#  if defined(__FreeBSD__) && defined(__x86_64__)
+#    elif defined(__FreeBSD__)
     FFI_CALL_TOS_2(fp, ctx->mc_rip, ctx->mc_rbp);
-#  elif defined(__linux__) && defined(__x86_64__)
+#    elif defined(__linux__)
     FFI_CALL_TOS_2(fp, ctx->gregs[REG_RIP], ctx->gregs[REG_RBP]);
-#  endif
-#  if (defined(_M_ARM64) || defined(__aarch64__)) && defined(__FreeBSD__)
+#    elif defined(__NetBSD__)
+    FFI_CALL_TOS_2(fp, ctx->__gregs[_REG_RIP], ctx->__gregs[_REG_RBP]);
+#    endif
+#  elif defined(__aarch64__)
+#    ifdef __FreeBSD__
     FFI_CALL_TOS_2(fp, NULL, ctx->mc_gpregs.gp_x[29]);
-#  elif (defined(__riscv) || defined(__riscv__)) && defined(__linux__)
-    FFI_CALL_TOS_2(fp, NULL, ctx->__gregs[8]);
-#  elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__linux__)
+#    elif defined(__linux__)
     FFI_CALL_TOS_2(fp, NULL, ctx->regs[29]);
-#  elif (defined(_M_ARM64) || defined(__aarch64__)) && defined(__OpenBSD__)
+#    elif defined(__OpenBSD__)
     FFI_CALL_TOS_2(fp, NULL, NULL);
+#    endif
+#  elif defined(__riscv)
+#    ifdef __linux__
+    FFI_CALL_TOS_2(fp, NULL, ctx->__gregs[8]);
+#    endif
 #  endif
   }
 }
@@ -380,6 +419,9 @@ static void ExitCoreRt(int sig) {
 static void ProfRt(int sig, siginfo_t *info, void *__ctx) {
   (void)sig, (void)info;
   ucontext_t *_ctx = __ctx;
+#  ifndef __OpenBSD__
+  mcontext_t *ctx = &_ctx->uc_mcontext;
+#  endif
   int64_t c = core_num;
   sigset_t set;
   sigemptyset(&set);
@@ -391,20 +433,21 @@ static void ProfRt(int sig, siginfo_t *info, void *__ctx) {
   if (cores[c].profiler_int) {
 #  ifdef __x86_64__
 #    ifdef __FreeBSD__
-    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.mc_rbp, cores[c].profiler_int,
-                           _ctx->uc_mcontext.mc_rip);
+    FFI_CALL_TOS_CUSTOM_BP(ctx->mc_rbp, cores[c].profiler_int, ctx->mc_rip);
 #    elif defined(__linux__)
-    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.gregs[REG_RBP],
-                           cores[c].profiler_int,
-                           _ctx->uc_mcontext.gregs[REG_RIP]);
+    FFI_CALL_TOS_CUSTOM_BP(ctx->gregs[REG_RBP], cores[c].profiler_int,
+                           ctx->gregs[REG_RIP]);
+#    elif defined(__NetBSD__)
+    FFI_CALL_TOS_CUSTOM_BP(ctx->__gregs[_REG_RBP], cores[c].profiler_int,
+                           ctx->__gregs[_REG_RIP]);
 #    endif
-#  endif
-#  if defined(__riscv) || defined(__riscv__)
+#  elif defined(__riscv)
 #    ifdef __linux__
-    FFI_CALL_TOS_CUSTOM_BP(_ctx->uc_mcontext.__gregs[8], cores[c].profiler_int,
-                           _ctx->uc_mcontext.__gregs[1]);
+    FFI_CALL_TOS_CUSTOM_BP(ctx->__gregs[8], cores[c].profiler_int,
+                           ctx->__gregs[1]);
 #    endif
 #  endif
+    // TODO ARM
     cores[c].profile_timer.it_value.tv_usec = cores[c].profiler_freq;
     cores[c].profile_timer.it_interval.tv_usec = cores[c].profiler_freq;
   }
@@ -420,7 +463,7 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
   CCPU *c = &cores[core];
   pthread_create(&c->pt, 0, threadrt, ptr);
   snprintf(ptr->name, sizeof ptr->name, "Seth(Core%" PRIu64 ")", core);
-#  if defined(__APPLE__)
+#  ifdef __APPLE__
   pthread_cond_init(&c->wake_cond, NULL);
 #  endif
 }
@@ -434,21 +477,22 @@ int64_t mp_cnt() {
 
 #  include <errno.h>
 void MPSleepHP(int64_t ns) {
-  if(Misc_LBtr(&cores[core_num].no_sleep, 0))
+  if (LBtr(&cores[core_num].no_sleep, 0))
      return;
   struct timespec ts = {0};
   ts.tv_nsec = (ns % 1000000) * 1000U;
   ts.tv_sec = ns / 1000000;
-  Misc_LBts(&cores[core_num].wake_futex, 0);
+  LBts(&cores[core_num].wake_futex, 0);
 #  if defined(__OpenBSD__)
   futex(&cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL);
 #  elif defined(__linux__)
   syscall(SYS_futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0);
-#  endif
-#  if defined(__FreeBSD__)
+#  elif defined(__NetBSD__)
+  syscall(SYS___futex, &cores[core_num].wake_futex, FUTEX_WAIT, 1, &ts, NULL, 0,
+          0);
+#  elif defined(__FreeBSD__)
   _umtx_op(&cores[core_num].wake_futex, UMTX_OP_WAIT, 1, NULL, &ts);
-#  endif
-#  if defined(__APPLE__)
+#  elif defined(__APPLE__)
   if (__ulock_wait) {
     __ulock_wait(UL_COMPARE_AND_WAIT_SHARED, &cores[core_num].wake_futex, 1,
                  ns);
@@ -463,20 +507,22 @@ void MPSleepHP(int64_t ns) {
     pthread_cond_timedwait(&cores[core_num].wake_cond, &mtx, &ts);
   }
 #  endif
-  Misc_LBtr(&cores[core_num].wake_futex, 0);
+  LBtr(&cores[core_num].wake_futex, 0);
 }
 
 void MPAwake(int64_t core) {
-   Misc_LBts(&cores[core].no_sleep,0);
-   if (Misc_Bt(&cores[core].wake_futex, 0)) {
+  LBts(&cores[core].no_sleep,0);
+  if (Bt(&cores[core].wake_futex, 0)) {
 #  if defined(__OpenBSD__)
     futex(&cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL);
 #  elif defined(__linux__)
-    syscall(SYS_futex, &cores[core].wake_futex, 1, FUTEX_WAKE, NULL, NULL, 0);
+    syscall(SYS_futex, &cores[core].wake_futex, FUTEX_WAKE, 1, NULL, NULL, 0);
+#  elif defined(__NetBSD__)
+    syscall(SYS___futex, &cores[core_num].wake_futex, FUTEX_WAKE, 1, NULL, NULL,
+            0, 0);
 #  elif defined(__FreeBSD__)
     _umtx_op(&cores[core].wake_futex, UMTX_OP_WAKE, 1, NULL, NULL);
-#  endif
-#  if defined(__APPLE__)
+#  elif defined(__APPLE__)
     if (__ulock_wake) {
       __ulock_wake(UL_COMPARE_AND_WAIT_SHARED | ULF_WAKE_ALL,
                    &cores[core].wake_futex, 1);
@@ -487,7 +533,7 @@ void MPAwake(int64_t core) {
   }
 }
 void __ShutdownCore(int core) {
-#  ifndef OPENBSD_POOP_TLS
+#  ifndef POOP_TLS
   pthread_kill(cores[core].pt, SIGUSR2);
 #  else
   CCPU *c = cores + core;
@@ -566,12 +612,12 @@ void SpawnCore(void *fp, void *gs, int64_t core) {
   nproc++;
 }
 void MPSleepHP(int64_t us) {
-  if(Misc_LBtr(&cores[core_num].no_sleep, 0))
+  if (LBtr(&cores[core_num].no_sleep, 0))
      return;
-  Misc_LBts(&cores[core_num].sleep, 0);
+  LBts(&cores[core_num].sleep, 0);
   LARGE_INTEGER delay = {.QuadPart = -us * 10};
   NtDelayExecution(TRUE, &delay);
-  Misc_LBtr(&cores[core_num].sleep, 0);
+  LBtr(&cores[core_num].sleep, 0);
 }
 // Dont make this static,used for miscWIN.s
 void ForceYield0() {
@@ -613,8 +659,8 @@ static void nopf(uint64_t i) {
 // http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Thread/NtDelayExecution.html
 // https://learn.microsoft.com/en-us/windows/win32/fileio/alertable-i-o
 void MPAwake(int64_t c) {
-  Misc_LBts(&cores[c].no_sleep,0);
-  if (!Misc_LBtr(&cores[c].sleep, 0))
+  LBts(&cores[c].no_sleep,0);
+  if (!LBtr(&cores[c].sleep, 0))
     return;
   QueueUserAPC(nopf, cores[c].thread, 0);
 }
@@ -636,7 +682,7 @@ static void WinProf(_4b _0, _4b _1, _8b _2, _8b _3, _8b _4) {
   (void)_0, (void)_1, (void)_2, (void)_3, (void)_4;
   uint64_t *rip;
   for (int i = 0; i < nproc; ++i) {
-    if (!Misc_Bt(&pf_prof_active, i))
+    if (!Bt(&pf_prof_active, i))
       continue;
     CCPU *c = cores + i;
     if (GetTicksHP() / 1e3 < c->next_prof_int || !c->profiler_int)
@@ -684,9 +730,9 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
     core->next_prof_int = 0;
     if (!pf_prof_active && !pf_prof_timer)
       pf_prof_timer = timeSetEvent(inc, inc, WinProf, 0, TIME_PERIODIC);
-    Misc_LBts(&pf_prof_active, c);
+    LBts(&pf_prof_active, c);
   } else {
-    Misc_LBtr(&pf_prof_active, c);
+    LBtr(&pf_prof_active, c);
     if (!pf_prof_active && pf_prof_timer) {
       timeKillEvent(pf_prof_timer);
       pf_prof_timer = 0;

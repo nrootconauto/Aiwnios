@@ -1,18 +1,18 @@
 .text
 .global TempleOS_CallN
 .global TempleOS_Call
-.global Misc_Btc
-.global Misc_LBtc
+.global Btc
+.global LBtc
 .global Misc_Caller
-.global Misc_Bt
-.global Misc_Bts
-.global Misc_Btr
-.global Misc_LBtr
-.global Misc_LBts
+.global Bt
+.global Bts
+.global Btr
+.global LBtr
+.global LBts
 .global Misc_BP
 .global TempleOS_CallVaArgs
 # I dont know the psudeo ops,sorry profressionals
-Misc_Btc:
+Btc:
   srli t0,a1,3 # divide by 8 bits
   add t0,t0,a0
   andi t1,a1,0x7
@@ -25,7 +25,7 @@ Misc_Btc:
   snez a0,a0
   jalr zero,ra
 
-Misc_LBtc:
+LBtc:
 #move the pointer down to align to 4 bytes,or else BUS ERROR
   andi t0,a0,3 #off=%4
   andi a0,a0,~3 #align a0 to 4
@@ -69,7 +69,7 @@ Misc_Caller:
   j .L_fin2
   
 
-Misc_Bt:
+Bt:
 #move the pointer down to align to 4 bytes,or else BUS ERROR
   andi t0,a0,3 #off=%4
   andi a0,a0,~3 #align a0 to 4
@@ -88,7 +88,7 @@ Misc_Bt:
   snez a0,a0
   jalr zero,ra
 
-Misc_Bts:
+Bts:
   srli t0,a1,3 # divide by 8 bits
   add t0,t0,a0
   andi t1,a1,0x7
@@ -101,7 +101,7 @@ Misc_Bts:
   snez a0,a0
   jalr zero,ra
 
-Misc_LBts:
+LBts:
 #move the pointer down to align to 4 bytes,or else BUS ERROR
   andi t0,a0,3 #off=%4
   andi a0,a0,~3 #align a0 to 4
@@ -120,7 +120,7 @@ Misc_LBts:
   snez a0,a0
   jalr zero,ra
 
-Misc_Btr:
+Btr:
   srli t0,a1,3 # divide by 8 bits
   add t0,t0,a0
   andi t1,a1,0x7
@@ -134,7 +134,7 @@ Misc_Btr:
   snez a0,a0
   jalr zero,ra
 
-Misc_LBtr:
+LBtr:
 #move the pointer down to align to 4 bytes,or else BUS ERROR
   andi t0,a0,3 #off=%4
   andi a0,a0,~3 #align a0 to 4

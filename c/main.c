@@ -470,6 +470,7 @@ static uint64_t __aiwn_in(uint64_t ul1, uint64_t ul2) {
   return -1ull;
 }
 #  endif
+#if !(__NetBSD__ + __OpenBSD__ > 0)
 static void STK_OutU8(uint64_t *stk) {
   __aiwn_out(stk[1], stk[0], 1);
 }
@@ -488,6 +489,7 @@ static uint64_t STK_InU16(uint64_t *stk) {
 static uint64_t STK_InU32(uint64_t *stk) {
   return __aiwn_in(stk[0], 4);
 }
+#endif
 #  ifdef _WIN32
 #    define RepIn(n)                                                           \
       static void STK_RepInU##n(uint64_t *) __attribute__((alias("STK_"        \
@@ -495,7 +497,7 @@ static uint64_t STK_InU32(uint64_t *stk) {
 #    define RepOut(n)                                                          \
       static void STK_RepOutU##n(uint64_t *) __attribute__((alias("STK_"       \
                                                                   "InU32")))
-#  else
+#  elif !(__NetBSD__ + __OpenBSD__ > 0)
 #    define RepIn(n)                                                           \
       static void STK_RepInU##n(uint64_t *stk) {                               \
         uint64_t port = stk[2], cnt = stk[1];                                  \
@@ -510,6 +512,9 @@ static uint64_t STK_InU32(uint64_t *stk) {
         for (uint64_t i = 0; i < cnt; i++)                                     \
           __aiwn_out(buf[i] & ((1ull << n) - 1), port, n / 8);                 \
       }
+#else
+  #define RepOut(x)
+  #define RepIn(x)
 #  endif
 RepIn(8);
 RepIn(16);
@@ -632,27 +637,27 @@ MATHFUNDEF(asin);
 MATHFUNDEF2(pow);
 MATHFUNDEF2(Arg);
 
-static int64_t STK_Misc_Btc(int64_t *stk) {
-  return Misc_Btc((void *)stk[0], stk[1]);
+static int64_t STK_Btc(int64_t *stk) {
+  return Btc((void *)stk[0], stk[1]);
 }
 
-static int64_t STK_Misc_Btr(int64_t *stk) {
-  return Misc_Btr((void *)stk[0], stk[1]);
+static int64_t STK_Btr(int64_t *stk) {
+  return Btr((void *)stk[0], stk[1]);
 }
-static int64_t STK_Misc_LBtr(int64_t *stk) {
-  return Misc_LBtr((void *)stk[0], stk[1]);
+static int64_t STK_LBtr(int64_t *stk) {
+  return LBtr((void *)stk[0], stk[1]);
 }
-static int64_t STK_Misc_LBts(int64_t *stk) {
-  return Misc_LBts((void *)stk[0], stk[1]);
+static int64_t STK_LBts(int64_t *stk) {
+  return LBts((void *)stk[0], stk[1]);
 }
-static int64_t STK_Misc_Bt(int64_t *stk) {
-  return Misc_Bt((void *)stk[0], stk[1]);
+static int64_t STK_Bt(int64_t *stk) {
+  return Bt((void *)stk[0], stk[1]);
 }
-static int64_t STK_Misc_LBtc(int64_t *stk) {
-  return Misc_LBtc((void *)stk[0], stk[1]);
+static int64_t STK_LBtc(int64_t *stk) {
+  return LBtc((void *)stk[0], stk[1]);
 }
-static int64_t STK_Misc_Bts(int64_t *stk) {
-  return Misc_Bts((void *)stk[0], stk[1]);
+static int64_t STK_Bts(int64_t *stk) {
+  return Bts((void *)stk[0], stk[1]);
 }
 
 static int64_t STK_HeapCtrlInit(int64_t *stk) {
@@ -785,25 +790,6 @@ static int64_t STK_memcmp(int64_t *stk) {
   return (int64_t)memcmp((void *)stk[0], (void *)stk[1], stk[2]);
 }
 
-static int64_t STK_Bt(int64_t *stk) {
-  return Misc_Bt((void *)stk[0], stk[1]);
-}
-
-static int64_t STK_LBts(int64_t *stk) {
-  return Misc_LBts((void *)stk[0], stk[1]);
-}
-static int64_t STK_LBtr(int64_t *stk) {
-  return Misc_LBtr((void *)stk[0], stk[1]);
-}
-static int64_t STK_LBtc(int64_t *stk) {
-  return Misc_LBtc((void *)stk[0], stk[1]);
-}
-static int64_t STK_Btr(int64_t *stk) {
-  return Misc_Btr((void *)stk[0], stk[1]);
-}
-static int64_t STK_Bts(int64_t *stk) {
-  return Misc_Bts((void *)stk[0], stk[1]);
-}
 static int64_t STK_Bsf(int64_t *stk) {
   return Bsf(stk[0]);
 }
@@ -1483,7 +1469,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("ASin", STK_asin, 1);
     PrsAddSymbol("ATan", STK_atan, 1);
     PrsAddSymbol("Exp", STK_exp, 1);
-    PrsAddSymbol("Btc", STK_Misc_Btc, 2);
+    PrsAddSymbol("Btc", STK_Btc, 2);
     PrsAddSymbol("HeapCtrlInit", STK_HeapCtrlInit, 3);
     PrsAddSymbol("HeapCtrlDel", STK_HeapCtrlDel, 1);
     PrsAddSymbol("__MAlloc", STK___AIWNIOS_MAlloc, 2);
@@ -1511,7 +1497,7 @@ static void BootAiwnios(char *bootstrap_text) {
     X(StrCpy, 2);
     X(StrICmp, 2);
     X(StrNICmp, 3);
-#if defined(__x86_64__) && !defined(__OpenBSD__)
+#if defined(__x86_64__) && !(__OpenBSD__ + __NetBSD__ > 0)
     X(OutU8, 2);
     X(OutU16, 2);
     X(OutU32, 2);
@@ -1538,12 +1524,12 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Ceil", STK_ceil, 1);
     PrsAddSymbol("Sqrt", STK_sqrt, 1);
     PrsAddSymbol("MemCmp", STK_memcmp, 3);
-    PrsAddSymbol("Bt", STK_Misc_Bt, 2);
-    PrsAddSymbol("LBtc", STK_Misc_LBtc, 2);
-    PrsAddSymbol("LBts", STK_Misc_LBts, 2);
-    PrsAddSymbol("LBtr", STK_Misc_LBtr, 2);
-    PrsAddSymbol("Bts", STK_Misc_Bts, 2);
-    PrsAddSymbol("Btr", STK_Misc_Btr, 2);
+    PrsAddSymbol("Bt", STK_Bt, 2);
+    PrsAddSymbol("LBtc", STK_LBtc, 2);
+    PrsAddSymbol("LBts", STK_LBts, 2);
+    PrsAddSymbol("LBtr", STK_LBtr, 2);
+    PrsAddSymbol("Bts", STK_Bts, 2);
+    PrsAddSymbol("Btr", STK_Btr, 2);
     PrsAddSymbol("Bsf", STK_Bsf, 1);
     PrsAddSymbol("Bsr", STK_Bsr, 1);
     PrsAddSymbol("DbgPutS", STK_PutS, 1);
@@ -1830,9 +1816,9 @@ static void Boot() {
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi);
 #elif defined(__x86_64__)
-#  if defined(_WIN32) || defined(WIN32)
+#  ifdef _WIN32
     host_abi = "Win";
-#  elif defined(__OpenBSD__)
+#  elif __OpenBSD__ + __NetBSD__ > 0
     host_abi = "OpenBSD";
 #  else
     host_abi = "SysV";
