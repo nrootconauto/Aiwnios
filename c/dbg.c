@@ -800,7 +800,7 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   } else
     abort();
   return; // returning calls setcontext
-#    elif defined(__FreeBSD__)
+#    elif defined(__NetBSD__)
   UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];

@@ -3,6 +3,7 @@
 #ifdef _WIN32
 extern void Misc_ForceYield();
 #endif
+#ifndef __x86_64__
 extern int64_t Bt(void *ptr, int64_t);
 extern int64_t Btc(void *ptr, int64_t);
 extern int64_t Btr(void *ptr, int64_t);
@@ -11,10 +12,47 @@ extern int64_t LBt(void *ptr, int64_t);
 extern int64_t LBtc(void *ptr, int64_t);
 extern int64_t LBtr(void *ptr, int64_t);
 extern int64_t LBts(void *ptr, int64_t);
-extern void *Misc_BP();
-extern int64_t Bsr(int64_t v);
-extern int64_t Bsf(int64_t v);
+#else
+#  define __BITOPR(inst, mem, idx)                                             \
+    ({                                                                         \
+      _Bool __ret = 0;                                                         \
+      asm(#inst "\t%[Idx],%[Mem]"                                              \
+          : "=@ccc"(__ret)                                                     \
+          : [Idx] "r"(idx), [Mem] "m"(*(char const(*)[(idx) / 8 + 1])(mem))    \
+          : "cc");                                                             \
+      __ret;                                                                   \
+    })
+#  define __BITOPW(inst, mem, idx)                                             \
+    ({                                                                         \
+      _Bool __ret = 0;                                                         \
+      asm(#inst "\t%[Idx],%[Mem]"                                              \
+          : "=@ccc"(__ret), [Mem] "+m"(*(char(*)[(idx) / 8 + 1])(mem))   \
+          : [Idx] "r"(idx)                                                     \
+          : "cc");                                                             \
+      __ret;                                                                   \
+    })
+#  define Bt(x, y)   __BITOPR(bt, (x), (y))
+#  define LBt(x, y)  __BITOPR(lock bt, (x), (y))
+#  define Btc(x, y)  __BITOPW(btc, (x), (y))
+#  define Btr(x, y)  __BITOPW(btr, (x), (y))
+#  define Bts(x, y)  __BITOPW(bts, (x), (y))
+#  define LBtc(x, y) __BITOPW(lock btc, (x), (y))
+#  define LBtr(x, y) __BITOPW(lock btr, (x), (y))
+#  define LBts(x, y) __BITOPW(lock bts, (x), (y))
+#endif
 
+#define Bsr(x)                                                                 \
+  ({                                                                           \
+    int64_t __x = (int64_t)(x);                                                     \
+    __x ? __builtin_popcountll(-2) - __builtin_clzll(__x) : -1;                \
+  })
+#define Bsf(x)                                                                 \
+  ({                                                                           \
+    int64_t __x = (int64_t)(x);                                                     \
+    __x ? __builtin_ctzll(__x) : -1;                                           \
+  })
+
+extern void *Misc_BP();
 void *Misc_Caller(int64_t c);
 extern void AIWNIOS_setcontext(void *);
 extern int64_t AIWNIOS_getcontext(void *);
@@ -36,5 +74,3 @@ int64_t TempleOS_CallVaArgs(void (*fptr)(void), int64_t argc, int64_t *argv);
 #else
 #  define PAUSE asm(".4byte 0x100000f");
 #endif
-int64_t Btr(void *, int64_t);
-int64_t Bts(void *, int64_t);

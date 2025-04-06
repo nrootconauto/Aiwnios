@@ -4,13 +4,6 @@
 #include "aiwn_multic.h"
 #include <stddef.h>
 #include <stdint.h>
-int64_t Bsf(int64_t v) {
-  return v ? __builtin_ctzll(v) : -1;
-}
-
-int64_t Bsr(int64_t v) {
-  return v ? __builtin_popcountll(-2) - __builtin_clzll(v) : -1;
-}
 
 char *WhichFun(char *fptr) {
   int64_t idx, best_dist = 0x1000000, dist;
