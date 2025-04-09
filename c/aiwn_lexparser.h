@@ -3,6 +3,7 @@
 #define INVALID_PTR ERR
 typedef struct CRPN CRPN;
 #include "aiwn_hash.h"
+#include "aiwn_asm.h"
 #include <stdint.h>
 struct CTask;
 // This represents a peice of text being lexed(it could be a file macro, or

@@ -5,6 +5,9 @@
 #include "aiwn_riscv.h"
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 extern void DoNothing();
 // backendd_user_data5 is the "fail" codemisc for IC_LT/GT etc
 // backend_user_data6 is the "pass" codemisc for IC_LT/GT etc
