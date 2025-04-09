@@ -286,7 +286,12 @@ typedef struct {
 } CCPU;
 static int64_t nproc;
 #endif
-static _Thread_local core_num = -1;
+//
+//  Heres the deal,main.c Calls Boot without iniialzing Core 0 in command line mode,MAke sure it defaults to 0
+//  This is because we boot into core 0,-1 leads to weird memory behavior.
+//  21 Nrootconauto  
+//
+static _Thread_local core_num = 0;
 static CCPU cores[128];
 CHashTable *glbl_table;
 
