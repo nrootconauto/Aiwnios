@@ -155,9 +155,41 @@ LBtr:
   jalr zero,ra
 
 TempleOS_Call:
-  ret
+  jalr zero,a0
 
 TempleOS_CallN:
+  addi sp,sp,-16
+  sd fp,(sp)
+  sd ra,8(sp)
+  add fp,zero,sp
+  add t0,zero,a0
+  add t1,zero,a1
+  add t2,zero,a2
+  ld a0,(t2)
+  ld a1,1*8(t2)
+  ld a2,2*8(t2)
+  ld a3,3*8(t2)
+  ld a4,4*8(t2)
+  ld a5,5*8(t2)
+  ld a6,6*8(t2)
+  ld a7,7*8(t2)
+  slli t1,t1,3
+  addi t1,t1,-8*8
+  beq t1,zero, .Lcall
+  addi t2,t2,8*8
+.Lloop:
+  blt t1,zero, .Lcall
+  addi sp,sp,-8
+  add t4,t2,t1
+  addi t1,t1,-8
+  ld t4,(t4)
+  sd t4,(sp)
+  j .Lloop
+.Lcall:
+  jalr ra,t0
+  addi sp,fp,16
+  ld ra,8(fp)
+  ld fp,(fp)
   ret
 # I64 CallVaArgs(fptr,argc1,argv1,...)
 # fptr is a variadic fun with argc normal args
@@ -165,7 +197,7 @@ TempleOS_CallN:
 TempleOS_CallVaArgs:
   addi sp,sp,-16
   sd fp,(sp)
-  sd ra,8(sp)
+  sd ra,8(sp) 
   addi fp,sp,16
   addi a4,sp,16 # point to argv
   addi t5,a3,1 #t5 has args + (1 argc)
