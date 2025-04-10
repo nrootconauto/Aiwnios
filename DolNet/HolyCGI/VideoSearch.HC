@@ -19,7 +19,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   if(v=GetQueryValue(url->query,"look_for")) {
     tmp_doc=DocNew;
     DocPrint(tmp_doc,"$$PURPLE$$$$TX+CX,\"Search results for \\\"%Q\\\":\"$$$$FD$$\n",v);
-    tmp_str=ChrootFile("/",SERVER_WWW"/Videos");
+    tmp_str=ChrootFile("/",SERVER_META"/Videos");
     StrUtil(tmp_str,SUF_REM_SPACES);
     as_txt=MStrPrint("%s*.DD",tmp_str);
     Free(tmp_str);

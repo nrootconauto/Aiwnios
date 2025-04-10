@@ -21,7 +21,7 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   CDoc *tmp_doc,*html,*comments,*props;
   CConnection *con=Fs->user_data;
   if(v=GetQueryValue(url->query,"view")) {
-    tmp_str=ChrootFile(v,SERVER_WWW"/Videos");
+    tmp_str=ChrootFile(v,SERVER_META"/Videos");
     if(FileFind(tmp_str)) {
 //Predefined(maybe change this in the future)
       tmp_doc=DocRead(tmp_str);
@@ -81,14 +81,14 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
                        "  Use slashes to categorize and group your videos,like Compiler/Lexer.\n");
     DocPrint(tmp_doc,"\n  Click $$LK,\"Here to find a video\",A=\"/VideoSearch.HC\"$$\n");
 
-    tmp_str=ChrootFile("/",SERVER_WWW"/Videos");
+    tmp_str=ChrootFile("/",SERVER_META"/Videos");
     v=MStrPrint("%s/*.DD",tmp_str);
     Free(tmp_str);
     root=FilesFind(v,FUF_FLATTEN_TREE|FUF_JUST_FILES|FUF_RECURSE);
     Free(v);
 
     for(ent=root;ent;ent=ent->next) {
-      v=MStrPrint("Videos/%Q",ent->name);
+      //v=MStrPrint("Videos/%Q",ent->name);
 
 
 //TODO encode strange names
@@ -97,7 +97,8 @@ Bool OnGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 	desc=AiwniosTubeGetVideoProp(tmp_str+StrLen("Videos/"),"Props/Description");
         DocTreeWrite(tmp_doc,tmp_str,FALSE,"$$LK,\"%Q\",HTML=\"/ViewVideo.HC?view=%Q\"$$\n%Q\n",ent->name,tmp_str+StrLen("Videos/"),desc);
       }
-      Free(v),Free(desc);
+      //Free(v);
+      Free(desc);
     }
     DirEntryDel(root);
     DocCollapse(FALSE,tmp_doc);

@@ -74,7 +74,7 @@ Bool OnPost(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req,CHashTable *post
     if(HashFind("video_delete",post_data,HTT_DICT_WORD))
       delete=TRUE;
 
-    video_dd_path=ChrootFile(v,SERVER_WWW"/Videos");
+    video_dd_path=ChrootFile(v,SERVER_META"/Videos");
     props=ChrootFile(v,SERVER_META"/VideoProps");
     comments_path=ChrootFile(v,SERVER_META"/VideoComments");
 

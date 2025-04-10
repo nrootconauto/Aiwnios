@@ -34,6 +34,7 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
   U8 *f,*mime,*dot=FileExtDot2(link),*et;
   I64 len;
   if(dot&&FileFind(link,,FUF_Z_OR_NOT_Z)){
+found:
     if(!StrICmp(dot,".GIF")||!StrICmp(dot,".GIF.Z")) mime="image/gif";
     else if(!StrICmp(dot,".JPEG")||!StrICmp(dot,".JPEG.Z")) mime="image/jpeg";
     else if(!StrICmp(dot,".JPG")||!StrICmp(dot,".JPG.Z")) mime="image/jpg";
@@ -59,7 +60,15 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
     WriteNBytes(stream,NULL,f,len);
     con->cache_age=24*60*60*3; //3 days
     Free(f);
+  } else if(StrIMatch("Videos",url->abs_path)) {
+    Free(link);
+    link=ChrootFile(url->abs_path,SERVER_META);
+    if(FileFind(link,,FUF_Z_OR_NOT_Z))
+      goto found;
+    else
+      goto nope;
   } else {
+nope:
     R404(stream,&len,url->abs_path);
     con=Fs->user_data;
     StrCpy(con->response_mime,"text/html");

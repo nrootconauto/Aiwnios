@@ -222,7 +222,7 @@ U0 R404(I64 s,I64 *ptr,U8 *msg) {
   WriteLn(s,ptr,"	</body>");
   WriteLn(s,ptr,"</html>");
 }
-U0 GenericGet(CServer *serv,I64 s,CURL *url,CHTTPRequest *req) {
+/*U0 GenericGet(CServer *serv,I64 s,CURL *url,CHTTPRequest *req) {
   if(!url) return;
   CDirEntry ent;
   I64 len=0;
@@ -237,7 +237,7 @@ U0 GenericGet(CServer *serv,I64 s,CURL *url,CHTTPRequest *req) {
     con->response_code=404;
     R404(s,NULL,url->abs_path);
   }
-}
+}*/
 
 CServer *CreateServer(I64 port) {
   CServer *srv=CAlloc(sizeof(CServer));
@@ -290,6 +290,7 @@ U0 SendRequest(I64 s) {
       break;case 206: msg="206 Partial Content";
       break;case 404: msg="404 Not Found";
       break;case 451: msg="451 Unavailable For Legal Reasons";
+      break;case 422: msg="422 Unprocessable Content";
       break;case 304: msg="304 Not Modified";
 //If we have a 304(not-modefied)
       //We will ommit the body
