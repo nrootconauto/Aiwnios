@@ -1683,6 +1683,14 @@ ins_label:
 	      }
 	      rpn->ic_dim=cc->hash_entry(CHashGlblVar*)->dim.next;
 	      Lex(cc);
+	    } else if(cc->hash_entry->type&HTT_EXPORT_SYS_SYM) {
+	        rpn=RPNAddNew(
+		      cc,
+		      IC_IMM_I64,
+		      cc->hash_entry(CHashExport*)->val,
+		      cmp.internal_types[RT_I64],
+		      );
+	      Lex(cc);
 	    } else if(cc->hash_entry->type&HTT_KEYWORD) {
 	      switch(cc->hash_entry(CHashGeneric *)->user_data0) {
 		  break;case KW_SIZEOF:
