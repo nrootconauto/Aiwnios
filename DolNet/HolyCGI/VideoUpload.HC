@@ -61,7 +61,7 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
   CConnection *con=Fs->user_data;
   if(!file||!title||!desc||!passwd||!session||!captcha)
     return FALSE;
-  if(StrOcc(file->user_data2,' ')||StrOcc(title->user_data2,' ')) {
+  if(StrOcc(file->user_data1,' ')||StrOcc(title->user_data1,' ')) {
     s="422: No spaces allowed in filename or title.\n";
     WriteNBytes(stream,0,s,StrLen(s));
     StrCpy(con->response_mime,"text/html");
