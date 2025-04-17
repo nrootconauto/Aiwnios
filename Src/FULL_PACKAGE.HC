@@ -376,7 +376,6 @@ U8 *body=
 #include "UAsmRiscV.HC"
 #include "AsmRISCV.HC"
 #endif
-#include "HomeKeyPlugIns.HC"
 if(!IsCmdLineMode&&!IsCmdLineMode2)
   DrawWindowNew;
 #ifdef GEN_HEADERS
@@ -440,6 +439,8 @@ if(!IsCmdLineMode) {
     SetFPS(60.);
   ACInit("~:/Src/*.HC*;*.HH*");
   OnceExe;
+  if(FileFind("~/HomeKeyPlugIns.HC"))
+    ExeFile("~/HomeKeyPlugIns.HC");
 }
 CoreAPSethTask;
 #endif;

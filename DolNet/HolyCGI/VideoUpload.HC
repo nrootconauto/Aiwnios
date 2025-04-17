@@ -53,14 +53,22 @@ U0 OnPost(CServer *srv,I64 stream,CURL *url,I64,CHashTable *post_data) {
   CHashGeneric *session=HashFind("session",post_data,HTT_DICT_WORD);
   CHashGeneric *captcha=HashFind("captcha",post_data,HTT_DICT_WORD);
   CHashGeneric *disable;
-  CDoc *tmp=DocNew,*html,*props;
-  CDoc *page=DocNew;
+  CDoc *tmp,*html,*props;
+  CDoc *page;
   I64 len,num,captchanum;
   U8 *as_txt,*tmp_str2,*tpasswd;
-  U8 *filename,*tnam,*tdesc,*ttitle;
+  U8 *filename,*tnam,*tdesc,*ttitle,*s;
   CConnection *con=Fs->user_data;
   if(!file||!title||!desc||!passwd||!session||!captcha)
     return FALSE;
+  if(StrOcc(file->user_data1,' ')||StrOcc(title->user_data1,' ')) {
+    s="422: No spaces allowed in filename or title.\n";
+    WriteNBytes(stream,0,s,StrLen(s));
+    StrCpy(con->response_mime,"text/html");
+    con->response_code=422;
+    return;
+  }
+  tmp=DocNew,page=DocNew;
 
   num=FramePtr(session->user_data1,adam_task);
   StrScan(captcha->user_data1,"%X",&captchanum);
@@ -119,7 +127,7 @@ exists:;
   DocPrint(page,"\n$$TR-C,\"%Q\"$$$$ID,2$$\n",ttitle);
   DocPrint(page,"%Q\n$$ID,-2$$\n",tdesc);
   //Save vidoe
-  filename=ChrootFile(tnam,SERVER_WWW"/Videos");
+  filename=ChrootFile(tnam,SERVER_META"/Videos");
   Free(tnam);
   StrUtil(filename,SUF_REM_SPACES);
   if(FileFind(filename))
@@ -131,7 +139,7 @@ exists:;
 //Save Video page
   tnam=MStrPrint("%s.DD",ttitle);
   StrUtil(tnam,SUF_REM_SPACES);
-  filename=ChrootFile(tnam,SERVER_WWW"/Videos");
+  filename=ChrootFile(tnam,SERVER_META"/Videos");
   EnsurePathExists(tnam);
   as_txt=DocSave(page,&len);
   FileWrite(filename,as_txt,len);

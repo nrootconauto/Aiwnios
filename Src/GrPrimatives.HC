@@ -928,7 +928,7 @@ public Bool GrEllipse3(CDC *dc=0,
   return res;
 }
 
-public Bool GrCircle3(CDC *dc=0,I64 cx,I64 cy,I64 cz,I64 radius,
+public Bool GrCircle3(CDC *dc=0,I64 cx,I64 cy,I64 cz,I64 radius,
   I64 step=1,F64 start_radians=0,F64 len_radians=2*pi)
 {//3D. Transformation with thick.
   if(!dc) dc=gr.dc;

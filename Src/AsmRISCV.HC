@@ -134,7 +134,10 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
       patch->imm->resolved=TRUE;
       if(rel)
 	patch->imm->value-=ToI64(&buf[patch->addr]);
-      buf[patch->addr](U32)=AsmOpcode0(blob,patch->opcode,patch->args);
+      if(patch->opcode)
+        buf[patch->addr](U32)=AsmOpcode0(blob,patch->opcode,patch->args);
+      else
+        MemCpy(&buf[patch->addr],&patch->imm->value,patch->sz);
       Free(patch->imm);
       patch->imm=NULL;
     }
@@ -997,7 +1000,7 @@ enter:
       if(!FileFind(cc->cur_str))
         LexExcept(cc,"File not found");
       fbuf=FileRead(cc->cur_str,&sz);
-      AddBytesToBuf(&buf,&ret_blob->len,sz,fbuf);
+      AddBytesToBuf(&ret_blob->data,&ret_blob->len,sz,fbuf);
       Free(fbuf);
     } else if(!StrCmp(cc->hash_entry->str,"DU8")) {
       sz=1;
@@ -1008,7 +1011,7 @@ duxx:
         if(cc->token==TK_STR) {
 	  idx=0;
 	  while(tmp=cc->cur_str[idx++])
-	    AddBytesToBuf(&buf,&ret_blob->len,sz,&tmp);
+	    AddBytesToBuf(&ret_blob->data,&ret_blob->len,sz,&tmp);
 	  Lex(cc);
         } else {
 	  tmp_mode=CAlloc(sizeof CAddrMode);
@@ -1019,7 +1022,7 @@ duxx:
 	  patch->sz=sz;
 	  QueIns(patch,asm_patches);
 	  tmp=0;
-	  AddBytesToBuf(&buf,&ret_blob->len,sz,&tmp);
+	  AddBytesToBuf(&ret_blob->data,&ret_blob->len,sz,&tmp);
         }
         if(cc->token==',') {
 	  Lex(cc);
