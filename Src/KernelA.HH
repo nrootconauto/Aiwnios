@@ -7232,4 +7232,5 @@ class CArm64Opc:CHash {
   U32 value;
   U32 mask;
   CArm64Operand operands[16]; 
+  U8 specific;
 };

@@ -1058,6 +1058,20 @@ CmpFixUpJITAsm(cc,tmpaot);
 		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
 		    }
 #endif
+#ifdef TARGET_AARCH64
+		    if (tmpaot=PrsAsmBlk(cc)) {
+		      //If we are not in a function,we will jump past the assembly block
+		      // to avoid running it
+		      if(!cc->htc.fun) {
+		        g_lb=COCMiscNew(cc,CMT_LABEL);
+		        RPNAddNew(cc,IC_JMP,g_lb,NULL,FALSE);
+		      }
+		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
+		      cc->flags|=CCF_HAS_MISC_DATA;
+		      if(!cc->htc.fun)
+		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
+		    }
+#endif
 		    /*		    if (cc->htc.fun) {
 if (tmpaot=CmpJoin(cc,CMPF_ASM_BLK))
 ICAdd(cc,IC_ASM,tmpaot,0);

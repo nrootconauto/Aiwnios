@@ -370,6 +370,7 @@ U8 *body=
 #include "MakeISOFile.HC";
 #ifdef TARGET_AARCH64
 #include "UAsmARM64.HC"
+#include "AsmARM64.HC"
 #endif
 #ifdef TARGET_RISCV
 #include "UAsmRiscV.HC"

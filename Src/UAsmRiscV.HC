@@ -1,4 +1,4 @@
-#define FP_UPPER_BITS "RiscV.FP.upper"
+ #define FP_UPPER_BITS "RiscV.FP.upper"
 Bool HasUpperBits() {
   if(HashFind(FP_UPPER_BITS,Fs->hash_table,HTT_FRAME_PTR))
     return TRUE;

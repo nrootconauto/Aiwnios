@@ -4,8 +4,9 @@ I64 Sext(I64 v,I64 bits) {
     return -(1<<bits-v);
   return v;
 }
-I64 Arm64GetValue(CArm64Opc *opc,U32 inst,I64 which,I64 occ=1) {
+I64 Arm64GetValue(CArm64Opc *opc,U32 inst,I64 which,I64 occ=1,U8 specific='X') {
   I64 o;
+  U8 buf[STR_LEN];
   for(o=0;o!=16;o++) {
     if(opc->operands[o].type==which) {
       if(!--occ) {
@@ -19,6 +20,10 @@ I64 Arm64GetValue(CArm64Opc *opc,U32 inst,I64 which,I64 occ=1) {
 	  case ARM64_OP_IMM19:
 	    return Sext(inst&(1<<19-1),19);
 	  case ARM64_OP_REG:
+	    if(specific) {
+	      StrPrint(buf,"%c%d",specific,inst&(1<<5-1));
+	      return buf[0](U64);
+	    }
 	    return inst&(1<<5-1);
 	  case ARM64_OP_B5:
 	    return inst&1;
@@ -169,8 +174,9 @@ U8 *ReadAFeild(U8 **_ptr) {
 }
 static CArm64Opc **arm64_opcodes_flat;
 U0 LoadOpcodes() {
-  if(!FileFind("/Src/AArch64_ops.csv"))
+  if(!FileFind("/Src/AArch64_ops.csv")) {
     return;
+  }
   U8 *optr=FileRead("/Src/AArch64_ops.csv"),*ptr=optr;
   StrUtil(optr,SUF_REM_CTRL_CHARS);
   I64 max_opc_cnt=StrOcc(optr,'\n')+1;
@@ -211,13 +217,24 @@ U0 LoadOpcodes() {
     *store_at++=opc;
     HashAdd(opc,cmp.asm_hash);
     Free(name);
+//blah
+    field=ReadAFeild(&ln);
+    Free(field);
+//Specific
+    field=ReadAFeild(&ln);
+    if(field&&field[0]!='v')
+      opc->specific=field[0];
+    else {
+      if(StrMatch("Single",append)||StrMatch("Single",append))
+	opc->specific='S';
+      else if(StrMatch("Double",append)||StrMatch("Double",prepend))
+	opc->specific='D';
+      else 
+        opc->specific=0;
+    }
+    Free(field);
     Free(prepend);
     Free(append);
-//blah*2
-    field=ReadAFeild(&ln);
-    Free(field);
-    field=ReadAFeild(&ln);
-    Free(field);
 //Comment
     field=ReadAFeild(&ln);
     Free(field);
@@ -398,25 +415,28 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
   U32 inst=*ptr;
   CArm64Opc **opcs,*opc;
   I64 off;
+  U8 specific;
   opcs=arm64_opcodes_flat;
   if(!opcs) return ptr+1;
   while(opc=*opcs) {
     if(opc->mask&inst==opc->value) {
+      if(!(specific=opc->specific))
+	specific='X';
       DocPrint(doc,"%P\t%s ",ptr,opc->str);
       switch(opc->num) {
         case 6 ... 9:
-	  DocPrint(doc,"R%d,%P",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG),
+	  DocPrint(doc,"%c,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific),
 	        ptr+Arm64GetValue(opc,inst,ARM64_OP_IMM19));
 	  break;
         case 11 ... 12:
-	  DocPrint(doc,"R%d,%d,%P",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG),
+	  DocPrint(doc,"%c,%d,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific),
 	        (Arm64GetValue(opc,inst,ARM64_OP_B5)<<5)|Arm64GetValue(opc,inst,ARM64_OP_B40),
 	        ptr+Arm64GetValue(opc,inst,ARM64_OP_IMM14));
 	  break;
         case 14:
-	  DocPrint(doc,"(%s),%P",
+	  DocPrint(doc,".%s,%P",
 	        ArmCond2Str(Arm64GetValue(opc,inst,ARM64_OP_COND)),
 	        ptr+Arm64GetValue(opc,inst,ARM64_OP_IMM19));
 	  break;
@@ -425,149 +445,149 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM16));
 	  break;
         case 36 ... 40:
-	  DocPrint(doc,"R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG));
+	  DocPrint(doc,"%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific));
 	  break;
         case 41 ... 43:
 	  DocPrint(doc,"%P",
 	        ptr+Arm64GetValue(opc,inst,ARM64_OP_IMM26));
 	  break;
         case 46 ... 77:
-	  DocPrint(doc,"R%d,R%d,R%d,[R%d]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,4),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,%c,%c,[%c]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,4,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,3));
 	  break;
         case 79 ... 85:
-	  DocPrint(doc,"R%d,%P",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG),
+	  DocPrint(doc,"%c,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific),
 	        ptr+Arm64GetValue(opc,inst,ARM64_OP_IMM19));
 	  break;
         case 87 ... 88:
         case 89 ... 90:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c:%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*4);
 	  break;
         case 91 ... 94:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c:%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*8);
 	  break;
         case 95 ... 96:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*16);
 	  break;
         case 98 ... 102:
-	  DocPrint(doc,"R%d,R%d,[R%d,+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c,+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*4);
 	  break;
         case 103 ... 106:
-	  DocPrint(doc,"R%d,R%d,[R%d,+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c,+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*8);
 	  break;
         case 107 ... 108:
-	  DocPrint(doc,"R%d,R%d,[R%d,+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c,+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*16);
 	  break;
         case 110 ... 114:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*4);
 	  break;
         case 115 ... 118:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*8);
 	  break;
         case 119 ... 120:
-	  DocPrint(doc,"R%d,R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*16);
 	  break;
         case 122 ... 126:
-	  DocPrint(doc,"R%d,R%d,[R%d+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*4);
 	  break;
         case 127 ... 130:
-	  DocPrint(doc,"R%d,R%d,[R%d+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*8);
 	  break;
         case 131 ... 132:
-	  DocPrint(doc,"R%d,R%d,[R%d+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM7)*16);
 	  break;
         case 134 ... 157:
-	  DocPrint(doc,"R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9)*8);
 	  break;
         case 158 ... 172:
-	  DocPrint(doc,"R%d,[R%,d+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c,+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9));
 	  break;
         case 173 ... 177:
-	  DocPrint(doc,"R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9)*4);
 	  break;
         case 178 ... 181:
-	  DocPrint(doc,"R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9)*8);
 	  break;
         case 183 ... 196:
-	  DocPrint(doc,"R%d,[R%d+%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9));
 	  break;
         case 197 ... 219:
-	  DocPrint(doc,"R%d,[R%d+=%X]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+=%X]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9));
 	  break;
         case 229 ... 242:
-	  DocPrint(doc,"R%d,[R%d+R%d]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,[%c+%c]",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
 	  break;
@@ -575,33 +595,33 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMM12);
 	  if(off<0) off=(-(-off-1<<12))&(1<<12-1);
 	  case 246 ... 251:
-	    DocPrint(doc,"R%d,[R%d+%X]",
-		  Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	    DocPrint(doc,"%c,[%c+%X]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 		  off);
 	    break;
 	  case 252 ... 253:
-	    DocPrint(doc,"R%d,[R%d+%X]",
-		  Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	    DocPrint(doc,"%c,[%c+%X]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 		  off*16);
 	    break;
 
 	  case 254 ... 259:
-	    DocPrint(doc,"R%d,[R%d+%X]",
-		  Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	    DocPrint(doc,"%c,[%c+%X]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 		  off*2);
 	    break;
 	  case 260 ... 264:
-	    DocPrint(doc,"R%d,[R%d+%X]",
-		  Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	    DocPrint(doc,"%c,[%c+%X]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 		  off*4);
 	    break;
-	  case 265 ... 267:
-	    DocPrint(doc,"R%d,[R%d+%X]",
-		  Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  case 265 ... 269:
+	    DocPrint(doc,"%c,[%c+%X]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 		  off*8);
 	    break;
@@ -611,8 +631,8 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMMLO)|
 	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
 	  off=Sext(off,19+2);
-	  DocPrint(doc,"R%d,%P",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%P",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ptr(U8*)+off);
 	  break;
         case 273:
@@ -620,144 +640,145 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
 	  off=Sext(off,19+2);
 	  off<<=12;
-	  DocPrint(doc,"R%d,%P",
+	  DocPrint(doc,"%c,%P",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        ptr(U8*)+off);
 	  break;
         case 275 ... 282:
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMM12);
 	  if(off<0) off=(-(-off-1<<12))&(1<<12-1);
-	  DocPrint(doc,"R%d,R%d,%X",
+	  DocPrint(doc,"%c,%c,%X",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        off);
 	  break;
         case 284 ... 287:
-	  DocPrint(doc,"R%d,R%d,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ImmSImmR2Val(inst)&(1<<32-1));
 	  break;
         case 288 ... 291:
-	  DocPrint(doc,"R%d,R%d,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ImmSImmR2Val(inst));
 	  break;
 
         case 293 ... 298:
-	  DocPrint(doc,"R%d,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
-	        Arm64GetValue(opc,inst,ARM64_OP_IMM16));
+	  DocPrint(doc,"%c,%X,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_IMM16),
+		inst>>21&0b11);
 	  break;
         case 300 ... 302:
-	  DocPrint(doc,"R%d,R%d,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ImmSImmR2Val(inst)&(1<<32-1));
 	  break;
         case 303 ... 305:
-	  DocPrint(doc,"R%d,R%d,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ImmSImmR2Val(inst));
 	  break;
         case 307 ... 308:
-	  DocPrint(doc,"R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 310 ... 318:
         case 319 ... 326:
         case 328 ... 331:
         case 332 ... 335:
-	  DocPrint(doc,"R%d,R%d,R%d,%s,%X",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+	  DocPrint(doc,"%c,%c,%c,%s,%X",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        ArmShmod2Str(Arm64GetValue(opc,inst,ARM64_OP_SHIFT)),
 	        (inst>>10)&(1<<6-1));
 	  break;
         case 337 ... 344:
-	  DocPrint(doc,"R%d,R%d,%s R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
+	  DocPrint(doc,"%c,%c,%s %c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
 	        ArmOption2Str(Arm64GetValue(opc,inst,ARM64_OP_OPTION)),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 346 ... 353:
-	  DocPrint(doc,"R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
 //TODO conditional compare
         case 364 ... 372:
-	  DocPrint(doc,"(%s) R%d,R%d,R%d",
+	  DocPrint(doc,".%s %c,%c,%c",
 	        ArmCond2Str(Arm64GetValue(opc,inst,ARM64_OP_COND)),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 374 ... 383:
-	  DocPrint(doc,"R%d,R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,4),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2));
+	  DocPrint(doc,"%c,%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,4,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific));
 	  break;
         case 385 ... 404:
-	  DocPrint(doc,"R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 406 ... 434:
-	  DocPrint(doc,"R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 441 ... 458:
-	  DocPrint(doc,"R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 460 ... 461:
-	  DocPrint(doc,"(%s) R%d,R%d,R%d",
+	  DocPrint(doc,".%s %c,%c,%c",
 	        ArmCond2Str(Arm64GetValue(opc,inst,ARM64_OP_COND)),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 466 ... 473:
-	  DocPrint(doc,"R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 475 ... 557:
-	  DocPrint(doc,"R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 559 ... 566:
-	  DocPrint(doc,"R%d,R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,4),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2));
+	  DocPrint(doc,"%c,%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,4,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific));
 	  break;
         case 568 ... 603:
-	  DocPrint(doc,"R%d,R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,3,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 604 ... 714:
-	  DocPrint(doc,"R%d,R%d",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+	  DocPrint(doc,"%c,%c",
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
 
 	  //TODO conditional compare flaoting point

@@ -2842,6 +2842,13 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     cctrl->backend_user_data6 = 0;
   }
   switch (rpn->type) {
+	  case IC_RAW_BYTES:
+    if (cctrl->code_ctrl->final_pass) {
+      memcpy(bin + code_off, rpn->raw_bytes, rpn->length);
+    }
+    code_off += rpn->length;
+break;
+
     break;
   case IC_LOCK:
     cctrl->is_lock_expr = 1;
@@ -5218,6 +5225,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         code_off += (misc->hi - misc->lo + 1) * 8;
         goto fill_in_refs;
       case CMT_LABEL:
+        if (run&&misc->patch_addr)
+          *misc->patch_addr = MemGetExecPtr(misc->addr);
         if (misc != cctrl->statics_label) // Filled in later
           goto fill_in_refs;
         break;
