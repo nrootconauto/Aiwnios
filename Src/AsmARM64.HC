@@ -265,28 +265,51 @@ U32 *AsmOpc(CArm64Opc *opc,U32 *ptr,I64 shmod,I64 *argv) {
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[1],1);
       ret=Arm64SetValue(opc,ret,ARM64_OP_IMM9,argv[2]);
       break;
-    case 220 ... 242:
+    case 220 ... 245:
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[0],2);
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[1],3);
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[2],1);
+      ret|=(argv[3]&0b111)<<13;
+      if(argv[4]) {
+        ret|=1<<12;
+        switch(opc->num) {
+	  case 220 ... 226:
+	    mul=1;
+	    break;
+	  case 227 ... 228:
+	    mul=16;
+	    break;
+	  case 229 ... 234:
+	    mul=2;
+	    break;
+	  case 235 ... 239:
+	    mul=4;
+	    break;
+	  case 240 ... 245:
+	    mul=8;
+	    break;
+        }
+        if(argv[4]!=mul)
+	  return NULL;
+      }
       break;
-	start:
+    start:
       case 246 ... 251:
-	mul=1;
-	break;
+        mul=1;
+        break;
       case 252 ... 253:
-	mul=16;
-	break;
+        mul=16;
+        break;
       case 254 ... 259:
-	mul=2;
-	break;
+        mul=2;
+        break;
       case 260 ... 264:
-	mul=4;
-	break;
+        mul=4;
+        break;
       case 265 ... 269:
-	mul=8;
-	break;
-end:
+        mul=8;
+        break;
+    end:
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[0],2);
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[1],1);
       ret=Arm64SetValue(opc,ret,ARM64_OP_IMM12,argv[2]/mul);
@@ -757,13 +780,25 @@ again:;
 	      argv[2]=PrsAsmImm(cc,&imodes[2],'X');
 	      LexExpect(cc,']'); //]
 	      break;
-	    case 220 ... 244:
+	    case 220 ... 245:
 	      argv[0]=PrsAsmReg(cc,specific);
 	      LexExpect(cc,',');
 	      LexExpect(cc,'['); //[
 	      argv[1]=PrsAsmReg(cc,'X');
 	      LexExpect(cc,'+');
 	      argv[2]=PrsAsmReg(cc,'X');
+	      if(cc->token==',') {
+		Lex(cc);
+		argv[3]=PrsAsmOption(cc);
+		if(cc->token==',') {
+		  Lex(cc);
+		  argv[4]=PrsAsmImm(cc,&imodes[3],'X');
+		} else
+		  argv[4]=0;
+	      } else {
+		argv[3]=0b111;
+		argv[4]=0;
+	      }
 	      LexExpect(cc,']'); //]
 	      break;
 	    case 246 ... 270:

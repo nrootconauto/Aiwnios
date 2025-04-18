@@ -414,14 +414,14 @@ case 0b111: return "SXTX";
 U8 *DisasOpc(CDoc *doc,U32 *ptr) {
   U32 inst=*ptr;
   CArm64Opc **opcs,*opc;
-  I64 off;
-  U8 specific;
+  I64 off,mul;
+  U8 specific,specific2;
   opcs=arm64_opcodes_flat;
   if(!opcs) return ptr+1;
   while(opc=*opcs) {
     if(opc->mask&inst==opc->value) {
       if(!(specific=opc->specific))
-	specific='X';
+        specific='X';
       DocPrint(doc,"%P\t%s ",ptr,opc->str);
       switch(opc->num) {
         case 6 ... 9:
@@ -585,11 +585,38 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM9));
 	  break;
-        case 229 ... 242:
-	  DocPrint(doc,"%c,[%c+%c]",
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,3),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1));
+        case 220 ... 245:
+	  mul=1;
+	  switch(opc->num) {
+	    case 220 ... 226:
+	      mul=1;
+	      break;
+	    case 227 ... 228:
+	      mul=16;
+	      break;
+	    case 229 ... 234:
+	      mul=2;
+	      break;
+	    case 235 ... 239:
+	      mul=4;
+	      break;
+	    case 240 ... 245:
+	      mul=8;
+	      break;
+	  }
+	  if(inst&1<<12)
+	    DocPrint(doc,"%c,[%c+%c,%s,%d]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,3),
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,1),
+		  ArmOption2Str(inst>>13&0b111),
+		  mul
+		  );
+	  else
+	    DocPrint(doc,"%c,[%c+%c]",
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,3),
+		  Arm64GetValue(opc,inst,ARM64_OP_REG,1));
 	  break;
         start:
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMM12);
@@ -629,7 +656,7 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  break;
         case 272:
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMMLO)|
-	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
+	        (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
 	  off=Sext(off,19+2);
 	  DocPrint(doc,"%c,%P",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
@@ -637,7 +664,7 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  break;
         case 273:
 	  off=Arm64GetValue(opc,inst,ARM64_OP_IMMLO)|
-	    (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
+	        (Arm64GetValue(opc,inst,ARM64_OP_IMMHI)<<2);
 	  off=Sext(off,19+2);
 	  off<<=12;
 	  DocPrint(doc,"%c,%P",
@@ -669,7 +696,7 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  DocPrint(doc,"%c,%X,%X",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific),
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM16),
-		inst>>21&0b11);
+	        inst>>21&0b11);
 	  break;
         case 300 ... 302:
 	  DocPrint(doc,"%c,%c,%X",
@@ -758,9 +785,19 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
 	  break;
         case 475 ... 557:
+	  specific2=specific;
+	  if(opc->num==510)
+	     specific='W',specific2='S';
+	  else if(opc->num==511)
+	     specific='S',specific2='W';
+	  else if(opc->num==548)
+	     specific='X',specific2='D';
+	  else if(opc->num==549)
+	     specific='D',specific2='X';
+	
 	  DocPrint(doc,"%c,%c",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific));
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific2));
 	  break;
         case 559 ... 566:
 	  DocPrint(doc,"%c,%c,%c,%c",
