@@ -444,6 +444,9 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	  DocPrint(doc,"%P",
 	        Arm64GetValue(opc,inst,ARM64_OP_IMM16));
 	  break;
+	case 26:
+	  DocPrint(doc,"%d",inst>>5&127);
+	  break;
         case 36 ... 40:
 	  DocPrint(doc,"%c",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,,specific));
@@ -797,7 +800,7 @@ U8 *DisasOpc(CDoc *doc,U32 *ptr) {
 	
 	  DocPrint(doc,"%c,%c",
 	        Arm64GetValue(opc,inst,ARM64_OP_REG,2,specific),
-	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific2));
+	        Arm64GetValue(opc,inst,ARM64_OP_REG,1,specific2));
 	  break;
         case 559 ... 566:
 	  DocPrint(doc,"%c,%c,%c,%c",

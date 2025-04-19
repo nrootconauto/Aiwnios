@@ -145,6 +145,9 @@ U32 *AsmOpc(CArm64Opc *opc,U32 *ptr,I64 shmod,I64 *argv) {
     case 16 ... 23:
       ret=Arm64SetValue(opc,ret,ARM64_OP_IMM16,argv[0]);
       break;
+    case 26:
+      ret|=argv[0]<<5&127;
+      break;
     case 36 ... 40:
       ret=Arm64SetValue(opc,ret,ARM64_OP_REG,argv[0]);
       break;
@@ -671,6 +674,9 @@ again:;
 	      LexExpect(cc,',');
 	      argv[0]=PrsAsmImm(cc,&imodes[0],specific);
 	      break;
+	    case 26:
+	      argv[0]=PrsAsmImm(cc,&imodes[0],specific);
+	      break;
 	    case 36 ... 40:
 	      argv[0]=PrsAsmReg(cc,specific);
 	      break;
@@ -780,7 +786,7 @@ again:;
 	      argv[2]=PrsAsmImm(cc,&imodes[2],'X');
 	      LexExpect(cc,']'); //]
 	      break;
-	    case 220 ... 245:
+	    case 220 ... 245:
 	      argv[0]=PrsAsmReg(cc,specific);
 	      LexExpect(cc,',');
 	      LexExpect(cc,'['); //[
