@@ -1,29 +1,22 @@
 .text	
-.global LBts
-.global LBtr
-.global LBtc
-.global Bt
-.global Btr
-.global Btc
-.global Bts
-.global Misc_Caller
-.global Misc_BP
-# For MacOS
-.global _LBts
-.global _LBtr
-.global _LBtc
-.global _Bt
-.global _Btr
-.global _Btc
-.global _Bts
-.global _Misc_Caller
-.global _Misc_BP
-_Misc_BP:
-Misc_BP:
+#ifdef __APPLE__ // https://ariadne.space/2023/04/12/writing-portable-arm-assembly.html
+#define PROC(p) _##p
+#else
+#define PROC(p) p
+#endif
+.global PROC(LBts)
+.global PROC(LBtr)
+.global PROC(LBtc)
+.global PROC(Bt)
+.global PROC(Btr)
+.global PROC(Btc)
+.global PROC(Bts)
+.global PROC(Misc_Caller)
+.global PROC(Misc_BP)
+PROC(Misc_BP):
   mov x0,x29
   ret
-_Bt:
-Bt:
+PROC(Bt):
   lsr x3,x1,3
   and x1,x1,0x7
   mov x2,1
@@ -33,8 +26,7 @@ Bt:
   tst w3,w1
   cset x0, ne
   ret
-_LBts:
-LBts:
+PROC(LBts):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -49,8 +41,7 @@ LBts:
   cbnz w4,.L_Bts_0
   mov x0,x5
   ret
-_Btc:
-Btc:
+PROC(Btc):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -63,8 +54,7 @@ Btc:
   strb w3,[x0]
   mov x0,x5
   ret
-_Bts:
-Bts:
+PROC(Bts):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -77,8 +67,7 @@ Bts:
   strb w3,[x0]
   mov x0,x5
   ret
-_Btr:
-Btr:
+PROC(Btr):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -93,8 +82,7 @@ Btr:
   mov x0,x5
   ret
 
-_LBtc:
-LBtc:
+PROC(LBtc):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -110,8 +98,7 @@ LBtc:
   mov x0,x5
   ret
 
-_LBtr:
-LBtr:
+PROC(LBtr):
   lsr x3,x1,3
   and x1,x1,0x7
   add x0,x3,x0
@@ -127,8 +114,7 @@ LBtr:
   cbnz w4,.L_Btr_0
   mov x0,x5
   ret
-_Misc_Caller:
-Misc_Caller:
+PROC(Misc_Caller):
   add x1,x0,1
   mov x2,x29
 .L_Caller_0:
