@@ -64,7 +64,7 @@ extern int64_t user_ev_num;
 int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_cmd_line2 = NULL, *arg_fork, *arg_no_debug,
-                               *arg_grab, *arg_fast_fail;
+                               *arg_grab, *arg_fast_fail, *arg_s;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
@@ -1922,6 +1922,7 @@ int main(int argc, char **argv) {
       arg_boot_files =
           arg_filen(NULL, NULL, "Command Line Boot files", 0, 100000,
                     "Files to run on  boot in command line mode."),
+      arg_s = arg_lit0("s", "sound", "sound in cmdline"),
       arg_fast_fail =
           arg_lit0("F", "fast-fail",
                    "Instantly fail on signals(like segmentation faults)."),
@@ -2048,8 +2049,8 @@ int main(int argc, char **argv) {
   }
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
-  InitSound();
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
+    InitSound();
     if (0 > SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
       char *p = SDL_GetError();
       if (!p)
@@ -2064,6 +2065,8 @@ int main(int argc, char **argv) {
     SpawnCore(&Boot, argv[0], 0);
     InputLoop(&quit);
   } else {
+    if (arg_s->count)
+      InitSound();
     Boot(argv[0]);
   }
   AiwniosBye(); // My RISCV(and presumably others) dont like atexit with
