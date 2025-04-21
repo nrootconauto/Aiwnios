@@ -208,7 +208,7 @@ U0 TaskDerivedValsUpdate(CTask *task=NULL,Bool update_z_buf=TRUE)
   if (!task) task=Fs;
   Bool bl=BreakLock;
   while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-    ;//TODO PAUSE
+    PAUSE
   WinDerivedValsUpdate(task);
   if (fp_update_ctrls)
     (*fp_update_ctrls)(task);
@@ -407,9 +407,9 @@ I64 TaskEnd()
     LBts(&sys_semas[SEMA_UPDATE_WIN_Z_BUF],0);
   
   while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-    ; //TODO atomic LOCK
+    PAUSE
   while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))
-    ; //TODO atomic LOCK
+    PAUSE
   JobQueDel(&task->srv_ctrl.next_waiting);
   JobQueDel(&task->srv_ctrl.next_done);
   
@@ -455,7 +455,7 @@ U0 TaskKillDying()
   CTaskDying *task,*task1;
   if (Gs->kill_jiffy<cnts.jiffies) {//Avoid doing as many lock operations.
     while (LBts(&(Gs->cpu_flags),CPUf_DYING_TASK_QUE))
-      ; //TODO atomic lock
+      PAUSE
     task=Gs->next_dying;
     while (task!=&(Gs->next_dying) && task->wake_jiffy<__GetTicks) {
       task1=task->next;

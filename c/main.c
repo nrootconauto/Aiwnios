@@ -1804,6 +1804,7 @@ static void Boot() {
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
   "#define TEXT_MODE 1\n"                                                      \
   "#define BOOTSTRAP 1\n"                                                      \
+  "#define PAUSE ;\n" \
   "#define HOST_ABI '%s'\n"                                                    \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)

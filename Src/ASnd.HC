@@ -99,7 +99,7 @@ public F64 Beat()
   Bool bl=BreakLock;
   if (mp_cnt>1)
     while (LBts(&sys_semas[SEMA_TMBEAT],0))
-      ; //TODO atomic
+      PAUSE
   cur_tM=tM;
   res=music.last_Beat;
   if (music.tempo)
@@ -294,7 +294,7 @@ U0 MusicSettingsRst()
   bl=BreakLock;
   if (mp_cnt>1)
     while (LBts(&sys_semas[SEMA_TMBEAT],0))
-      ;
+      PAUSE
   music.last_tM=tM;
   music.last_Beat=0.0;
   if(bl) BreakUnlock;

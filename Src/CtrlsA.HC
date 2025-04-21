@@ -66,7 +66,7 @@ U0 DrawCtrls(CTask *task)
 	if (!Bt(&task->display_flags,DISPLAYf_NO_BORDER)) {
 	  bl=BreakLock;
 	  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-	    ; //TODO atomic
+	    PAUSE
 
 	  task->win_left--; //Allow drawing on border
 	  task->win_right++;
@@ -82,7 +82,7 @@ U0 DrawCtrls(CTask *task)
 
 	  bl=BreakLock;
 	  while (LBts(&task->task_flags,TASKf_TASK_LOCK))
-	    ; //TODO PAUSE
+	    PAUSE
 
 	  task->win_left++;
 	  task->win_right--;

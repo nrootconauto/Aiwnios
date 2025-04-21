@@ -145,7 +145,7 @@ U32 *AsmOpc(CArm64Opc *opc,U32 *ptr,I64 shmod,I64 *argv) {
     case 16 ... 23:
       ret=Arm64SetValue(opc,ret,ARM64_OP_IMM16,argv[0]);
       break;
-    case 26:
+    case 26: case 1420:
       ret|=argv[0]<<5&127;
       break;
     case 36 ... 40:
@@ -959,6 +959,7 @@ again:;
 	      LexExpect(cc,',');
 	      argv[1]=PrsAsmReg(cc,specific);
 	      break;
+	    case 1420:break;
 	    default:
 	      LexExcept(cc,"Un-implemented Opcode at ");
 	  }
@@ -1091,6 +1092,11 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   AsmResolvePatches(cc,blob->asm_patches);
 //If our relocations are not realtive,add the ptr to result
   patch=blob->asm_patches->next;
+  if(cc->flags&CCF_AOT_COMPILE) {
+    if(patch!=blob->asm_patches)
+      LexExcept(cc,"AOT assembler not implemented yet for relocs");
+    return;
+  }
   while(patch!=blob->asm_patches) {
     next_patch=patch->next;
     rel=FALSE;
@@ -1148,8 +1154,6 @@ U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b) {
 
 
 CAiwniosAOTBlob *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0) {
-  if(cc->flags&CCF_AOT_COMPILE)
-    LexExcept(cc,"AOT assembler not implemented yet");
   Bool one_ins=FALSE;
   if(flags&CMPF_ONE_ASM_INS) {
     one_ins=TRUE;

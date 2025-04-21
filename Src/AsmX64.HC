@@ -1204,6 +1204,11 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   AsmResolvePatches(cc,blob->asm_patches);
 //If our relocations are not realtive,add the ptr to result
   patch=blob->asm_patches->next;
+  if(cc->flags&CCF_AOT_COMPILE) {
+    if(patch!=blob->asm_patches)
+      LexExcept(cc,"AOT assembler not implemented yet for relocs");
+    return;
+  }
   while(patch!=blob->asm_patches) {
     next_patch=patch->next;
     if(patch->imm) {
@@ -1247,8 +1252,6 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   }
 }
 CAiwniosAOTBlob *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0) {
-  if(cc->flags&CCF_AOT_COMPILE)
-    LexExcept(cc,"AOT assembler not implemented yet");
   Bool one_ins=FALSE;
   if(flags&CMPF_ONE_ASM_INS) {
     one_ins=TRUE;

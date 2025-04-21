@@ -13,8 +13,8 @@ U0 CoreAPSethTask()
       //Messages will return a JOBT_DONE(0) from a JobRunOne
       //Seth task's dont need messages so i will flush them
       FlushMsgs;
-      while (LBts(&ctrl->flags,JOBCf_LOCKED))
-        ; //TODO atomic lock
+      do PAUSE
+      while (LBts(&ctrl->flags,JOBCf_LOCKED));
     } while (ctrl->next_waiting!=ctrl && JobRunOne(0,ctrl));
     if(bl)
       BreakUnlock;
