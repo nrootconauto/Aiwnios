@@ -184,6 +184,14 @@ TaskInit(adam_task,0);
 #include "UAsmX64.HC"
 #include "AsmX64.HC"
 #endif
+#ifdef TARGET_RISCV
+#include "UAsmRiscV.HC"
+#include "AsmRISCV.HC"
+#endif
+#ifdef TARGET_AARCH64
+#include "UAsmARM64.HC"
+#include "AsmARM64.HC"
+#endif
 #include "KUtils.HC"
 #include "KMain.HC"
 U0 SCRoutine() {
@@ -217,7 +225,7 @@ U0 InitCPUs() {
     c->idle_factor=0.01;
     QueInit(&c->next_dying);
     SpawnCore(&SCRoutine,c,idx);
-    do __Sleep(2);
+    do PAUSE
     while (!Bt(&c->ready,0));
   }
  }
@@ -368,14 +376,6 @@ U8 *body=
 #include "Merge.HC" 
 #include "DocUtils.HC" 
 #include "MakeISOFile.HC";
-#ifdef TARGET_AARCH64
-#include "UAsmARM64.HC"
-#include "AsmARM64.HC"
-#endif
-#ifdef TARGET_RISCV
-#include "UAsmRiscV.HC"
-#include "AsmRISCV.HC"
-#endif
 if(!IsCmdLineMode&&!IsCmdLineMode2)
   DrawWindowNew;
 #ifdef GEN_HEADERS

@@ -460,7 +460,7 @@ indir:
   Free(am);
   return NULL;
 }
-CHashTable *riscv_opcs=adam_task->hash_table;
+CHashTable *riscv_opcs=cmp.asm_hash;
 CRiscVOpcode *AO(U8 *name,U32 o,U64 f3,U64 f7,U64 type,U64 r2_style=0) {
   CRiscVOpcode *opc=CAlloc(sizeof CRiscVOpcode);
   opc->str=StrNew(name);
