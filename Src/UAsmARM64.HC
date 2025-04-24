@@ -1,4 +1,3 @@
-#ifndef BOOTSTRAP
 I64 Sext(I64 v,I64 bits) {
   if(v&(1<<(bits-1)))
     return -(1<<bits-v);
@@ -174,6 +173,10 @@ U8 *ReadAFeild(U8 **_ptr) {
 }
 static CArm64Opc **arm64_opcodes_flat;
 U0 LoadOpcodes() {
+#ifdef BOOTSTRAP
+  //Heres the Donal Trump deal. This mounts the drives so aiwnios can read the file
+  KMain;
+#endif
   if(!FileFind("/Src/AArch64_ops.csv")) {
     return;
   }
@@ -212,7 +215,7 @@ U0 LoadOpcodes() {
     append=ReadAFeild(&ln);
     opc=CAlloc(sizeof CArm64Opc);
     opc->num=num;
-    opc->str=MStrPrint("%s",name);
+    opc->str=StrNew(name);
     opc->type=HTT_OPCODE;
     *store_at++=opc;
     HashAdd(opc,cmp.asm_hash);
@@ -1008,4 +1011,3 @@ GenTests(559,705);
 //Pass
 GenTests(707,714);
 */
-#endif

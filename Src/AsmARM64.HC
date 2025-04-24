@@ -1022,7 +1022,7 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
         local=FALSE;
       }
       if(!tab) {
-	goto do_it;
+	goto nxt;
       }
       cur=tab;
       while(cur) {
@@ -1076,7 +1076,7 @@ nxt:;
 }
 U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   CToFill *to_fill=blob->to_fill,*tmp_to_fill;
-  CAsmPatch *patch,*next_patch;
+  CAsmPatch *patch,*next_patch,*tmp;
   Bool rel;
   I64 tmp,sz;
   CArm64Opc *opc,a;
@@ -1093,8 +1093,18 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
 //If our relocations are not realtive,add the ptr to result
   patch=blob->asm_patches->next;
   if(cc->flags&CCF_AOT_COMPILE) {
-    if(patch!=blob->asm_patches)
-      LexExcept(cc,"AOT assembler not implemented yet for relocs");
+    tmp=patch;
+    while(tmp!=blob->asm_patches) {
+      switch(tmp->opcode->num) {//Synchronized with the switch below
+      case 6 ... 9:
+      case 11 ... 12:
+      case 14:
+      case 41 ... 43:
+      case 79 ... 85:
+        LexExcept(cc,"AOT assembler not implemented yet for relocs");
+      }
+      tmp=tmp->next;
+    }
     return;
   }
   while(patch!=blob->asm_patches) {
@@ -1103,7 +1113,7 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
     for(a=0;a!=16;++a) {
       amode=&patch->imodes[a];
       if(opc=patch->opcode) {
-        switch(opc->num) {
+        switch(opc->num) {//Synchronized with the switch above
 	  case 6 ... 9:
 	  case 14:
 	  case 79 ... 85:

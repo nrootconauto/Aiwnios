@@ -1797,6 +1797,10 @@ static void Boot() {
     FuzzTest2();
     FuzzTest3();*/
   if (arg_bootstrap_bin->count) {
+    char const *extra = "";
+#if __OpenBSD + __NetBSD__ > 0
+    extra = "#define __OpenBSD__";
+#endif
 #define BOOTSTRAP_FMT                                                          \
   "#define TARGET_%s 1\n"                                                      \
   "#define lastclass \"U8\"\n"                                                 \
@@ -1804,8 +1808,9 @@ static void Boot() {
   "#define IMPORT_AIWNIOS_SYMS 1\n"                                            \
   "#define TEXT_MODE 1\n"                                                      \
   "#define BOOTSTRAP 1\n"                                                      \
-  "#define PAUSE ;\n" \
+  "#define PAUSE ;\n" /*Bootstrap compiler doesnt do ASM*/                     \
   "#define HOST_ABI '%s'\n"                                                    \
+  "%s\n" \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(__aarch64__) || defined(_M_ARM64)
 #  if defined(__APPLE__)
@@ -1813,9 +1818,9 @@ static void Boot() {
 #  else
     host_abi = "SysV";
 #  endif
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64", host_abi);
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "AARCH64", host_abi, extra);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "AARCH64", host_abi, extra);
 #elif defined(__x86_64__)
 #  ifdef _WIN32
     host_abi = "Win";
@@ -1824,14 +1829,14 @@ static void Boot() {
 #  else
     host_abi = "SysV";
 #  endif
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi);
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "X86", host_abi, extra);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "X86", host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "X86", host_abi, extra);
 #elif defined(__riscv) || defined(__riscv__)
     host_abi = "SysV";
-    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV", host_abi);
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "RISCV", host_abi, extra);
     char buf[len + 1];
-    sprintf(buf, BOOTSTRAP_FMT, "RISCV", host_abi);
+    sprintf(buf, BOOTSTRAP_FMT, "RISCV", host_abi, extra);
 #else
 #  error "Arch not supported"
 #endif
