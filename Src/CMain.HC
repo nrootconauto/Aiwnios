@@ -235,8 +235,10 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
   cc->opts|=1<<OPTf_GLBLS_ON_DATA_HEAP;
   #endif
   #ifdef TARGET_X86
-  //For OpenBSD
+  #ifdef __OpenBSD__
+  //For OpenBSD/NetBSD
   cc->opts|=1<<OPTf_GLBLS_ON_DATA_HEAP;
+  #endif
   #endif
   QueIns(cc,Fs->last_cc);
   res=CmpJoin(cc,CMPF_LEX_FIRST,map_name,mapfile_drv_let);

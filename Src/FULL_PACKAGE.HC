@@ -188,12 +188,14 @@ TaskInit(adam_task,0);
 #include "UAsmRiscV.HC"
 #include "AsmRISCV.HC"
 #endif
+#include "KUtils.HC"
+#include "KMain.HC"
+//IMPORTANT:DO NOT CHANGE ORDER OF KMAIN WITH ARM
 #ifdef TARGET_AARCH64
 #include "UAsmARM64.HC"
 #include "AsmARM64.HC"
 #endif
-#include "KUtils.HC"
-#include "KMain.HC"
+
 U0 SCRoutine() {
   CTask *self=CAlloc(sizeof CTask,adam_task);
   SetFs(self);

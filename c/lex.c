@@ -276,13 +276,14 @@ re_enter:;
   case ',':
     return lex->cur_tok = ',';
     break;
-  case ' ':
-  case '\t':
   case '\n':
-    if ((lex->flags & LEXF_UNTIL_NEWLINE) && chr1 == '\n') {
+    if (lex->flags & LEXF_UNTIL_NEWLINE) {
       lex->flags &= ~LEXF_UNTIL_NEWLINE;
       return lex->cur_tok = '\n';
     }
+  case 0x1f/*^_*/:
+  case ' ':
+  case '\t':
     goto re_enter;
     break;
   case '0' ... '9':
