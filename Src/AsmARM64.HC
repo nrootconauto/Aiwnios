@@ -1076,7 +1076,7 @@ nxt:;
 }
 U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   CToFill *to_fill=blob->to_fill,*tmp_to_fill;
-  CAsmPatch *patch,*next_patch,*tmp;
+  CAsmPatch *patch,*next_patch,*tmpp;
   Bool rel;
   I64 tmp,sz;
   CArm64Opc *opc,a;
@@ -1093,9 +1093,9 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
 //If our relocations are not realtive,add the ptr to result
   patch=blob->asm_patches->next;
   if(cc->flags&CCF_AOT_COMPILE) {
-    tmp=patch;
-    while(tmp!=blob->asm_patches) {
-      switch(tmp->opcode->num) {//Synchronized with the switch below
+    tmpp=patch;
+    while(tmpp!=blob->asm_patches) {
+      switch(tmpp->opcode->num) {//Synchronized with the switch below
       case 6 ... 9:
       case 11 ... 12:
       case 14:
@@ -1103,7 +1103,7 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
       case 79 ... 85:
         LexExcept(cc,"AOT assembler not implemented yet for relocs");
       }
-      tmp=tmp->next;
+      tmpp=tmpp->next;
     }
     return;
   }
