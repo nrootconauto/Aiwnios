@@ -2932,7 +2932,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
         if (b) {
           if (IsRBPDeref(b) && idx) {
-			  if(!(idx->type==IC_IREG&&idx->integer==13))
+			  if(idx->type==IC_IREG&&idx->integer!=13)
             if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 >= 0) {
           CRPN *next = b->base.next;
 			  i -= next->integer;
