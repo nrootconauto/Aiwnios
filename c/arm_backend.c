@@ -286,19 +286,19 @@ static void SetKeepTmps(CRPN *rpn) {
   abinop:
     left = ICArgN(rpn, 1);
     right = ICArgN(rpn, 0);
-    left->res.keep_in_tmp=0;
-    right->res.keep_in_tmp=0;
-    right->tmp_res.mode=0; //Default to unused  
-    left->tmp_res.mode=0;
+    left->res.keep_in_tmp = 0;
+    right->res.keep_in_tmp = 0;
+    right->tmp_res.mode = 0; // Default to unused
+    left->tmp_res.mode = 0;
     /* DUMB hack
      *  assigning into a IC_DEREF bypasses the deref(uses deref->next)
      *  MAKE SURE deref->next is not a temporarry
      */
-    if(left->type==IC_DEREF) {
-		CRPN *arg=left->base.next;
-		arg->res.keep_in_tmp=0;
-		arg->tmp_res.mode=0;
-	}
+    if (left->type == IC_DEREF) {
+      CRPN *arg = left->base.next;
+      arg->res.keep_in_tmp = 0;
+      arg->tmp_res.mode = 0;
+    }
     if (left->type == IC_IREG || left->type == IC_FREG ||
         left->type == IC_BASE_PTR) {
       // Only act on accumulator for now in "safe" spots.
@@ -959,7 +959,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(ARM_fmovI64F64(i, i));                                \
       }                                                                        \
       \		 
-                                                                                                                                                                                                                                                                                      \
+                                                                                                                                                                                                                                                                                                                                                           \
     }                                                                          \
   }
   // Arm mandates 16 byte align
@@ -2842,12 +2842,12 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     cctrl->backend_user_data6 = 0;
   }
   switch (rpn->type) {
-	  case IC_RAW_BYTES:
+  case IC_RAW_BYTES:
     if (cctrl->code_ctrl->final_pass) {
       memcpy(bin + code_off, rpn->raw_bytes, rpn->length);
     }
     code_off += rpn->length;
-break;
+    break;
 
     break;
   case IC_LOCK:
@@ -3178,21 +3178,23 @@ break;
   case IC_POS:
     BACKEND_UNOP(ARM_fmovReg, ARM_movRegX);
     break;
-	case IC_SQR:
+  case IC_SQR:
     next = ICArgN(rpn, 0);
     code_off = __OptPassFinal(cctrl, next, bin, code_off);
-    code_off=PutICArgIntoReg(cctrl,&next->res,RT_F64,0,bin,code_off); //Fallback to reg 0
-    if(rpn->res.mode==MD_REG) {
-		AIWNIOS_ADD_CODE(ARM_fmulReg(rpn->res.reg,next->res.reg,next->res.reg));
-	} else {
-		tmp.mode=MD_REG;
-		tmp.raw_type=RT_F64;
-		tmp.reg=MFR(cctrl,0); //MAKE SURE TO MARK THE VARIABLE AS modified
-		AIWNIOS_ADD_CODE(ARM_fmulReg(tmp.reg,next->res.reg,next->res.reg));
-		code_off=ICMov(cctrl,&rpn->res,&tmp,bin,code_off);//Move tmp into result.
-	}
+    code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 0, bin,
+                               code_off); // Fallback to reg 0
+    if (rpn->res.mode == MD_REG) {
+      AIWNIOS_ADD_CODE(ARM_fmulReg(rpn->res.reg, next->res.reg, next->res.reg));
+    } else {
+      tmp.mode = MD_REG;
+      tmp.raw_type = RT_F64;
+      tmp.reg = MFR(cctrl, 0); // MAKE SURE TO MARK THE VARIABLE AS modified
+      AIWNIOS_ADD_CODE(ARM_fmulReg(tmp.reg, next->res.reg, next->res.reg));
+      code_off =
+          ICMov(cctrl, &rpn->res, &tmp, bin, code_off); // Move tmp into result.
+    }
     break;
-      case IC_NAME:
+  case IC_NAME:
     abort();
     break;
   case IC_STR:
@@ -3434,7 +3436,8 @@ break;
       shift_cnt = ConstVal(next3);                                                                                                                           \
       shift_op##shift                                                                                                                                        \
           : if (shift_cnt < (1 << 6) &&                                                                                                                      \
-                !(next->res.keep_in_tmp || next4->res.keep_in_tmp)&&!SpillsTmpRegs(next)) {                                                                                        \
+                !(next->res.keep_in_tmp || next4->res.keep_in_tmp) &&                                                                                        \
+                !SpillsTmpRegs(next)) {                                                                                                                      \
         if (!(next4->res.mode == __MD_ARM_SHIFT || next->res                                                                                                 \
                                                            .mode == __MD_ARM_SHIFT) /* Things get weird(shift and shift means lots of registers mutati)*/) { \
           code_off = __OptPassFinal(cctrl, next4, bin, code_off);                                                                                            \
@@ -5225,7 +5228,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         code_off += (misc->hi - misc->lo + 1) * 8;
         goto fill_in_refs;
       case CMT_LABEL:
-        if (run&&misc->patch_addr)
+        if (run && misc->patch_addr)
           *misc->patch_addr = MemGetExecPtr(misc->addr);
         if (misc != cctrl->statics_label) // Filled in later
           goto fill_in_refs;
