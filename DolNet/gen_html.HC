@@ -59,6 +59,12 @@ found:
     con->response_code=200;
     WriteNBytes(stream,NULL,f,len);
     con->cache_age=24*60*60*3; //3 days
+    if(con->want_range_start<=0) {
+      con->want_range_start=0;
+    }
+    if(con->want_range_end<=0) {
+      con->want_range_end=len;
+    }
     Free(f);
   } else if(StrIMatch("Videos",url->abs_path)) {
     Free(link);

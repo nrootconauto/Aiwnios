@@ -264,8 +264,11 @@ U0 NetWriteWErr(I64 s,U8 *data,I64 len) {
   while(len>0) {
     if(NetPollForHangup(1,&s)==0)
       goto fail;
-    w=NetWrite(s,data,MinI64(len,0x10000*4));
-    if(w<=0) {
+    if(NetPollForWrite(1,&s)==0)
+      w=NetWrite(s,data,MinI64(len,0x10000*4));
+    else 
+      w=0;
+    if(w<0) {
 fail:;
       LBts(&con->is_dead,0);
       Exit;
@@ -315,6 +318,9 @@ U0 SendRequest(I64 s) {
 range:
     tmp=MStrPrint(
 	"Content-Range: bytes %d-%d/%d\x0d\n",st,en-1,con->response_length);
+    NetWriteWErr(s,tmp,StrLen(tmp));
+    Free(tmp);
+    tmp=MStrPrint("Content-Length: %d\x0d\n",en-st);
     NetWriteWErr(s,tmp,StrLen(tmp));
     Free(tmp);
     NetWriteWErr(s,"\x0d\n",2);
@@ -388,7 +394,6 @@ U0 ParseRequest(CConnection *con) {
     case HTTP_POST:
       if(con->server->post) {
         (*con->server->post)(con->server,stream,url,&req,con->post_data);
-//        NetWrite(stream,"\x0d\n",2);
       }
       break;
   }
@@ -441,7 +446,7 @@ found:
   }
   MemCpy(con->buffer_ptr,data,len);
   con->buffer_len+=len;
-  con->buffer_ptr[con->buffer_len]=0;
+  con->buffer_ptr[len]=0;
 loop:
   if(ptr=LookForLine(con->buffer_ptr,con->buffer_len)) {
      len2=ptr-con->buffer_ptr;
@@ -458,12 +463,11 @@ loop:
     len=con->buffer_len;
     if(len)
       en=SReadLine(s,con->buffer_ptr,len,ut);
-	con->buffer_len-=len;
+    con->buffer_len-=len;
     con->buffer_ptr+=len;
   }
 }
 Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
-//PrintI(data,len);
   static I64 spawn_at=0;
   CConnection *first,*con,*con2;
   CHashGeneric *hash;
@@ -471,7 +475,7 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
   U8 *fb,*http2,*t1,*t2,*odata;
   con=ut->con;
   buf=MAlloc(len+1,con->hc),buf2=MAlloc(len+1,con->hc);
-  if(len==2) con->state.u8[0]=CON_S_BLANK_LINE;
+  if(len==2) con->state.u8[0]=CON_S_BLANK_LINE;
   if(con->state.u8[0]==CON_S_METHOD&&!StrNICmp(data,"GET",3)) {
     con->method.u8[0]=HTTP_GET;
     t1=MStrPrint("http://potato.com/%s",Trim(SkipWhitespace(data+3)));
@@ -501,8 +505,10 @@ Bool SReadLine(I64 s,U8 *data,I64 len,CUniqueToken *ut) {
        }
        if(*t1=='-') {
 	 t1++;
-	 if(Bt(char_bmp_dec_numeric,*t1))
+	 if(Bt(char_bmp_dec_numeric,*t1)) {
 	   con->want_range_end=Str2I64(t1,10);
+
+         }
        }
     }
   } else if(!StrNICmp(data,"Host",StrLen("Host"))) {
@@ -710,6 +716,7 @@ U0 CloseCallback(I64 s,CUniqueToken *ut) {
   if(con->task)
     Kill(con->task,TRUE); //Wait for kill
   con->task=NULL;
+  ut->con=NULL;
 //All memory will be Free'd on killing con->hc
   Free(con->session_cookie);
   NetClose(con->stream);
@@ -724,8 +731,9 @@ U0 ServeExit() {
   CServer *server=Fs->user_data;
   I64 idx;
   for(idx=0;idx!=BACKLOG;idx++) {
-    if(fds[idx]!=-1)
+    if(fds[idx]!=-1) {
       CloseCallback(fds[idx],&unique_tokens[idx]);
+    }
   }
   NetClose(server->s_sock);
   Exit;

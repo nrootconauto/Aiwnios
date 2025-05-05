@@ -7,7 +7,7 @@ Cd(__DIR__);;
 #define SERVER_PORT 8080
 #define SERVER_RAW_PREFIX "/raw/"
 #define SERVER_ISOC_PREFIX "/raw_dir/"
-#define MAX_UPLOAD 10*1024*1024
+#define MAX_UPLOAD 100*1024*1024
 
 U0 ServerYield() {
   I64 to=FramePtr("TIMEOUT");
