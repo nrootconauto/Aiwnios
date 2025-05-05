@@ -63,7 +63,7 @@ found:
       con->want_range_start=0;
     }
     if(con->want_range_end<=0) {
-      con->want_range_end=len;
+      con->want_range_end=ClampI64(con->want_range_start+10*1024*1024,con->want_range_start,len);
     }
     Free(f);
   } else if(StrIMatch("Videos",url->abs_path)) {
