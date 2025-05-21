@@ -377,7 +377,10 @@ U8 *body=
 #include "Diff.HC" 
 #include "Merge.HC" 
 #include "DocUtils.HC" 
-#include "MakeISOFile.HC";
+#include "MakeISOFile.HC"
+#include "LineRep.HC"
+#include "LinkChk.HC"
+#include "StrUtils.HC"
 if(!IsCmdLineMode&&!IsCmdLineMode2)
   DrawWindowNew;
 #ifdef GEN_HEADERS
