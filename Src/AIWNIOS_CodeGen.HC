@@ -886,7 +886,7 @@ re_number:;
 	    mv[tmp].addrof_cnt++;
 	    mv[tmp].score=0;
 	    mv[tmp].m->reg=REG_NONE;
-	  } else if(cc->flags&CCF_NO_REG_OPT) {
+	  } else if(cc->flags&CCF_NO_REG_OPT||GetOption(OPTf_BYTE_CODE)) {
 	    mv[tmp].score=0;
 	    mv[tmp].m->reg=REG_NONE;
 	  } else if(!mv[tmp].addrof_cnt)
@@ -1291,7 +1291,7 @@ next_ic:
 //
 // Turns my CRPN from the parser into the IC for the C side
 //
-U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info) {
+U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info,Bool byte_code=FALSE) {
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
   CMemberLst *mlst,*mlst2;
@@ -1392,7 +1392,7 @@ skip_convert:;
   //  sure arent getting the address of said location
   //
   if(cc->htc.fun) {
-    if(GetOption(OPTf_NO_REG_VAR)) {
+    if(GetOption(OPTf_NO_REG_VAR)||GetOption(OPTf_BYTE_CODE)) {
       mlst=cc->htc.fun->member_lst_and_root;
       while(mlst) {
         mlst->reg=REG_NONE;
@@ -2060,7 +2060,11 @@ break;case IC_ASM:
     aiwnios_dbg_info=CAlloc(8*(reported_max_ln-reported_min_ln+2));
   } else 
 	aiwnios_dbg_info=NULL;
-  machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
+  if(byte_code)
+    machine_code=BCCompile(acc,&idx,aiwnios_dbg_info,Fs->data_heap);
+  else
+    machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
+  
 
   if(cc->pass_trace&&cc->htc.fun) {
      U8 *dumb_dump=NULL;
@@ -2242,7 +2246,14 @@ U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
   CRPN *rpn=cc->coc.coc_head.next;
   if(rpn->type==IC_RET&&_type)
     *_type=AssignRawTypeToNode(rpn->next)->raw_type;
-  U8 *mc=AiwniosCompile(cc,_code_size,_dbg);
+  U8 *mc=AiwniosCompile(cc,_code_size,_dbg,FALSE);
+  return mc;
+}
+U8 *COCBCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
+  CRPN *rpn=cc->coc.coc_head.next;
+  if(rpn->type==IC_RET&&_type)
+    *_type=AssignRawTypeToNode(rpn->next)->raw_type;
+  U8 *mc=AiwniosCompile(cc,_code_size,_dbg,TRUE);
   return mc;
 }
 

@@ -96,6 +96,7 @@ typedef struct CHashClass {
 typedef struct CHashExport {
   CHash base;
   char *val;
+  char *oval;
 } CHashExport;
 
 typedef struct CHashFun {
@@ -104,6 +105,7 @@ typedef struct CHashFun {
   CHashClass *return_class;
   int64_t argc;
   void *fun_ptr;
+  void *orig_fun_ptr;
 } CHashFun;
 typedef struct CHashGlblVar {
   CHash base;

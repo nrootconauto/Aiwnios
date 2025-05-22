@@ -13,6 +13,7 @@
 #include "c/aiwn_sock.h"
 #include "c/aiwn_tui.h"
 #include "c/aiwn_windows.h"
+#include "c/aiwn_bytecode.h"
 #include "isocline.h"
 #include <SDL.h>
 #include <assert.h>
@@ -109,6 +110,7 @@ static void PrsAddSymbol(char *name, void *ptr, int64_t arity) {
 static void PrsAddSymbolNaked(char *name, void *ptr, int64_t arity) {
   PrsBindCSymbolNaked(name, ptr, arity);
 }
+
 static void FuzzTest1() {
   int64_t i, i2, o;
   char tf[BUFSIZ];
@@ -1369,6 +1371,27 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
   NetUDPAddrDel(stk[0]);
 }
 
+extern char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
+              CHeapCtrl *heap);
+static int64_t STK_BCCompile(int64_t *stk) {
+	return (int64_t)CompileBC((void*)stk[0],(void*)stk[1],(void*)stk[2],(void*)stk[3]);
+}
+static int64_t STK_BCCtxNew(int64_t *stk) {
+	return (int64_t)ABCStateNew((void*)stk[0],(void*)stk[1],stk[2],(void*)stk[3]);
+}
+static int64_t STK_BCCtxDel(int64_t *stk) {
+	ABCStateDel((void*)stk);
+	return 0;
+}
+
+static int64_t STK_BCDel(int64_t *stk) {
+	AiwnBCDel((void*)stk);
+	return 0;
+}
+static int64_t STK_BCRun(int64_t *stk) {
+	return ABCRun((void*)stk[0]);
+}
+
 int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
@@ -1437,6 +1460,11 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
+    PrsAddSymbol("BCCompile",&STK_BCCompile,4);
+    PrsAddSymbol("BCCtxDel",&STK_BCCtxDel,1);
+    PrsAddSymbol("BCCtxNew",&STK_BCCtxNew,4);
+	PrsAddSymbol("BCRun",&STK_BCRun,1);
+	PrsAddSymbol("BCDel",&STK_BCRun,1);
     PrsAddSymbol("DolDocDumpIR", STK_DolDocDumpIR, 3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);

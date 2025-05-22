@@ -26,6 +26,7 @@ set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/socket.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sound.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ulock.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/w_bytecode.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows.c")
 
 if (ARCH STREQUAL "riscv64")

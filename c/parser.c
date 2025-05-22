@@ -4382,6 +4382,7 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
             },
         .val =
             naked ? GenFFIBindingNaked(ptr, arity) : GenFFIBinding(ptr, arity),
+        .oval=ptr
     };
     HashAdd(exp, Fs->hash_table);
   }

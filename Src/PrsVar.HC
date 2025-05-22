@@ -70,7 +70,12 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
 	  RPNAddNew(cc,IC_RET,0,tmpc,FALSE);
 	  while(cc->aotc->rip&3)
 	    AOTStoreCodeU8(cc,0);
-	  if (machine_code=COCCompile(cc,&size,NULL,NULL)) {
+
+	  if(Bt(&cc->opts,OPTf_BYTE_CODE))
+	    machine_code=COCCompile(cc,&size,NULL,NULL);
+	  else
+	    machine_code=COCCompile(cc,&size,NULL,NULL);
+	  if (machine_code) {
 	    tmpie=CAlloc(sizeof(CAOTImportExport));
 	    tmpie->type=IET_MAIN;
 	    QueIns(tmpie,cc->aot->last_ie);
@@ -223,28 +228,32 @@ U0 PrsStaticInit(CCmpCtrl *cc,CMemberLst *tmpm,I64 pass)
     COCInit(cc);
   }
   PrsVarInit2(cc,&dst,tmpc,&tmpm->dim,tmpm->static_data_rip,
-	&tmpm->static_data,Bt(&cc->flags,CCf_AOT_COMPILE),pass,NULL);
+        &tmpm->static_data,Bt(&cc->flags,CCf_AOT_COMPILE),pass,NULL);
   if (cc->flags&CCF_AOT_COMPILE && pass==2) {
     if (cc->coc.coc_head.next!=&cc->coc.coc_head) {
       RPNAddNew(cc,IC_RET,,AssignRawTypeToNode(cc->coc.coc_head.next),FALSE);
-      //ARM likes 4byte align for instrcutions
+//ARM likes 4byte align for instrcutions
       while(cc->aotc->rip%4)
         AOTStoreCodeU8(cc,0);
-      if (machine_code=COCCompile(cc,&size,NULL,NULL)) {
-	if (pass==2) {
+      if(Bt(&cc->opts,OPTf_BYTE_CODE))
+        machine_code=COCCompile(cc,&size,NULL,NULL);
+      else
+        machine_code=COCCompile(cc,&size,NULL,NULL);
+      if (machine_code) {
+        if (pass==2) {
 	  tmpie=CAlloc(sizeof(CAOTImportExport));
 	  tmpie->type=IET_MAIN;
 	  tmpie->rip=cc->aotc->rip;
 	  QueIns(tmpie,cc->aot->last_ie);
-    for (i=0;i<size;i++)
+	  for (i=0;i<size;i++)
 	    AOTStoreCodeU8(cc,machine_code(U8*)[i]);
-	}
-	Free(machine_code);
+        }
+        Free(machine_code);
       }
     } //TODO: else del misc?
     COCPop(cc);
   }
-  
+
   cc->htc.fun=old_fun;
 }
 

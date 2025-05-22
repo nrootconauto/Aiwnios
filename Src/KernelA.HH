@@ -1529,6 +1529,7 @@ public class CAutoCompleteDictGlbls
 #define OPTf_USE_IMM64		0x25 //Not completely implemented
 #define OPTf_KEEP_RELOCATIONS 0x26 //Added by nroot,will keep the CHashImport's
 #define OPTf_BOUNDS_CHECK 0x27 //Added by nroot,Bounds checker
+#define OPTf_BYTE_CODE 0x28 //Added by nroot
 
 #define OPTF_ECHO		(1<<OPTf_ECHO)
 
@@ -5154,7 +5155,7 @@ extern I64 DelTreeDirs(CDirEntry *tmpde1);
 extern I64 DelTreeFiles(CDirEntry *tmpde1);
 extern I64 DelTree(U8 *files_find_mask,U8 *fu_flags=NULL);
 extern U0 AiwniosMakeShortJmps(CCmpCtrl *cc) ;
-extern U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info=NULL) ;
+extern U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info=NULL,Bool byte_code=FALSE) ;
 extern U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) ;
 extern U0 PrsBindCSymbol(U8 *as,U8 *fptr) ;
 extern CTask *PolyFillFs() ;
@@ -7244,3 +7245,17 @@ public extern I64 Words(U8 *files_find_mask="*",U32 *char_bmp=NULL,U8 *fu_flags=
 public extern I64 LongLines(U8 *files_find_mask="*",I64 cols=80,U8 *fu_flags=NULL);
 public extern U0 SU(U8 *files_find_mask,I64 suf_flags,U8 *fu_flags=NULL,F64 indent_scale_factor=0);
 public extern U0 S2T(U8 *files_find_mask,U8 *fu_flags=NULL);
+
+#ifdef IMPORT_AIWNIOS_SYMS
+import U8 *BCCompile(U8 *cc,I64 *res_sz,U8 **dbg_info,CHeapCtrl *);
+import U0 BCCtxDel(U8 *);
+import U8 *BCCtxNew(U8 *bc_addr,I64 *stk,I64 argc,I64 *argv);
+import I64 BCRun(U8 *bc_ctx);
+import U0 BCDel(U8 *bc);
+#else
+extern U8 *BCCompile(U8 *cc,I64 *res_sz,U8 **dbg_info,CHeapCtrl *);
+extern U0 BCCtxDel(U8 *);
+extern U8 *BCCtxNew(U8 *bc_addr,I64 *stk,I64 argc,I64 *argv);
+extern I64 BCRun(U8 *bc_ctx);
+extern U0 BCDel(U8 *bc);
+#endif

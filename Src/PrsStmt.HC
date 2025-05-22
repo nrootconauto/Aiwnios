@@ -172,24 +172,31 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
   cc->lb_leave=saved_leave_label;
   cc->htc.fun->size&=~7;
   if (cc->flags&CCF_AOT_COMPILE) {
-    //ARM likes 4byte align for instrcutions
+//ARM likes 4byte align for instrcutions
     while(cc->aotc->rip%4)
       AOTStoreCodeU8(cc,0);
     cc->htc.fun->exe_addr=cc->aotc->rip;
     cc->htc.fun->type|=HTF_EXPORT|HTF_RESOLVE;
-    r=COCCompile(cc,&size,&cc->htc.fun->dbg_info,NULL);
+    if(Bt(&cc->opts,OPTf_BYTE_CODE)) {
+      r=COCBCCompile(cc,&size,&cc->htc.fun->dbg_info,NULL);
+    } else
+      r=COCCompile(cc,&size,&cc->htc.fun->dbg_info,NULL);
     if (r) {
       j=(size+7)>>3;
       for (i=0;i<j;i++)
-	AOTStoreCodeU64(cc,r[i]);
+        AOTStoreCodeU64(cc,r[i]);
       Free(r);
     }
-    //Dont fill in relocations,but fill in short calls
+//Dont fill in relocations,but fill in short calls
     FillInShortCalls(cc); //Added by nroot
   } else {
     old_trace=LBtr(&cc->opts,OPTf_TRACE);
-    cc->htc.fun->exe_addr=COCCompile(
-	  cc,&size,&cc->htc.fun->dbg_info,NULL);
+    if(Bt(&cc->opts,OPTf_BYTE_CODE))
+      cc->htc.fun->exe_addr=COCBCCompile(
+	    cc,&size,&cc->htc.fun->dbg_info,NULL);
+    else
+      cc->htc.fun->exe_addr=COCCompile(
+	    cc,&size,&cc->htc.fun->dbg_info,NULL);
     if (old_trace) {
       LBts(&cc->opts,OPTf_TRACE);
       Un(cc->htc.fun->exe_addr,size,64);
@@ -202,15 +209,15 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
   while (tmpm) {
     if (tmpm->flags & MLF_NO_UNUSED_WARN) {
       if (tmpm->use_cnt>1&&StrCmp(tmpm->str,"_anon_")) {
-	if (!IsCmdLineMode) PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
-	      cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
-	      tmpm->str,cc->htc.fun->str);
+        if (!IsCmdLineMode) PrintWarn("Unneeded no_warn\n $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
+	        cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
+	        tmpm->str,cc->htc.fun->str);
         else PrintWarn("Unneeded no_warn '%s' in '%s' at %s\n",tmpm->str,cc->htc.fun->str,cc->lex_include_stk->full_name);
-     }
+      }
     } else if (!tmpm->use_cnt && GetOption(OPTf_WARN_UNUSED_VAR)) {
       if (!IsCmdLineMode) PrintWarn("Unused var $$LK,\"FL:%s,%d\"$$ '%s' in '%s'\n",
-	    cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
-	    tmpm->str,cc->htc.fun->str);
+	      cc->lex_include_stk->full_name,cc->lex_include_stk->line_num,
+	      tmpm->str,cc->htc.fun->str);
       else PrintWarn("Unused var '%s' in '%s' at %s\n",tmpm->str,cc->htc.fun->str,cc->lex_include_stk->full_name);
     }
     tmpm=tmpm->next;

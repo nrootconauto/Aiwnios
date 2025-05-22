@@ -1651,3 +1651,25 @@ char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   cctrl->flags = old_flags;
   return OptPassFinal(cctrl, res_sz, dbg_info, heap);
 }
+
+#include "aiwn_bytecode.h"
+char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
+              CHeapCtrl *heap) {
+  CRPN *r;
+  int64_t old_flags = cctrl->flags;
+  for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+       r = r->base.next) {
+    AssignRawTypeToNode(cctrl, r);
+  }
+  OptPassFixFunArgs(cctrl);
+  OptPassExpandPtrs(cctrl);
+  OptPassConstFold(cctrl);
+  OptPassMergeCommunitives(cctrl);
+  // OptPassDeadCodeElim(cctrl);
+  OptPassRegAlloc(cctrl);
+  OptPassRemoveUselessArith(cctrl);
+  OptPassRemoveUselessTypecasts(cctrl);
+  OptPassMergeAddressOffsets(cctrl);
+  cctrl->flags = old_flags;
+  return OptPassFinalBC(cctrl, res_sz, dbg_info, heap);
+}
