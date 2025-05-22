@@ -100,9 +100,11 @@ I64 DocWordsFile(CDoc *doc_out=NULL,U8 *filename,U32 *char_bmp)
   DocDel(doc_in);
   return res;
 }
-public I64 Words(U8 *files_find_mask="*",U32 *char_bmp=char_bmp_alpha,
+public I64 Words(U8 *files_find_mask="*",U32 *char_bmp=NULL,
 	U8 *fu_flags=NULL)
 {//Break file into list of not-unique words.
+  if(!char_bmp)
+     char_bmp=char_bmp_alpha;
   I64 fuf_flags=0,res=0;
   CDoc *doc_out=DocNew;
   CDirEntry *tmpde,*tmpde1;

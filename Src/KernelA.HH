@@ -7234,3 +7234,13 @@ class CArm64Opc:CHash {
   CArm64Operand operands[16]; 
   U8 specific;
 };
+
+public extern I64 LineRep(U8 *files_find_mask="/*",U8 *fu_flags=NULL);
+public extern I64 SizeRep(U8 *files_find_mask="/*",U8 *fu_flags=NULL);
+public extern I64 LinkChk(U8 *files_find_mask="/*",U8 *fu_flags=NULL);
+
+public extern I64 Sort(U8 *_in_name,U8 *_out_name=NULL,I64 entry_lines=1,Bool unique=FALSE);
+public extern I64 Words(U8 *files_find_mask="*",U32 *char_bmp=NULL,U8 *fu_flags=NULL);
+public extern I64 LongLines(U8 *files_find_mask="*",I64 cols=80,U8 *fu_flags=NULL);
+public extern U0 SU(U8 *files_find_mask,I64 suf_flags,U8 *fu_flags=NULL,F64 indent_scale_factor=0);
+public extern U0 S2T(U8 *files_find_mask,U8 *fu_flags=NULL);
