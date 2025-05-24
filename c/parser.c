@@ -2683,8 +2683,9 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   bin = Compile(ccmp, NULL, NULL, NULL);
   binf = (void *)bin;
   int old = SetWriteNP(1);
-  if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
+  if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64) {
     res = FFI_CALL_TOS_0(binf);
+  }
   else {
     _if.i = FFI_CALL_TOS_0(binf);
     res=_if.f;

@@ -221,6 +221,22 @@ I64 VarIRegToReg(I64 r) {return r+AIWNIOS_IREG_START;}
 I64 VarFRegToReg(I64 r) {return r+AIWNIOS_FREG_START;}
 #endif
 
+
+#ifdef TARGET_BYTECODE
+#define AIWNIOS_IREG_START 0
+#define AIWNIOS_IREG_CNT 0
+#define AIWNIOS_REG_FP 0
+#define AIWNIOS_REG_SP 0
+#define AIWNIOS_TMP_IREG_POOP 0 //Platform register,I use it as a poo poo
+#define AIWNIOS_TMP_IREG_POOP2 0 //I use it as a second poo poo ALWAYS
+#define AIWNIOS_TMP_IREG_START 0
+#define AIWNIOS_TMP_IREG_CNT 0
+#define AIWNIOS_FREG_START 0
+#define AIWNIOS_FREG_CNT 0
+#define AIWNIOS_TMP_FREG_START 0
+#define AIWNIOS_TMP_FREG_CNT 0
+#endif
+
 #ifdef TARGET_RISCV
 #define AIWNIOS_IREG_START 0
 #define AIWNIOS_FREG_START 0
@@ -520,6 +536,9 @@ I64 VarIRegToReg(I64 r)  {
 #endif
 #ifdef TARGET_BYTECODE
 I64 VarIRegToReg(I64 r)  {
+  throw('Compile');
+}
+I64 VarFRegToReg(I64 r)  {
   throw('Compile');
 }
 #endif

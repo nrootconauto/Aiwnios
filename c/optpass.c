@@ -1436,7 +1436,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       sz = mv[i].m->member_class->sz;
       sz *= mv[i].m->dim.total_cnt;
       mv[i].m->off = off;
-#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__)
+#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) || defined(USE_BYTECODE)
       // In X86_64 the base pointer above of the  stack's bottom,
       // I will move the items down by thier size so they are at the bottom
       //
@@ -1673,6 +1673,7 @@ char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   OptPassConstFold(cctrl);
   OptPassMergeCommunitives(cctrl);
   // OptPassDeadCodeElim(cctrl);
+  OptPassRegAlloc(cctrl);
   OptPassRemoveUselessArith(cctrl);
   OptPassRemoveUselessTypecasts(cctrl);
   OptPassMergeAddressOffsets(cctrl);
