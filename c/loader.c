@@ -341,7 +341,7 @@ typedef struct __attribute__((packed)) CBinFile {
   char data[];
 } CBinFile;
 
-#if defined(__x86_64__) && (__NetBSD__ + __OpenBSD__ > 0)
+#if !defined(USE_BYTECODE) && defined(__x86_64__) && (__NetBSD__ + __OpenBSD__ > 0)
 typedef char xmm __attribute__((vector_size(16), aligned(1)));
 _Static_assert('e' == 0x65);
 
@@ -397,7 +397,7 @@ char *Load(char *fbuf, int64_t size) {
   bfh = A_MALLOC(size, hc);
   memcpy(MemGetWritePtr(bfh), fbuf, size); // MemGetWritePtr(obfh) for
 
-#if defined(__x86_64__) && (__OpenBSD__ + __NetBSD__ > 0)
+#if !defined(USE_BYTECODE) && defined(__x86_64__) && (__OpenBSD__ + __NetBSD__ > 0)
   // OX86, gcc multicharacter literals are big endian
   if (bfh->bin_signature != '68XO')
     RewriteSegments(MemGetWritePtr(bfh));

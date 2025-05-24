@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 option(BUILD_HCRT "Build kernel" ON)
+option(USE_BYTECODE "Use bytecode" OFF)
+
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
   message(FATAL_ERROR "MAY NOT BUILD FROM ROOT")

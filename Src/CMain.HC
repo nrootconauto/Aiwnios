@@ -391,6 +391,9 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
     bfh->module_align_bits=tmpaot->max_align_bits;
     bfh->patch_table_offset=sizeof(CBinFile)+aot_U8s;
     bfh->file_size=size;
+#ifdef TARGET_BYTECODE
+    bfh->bin_signature='BYTC';
+#endif
 #ifdef TARGET_X86
     bfh->bin_signature='X86';
     if(HOST_ABI=='OpenBSD')

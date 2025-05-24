@@ -102,6 +102,7 @@ Bool IsSuspended(CTask *task=NULL)
 }
 I64 TaskInit(CTask *task,I64 stk_size)
 {//Returns Fs of task
+PrintI("ass",task);
   task->data_heap=HeapCtrlInit(NULL,task,0);
   task->code_heap=HeapCtrlInit(NULL,task,1);
   task->addr=task->next_task=task->last_task=
@@ -115,6 +116,7 @@ I64 TaskInit(CTask *task,I64 stk_size)
   task->next_child_task=task->last_child_task=
 	(&task->next_child_task)(U8 *)-offset(CTask.next_sibling_task);
 
+PrintI("ass",1111);
 #ifndef BOOTSTRAP
   JobCtrlInit(&task->srv_ctrl);
 #endif

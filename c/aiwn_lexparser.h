@@ -514,7 +514,20 @@ char *WhichFun(char *fptr);
 //
 // These are used by optpass
 //
-#if defined(__x86_64__)
+#if defined(USE_BYTECODE)
+#  define AIWNIOS_IREG_START 0
+#  define AIWNIOS_IREG_CNT    0
+#  define AIWNIOS_REG_FP         0
+#  define AIWNIOS_REG_SP         0
+#  define AIWNIOS_TMP_IREG_POOP  0
+#  define AIWNIOS_TMP_IREG_POOP2 0
+#  define AIWNIOS_TMP_IREG_START 0
+#  define AIWNIOS_TMP_IREG_CNT   2
+#  define AIWNIOS_FREG_START     0
+#  define AIWNIOS_TMP_FREG_START 0
+#  define AIWNIOS_TMP_FREG_CNT   0
+#  define AIWNIOS_FREG_CNT       0
+#elif defined(__x86_64__)
 enum {
   RAX = 0,
   RCX = 1,

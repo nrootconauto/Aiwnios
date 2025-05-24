@@ -1253,6 +1253,11 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
         (void *)&OptMemberVarSort);
   ireg = AIWNIOS_IREG_START;
   freg = AIWNIOS_FREG_START;
+#if defined(USE_BYTECODE)
+  for (i = cnt - 1; i >= 0; i--) {
+    mv[i].m->reg = REG_NONE;
+  }
+#else
   for (i = cnt - 1; i >= 0; i--) {
     if (mv[i].m->reg == REG_MAYBE || mv[i].m->reg == REG_ALLOC) {
       if (mv[i].m->member_class->raw_type == RT_F64) {
@@ -1380,12 +1385,14 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
 #if defined(__aarch64__) || defined(_M_ARM64)
           mv[i].m->reg = ireg++;
 #endif
+          mv[i].m->reg = REG_NONE;
         } else
           mv[i].m->reg = REG_NONE;
       } else
         mv[i].m->reg = REG_NONE;
     }
   }
+#endif
   // Time to assign the rest of the function members to the base pointer
   qsort(mv, cnt, sizeof(COptMemberVar), (void *)&OptMemberVarSortSz);
 #if defined(__riscv__) || defined(__riscv)
@@ -1666,7 +1673,6 @@ char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   OptPassConstFold(cctrl);
   OptPassMergeCommunitives(cctrl);
   // OptPassDeadCodeElim(cctrl);
-  OptPassRegAlloc(cctrl);
   OptPassRemoveUselessArith(cctrl);
   OptPassRemoveUselessTypecasts(cctrl);
   OptPassMergeAddressOffsets(cctrl);

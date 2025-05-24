@@ -1,3 +1,5 @@
+extern I64i PrintI(I64i *,I64i);
+PrintI("ass",123);
 #include "KernelA.HH"
 #ifdef BOOTSTRAP
 #define mp_cnt 1
@@ -143,32 +145,62 @@ U0 SwapI64(I64 *a,I64 *b) {
   *a=*b;
   *b=tmp;
 }
+I64 x=0;
+PrintI("ass",x++);
 #include "CQue.HC"
+PrintI("ass",++x);
 #include "KDate.HC"
+PrintI("ass",x++);
 #include "StrA.HC"
+PrintI("ass",x++);
 #include "KHashA.HC"
+PrintI("ass",x++);
 #include "KMath.HC"
+PrintI("ass",x++);
 #include "KMathB.HC"
+PrintI("ass",x++);
 #include "StrPrint.HC"
+PrintI("ass",x++);
 #include "StrA.HC"
+PrintI("ass",x++);
 #include "Sched.HC"
+PrintI("ass",x++);
 #include "Display.HC"
+PrintI("ass",x++);
 #include "KHashB.HC"
+PrintI("ass",x++);
 #include "KTask.HC"
+PrintI("ass",x++);
 #include "MultiProc.HC"
+PrintI("ass",x++);
 #include "KExcept.HC"
+PrintI("ass",x++);
 #include "Job.HC"
+PrintI("ass",x++);
 #include "KDataTypes.HC"
+PrintI("ass",x++);
 #include "Compress.HC"
+PrintI("ass",x++);
 #include "StrB.HC"
+PrintI("ass",x++);
 #include "KDefine.HC"
+PrintI("ass",x++);
 #include "StrScan.HC"
+PrintI("poo",x++);
 #include "QSort.HC"
+PrintI("poo",x++);
 #include "MakeBlkDev.HC"
+PrintI("poo2",x++);
 adam_task=aiwnios_boot_task;
+PrintI("poo2",x++);
 SetFs(adam_task);
+PrintI("poo2",x++);
+PrintI("adam_task",adam_task)
 TaskInit(adam_task,0);
+PrintI("poo2",x++);
+PrintI("poo",x++);
 #include "KEnd.HC"
+PrintI("poo",x++);
 #include "FontStd.HC"
 #include "FontCyrillic.HC"
 #include "KLoadARM.HC"
@@ -296,6 +328,9 @@ U0 ImportSymbolsCB(U8 *name,U8 *addr) {
 CDoc *unfound=DocNew("unfound.DD");
 #endif
 U0 InitSymbols() {
+#ifdef TARGET_BYTECODE
+  ExePrint("#define TARGET_BYTECODE\n;");
+#endif
 #ifdef TARGET_X86
   ExePrint("#define TARGET_X86\n;");
 #endif
@@ -328,6 +363,9 @@ U8 *body=
 	"#define TEXT_MODE 0\n"
 	#ifdef TARGET_X86
 	"#define TARGET_X86 1\n"
+	#endif
+	#ifdef TARGET_BOOTSTRAP
+	"#define TARGET_BOOTSTRAP 21\n"
 	#endif
 	#ifdef TARGET_AARCH64
 	"#define TARGET_AARCH64 1\n"

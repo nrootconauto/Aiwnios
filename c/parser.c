@@ -2668,6 +2668,10 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   int64_t res;
   int64_t (*bin)();
   double (*binf)();
+  union {
+	  int64_t i;
+	  double f;
+  }_if;
   CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
   ccmp->cur_fun = NULL;
@@ -2680,9 +2684,11 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   binf = (void *)bin;
   int old = SetWriteNP(1);
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
-    res = (*bin)();
-  else
-    res = (*binf)();
+    res = FFI_CALL_TOS_0(binf);
+  else {
+    _if.i = FFI_CALL_TOS_0(binf);
+    res=_if.f;
+  }
   SetWriteNP(old);
   CodeCtrlPop(ccmp);
   ccmp->cur_fun = fun; // Restore
@@ -2693,6 +2699,10 @@ double PrsF64(CCmpCtrl *ccmp) {
   double res;
   int64_t (*bin)();
   double (*binf)();
+  union {
+	  int64_t i;
+	  double f;
+  } _if;
   CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
   ccmp->cur_fun = NULL;
@@ -2704,10 +2714,12 @@ double PrsF64(CCmpCtrl *ccmp) {
   bin = Compile(ccmp, NULL, NULL, NULL);
   binf = (void *)bin;
   int old = SetWriteNP(1);
-  if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64)
-    res = (*bin)();
-  else
-    res = (*binf)();
+  if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64) {
+    res = FFI_CALL_TOS_0(bin);
+  } else {
+    _if.i = FFI_CALL_TOS_0(bin);
+    res=_if.f;
+}
   SetWriteNP(old);
   CodeCtrlPop(ccmp);
   ccmp->cur_fun = fun;
@@ -2991,7 +3003,7 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
                                },
                            .raw_type = RT_FUNC,
                        },
-                   .fun_ptr = &DoNothing,
+                   .fun_ptr = DoNothing,
                    .return_class = cls};
     HashAdd(fun, Fs->hash_table);
     if (flags & (PRSF_EXTERN | PRSF__EXTERN)) {

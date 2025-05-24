@@ -1441,6 +1441,12 @@ int64_t IsFastFail() {
 }
 static char *AiwniosPackRamDiskPtr(int64_t **);
 static char *AiwniosPackBootCommand(int64_t **);
+static int64_t STK_AiwnBCCall(int64_t **stk) {
+	return AiwnBCCall((void*)stk[0]);
+}
+static int64_t STK_AiwnBCCallArgs(int64_t **stk) {
+	return AiwnBCCallArgs((void*)stk[0],stk[0],(void*)stk[1]);
+}
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1566,7 +1572,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", GetHolyFs, 0);
     PrsAddSymbol("WriteProtectMemCpy", STK_WriteProtectMemCpy, 3);
-    PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
+    #ifdef USE_BYTECODE
+		PrsAddSymbolNaked("GetRBP", &AiwnBC_FP, 0);
+	#else
+		PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
+	#endif
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
@@ -1590,13 +1600,21 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("ImportSymbolsToHolyC", STK_ImportSymbolsToHolyC, 1);
     // These dudes will expected to return to a location on the stack,SO DONT
     // MUDDY THE STACK WITH ABI "translations"
-    PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
-    PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
-    PrsAddSymbolNaked("Call", TempleOS_Call, 1);
-    PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
-    PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs,
+	#ifdef USE_BYTECODE
+		PrsAddSymbolNaked("AIWNIOS_SetJmp", AiwnBCContextGet, 1);
+		PrsAddSymbolNaked("AIWNIOS_LongJmp", AiwnBCContextSet, 1);
+		PrsAddSymbol("Call", STK_AiwnBCCall, 1);
+		PrsAddSymbol("CallArgs", STK_AiwnBCCallArgs, 3);
+	#else
+		PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
+		PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
+		PrsAddSymbolNaked("Call", TempleOS_Call, 1);
+		PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
+	#endif
+    /*PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs,
                       5); // fptr,argc1,argv1,argc,argv but argpop so ignored
                           //(this is for parser.c checks)
+    */
     PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
@@ -1840,7 +1858,13 @@ static void Boot() {
   "#define HOST_ABI '%s'\n"                                                    \
   "%s\n" \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if defined(USE_BYTECODE)
+  host_abi="ABC";
+  extra="";
+     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "BYTECODE", host_abi, extra);
+    char buf[len + 1];
+    sprintf(buf, BOOTSTRAP_FMT, "BYTECODE", host_abi, extra);
+#elif defined(__aarch64__) || defined(_M_ARM64)
 #  if defined(__APPLE__)
     host_abi = "Apple";
 #  else

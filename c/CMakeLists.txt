@@ -28,8 +28,8 @@ set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/ulock.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/w_bytecode.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows.c")
-
-if (ARCH STREQUAL "riscv64")
+if(USE_BYTECODE)
+elseif (ARCH STREQUAL "riscv64")
   list(APPEND C_SOURCES
     riscv_asm.c
     riscv_backend.c)
@@ -45,6 +45,9 @@ elseif (ARCH STREQUAL "arm64")
 endif()
 
 add_executable(aiwnios ${C_SOURCES})
+if(USE_BYTECODE)
+  target_compile_definitions(aiwnios PRIVATE  USE_BYTECODE=21)
+endif()
 target_compile_options(aiwnios PRIVATE -Wno-all -Werror-implicit-function-declaration)
 set(COMP_OPTS
   -w

@@ -3073,6 +3073,9 @@ class CBpt
 #ifdef TARGET_X86
   U8	*addr,val;
 #endif
+#ifdef TARGET_BYTECODE
+  U32	*addr,val;
+#endif
 #ifdef TARGET_AARCH64
   //On ARM64 all the insts are 32bit
   U32	*addr,val;
@@ -6847,6 +6850,10 @@ extern I64 sprite_elem_base_sizes[SPT_TYPES_NUM];
 _intern IC_TO_I64 I64 ToI64(F64);
 _intern IC_TO_F64 F64 ToF64(I64);
 _intern IC_TO_BOOL Bool ToBool(I64);
+#ifdef TARGET_BYTECODE
+_intern IC_FS CTask *Fs();
+_intern IC_GS CCPU *Gs();
+#endif
 #ifdef TARGET_X86
 _intern IC_SQRT F64 Sqrt(F64);
 _intern IC_BT Bool Bt(U8*,I64);

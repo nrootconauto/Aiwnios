@@ -1,7 +1,16 @@
 #include "aiwn_mem.h"
 #include "aiwn_multic.h"
 #include <string.h>
-#ifdef __x86_64__
+#ifdef USE_BYTECODE
+#include "aiwn_bytecode.h"
+void *GenFFIBinding(void *fptr, int64_t arity) {
+	return BCGenerateFFICall(fptr);
+}
+void *GenFFIBindingNaked(void *fptr, int64_t arity) {
+	return BCGenerateFFICall(fptr);
+}
+#else
+#if defined( __x86_64__)
 #  include "aiwn_lexparser.h" //For reigster names
 int64_t X86PushReg(char *to, int64_t reg);
 int64_t X86MovRegReg(char *to, int64_t reg, int64_t);
@@ -189,4 +198,5 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;
 }
+#endif
 #endif

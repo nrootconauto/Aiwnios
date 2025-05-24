@@ -518,6 +518,11 @@ I64 VarIRegToReg(I64 r)  {
   throw('Compile');
 }
 #endif
+#ifdef TARGET_BYTECODE
+I64 VarIRegToReg(I64 r)  {
+  throw('Compile');
+}
+#endif
 class CAddShortRelocData {
 	CCmpCtrl *cc;
 	CCodeMisc *cm;
@@ -1547,6 +1552,14 @@ found_offset:;;
       } else
         __HC_ICAdd_Arg(cc2,idx);
 #endif
+#ifdef TARGET_BYTECODE
+//Not yet implemented for AARCH64
+      if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
+        __HC_ICAdd_GetVargsPtr(cc2);
+      } else
+        __HC_ICAdd_Arg(cc2,idx);
+#endif
+
 #ifdef TARGET_AARCH64
         __HC_ICAdd_Arg(cc2,idx);
 #endif
