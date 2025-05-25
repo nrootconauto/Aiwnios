@@ -936,7 +936,7 @@ U0 PrsStreamBlk(CCmpCtrl *cc)
   Free(htc);
   COCPop(cc);
   QueRem(tmpe);
-  if (*tmpe->body)
+  if (tmpe->body)
     LexIncludeStr(cc,"StreamBlk",tmpe->body,FALSE);
   else
     Free(tmpe->body);
@@ -1254,7 +1254,7 @@ sm_import:
 		    if (!cc->htc.fun->return_class->size)
 		      LexWarn(cc,"Function should NOT return val ");
 		    if (!PrsExpression(cc,NULL,FALSE))
-		      throw('Compiler');
+		      LexExcept(cc,"Expected an expression at: ");
 //Lunk added by nroot,we will convert the result to the return type(F64 or not F64)
 		    if(cc->coc.coc_head.next(CRPN*)->ic_class->raw_type==RT_F64) {
 		      if(cc->htc.fun->return_class->raw_type==RT_F64) {
@@ -1373,7 +1373,7 @@ try_label:
         }  else if (cc->token!=TK_EOF) {//Non-cur_str symbol, num or something
 sm_prs_exp:
 	  if (!PrsExpression(cc,NULL,TRUE))
-	    throw('Compiler');
+	      LexExcept(cc,"Expected an expression at: ");
 sm_semicolon:
 	  if (cmp_flags&CMPF_PRS_SEMICOLON) {
 	    if (cc->token==';')

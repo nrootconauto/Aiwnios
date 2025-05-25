@@ -3004,7 +3004,11 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
                                },
                            .raw_type = RT_FUNC,
                        },
+                    #ifdef USE_BYTECODE
+                   .fun_ptr = INVALID_PTR,
+                    #else   
                    .fun_ptr = DoNothing,
+                   #endif
                    .return_class = cls};
     HashAdd(fun, Fs->hash_table);
     if (flags & (PRSF_EXTERN | PRSF__EXTERN)) {
@@ -4375,7 +4379,7 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
         puts(name);
         abort();
       }
-      if (!fun->fun_ptr || fun->fun_ptr == &DoNothing) {
+      if (!fun->fun_ptr || fun->fun_ptr == &DoNothing||fun->fun_ptr==INVALID_PTR) {
         fun->base.base.type &= ~HTF_EXTERN;
         if (naked)
           fun->fun_ptr = GenFFIBindingNaked(ptr, arity);

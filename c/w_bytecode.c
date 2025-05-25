@@ -68,10 +68,10 @@ enum {
   ABC_SKIP_ON_FAIL, // next u32 is amt of u32's to skip
   ABC_GS,
   ABC_FS,
-  ABC_PRE_INC, //next u64 is amount to add
-  ABC_POST_INC, //next u64 is amount to add
-  ABC_DISCARD, // next u32 is amount to discard
-  ABC_CNT,     // MUST BE THE LAST ITEM
+  ABC_PRE_INC,  // next u64 is amount to add
+  ABC_POST_INC, // next u64 is amount to add
+  ABC_DISCARD,  // next u32 is amount to discard
+  ABC_CNT,      // MUST BE THE LAST ITEM
 };
 
 void AiwnBCWrite(char *dst, char *src, int64_t rt) {
@@ -155,17 +155,18 @@ double AiwnBCReadF64(char *src, int64_t rt) {
   }
   abort();
 }
-#define puts(...) 
-#define printf(...) 
+#define puts(...)
+#define printf(...)
 
 static _Thread_local ABCState *cur_bcstate;
-void AiwnRunBC(ABCState *state) {
+int64_t AiwnRunBC(ABCState *state) {
   cur_bcstate = state;
   uint32_t *bc = (void *)state->ip;
   if (!bc)
-    return;
-  int64_t i64, ai, bi, old_fp, old_addr, ret, t=((*bc >> 16) & 0xffFF);
+    return 0;
+  int64_t i64, ai, bi, old_fp, old_addr, ret, t = ((*bc >> 16) & 0xffFF);
   uint64_t bu;
+  int64_t retval=0;
   double f64, af, bf;
   ABCFrame *abcf = state->fun_frame, *new;
   int64_t is_f64 = t == RT_F64;
@@ -173,48 +174,49 @@ void AiwnRunBC(ABCState *state) {
   int64_t (*fun_ptr)(int64_t *stk);
   int64_t dft;
   int64_t *table;
-  printf("IP:%p,FP:%p,SP:%p\n", bc, state->fp, state->_sp);
-  printf("BTTM:%p,TOP:%p,PR:(%p)\n", abcf->istk[abcf->sp - 1], abcf->istk[abcf->sp],abcf->sp);
+  printf("IP:%p(%s),FP:%p,SP:%p\n", bc,WhichFun(bc), state->fp, state->_sp);
+  //printf("BTTM:%p,TOP:%p,PR:(%p)\n", abcf->istk[abcf->sp - 1],
+  //       abcf->istk[abcf->sp], abcf->sp);
   printf("%d\n", *bc & 0xffFF);
   switch (*bc++ & 0xffFF) {
   case ABC_PRE_INC:
-  puts("PREINC");
-	  bi=abcf->istk[abcf->sp];
-  if(is_f64) {
-	af=*(double*)bc;
-	bc+=2;  
-	af+=AiwnBCReadF64(bi,t);
-	AiwnBCWrite((void*)bi,&af,t);
-	abcf->fstk[abcf->sp]=af;
-  } else {
-	ai=*(int64_t*)bc;
-	bc+=2;  
-	ai+=AiwnBCReadI64(bi,t);
-	AiwnBCWrite((void*)bi,&ai,t);
-	abcf->istk[abcf->sp]=ai;
-  }
-  
-  break;
-  case ABC_POST_INC:
-  puts("POST_ICN");
-  	  bi=abcf->istk[abcf->sp];
+    puts("PREINC");
+    bi = abcf->istk[abcf->sp];
+    if (is_f64) {
+      af = *(double *)bc;
+      bc += 2;
+      af += AiwnBCReadF64(bi, t);
+      AiwnBCWrite((void *)bi, &af, t);
+      abcf->fstk[abcf->sp] = af;
+    } else {
+      ai = *(int64_t *)bc;
+      bc += 2;
+      ai += AiwnBCReadI64(bi, t);
+      AiwnBCWrite((void *)bi, &ai, t);
+      abcf->istk[abcf->sp] = ai;
+    }
 
-  if(is_f64) {
-	af=*(double*)bc;
-	abcf->fstk[abcf->sp]=AiwnBCReadF64(bi,t);
-	bc+=2;  
-	af+=AiwnBCReadF64(bi,t);
-	AiwnBCWrite((void*)bi,&af,t);
-	abcf->fstk[abcf->sp]=af;
-  } else {
-	ai=*(int64_t*)bc;
-	abcf->istk[abcf->sp]=AiwnBCReadI64(bi,t);
-	bc+=2;  
-	ai+=AiwnBCReadI64(bi,t);
-	AiwnBCWrite((void*)bi,&ai,t);
-  }
-  break;
-  
+    break;
+  case ABC_POST_INC:
+    puts("POST_ICN");
+    bi = abcf->istk[abcf->sp];
+
+    if (is_f64) {
+      af = *(double *)bc;
+      abcf->fstk[abcf->sp] = AiwnBCReadF64(bi, t);
+      bc += 2;
+      af += AiwnBCReadF64(bi, t);
+      AiwnBCWrite((void *)bi, &af, t);
+      abcf->fstk[abcf->sp] = af;
+    } else {
+      ai = *(int64_t *)bc;
+      abcf->istk[abcf->sp] = AiwnBCReadI64(bi, t);
+      bc += 2;
+      ai += AiwnBCReadI64(bi, t);
+      AiwnBCWrite((void *)bi, &ai, t);
+    }
+    break;
+
   case ABC_NOP:
     puts("NOP");
     break;
@@ -222,7 +224,7 @@ void AiwnRunBC(ABCState *state) {
     puts("INTERN");
     fun_ptr = *(void **)bc;
     bc += 2;
-    ret = (*fun_ptr)((int64_t *)state->_sp + 2);
+    ret = (*fun_ptr)((int64_t*)((char*)state->_sp + 16+sizeof(ABCFrame)));
     abcf->istk[++abcf->sp] = ret;
     break;
   case ABC_DUP:
@@ -257,41 +259,57 @@ void AiwnRunBC(ABCState *state) {
     puts("SET_FRAME_SIZE");
     state->_sp -= *bc++;
     break;
-    case ABC_SUB_RET:
-    AiwnBCWrite(&state->ip,(void*)state->_sp,RT_I64i);
+  case ABC_SUB_RET:
+    AiwnBCWrite(&state->ip, (void *)state->_sp, RT_I64i);
     state->_sp += 8;
     goto fin;
-    case ABC_SUB_CALL:
+  case ABC_SUB_CALL:
+    bc += 2;
     state->_sp -= 8;
-    AiwnBCWrite((void*)state->_sp,&state->ip,RT_I64i);
-    bc+=2;
-    state->ip = *(uint64_t*)bc;
+    AiwnBCWrite((void *)state->_sp, &bc, RT_I64i);
+    state->ip = ((uint64_t *)bc)[-1];
     goto fin;
   case ABC_CALL:
     puts("CALL");
-    new = calloc(1, sizeof(ABCFrame));
-    new->next = abcf;
-    old_fp = state->fp;
-    state->fp = state->_sp -= 16;
-    AiwnBCWrite((void *)(state->fp + 0), (void *)&old_fp, RT_I64i);
-    AiwnBCWrite((void *)(state->fp + 8), (void *)&bc, RT_I64i);
-    state->ip = abcf->istk[abcf->sp--];
-    state->fun_frame = new;
-    goto fin;
+    if(abcf->istk[abcf->sp]!=INVALID_PTR) {
+		old_fp = state->fp;
+		state->fp = state->_sp -= 16+sizeof(ABCFrame);
+		new=state->fp+16;
+		new->next = abcf;
+		new->sp=0;
+		printf("TO::%p,ME:%p\n",abcf->istk[abcf->sp],bc);
+		AiwnBCWrite((void *)(state->fp + 0), (void *)&old_fp, RT_I64i);
+		AiwnBCWrite((void *)(state->fp + 8), (void *)&bc, RT_I64i);
+		state->ip = abcf->istk[abcf->sp--];
+		printf("FROM::%p\n",state->fun_frame);
+		state->fun_frame = new;
+		printf("INTO:%p\n",new);
+//		fprintf(stdout,"%s\n",WhichFun(state->ip));
+    	    goto fin;
+
+	} else {
+	  abcf->istk[abcf->sp]=0;
+	  break;
+	}
+	break;
   case ABC_RET:
     puts("RET");
     ret = abcf->istk[abcf->sp];
-    state->fun_frame = abcf->next;
-    free(abcf);
+    printf("FP:%p\n",state->fp);
+    printf("RETAT:%p\n",state->fun_frame);
     old_fp = AiwnBCReadI64((void *)(state->fp), RT_I64i);
     old_addr = AiwnBCReadI64((void *)(state->fp + 8), RT_I64i);
-    state->_sp = state->fp + 16;
+    printf("RETTO:%p\n",old_addr);
+    state->_sp = state->fp + 16+sizeof(ABCFrame);
+    printf("ASS:%p\n",state->fun_frame);
     state->fp = old_fp;
     state->ip = old_addr;
-    if (state->fun_frame) {
-      abcf = state->fun_frame;
+    if (state->fp) {
+      abcf=state->fun_frame=(ABCFrame*)(state->fp+16);
       abcf->istk[++abcf->sp] = ret;
-    }
+    } else
+		state->fun_frame=NULL;
+	retval=ret;
     goto fin;
     break;
   case ABC_GOTO:
@@ -403,21 +421,21 @@ void AiwnRunBC(ABCState *state) {
     bc += 2;
     abcf->istk[++abcf->sp] = i64;
     break;
-    case ABC_SWITCH:
-    i64=*bc;
+  case ABC_SWITCH:
+    i64 = *bc;
     ++bc;
     table = *(int64_t **)bc;
     bc += 2;
-    dft= *(int64_t *)bc;
+    dft = *(int64_t *)bc;
     bc += 2;
-    ai=abcf->istk[abcf->sp--];
-    if(ai<0) {
-		state->ip=dft;
-    } else if(ai>=i64) {
-		state->ip=dft;
-	} else {
-		state->ip=table[ai];
-	}
+    ai = abcf->istk[abcf->sp--];
+    if (ai < 0) {
+      state->ip = dft;
+    } else if (ai >= i64) {
+      state->ip = dft;
+    } else {
+      state->ip = table[ai];
+    }
     goto fin;
   case ABC_ADD:
 #define ABC_OP(op)                                                             \
@@ -511,12 +529,12 @@ void AiwnRunBC(ABCState *state) {
     }
     break;
   case ABC_SWAP:
-  puts("swap");
-  ai=abcf->istk[abcf->sp-1];
-  bi=abcf->istk[abcf->sp];
-  abcf->istk[abcf->sp-1]=bi;
-  abcf->istk[abcf->sp]=ai;
-  break;
+    puts("swap");
+    ai = abcf->istk[abcf->sp - 1];
+    bi = abcf->istk[abcf->sp];
+    abcf->istk[abcf->sp - 1] = bi;
+    abcf->istk[abcf->sp] = ai;
+    break;
   case ABC_SUB:
     ABC_OP(-=);
     break;
@@ -573,10 +591,10 @@ void AiwnRunBC(ABCState *state) {
   case ABC_LNOT:
 #define ABC_UNOP(op)                                                           \
   if (is_f64) {                                                                \
-    bf = abcf->fstk[abcf->sp];                                               \
+    bf = abcf->fstk[abcf->sp];                                                 \
     abcf->fstk[abcf->sp] = op bf;                                              \
   } else {                                                                     \
-    bi = abcf->istk[abcf->sp];                                               \
+    bi = abcf->istk[abcf->sp];                                                 \
     abcf->istk[abcf->sp] = op bi;                                              \
   }
     ABC_UNOP(!);
@@ -622,6 +640,7 @@ void AiwnRunBC(ABCState *state) {
   }
   state->ip = (int64_t)bc;
 fin:;
+  return retval;
 }
 static char *abc_mem = NULL;
 static int64_t abc_mem_sz = 0;
@@ -664,8 +683,8 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_GOTO_IF | (arg0->raw_type << 16), len);
     if (ptr)
       cmr = CodeMiscAddRefBC(rpn->code_misc, (void *)(ptr + len));
-    len=AiwnBCAddCode(ptr,0,len);
-    len=AiwnBCAddCode(ptr,0,len);
+    len = AiwnBCAddCode(ptr, 0, len);
+    len = AiwnBCAddCode(ptr, 0, len);
     break;
   case IC_TO_I64:
     len = CompileToBC0(cc, ptr, arg0, len);
@@ -685,8 +704,8 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     break;
   case IC_STATIC:
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
-    len = AiwnBCAddCode(ptr, 0, len);
-    len = AiwnBCAddCode(ptr, 0, len);
+    len = AiwnBCAddCode(ptr, rpn->integer, len);
+    len = AiwnBCAddCode(ptr, rpn->integer>>32, len);
     if (ptr) {
       cmr = CodeMiscAddRefBC(rpn->code_misc, (void *)(ptr + len - 8));
       cmr->offset = rpn->integer;
@@ -733,12 +752,18 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
       arg1 = ICArgN(arg1, 0);
     } else
       t = arg1->raw_type;
-    if (arg1->type == IC_BASE_PTR) {
+    if (arg1->type == IC_STATIC) {
+      len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
+      len = AiwnBCAddCode(ptr, arg1->integer, len);
+      len = AiwnBCAddCode(ptr, arg1->integer>>32, len);
+      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);
+      len = AiwnBCAddCode(ptr, arg1->integer, len);
+    } else if (arg1->type == IC_BASE_PTR) {
       len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
       len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);
       len = AiwnBCAddCode(ptr, -arg1->integer, len);
     } else if (arg1->type == IC_DEREF) {
-      len = CompileToBC0(cc, ptr, ICArgN(arg1,0), len);
+      len = CompileToBC0(cc, ptr, ICArgN(arg1, 0), len);
       len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);
     } else if (arg1->type == IC_GLOBAL) {
 #define GLOB_PTR(rpn)                                                          \
@@ -753,7 +778,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
   len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                  \
   len = AiwnBCAddCode(ptr, ienter_addr, len);                                  \
   len = AiwnBCAddCode(ptr, ienter_addr >> 32ul, len);                          \
-  len = AiwnBCAddCode(ptr, ABC_READ_PTR|(RT_I64i<<16), len); 
+  len = AiwnBCAddCode(ptr, ABC_READ_PTR | (RT_I64i << 16), len);
 
       GLOB_PTR((arg1));
 
@@ -792,19 +817,23 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     arg0 = ICArgN(arg0, 0);                                                    \
   } else                                                                       \
     t = arg0->raw_type;                                                        \
-  if (arg0->type == IC_BASE_PTR) {                                             \
+  if (arg0->type == IC_STATIC) {                                               \
+    len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
+    len = AiwnBCAddCode(ptr, arg0->integer, len);                                          \
+    len = AiwnBCAddCode(ptr, arg0->integer>>32, len);                                          \
+  } else if (arg0->type == IC_BASE_PTR) {                                      \
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);                             \
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, -arg0->integer, len);                             \
     len = AiwnBCAddCode(ptr, -arg0->integer >> 32, len);                       \
     len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);                  \
   } else if (arg0->type == IC_DEREF) {                                         \
-    len = CompileToBC0(cc, ptr, arg0->base.next, len);                                    \
+    len = CompileToBC0(cc, ptr, arg0->base.next, len);                         \
   } else if (arg0->type == IC_GLOBAL) {                                        \
     GLOB_PTR((arg0));                                                          \
   } else                                                                       \
     abort();
-  GET_PTR;
+    GET_PTR;
     break;
   case IC_XOR:
     len = CompileToBC0(cc, ptr, arg1, len);
@@ -813,8 +842,8 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     break;
   case IC_GLOBAL:
     GLOB_PTR((rpn));
-    if(rpn->global_var->base.type&HTT_FUN)
-		break;
+    if (rpn->global_var->base.type & HTT_FUN)
+      break;
     len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 16), len);
     break;
   case IC_MOD:
@@ -943,14 +972,14 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
         len = AiwnBCAddCode(ptr, ABC_POP | (t << 16), len);
       }
     }
-    len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
-    len = AiwnBCAddCode(ptr, 8, len);
 
     if (ptr)
       for (cnt = i; --cnt >= 0;) {
         if (cnt)
           *(uint32_t *)(ptr + skipos[cnt] + 4) = len - skipos[cnt];
       }
+    len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
+    len = AiwnBCAddCode(ptr, 8, len);
   } break;
   case IC_GE:
     goto cmp_style;
@@ -972,34 +1001,51 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     arg1 = ICArgN(arg1, 0);                                                    \
   } else                                                                       \
     t = arg1->raw_type;                                                        \
-  if (arg1->type == IC_BASE_PTR) {                                             \
+  if (arg1->type == IC_STATIC) {                                               \
+    len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
+    len = AiwnBCAddCode(ptr, arg1->integer, len);                                          \
+    len = AiwnBCAddCode(ptr, arg1->integer>>32, len);                                          \
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 16), len);                  \
+    len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
+    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
+    len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
+    len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
+    len = AiwnBCAddCode(ptr, 0, len);                                          \
+    len = AiwnBCAddCode(ptr, 0, len);                                          \
+    if (ptr) {                                                                 \
+      cmr = CodeMiscAddRefBC(cc->statics_label, ptr + len - 8);                             \
+      cmr->offset = arg1->integer;                                             \
+    }                                                                          \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);                 \
+    len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
+  } else if (arg1->type == IC_BASE_PTR) {                                      \
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);                             \
     len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 16), len);                  \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
-    len=AiwnBCAddCode(ptr,ABC_SWAP,len); \
+    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
     len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);                             \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);                 \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
   } else if (arg1->type == IC_DEREF) {                                         \
-    len = CompileToBC0(cc, ptr, ICArgN(arg1,0), len);                                    \
+    len = CompileToBC0(cc, ptr, ICArgN(arg1, 0), len);                         \
     len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
-    len=AiwnBCAddCode(ptr,ABC_PUSH,len); \
+    len = AiwnBCAddCode(ptr, ABC_PUSH, len);                                   \
     len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 16), len);                   \
-    len=AiwnBCAddCode(ptr,ABC_SWAP,len); \
+    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
     len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
-    len=AiwnBCAddCode(ptr,ABC_POP,len); \
+    len = AiwnBCAddCode(ptr, ABC_POP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);                  \
   } else if (arg1->type == IC_GLOBAL) {                                        \
     GLOB_PTR(arg1);                                                            \
     len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
-    len=AiwnBCAddCode(ptr,ABC_PUSH,len); \
+    len = AiwnBCAddCode(ptr, ABC_PUSH, len);                                   \
     len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 16), len);                   \
-    len=AiwnBCAddCode(ptr,ABC_SWAP,len); \
+    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
     len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
-    len=AiwnBCAddCode(ptr,ABC_POP,len); \
+    len = AiwnBCAddCode(ptr, ABC_POP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);                  \
-                                                                                                                                        \
+                                                                               \
   } else                                                                       \
     abort();
     ASSIGN_OP(ABC_ADD);
@@ -1045,21 +1091,24 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = CompileToBC0(cc, ptr, arg0, len);
     len = AiwnBCAddCode(ptr, ABC_RET | (rpn->raw_type << 16), len);
     break;
+    case __IC_CALL:
   case IC_CALL:
     t = 0;
     for (a = 0; a < rpn->length; ++a) {
       arg1 = ICArgN(rpn, a);
       if (arg1->type == __IC_VARGS)
         t = arg1->length;
+      else
+		++t;
       len = CompileToBC0(cc, ptr, arg1, len);
       if (arg1->type != __IC_VARGS)
-      len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 16), len);
     }
     arg0 = ICArgN(rpn, rpn->length);
     len = CompileToBC0(cc, ptr, arg0, len);
     len = AiwnBCAddCode(ptr, ABC_CALL | (rpn->raw_type << 16), len);
     len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
-    len = AiwnBCAddCode(ptr, rpn->length * 8 + t * 8, len);
+    len = AiwnBCAddCode(ptr, t * 8, len);
     break;
   case IC_COMMA:
     len = CompileToBC0(cc, ptr, arg1, len);
@@ -1072,7 +1121,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
     len = AiwnBCAddCode(ptr, -rpn->code_misc->lo, len);
     len = AiwnBCAddCode(ptr, -rpn->code_misc->lo >> 32, len);
-    len=AiwnBCAddCode(ptr,ABC_ADD|(RT_I64i<<16),len);
+    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);
     len = AiwnBCAddCode(ptr, ABC_SWITCH, len);
     len =
         AiwnBCAddCode(ptr, (rpn->code_misc->hi - rpn->code_misc->lo + 1), len);
@@ -1112,7 +1161,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, -rpn->integer, len);
     break;
   case __IC_VARGS:
-    for (a = 0; a <rpn->length; ++a) {
+    for (a = 0; a < rpn->length; ++a) {
       arg1 = ICArgN(rpn, a);
       len = CompileToBC0(cc, ptr, arg1, len);
       len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 16), len);
@@ -1121,8 +1170,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
   case __IC_ARG:
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
     len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (rpn->raw_type << 16), len);
-    printf("A:%p\n",16 + 8 * rpn->integer);
-    len = AiwnBCAddCode(ptr, 16 + 8 * rpn->integer, len);
+    len = AiwnBCAddCode(ptr, sizeof(ABCFrame)+16 + 8 * rpn->integer, len);
     break;
   case IC_RELOC:
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
@@ -1150,7 +1198,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
   case __IC_STATICS_SIZE:
     break;
   case IC_GET_VARGS_PTR:
-    head = (CRPN *)&cc->code_ctrl->ir_code->next;
+    head = (CRPN *)cc->code_ctrl->ir_code;
     t = 0;
     for (arg0 = (CRPN *)head->base.next; arg0 != (CRPN *)head;
          arg0 = (CRPN *)arg0->base.next) {
@@ -1159,8 +1207,8 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     }
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
-    len = AiwnBCAddCode(ptr, (-16 - 8 * t), len);
-    len = AiwnBCAddCode(ptr, (-16 - 8 * t) >> 32, len);
+    len = AiwnBCAddCode(ptr, (-16 -sizeof(ABCFrame) - 8 * t), len);
+    len = AiwnBCAddCode(ptr, (-16 -sizeof(ABCFrame) - 8 * t) >> 32, len);
     len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);
     break;
   case IC_TO_BOOL:
@@ -1173,28 +1221,28 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_GS, len);
     break;
   case IC_POST_DEC:;
-GET_PTR;
-    len=AiwnBCAddCode(ptr,ABC_POST_INC|(t<<16),len);
-    len=AiwnBCAddCode(ptr,-rpn->integer,len);
-    len=AiwnBCAddCode(ptr,-rpn->integer>>32,len);
+    GET_PTR;
+    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, -rpn->integer, len);
+    len = AiwnBCAddCode(ptr, -rpn->integer >> 32, len);
     break;
   case IC_POST_INC:
     GET_PTR;
-    len=AiwnBCAddCode(ptr,ABC_POST_INC|(t<<16),len);
-    len=AiwnBCAddCode(ptr,rpn->integer,len);
-    len=AiwnBCAddCode(ptr,rpn->integer>>32,len);
+    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, rpn->integer, len);
+    len = AiwnBCAddCode(ptr, rpn->integer >> 32, len);
     break;
   case IC_PRE_DEC:
     GET_PTR;
-    len=AiwnBCAddCode(ptr,ABC_PRE_INC|(t<<16),len);
-    len=AiwnBCAddCode(ptr,-rpn->integer,len);
-    len=AiwnBCAddCode(ptr,-rpn->integer>>32,len);
+    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, -rpn->integer, len);
+    len = AiwnBCAddCode(ptr, -rpn->integer >> 32, len);
     break;
   case IC_PRE_INC:
     GET_PTR;
-    len=AiwnBCAddCode(ptr,ABC_PRE_INC|(t<<16),len);
-    len=AiwnBCAddCode(ptr,rpn->integer,len);
-    len=AiwnBCAddCode(ptr,rpn->integer>>32,len);
+    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, rpn->integer, len);
+    len = AiwnBCAddCode(ptr, rpn->integer >> 32, len);
   }
   return len;
 }
@@ -1216,37 +1264,38 @@ char *OptPassFinalBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   }
 again:;
   len = 0;
-  	CMemberLst *lst;
-	if(cctrl->cur_fun) {
-	lst = cctrl->cur_fun->base.members_lst;
-	while(lst) {
-		lst=lst->next;
-	}
-	lst = cctrl->cur_fun->base.members_lst;
-	
-    for (i = 0; i != cctrl->cur_fun->argc; i++) {	
-		len=AiwnBCAddCode(bin,ABC_FRAME_ADDR,len); 
-		len=AiwnBCAddCode(bin,ABC_READ_PTRO|(lst->member_class->raw_type<<16),len); 
-		len=AiwnBCAddCode(bin,16+8*i,len);
-		len=AiwnBCAddCode(bin,ABC_FRAME_ADDR,len); 
-		len=AiwnBCAddCode(bin,ABC_WRITE_PTRO|(lst->member_class->raw_type<<16),len); 
-		len=AiwnBCAddCode(bin,-lst->off,len);
+  CMemberLst *lst;
+  if (cctrl->cur_fun) {
+    lst = cctrl->cur_fun->base.members_lst;
+    while (lst) {
+      lst = lst->next;
+    }
+    lst = cctrl->cur_fun->base.members_lst;
+
+    for (i = 0; i != cctrl->cur_fun->argc; i++) {
+      len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
+      len = AiwnBCAddCode(
+          bin, ABC_READ_PTRO | (lst->member_class->raw_type << 16), len);
+      len = AiwnBCAddCode(bin, sizeof(ABCFrame) + 16 + 8 * i, len);
+      len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
+      len = AiwnBCAddCode(
+          bin, ABC_WRITE_PTRO | (lst->member_class->raw_type << 16), len);
+      len = AiwnBCAddCode(bin, -lst->off, len);
       if ((cctrl->cur_fun->base.flags & CLSF_VARGS) &&
           !strcmp("argv", lst->str)) {
-		len=AiwnBCAddCode(bin,ABC_FRAME_ADDR,len); 
-		len=AiwnBCAddCode(bin,ABC_IMM_I64,len);
-		len=AiwnBCAddCode(bin,16+8*i,len);
-		len=AiwnBCAddCode(bin,(16+8*i)>>32ul,len);
-		len=AiwnBCAddCode(bin,ABC_ADD|(RT_I64i<<16),len);
-		len=AiwnBCAddCode(bin,ABC_FRAME_ADDR,len); 
-		len=AiwnBCAddCode(bin,ABC_WRITE_PTRO|(RT_I64i<<16),len); 
-		len=AiwnBCAddCode(bin,-lst->off,len);
+        len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
+        len = AiwnBCAddCode(bin, ABC_IMM_I64, len);
+        len = AiwnBCAddCode(bin, sizeof(ABCFrame) + 16 + 8 * i, len);
+        len = AiwnBCAddCode(bin, (sizeof(ABCFrame) + 16 + 8 * i) >> 32ul, len);
+        len = AiwnBCAddCode(bin, ABC_ADD | (RT_I64i << 16), len);
+        len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
+        len = AiwnBCAddCode(bin, ABC_WRITE_PTRO | (RT_I64i << 16), len);
+        len = AiwnBCAddCode(bin, -lst->off, len);
       }
       lst = lst->next;
     }
     len = AiwnBCAddCode(bin, ABC_SET_FRAME_SIZE, len);
-     len = AiwnBCAddCode(bin, cctrl->cur_fun->base.sz+16, len);
-
+    len = AiwnBCAddCode(bin, cctrl->cur_fun->base.sz + 16, len);
   }
   for (cur = (CRPN *)head->base.next; cur != head;
        cur = (CRPN *)cur->base.next) {
@@ -1275,8 +1324,6 @@ again:;
       break;
     case CMT_RELOC_U64:
       cm->addr = bin + len;
-      if (cm->patch_addr)
-        *cm->patch_addr = cm->addr;
       len += 8;
       if (bin) {
         *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
@@ -1293,6 +1340,8 @@ again:;
       break;
     case CMT_LABEL:
     fill_in_refs:
+          if (cm->patch_addr)
+        *cm->patch_addr = cm->addr;
       while ((cmr = cm->refs)) {
         *(int64_t **)cmr->add_to = cm->addr + cmr->offset;
         cm->refs = cmr->next;
@@ -1308,7 +1357,7 @@ again:;
           to = cm->jmp_tab[i];
           if (!to)
             to = cm->dft_lab;
-          ((uint64_t *)(bin+len))[i] = (uint64_t)to->addr;
+          ((uint64_t *)(bin + len))[i] = (uint64_t)to->addr;
         }
       }
       len += 8 * i;
@@ -1316,7 +1365,7 @@ again:;
       break;
     case CMT_STRING:
       if (cctrl->flags & CCF_STRINGS_ON_HEAP) {
-        cm->addr = A_CALLOC(cm->str_len+1,NULL);
+        cm->addr = A_CALLOC(cm->str_len + 1, NULL);
       } else
         cm->addr = bin + len;
       if (bin) {
@@ -1353,8 +1402,9 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
 ABCState *ABCStateNew(void *bc_addr, void *stk_ptr, int64_t argc,
                       int64_t *argv) {
   ABCState *state = calloc(1, sizeof(ABCState));
-  state->fun_frame = calloc(1, sizeof(ABCFrame));
-  state->fun_frame->next = calloc(1, sizeof(ABCFrame));
+  stk_ptr-=sizeof(ABCFrame);
+  ABCFrame *dummy=(void*)stk_ptr;
+  
   int64_t *args = stk_ptr;
   args -= argc;
   while (--argc >= 0) {
@@ -1362,7 +1412,11 @@ ABCState *ABCStateNew(void *bc_addr, void *stk_ptr, int64_t argc,
   }
   state->ip = (int64_t)bc_addr;
   state->_sp = (int64_t)args;
-  state->fp = state->_sp -= 16;
+  state->fp = state->_sp -= 16+sizeof(ABCFrame);
+  state->fun_frame=state->fp+16;
+  memset(dummy,0,sizeof(ABCFrame));
+  memset(state->fun_frame,0,sizeof(ABCFrame));
+  state->fun_frame->next=dummy;
   *(int64_t *)state->fp = NULL;
   ((int64_t *)state->fp)[1] = NULL;
   return state;
@@ -1372,21 +1426,20 @@ void ABCStateDel(ABCState *st) {
   ABCFrame *f = st->fun_frame, *next;
   while (f) {
     next = f->next;
-    free(f);
     f = next;
   }
   free(st);
 }
 
 int64_t ABCRun_Done(ABCState *st, int64_t *retval) {
-  ABCFrame *f = st->fun_frame;
   if (!st->ip) {
-    if (retval)
-      *retval = f->istk[f->sp];
     return 1;
   }
-  AiwnRunBC(st);
-  return 0;
+  if(retval)
+	*retval=AiwnRunBC(st);
+	else
+	AiwnRunBC(st);
+  return st->ip==0;
 }
 int64_t ABCRun(ABCState *st) {
   int64_t ret = 0;
@@ -1456,18 +1509,6 @@ uint64_t AiwnBCContextSet(ABCState **to_stk) {
   ABCState *state = cur_bcstate;
   ABCFrame *cur = state->fun_frame;
   ABCFrame *target = to->fun_frame, *next;
-  while (cur != target) {
-    if (cur == target) {
-      for (cur = state->fun_frame; target != cur; cur = next) {
-        next = cur->next;
-        free(cur);
-      }
-      memcpy(state, to, sizeof(ABCState));
-      return 1;
-    }
-    cur = cur->next;
-  }
-  // Not on current Task?
   memcpy(state, to, sizeof(ABCState));
   return 1;
 }

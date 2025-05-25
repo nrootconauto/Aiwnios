@@ -192,6 +192,9 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
     gps[2]=rbp;
   }
   #endif
+  #ifdef TARGET_BYTECODE
+  I64 oip=NULL,rbp=NULL; 
+  #endif
   #ifdef TARGET_AARCH64
   I64 oip=gps[22],rbp=gps[11]; 
   #endif
@@ -293,6 +296,10 @@ Bool BptS(U32 *addr,CTask *task=NULL,Bool live=TRUE)
       *addr=0xd4200000;
 #endif
 #ifdef TARGET_RISCV
+	  ;//*addr=0x00100073; TODO TODO
+#endif
+
+#ifdef TARGET_BYTECODE
 	  ;//*addr=0x00100073; TODO TODO
 #endif
   }

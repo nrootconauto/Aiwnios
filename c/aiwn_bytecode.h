@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "aiwn_lexparser.h"
 #include "aiwn_mem.h"
-#define IM_STK_SIZE 0x80
+#define IM_STK_SIZE 32
 typedef struct ABCFrame {
   union {
     double fstk[IM_STK_SIZE];
@@ -18,7 +18,7 @@ typedef struct ABCState {
 } ABCState;
 char *OptPassFinalBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                    CHeapCtrl *heap);
-void AiwnRunBC(ABCState *state);
+int64_t AiwnRunBC(ABCState *state);
 ABCState *ABCStateNew(void *bc_addr,void *stk_fptr,int64_t argc,int64_t *argv);
 void ABCStateDel(ABCState *st);
 int64_t ABCRun_Done(ABCState *st,int64_t *retval);

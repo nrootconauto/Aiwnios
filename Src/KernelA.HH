@@ -7266,3 +7266,6 @@ extern U8 *BCCtxNew(U8 *bc_addr,I64 *stk,I64 argc,I64 *argv);
 extern I64 BCRun(U8 *bc_ctx);
 extern U0 BCDel(U8 *bc);
 #endif
+#ifdef TARGET_BYTECODE
+#define PAUSE ;
+#endif

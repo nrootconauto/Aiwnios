@@ -1605,7 +1605,7 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
           break;
         case IC_BASE_PTR:
 // Stack grows down
-#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__)
+#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) || defined(USE_BYTECODE)
           base->integer -= off->integer;
 #else
           base->integer += off->integer;

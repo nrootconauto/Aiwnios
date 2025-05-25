@@ -344,7 +344,7 @@ static void *threadrt(void *_pair) {
   void (*fp)();
   fp = pair->fp;
   free(pair);
-  fp();
+  FFI_CALL_TOS_0(fp);
 }
 #ifndef _WIN32
 

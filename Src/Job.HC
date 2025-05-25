@@ -356,6 +356,7 @@ I64 JobsHndlr(I64 run_flags,CTask *task=NULL)
 {//Handle all waiting cmds and return.
   I64 cnt=0,old_flags=0;//GetRFlags;TODO RESTORE
   if (!task) task=Fs;
+  PrintI("t",task);
   while (TRUE) {
     //CLI TODO RESTORE
     while (LBts(&task->srv_ctrl.flags,JOBCf_LOCKED))

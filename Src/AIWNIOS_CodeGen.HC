@@ -1423,9 +1423,11 @@ skip_convert:;
 	mlst=mlst->next;
       }
     } else {
+    #ifndef TARGET_BYTECODE
       LiveVariableAnalysis(cc);
       GraphColoringDel(GraphColor(cc,TRUE));
       GraphColoringDel(GraphColor(cc,FALSE));
+    #endif
     }
     member_cnt=cc->htc.fun->member_cnt;
     mlst=cc->htc.fun->member_lst_and_root;
