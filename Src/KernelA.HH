@@ -17,7 +17,7 @@ extern class CTask;
 
 #define U8 U8i
 #define I8 I8i
-#define Bool U8
+#define Bool U64
 #define NULL	0
 #define TRUE	1
 #define FALSE	0
@@ -3228,7 +3228,11 @@ class CTaskStk
   U0	stk_base;
 };
 
+#ifdef TARGET_BYTECODE
+#define DYING_JIFFIES ToI64(JIFFY_FREQ)
+#else
 #define DYING_JIFFIES	ToI64(JIFFY_FREQ/5)
+#endif
 class CTaskDying
 {
   CTask *next,*last;

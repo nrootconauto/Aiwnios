@@ -50,8 +50,9 @@ public U0 EdCursorLeft(CDoc *doc,I64 sc=I64_MIN)
 	doc_ce=doc_ne;
 	cc=doc_ce->min_col;
       }
-      if (sc>=0)
+      if (sc>=0) {
 	LBEqu(&doc_ce->type,DOCEt_SEL,sc&SCF_SHIFT);
+      }
     } else {
       cc=doc_ce->min_col;
       while (doc_ce->last!=doc &&

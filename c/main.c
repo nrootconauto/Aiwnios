@@ -1486,10 +1486,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 1);
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
-    PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
     #ifdef USE_BYTECODE
     PrsAddSymbol("MakeContext", AiwnBCMakeContext, 3);
+    PrsAddSymbol("TaskContextSetRIP", AiwnBCTaskContextSetRIP, 2);
     #else
+    PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
     PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
     #endif
     PrsAddSymbol("__HC_ICAdd_RawBytes", STK__HC_ICAdd_RawBytes, 3);

@@ -84,7 +84,7 @@ Bool BreakUnlock(CTask *task=NULL)
     if (task==Fs)
       Break;
     else
-      task->context_save_area[12]=&Break;
+      TaskContextSetRIP(task->context_save_area,&Break);
   }
   return res;
 }

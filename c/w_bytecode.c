@@ -1503,7 +1503,7 @@ ABCState *ABCStateNew(void *bc_addr, void *stk_ptr, int64_t argc,
   ABCState *state = calloc(1, sizeof(ABCState));
   stk_ptr -= sizeof(ABCFrame);
   ABCFrame *dummy = (void *)stk_ptr;
-
+	
   int64_t *args = stk_ptr;
   args -= argc;
   while (--argc >= 0) {
@@ -1599,7 +1599,13 @@ uint32_t *BCGenerateFFICall(void *fcall) {
 uint64_t AiwnBCContextGet(ABCState **to_stk) {
   ABCState *to = to_stk[0];
   ABCState *state = cur_bcstate;
-  memcpy(to, state, sizeof(ABCState));
+  int64_t old_fp=*(int64_t*)state->fp;
+  int64_t old_ip=((int64_t*)state->fp)[1];
+  ABCFrame *fr=(ABCFrame*)(old_fp+16);
+  to->_sp=fr+1;
+  to->fp=old_fp;
+  to->ip=old_ip;
+  to->fun_frame=fr;
   return 0;
 }
 // to_stk as its a "naked" function
@@ -1608,7 +1614,7 @@ uint64_t AiwnBCContextSet(ABCState **to_stk) {
   ABCState *state = cur_bcstate;
   ABCFrame *cur = state->fun_frame;
   ABCFrame *target = to->fun_frame, *next;
-  memcpy(state, to, sizeof(ABCState));
+  memmove(state, to, sizeof(ABCState));
   return 1;
 }
 // to_stk as its a "naked" function
@@ -1697,5 +1703,10 @@ int64_t FFI_CALL_TOS_4(void *fptr, int64_t a, int64_t b, int64_t c, int64_t d) {
 // TODO
 int64_t FFI_CALL_TOS_CUSTOM_BP(uint64_t bp, void *fp, uint64_t ip) {
   return FFI_CALL_TOS_0(bp); // whoops
+}
+
+void AiwnBCTaskContextSetRIP(uint64_t **stk) {
+	ABCState *st=(ABCState*)stk[0];
+	st->ip=stk[1];
 }
 #endif

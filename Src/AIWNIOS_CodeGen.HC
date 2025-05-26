@@ -1423,7 +1423,7 @@ skip_convert:;
 	mlst=mlst->next;
 }
   #else
-    if(GetOption(OPTf_NO_REG_VAR)||GetOption(OPTf_BYTE_CODE)) {
+    if(GetOption(OPTf_NO_REG_VAR)||GetOption(OPTf_BYTE_CODE)) {
       mlst=cc->htc.fun->member_lst_and_root;
       while(mlst) {
         mlst->reg=REG_NONE;
