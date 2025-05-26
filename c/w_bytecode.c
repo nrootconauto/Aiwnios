@@ -171,9 +171,9 @@ static int64_t AiwnBCAddCode(ABC_PTR ptr, uint32_t v, int64_t len) {
 
 static int64_t ForceType(char *ptr,CRPN *a,int64_t to,int64_t len) {
 	if((a->raw_type==RT_F64)!=(to==RT_F64)) {
-		if(to==RT_F64)
+		if(to==RT_F64&&a->type!=IC_F64)
 			len=AiwnBCAddCode(ptr,ABC_TO_F64,len);
-		else
+		else if(to!=RT_F64&&a->type!=IC_I64)
 			len=AiwnBCAddCode(ptr,ABC_TO_I64,len);
 	}
 	return len;
@@ -191,7 +191,7 @@ int64_t AiwnRunBC(ABCState *state) {
   double f64, af, bf;
   ABCFrame *abcf = state->fun_frame, *new;
   int64_t is_f64 = t == RT_F64;
-  int64_t is_u64 = t == RT_F64;
+  int64_t is_u64 = t == RT_U64i;
   int64_t (*fun_ptr)(int64_t *stk);
   int64_t dft;
   int64_t *table;
@@ -309,7 +309,6 @@ int64_t AiwnRunBC(ABCState *state) {
       printf("FROM::%p\n", state->fun_frame);
       state->fun_frame = new;
       printf("INTO:%p\n", new);
-      //		fprintf(stdout,"%s\n",WhichFun(state->ip));
       goto fin;
 
     } else {
@@ -356,7 +355,7 @@ int64_t AiwnRunBC(ABCState *state) {
     i64 = *(uint64_t *)bc;
     bc += 2;
     if (is_f64) {
-      if (abcf->fstk[abcf->sp--]) {
+      if (abcf->fstk[abcf->sp--]!=0.) {
         state->ip = i64 + old_addr;
         goto fin;
       }
@@ -670,7 +669,7 @@ int64_t AiwnRunBC(ABCState *state) {
     puts("RSH");
     bi = abcf->istk[abcf->sp--];
     if (is_u64) {
-      abcf->ustk[abcf->sp] >>= bi;
+      abcf->ustk[abcf->sp] >>= (uint64_t)bi;
     } else
       abcf->istk[abcf->sp] >>= bi;
   }
@@ -924,8 +923,7 @@ len = CompileToBC0(cc, ptr, arg1, len);
     goto cmp_style;
   case IC_LNOT:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_LNOT | (rpn->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_LNOT | (arg0->raw_type << 16), len);
     break;
   case IC_BNOT:
     len = CompileToBC0(cc, ptr, arg0, len);
@@ -1176,7 +1174,7 @@ len = CompileToBC0(cc, ptr, arg1, len);
         ++t;
       len = CompileToBC0(cc, ptr, arg1, len);
       if (arg1->type != __IC_VARGS)
-        len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_PUSH | ((arg1->raw_type==RT_F64?RT_F64:RT_I64i) << 16), len);
     }
     arg0 = ICArgN(rpn, rpn->length);
     len = CompileToBC0(cc, ptr, arg0, len);

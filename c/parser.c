@@ -4376,6 +4376,7 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
       glbl->data_addr = ptr;
     } else if (glbl->base.type & HTT_FUN) {
       if (fun->argc != arity) {
+        puts(name);
         abort();
       }
       if (!fun->fun_ptr || fun->fun_ptr == &DoNothing||fun->fun_ptr==INVALID_PTR) {
