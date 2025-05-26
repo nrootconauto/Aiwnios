@@ -1,3 +1,17 @@
+
+#ifdef TARGET_BYTECODE
+U8 *Caller(I64 c=0) {
+  U8 **rbp=GetRBP;
+  while(ChkOnStk(rbp,Fs)) {
+     if(--c<0)
+		break;
+     rbp=*rbp;
+  }
+  if(!ChkOnStk(rbp,Fs))
+    return NULL;
+  return rbp[1];
+} 
+#endif
 //Added by nroot,used for Bounds checker
 U8 *WhineOOB(U8 *ptr) {
   I64 oob=0;
@@ -38,7 +52,10 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
   if (!TaskValidate(task))
     return NULL;
 #ifdef TARGET_X86
-  x29=task->context_save_area[2];
+  x29=task->context_save_area[2];
+#endif
+#ifdef TARGET_BYTECODE
+  x29=TaskContextGetRBP(task->context_save_area);
 #endif
 #ifdef TARGET_AARCH64
   x29=task->context_save_area[11];
@@ -76,6 +93,9 @@ U8 *TaskCaller(CTask *task=NULL,I64 num=0,Bool saved_context=FALSE)
     }
     return NULL;
   } else {
+#ifdef TARGET_BYTECODE
+  return TaskContextGetRIP(task->context_save_area);
+#endif
 #ifdef TARGET_X86
     return task->context_save_area[0];
 #else    
@@ -98,6 +118,14 @@ U0 CallerRep(U8 **x29=NULL,CTask *task=NULL)
       x29=Fs->context_save_area[2];
     else
       x29=task->context_save_area[2];
+  }
+  #endif
+  #ifdef TARGET_BYTECODE
+  if (!x29) {
+    if (task==Fs)
+      x29=TaskContextGetRBP(task);
+    else
+      x29=TaskContextGetRBP(task->context_save_area);
   }
   #endif
   #ifdef TARGET_AARCH64
@@ -149,6 +177,9 @@ U0 DebuggerSpawn(CTask *debugee) {
   #endif
   #ifdef TARGET_AARCH64
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[22],src_link=SrcEdLink(debugee->context_save_area[22]);
+  #endif
+  #ifdef TARGET_BYTECODE
+  "Oh,and welcome to %P(%s)\n",TaskContextGetRIP(debugee->context_save_area[22]),src_link=SrcEdLink(TaskContextGetRIP(debugee->context_save_area));
   #endif
   "\n";
   Free(src_link);
@@ -408,6 +439,10 @@ public Bool ViewFrameVars(I64 frame=0,I64 depth=2) {
 #ifdef TARGET_AARCH64
   rbp=t->context_save_area[11];
   rip=t->context_save_area[22];
+#endif
+#ifdef TARGET_BYTECODE
+  rbp=TaskContextGetRBP(t->context_save_area);
+  rip=TaskContextGetRIP(t->context_save_area);
 #endif
   while(frame>0) {
     rip=rbp[1];

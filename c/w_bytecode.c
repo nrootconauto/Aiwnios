@@ -1709,4 +1709,13 @@ void AiwnBCTaskContextSetRIP(uint64_t **stk) {
 	ABCState *st=(ABCState*)stk[0];
 	st->ip=stk[1];
 }
+
+int64_t AiwnBCTaskContextGetRBP(uint64_t **stk) {
+	ABCState *st=(ABCState*)stk[0];
+	return st->fp;
+}
+int64_t AiwnBCTaskContextGetRIP(uint64_t **stk) {
+	ABCState *st=(ABCState*)stk[0];
+	return st->ip;
+}
 #endif

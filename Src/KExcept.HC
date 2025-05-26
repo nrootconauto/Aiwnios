@@ -75,7 +75,7 @@ Bool BreakLock(CTask *task=NULL)
   return !LBts(&task->task_flags,TASKf_BREAK_LOCKED);
 }
 
-Bool BreakUnlock(CTask *task=NULL)
+Bool BreakUnlock(CTask *task=NULL)
 {//Reenables <CTRL-ALT-c> and issues any pending breaks.
   Bool res;
   if (!task) task=Fs;

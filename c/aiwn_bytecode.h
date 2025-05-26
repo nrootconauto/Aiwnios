@@ -32,3 +32,5 @@ int64_t AiwnBCCall(void *bc);
 int64_t AiwnBC_FP();
 uint64_t AiwnBCMakeContext(int64_t *to_stk);
 void AiwnBCTaskContextSetRIP(uint64_t **stk);
+int64_t AiwnBCTaskContextGetRIP(uint64_t **stk);
+int64_t AiwnBCTaskContextGetRBP(uint64_t **stk);

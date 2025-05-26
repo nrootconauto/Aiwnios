@@ -3955,7 +3955,13 @@ import Bool IsValidPtr(U8*);
 #define MSize2 MSize
 import U64 LBtr(U8 *,I64);
 import U64 LBts(U8 *,I64);
+#ifdef TARGET_BYTECODE
+extern U8 *Caller(I64 c=0);
+import I64 TaskContextGetRIP(U8*);
+import I64 TaskContextGetRBP(U8*);
+#else
 import U8 *Caller(I64 c=0);
+#endif
 import I64 UnixNow();
 import U0 VFsFTrunc(U8i*,I64i);
 import U8i *VFsFOpen(U8i*,Bool);
@@ -3999,6 +4005,10 @@ import U0 AiwniosTUIEnable();
 import U0 TermSize(I64 *c,I64 *r);
 import Bool CSPRNG(U8 *,I64);
 #else
+#ifdef TARGET_BYTECODE
+extern I64 TaskContextGetRIP(U8*);
+extern I64 TaskContextGetRBP(U8*);
+#endif
 extern U8 *DolDocDumpIR(U8 *to,I64 len,U8 *c_rpn);
 extern U8 *AiwniosPackBootCommand();
 extern U8 *AiwniosPackRamDisk(I64 *len=NULL);

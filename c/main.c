@@ -1489,6 +1489,8 @@ static void BootAiwnios(char *bootstrap_text) {
     #ifdef USE_BYTECODE
     PrsAddSymbol("MakeContext", AiwnBCMakeContext, 3);
     PrsAddSymbol("TaskContextSetRIP", AiwnBCTaskContextSetRIP, 2);
+    PrsAddSymbol("TaskContextGetRIP", AiwnBCTaskContextGetRIP, 1);
+    PrsAddSymbol("TaskContextGetRBP", AiwnBCTaskContextGetRBP, 1);
     #else
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
     PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);

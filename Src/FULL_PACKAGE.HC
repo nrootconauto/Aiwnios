@@ -143,7 +143,6 @@ U0 SwapI64(I64 *a,I64 *b) {
   *a=*b;
   *b=tmp;
 }
-I64 x=0;
 #include "CQue.HC"
 #include "KDate.HC"
 #include "StrA.HC"
@@ -198,6 +197,7 @@ TaskInit(adam_task,0);
 #endif
 
 U0 SCRoutine() {
+  SetFs(adam_task);//For Caller
   CTask *self=CAlloc(sizeof CTask,adam_task);
   SetFs(self);
   TaskInit(Fs,0);
@@ -254,7 +254,7 @@ U0 ExeEmbedFile(U8 *fn) {
   comp=CompressBuf(ptr,len+1); //+1 for NULL terminator
   Free(ptr);
   ptr=comp;
-  len=comp->compressed_size;
+	len=comp->compressed_size;
   ptr2=buf=MAlloc(4*len+1); //\xff(4 chars )
   StreamPrint("ExpandBuf(");
   while(len>0) {

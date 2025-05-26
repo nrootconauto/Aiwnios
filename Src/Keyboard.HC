@@ -353,7 +353,7 @@ I64 kb_mtx=0;
 U0 InteruptRt(I64 rip,U8 **rbp) {
   U8 **ptr;
   DbgPrint("Interupt At:%p",rip,rip);
-  while(ChkOnStk(rbp)) {
+  while(ChkOnStk(rbp,Fs)) {
     ptr=rbp+1;
     DbgPrint(",%p",*ptr);
     if(rbp>=*rbp)
