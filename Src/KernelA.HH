@@ -3228,11 +3228,7 @@ class CTaskStk
   U0	stk_base;
 };
 
-#ifdef TARGET_BYTECODE
-#define DYING_JIFFIES ToI64(JIFFY_FREQ)
-#else
 #define DYING_JIFFIES	ToI64(JIFFY_FREQ/5)
-#endif
 class CTaskDying
 {
   CTask *next,*last;

@@ -179,7 +179,7 @@ U0 DebuggerSpawn(CTask *debugee) {
   "Oh,and welcome to %P(%s)\n",debugee->context_save_area[22],src_link=SrcEdLink(debugee->context_save_area[22]);
   #endif
   #ifdef TARGET_BYTECODE
-  "Oh,and welcome to %P(%s)\n",TaskContextGetRIP(debugee->context_save_area[22]),src_link=SrcEdLink(TaskContextGetRIP(debugee->context_save_area));
+  "Oh,and welcome to %P(%s)\n",TaskContextGetRIP(debugee->context_save_area),src_link=SrcEdLink(TaskContextGetRIP(debugee->context_save_area));
   #endif
   "\n";
   Free(src_link);
@@ -207,7 +207,7 @@ U0 DumbStackTrace(U8 **rbp,U8 *rip) {
 }
 U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   AIWNIOS_SetCaptureMouse(FALSE); //If you freeze you are on your own
-  I64 gps[33];
+  I64 gps[2048/8];
   MemCpy(gps,_gps,8*33);
   DebuggerClientStart(Fs,gps);
   CBpt *bp;
@@ -224,7 +224,7 @@ U0 AiwniosDbgCB(I64 sig,I64 *_gps) {
   }
   #endif
   #ifdef TARGET_BYTECODE
-  I64 oip=NULL,rbp=NULL; 
+  I64 oip=TaskContextGetRIP(gps),rbp=TaskContextGetRBP(gps); 
   #endif
   #ifdef TARGET_AARCH64
   I64 oip=gps[22],rbp=gps[11]; 

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "aiwn_bytecode.h"
 // Look at your vendor's ucontext.h
 #define __USE_GNU
 #define _XOPEN_SOURCE    1
@@ -753,11 +754,14 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   ucontext_t *_ctx = __ctx;
   if (sig == SIGWINCH) {
-    puts("SIGWINCH");
     UnblockSignals();
     return;
   }
-#  if defined(__x86_64__)
+  #if defined(USE_BYTECODE)
+  UnblockSignals();
+    AiwnBCDbgFault(sig);
+  return;
+#  elif defined(__x86_64__)
 #    if defined(__linux__)
   // See /usr/include/x86_64-linux-gnu/sys/ucontext.h
   enum {
@@ -1001,6 +1005,15 @@ void InstallDbgSignalsForThread() {
 #endif
 }
 // This happens when after we call DebuggerClientEnd
+#if defined(USE_BYTECODE)
+void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
+}
+void DebuggerClientStart(void *task, void **write_regs_to) {
+	memcpy(write_regs_to,AiwnBCDbgCurContext(),sizeof(ABCFrame));
+}
+void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
+}
+#else
 void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
   WriteMsg(DBG_MSG_SET_GREG, task, gettid(), which, v);
   GrabDebugger(SIGCONT);
@@ -1013,3 +1026,4 @@ void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
   WriteMsg(DBG_MSG_RESUME, task, gettid(), wants_singlestep);
   GrabDebugger(SIGCONT);
 }
+#endif

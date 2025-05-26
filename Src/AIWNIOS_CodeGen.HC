@@ -2223,7 +2223,7 @@ break;case IC_ASM:
             tmpaie->offset=misc->offset;
             QueIns(tmpaie,cc->aot->last_ie);
 	  }
-        }
+        }
       } else {
         if(misc->addr!=INVALID_PTR) {
           h=CAlloc(sizeof CHashImport);

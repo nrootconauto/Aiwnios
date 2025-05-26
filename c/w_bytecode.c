@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 enum {
   ABC_NOP,
   ABC_SWAP,
@@ -160,7 +161,8 @@ double AiwnBCReadF64(char *src, int64_t rt) {
 #define printf(...)
 
 static _Thread_local ABCState *cur_bcstate;
-
+static _Thread_local ABCState cur_dbgstate;
+static _Thread_local jmp_buf except_to;
 typedef char *ABC_PTR;
 static int64_t AiwnBCAddCode(ABC_PTR ptr, uint32_t v, int64_t len) {
   if (ptr) {
@@ -1634,6 +1636,7 @@ int64_t FFI_CALL_TOS_0(void *fptr) {
   char *stk = calloc(1, stk_sz);
   stk += stk_sz;
   ABCState *state = ABCStateNew(fptr, stk, 0, NULL);
+  setjmp(except_to);
   while (!ABCRun_Done(state, &ret))
     ;
 
@@ -1648,6 +1651,7 @@ int64_t FFI_CALL_TOS_1(void *fptr, int64_t a) {
   char *stk = calloc(1, stk_sz);
   stk += stk_sz;
   ABCState *state = ABCStateNew(fptr, stk, 1, &a);
+  setjmp(except_to);
   while (!ABCRun_Done(state, &ret))
     ;
 
@@ -1663,6 +1667,7 @@ int64_t FFI_CALL_TOS_2(void *fptr, int64_t a, int64_t b) {
   char *stk = calloc(1, stk_sz);
   stk += stk_sz;
   ABCState *state = ABCStateNew(fptr, stk, 2, &args);
+  setjmp(except_to);
   while (!ABCRun_Done(state, &ret))
     ;
 
@@ -1678,6 +1683,7 @@ int64_t FFI_CALL_TOS_3(void *fptr, int64_t a, int64_t b, int64_t c) {
   char *stk = calloc(1, stk_sz);
   stk += stk_sz;
   ABCState *state = ABCStateNew(fptr, stk, 3, &args);
+  setjmp(except_to);
   while (!ABCRun_Done(state, &ret))
     ;
 
@@ -1693,6 +1699,7 @@ int64_t FFI_CALL_TOS_4(void *fptr, int64_t a, int64_t b, int64_t c, int64_t d) {
   char *stk = calloc(1, stk_sz);
   stk += stk_sz;
   ABCState *state = ABCStateNew(fptr, stk, 4, &args);
+  setjmp(except_to);
   while (!ABCRun_Done(state, &ret))
     ;
 
@@ -1710,12 +1717,39 @@ void AiwnBCTaskContextSetRIP(uint64_t **stk) {
 	st->ip=stk[1];
 }
 
-int64_t AiwnBCTaskContextGetRBP(uint64_t **stk) {
+int64_t AiwnBCTaskContextGetRBP(uint64_t *stk) {
 	ABCState *st=(ABCState*)stk[0];
 	return st->fp;
 }
-int64_t AiwnBCTaskContextGetRIP(uint64_t **stk) {
+int64_t AiwnBCTaskContextGetRIP(uint64_t *stk) {
 	ABCState *st=(ABCState*)stk[0];
 	return st->ip;
 }
+
+void *AiwnBCDbgCurContext() {
+	return &cur_dbgstate;
+}
+void AiwnBCDbgFault(int sig) {
+	CHashExport *exp;
+	ABCFrame *ff;
+	int64_t *prolog,*args;
+	exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1);
+	memcpy(&cur_dbgstate,cur_bcstate,sizeof(ABCState));
+	if(!exp)
+		exit(1);
+	
+	cur_bcstate->_sp-=16+sizeof(ABCFrame)-16;
+	prolog=(int64_t*)cur_bcstate->_sp;
+	prolog[0]=cur_bcstate->fp;
+	prolog[1]=cur_bcstate->ip;
+	ff=(void*)&prolog[2];
+	args=(void*)(ff+1);
+	args[0]=sig;
+	args[1]=&cur_dbgstate;
+	cur_bcstate->fun_frame=ff;
+	ff->sp=0;
+	cur_bcstate->ip=exp->val;
+	cur_bcstate->fp=(int64_t)prolog;
+	longjmp(except_to,1);
+} 
 #endif
