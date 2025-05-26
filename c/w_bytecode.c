@@ -1602,7 +1602,7 @@ uint64_t AiwnBCContextGet(ABCState **to_stk) {
   int64_t old_fp=*(int64_t*)state->fp;
   int64_t old_ip=((int64_t*)state->fp)[1];
   ABCFrame *fr=(ABCFrame*)(old_fp+16);
-  to->_sp=fr+1;
+  to->_sp=(int64_t)state->fp+16+sizeof(ABCFrame);
   to->fp=old_fp;
   to->ip=old_ip;
   to->fun_frame=fr;
