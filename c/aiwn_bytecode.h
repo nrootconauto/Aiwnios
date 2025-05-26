@@ -30,3 +30,4 @@ uint64_t AiwnBCContextGet(ABCState **to_stk);
 int64_t AiwnBCCallArgs(void *bc,int64_t argc,int64_t *argv);
 int64_t AiwnBCCall(void *bc);
 int64_t AiwnBC_FP();
+uint64_t AiwnBCMakeContext(int64_t *to_stk);

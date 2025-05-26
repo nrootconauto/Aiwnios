@@ -206,7 +206,6 @@ U0 SCRoutine() {
   LBts(&(Gs->ready),0);
   CoreAPSethTask;
 }
-MakeContext(adam_task->context_save_area,NULL,adam_task->stk);
 U0 InitCPUs() {
   I64 idx;
   MemSet(&cpu_structs,0,sizeof(CCPU) *64);

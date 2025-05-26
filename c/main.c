@@ -1487,7 +1487,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
+    #ifdef USE_BYTECODE
+    PrsAddSymbol("MakeContext", AiwnBCMakeContext, 3);
+    #else
     PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
+    #endif
     PrsAddSymbol("__HC_ICAdd_RawBytes", STK__HC_ICAdd_RawBytes, 3);
     PrsAddSymbol("__HC_SetAOTRelocBeforeRIP", STK___HC_SetAOTRelocBeforeRIP, 2);
     PrsAddSymbol("__HC_CodeMiscIsUsed", STK___HC_CodeMiscIsUsed, 1);
@@ -2120,7 +2124,7 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
     user_ev_num = SDL_RegisterEvents(1);
-    SpawnCore(&Boot, argv[0], 0);
+    SpawnCore(GenFFIBinding(&Boot,0), argv[0], 0);
     InputLoop(&quit);
   } else {
     if (arg_s->count)

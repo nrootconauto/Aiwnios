@@ -1416,6 +1416,13 @@ skip_convert:;
   //  sure arent getting the address of said location
   //
   if(cc->htc.fun) {
+  #ifdef  TARGET_BYTECODE
+        mlst=cc->htc.fun->member_lst_and_root;
+      while(mlst) {
+        mlst->reg=REG_NONE;
+	mlst=mlst->next;
+}
+  #else
     if(GetOption(OPTf_NO_REG_VAR)||GetOption(OPTf_BYTE_CODE)) {
       mlst=cc->htc.fun->member_lst_and_root;
       while(mlst) {
@@ -1429,6 +1436,7 @@ skip_convert:;
       GraphColoringDel(GraphColor(cc,FALSE));
     #endif
     }
+    #endif
     member_cnt=cc->htc.fun->member_cnt;
     mlst=cc->htc.fun->member_lst_and_root;
     if(cc->htc.fun->flags&(1<<Ff_DOT_DOT_DOT)) {
@@ -1492,6 +1500,10 @@ skip_convert:;
 	  goto no_farg;
 	  #endif
 	  #ifdef TARGET_RISCV
+	  //RISCV now uses a native SysV ABI srot of
+	  goto no_farg;
+	  #else
+	  #ifdef TARGET_BYTECODE
 	  //RISCV now uses a native SysV ABI srot of
 	  goto no_farg;
 	  #else

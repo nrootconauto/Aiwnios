@@ -79,7 +79,6 @@ U0 Yield() {
     }
   }
   if(TaskContextSave) {
-  PrintI("after",Fs);
     return;
   }  
   if(SYS_CTRL_ALT_FLAGS

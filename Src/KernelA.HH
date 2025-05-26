@@ -6854,6 +6854,12 @@ _intern IC_TO_BOOL Bool ToBool(I64);
 _intern IC_FS CTask *Fs();
 _intern IC_GS CCPU *Gs();
 #endif
+#ifdef TARGET_BYTECODE
+extern I64 MaxI64(I64,I64);
+extern I64 MinI64(I64,I64);
+extern U64 MaxU64(U64,U64);
+extern U64 MinU64(U64,U64);
+#endif
 #ifdef TARGET_X86
 _intern IC_SQRT F64 Sqrt(F64);
 _intern IC_BT Bool Bt(U8*,I64);

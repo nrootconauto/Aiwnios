@@ -224,6 +224,7 @@ void __bootstrap_tls(void) {
 typedef struct {
   void *fp, *gs;
   int64_t num;
+  int64_t arg;
   void *profiler_int;
   CHashTable *parent_table;
   char name[16];
