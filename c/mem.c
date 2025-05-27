@@ -11,7 +11,7 @@
 #include <string.h>
 #define ERR         0x7fFFffFFffFFffFF
 #define INVALID_PTR ERR
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(USE_BYTECODE)
 #  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
 #  include <windows.h>
 #  include <memoryapi.h>
@@ -60,6 +60,36 @@ static int64_t NextPower2(uint64_t v) {
   return v;
 }
 static void **new_nul = &new_nul;
+void InitBoundsChecker() {
+  int64_t want = (1ull << 31) / 8;
+  bc_good_bitmap = calloc(want, 1);
+  bc_enable = 1;
+}
+#if defined(USE_BYTECODE)
+static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
+  if (!hc)
+    hc = Fs->heap;
+  int64_t b;
+  static int64_t ps=4096;
+  int64_t pag = -1;
+  CMemBlk *ret;
+  CMemBlk *rw = 0, *rx = 0;
+  b = (pags * 4096 + ps - 1) & ~(ps - 1);
+  ret=malloc(b);
+  memset(ret,0,sizeof(CMemBlk));
+  rw = rx = ret;
+  
+  QueIns(&rw->base, hc->mem_blks.last);
+  rw->pags = pags;
+  hc->alloced_u8s += pags * 4096;
+  return ret;
+}
+static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
+	QueRem(&blk->base);
+	hc->alloced_u8s-=blk->pags*4096;
+	free(blk);
+}
+#else
 #if __OpenBSD__ + __NetBSD__ > 0
 /* THESE ARE MOTHERFUCKIN SORTED BY ->rx
  * Keep it that way or the computer will get confused.
@@ -419,11 +449,6 @@ int SetWriteNP(int st) {
 }
 #endif
 
-void InitBoundsChecker() {
-  int64_t want = (1ull << 31) / 8;
-  bc_good_bitmap = calloc(want, 1);
-  bc_enable = 1;
-}
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
 #ifndef _WIN64
   static int64_t ps;
@@ -513,7 +538,7 @@ fp_GetProcessMitigationPolicy_t *DynamicFptr_GetProcessMitigationPolicy() {
   return ret;
 }
 #endif
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) && !defined(USE_BYTECODE)
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
@@ -686,6 +711,7 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   return ret;
 }
 #endif
+#endif
 static CHeapCtrlArena *PickArena(CHeapCtrl *hc) {
   int64_t a;
 again:
@@ -739,7 +765,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (cnt <= MEM_HEAP_HASH_SIZE)
     cnt = NextPower2(cnt);
     // XXX TODO arm64 OpenBSD optpassfinal
-#if !defined(__x86_64__) && defined(__OpenBSD__)
+#if !defined(__x86_64__) && defined(__OpenBSD__) && !defined(USE_BYTECODE)
   if (hc->is_code_heap)
     goto big;
 #endif
@@ -760,7 +786,7 @@ again:;
       PAUSE;
     ret = MemPagTaskAlloc(
         (pags = ((cnt + 16 * MEM_PAG_SIZE - 1) >> MEM_PAG_BITS)) + 1, hc);
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
     ret = ((CMemBlk *)ret)->rw;
 #endif
     if (!ret) {
@@ -792,7 +818,7 @@ big:
   while (LBts(&hc->locked_flags, 1))
     PAUSE;
   ret = MemPagTaskAlloc(1 + ((cnt + sizeof(CMemBlk)) >> MEM_PAG_BITS), hc);
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   ret = ((CMemBlk *)ret)->rw;
 #endif
   LBtr(&hc->locked_flags, 1);
@@ -819,7 +845,7 @@ almost_done:
     memset(&bc_good_bitmap[(int64_t)ret / 8], 7, orig / 8);
   }
   SetWriteNP(old_wnp);
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
     while (LBts(&hc->locked_flags, 1))
@@ -866,7 +892,7 @@ void __AIWNIOS_Free(void *ptr) {
   hc = un->hc;
   hc->used_u8s -= un->sz;
   which_bucket = un->which_bucket;
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   if (hc->is_code_heap) {
     // Translate back to rx if code_heap
     while (LBts(&hc->locked_flags, 1))
@@ -942,7 +968,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
     ct->arenas[a].malloc_free_lst = &new_nul;
     QueInit(&ct->arenas[a].used_next);
   }
-#ifdef __OpenBSD__
+#ifdef __OpenBSD__ &&!defined(USE_BYTECODE)
   ct->buddies = calloc(1, sizeof(CBuddyPair));
   ct->buddies->offset_r = (1ul << 31) / 2;
 #endif
@@ -956,7 +982,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
     next = m->base.next;
-#if defined(_WIN32) || defined(WIN32)
+#if defined(_WIN32) || defined(WIN32) &&!defined(USE_BYTECODE)
     VirtualFree(m, 0, MEM_RELEASE);
 #else
     static int64_t ps;
@@ -966,10 +992,14 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
     if (m->base2.next)
       QueRem(&m->base2);
+    #if !defined(USE_BYTECODE)
     munmap(m, b);
+    #else
+    free(m);
+    #endif
 #endif
   }
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__)&& !defined(USE_BYTECODE)
   if (ct->code_shm_fd)
     close(ct->code_shm_fd);
   OBSD_SexyBuddyDel0(ct->buddies);
@@ -987,8 +1017,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   return ret;
 }
 
-#ifdef _WIN64
-
+#if defined(_WIN64)&&!defined(USE_BYTECODE) 
 int64_t IsValidPtr(char *chk) {
   MEMORY_BASIC_INFORMATION mbi;
   if (!VirtualQuery(chk, &mbi, sizeof mbi))
@@ -1195,12 +1224,12 @@ void *BoundsCheck(void *ptr, int64_t *after) {
 }
 
 int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len) {
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   CMemPair *mp = GetMemPairForPtrRX(dst);
   if (mp) {
     return (int64_t *)memcpy(mp->rw + (dst - mp->rx), src, len);
   }
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !defined(USE_BYTECODE)
   int old = SetWriteNP(0);
   int64_t r = (int64_t)memcpy(dst, src, len);
   SetWriteNP(old);
@@ -1211,7 +1240,7 @@ int64_t WriteProtectMemCpy(char *dst, char *src, int64_t len) {
 }
 
 void *(MemGetWritePtr)(void *ptr) {
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   CMemPair *mp = GetMemPairForPtrRX(ptr);
   if (!mp)
     return ptr;
@@ -1221,7 +1250,7 @@ void *(MemGetWritePtr)(void *ptr) {
   return ptr;
 }
 void *(MemGetExecPtr)(void *ptr) {
-#if __OpenBSD__ + __NetBSD__ > 0
+#if __OpenBSD__ + __NetBSD__ > 0 && !defined(USE_BYTECODE)
   CMemPair *mp = GetMemPairForPtrRW(ptr);
   if (!mp)
     return ptr;
