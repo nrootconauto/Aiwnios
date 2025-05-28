@@ -25,13 +25,21 @@ class CElTorito
   U8 zero2[20];
 };
 
-/*U0 RedSeaISO9660Stage1(U8 *iso_filename,U8 *stage2_filename)
+U0 RedSeaISO9660Stage1(U8 *iso_filename,U8 *stage2_filename)
 {
+
+  U64 BDVD_END=0x90a3;
+  U64 BDVD_START=0x8e88;
+  U64 BDVD_BLK_LO=0x8f42;
+  U64 BDVD_BLK_CNT=0x8f46;
+  U64 BDVD_SHIFT_BLKS=0x8f48;
+
   CDirEntry de;
   CFile *out_file=NULL;
   U8	*stage1_buf=CAlloc(DVD_BOOT_LOADER_SIZE);
+  U8	*stage1_src=FileRead("::/Src/DvdBootloader.BIN.C");
   if (FileFind(stage2_filename,&de) && (out_file=FOpen(iso_filename,"wc+"))) {
-    MemCpy(stage1_buf,BDVD_START,BDVD_END-BDVD_START);
+    MemCpy(stage1_buf,stage1_src,BDVD_END-BDVD_START);
     *(BDVD_BLK_LO	-BDVD_START+stage1_buf)(U32 *)=de.clus>>2;
     *(BDVD_BLK_CNT	-BDVD_START+stage1_buf)(U16 *)=
 	  (de.size+DVD_BLK_SIZE-1)>>(BLK_SIZE_BITS+2);
@@ -42,8 +50,9 @@ class CElTorito
 	  20<<2+1<<2,DVD_BOOT_LOADER_SIZE/BLK_SIZE);
     FClose(out_file);
   }
+  Free(stage1_src);
   Free(stage1_buf);
-}*/
+}
 
 U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let)
 {
@@ -177,7 +186,7 @@ public I64 RedSeaISO(U8 *_iso_filename=NULL,U8 *_src_dir,
       BlkDevAdd(bd,,TRUE,TRUE);
       StrPrint(buf,"%C:/",dv->drv_let);
       CopyTree(src_dir,buf,TRUE);
-      //RedSeaISO9660Stage1(iso_filename,stage2_filename);
+      RedSeaISO9660Stage1(iso_filename,stage2_filename);
       BlkDevDel(bd);
       DrvDel(dv);
     }
