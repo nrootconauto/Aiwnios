@@ -1592,7 +1592,7 @@ void SysSymImportsResolve(char *sym, int64_t flags) {
     SetWriteNP(1);
 #if defined(__APPLE__)
     sys_icache_invalidate(imp->address, 8);
-#else
+#elif !defined(USE_BYTECODE)
     __builtin___clear_cache(imp->address, imp->address + 8);
 #endif
     imp->base.type = HTT_INVALID;
@@ -4376,7 +4376,6 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
       glbl->data_addr = ptr;
     } else if (glbl->base.type & HTT_FUN) {
       if (fun->argc != arity) {
-        puts(name);
         abort();
       }
       if (!fun->fun_ptr || fun->fun_ptr == &DoNothing||fun->fun_ptr==INVALID_PTR) {

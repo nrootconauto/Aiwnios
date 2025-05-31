@@ -1205,7 +1205,6 @@ CCF_DONT_FREE_BUF
   Lex(cctrl);
   blob=PrsAsmBlk(cctrl);
   oret=ret=MAllocIdent(blob->data,Fs->code_heap);
-PrintI("ret",ret);
   JITFixupAiwniosAOTBlob(cctrl,blob,ret);
   CmpCtrlDel(cctrl);
   while(ret<oret+blob->len) {

@@ -395,6 +395,7 @@ if(!IsCmdLineMode&&!IsCmdLineMode2)
 Gs->seth_task=adam_task;
 if(IsCmdLineMode2)
   AiwniosTUIEnable;
+
 if(!IsCmdLineMode)
   sys_winmgr_task=Spawn(&WinMgrTask,NULL,"Window Mgr");
 U0 UserStartUp()
@@ -448,7 +449,9 @@ if(!IsCmdLineMode) {
   ExePrint2("#include \"~:/Src/AMouse.HC\";");
   if (_SixtyFPS)
     SetFPS(60.);
+
   ACInit("~:/Src/*.HC*;*.HH*");
+
   OnceExe;
   if(FileFind("~/HomeKeyPlugIns.HC"))
     ExeFile("~/HomeKeyPlugIns.HC");

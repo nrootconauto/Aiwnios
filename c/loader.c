@@ -94,6 +94,7 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
     }
 // same thing as above(avoiding strict aliaing stuff).
 #define OFF(T) (i - (int64_t)ptr2 - sizeof(T))
+#ifndef __EMSCRIPTEN__
 #define REL(T)                                                                 \
   {                                                                            \
     size_t off = OFF(T);                                                       \
@@ -105,6 +106,18 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
     memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                               \
     __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
   }
+#else
+#define REL(T)                                                                 \
+  {                                                                            \
+    size_t off = OFF(T);                                                       \
+    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                             \
+  }
+#define IMM(T)                                                                 \
+  {                                                                            \
+    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                               \
+  }
+
+#endif
     if (tmpex) {
       ptr2 = module_base + i;
       if (tmpex->base.type & HTT_FUN)
@@ -278,6 +291,7 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
   }
 }
 
+
 static void LoadPass2(char *src, char *module_base) {
   char *st_ptr;
   int64_t i, etype, cnt2;
@@ -413,7 +427,9 @@ char *Load(char *fbuf, int64_t size) {
 
 lo_skip:
   LoadPass1((char *)bfh_addr + bfh_addr->patch_table_offset, bfh_addr->data, 0);
+  #if !defined(__EMSCRIPTEN__)
   LoadPass2((char *)bfh_addr + bfh_addr->patch_table_offset, bfh_addr->data);
+  #endif
   return bfh_addr;
 }
 
@@ -430,3 +446,53 @@ void ImportSymbolsToHolyC(void (*cb)(char *name, void *addr)) {
     }
   }
 }
+#if defined(__EMSCRIPTEN__)
+char *LoadMainsWasm(char *src, char *module_base) {
+  char *st_ptr;
+  int64_t i, etype, cnt2;
+  void (*fptr)();
+  if(!src)
+	src=module_base + ((CBinFile*)module_base)->patch_table_offset;
+	module_base=((CBinFile*)module_base)->data;
+	again:;
+  char *osrc=src;
+  if (etype = *src++) {
+    i = READ_NUM(src, int32_t);
+    src += 4;
+    switch (etype) {
+    case IET_REL_I0 ... IET_REL_RISCV:
+      // Special has form [BINOFF,OFFSET]
+      src += 4;
+    }
+    st_ptr = src;
+    src += strlen(st_ptr) + 1;
+    switch (etype) {
+    case IET_MAIN:	
+      fptr = (i + module_base);
+      if(FFI_CALL_TOS_0_FEW_INSTS(fptr,8000000))
+		return osrc;
+	  goto again;
+      break;
+    case IET_ABS_ADDR:
+      src += sizeof(int32_t) * i;
+      break;
+    case IET_CODE_HEAP:
+    case IET_ZEROED_CODE_HEAP:
+      src += 4 + sizeof(int32_t) * i;
+      break;
+    case IET_DATA_HEAP:
+    case IET_ZEROED_DATA_HEAP:
+      cnt2 = READ_NUM(src, int64_t);
+      // I64 size
+      // U8 data[cnt2];
+      // union {I32 ptr,I32 offset}[i]
+      src += 8 + sizeof(int32_t) * i * 2 + cnt2;
+      break;
+    default:
+    goto again;
+    }
+  }
+  return src;
+}
+
+#endif

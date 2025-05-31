@@ -15,7 +15,12 @@
 #include "c/aiwn_windows.h"
 #include "c/aiwn_bytecode.h"
 #include "isocline.h"
+#if !defined(__EMSCRIPTEN__)
 #include <SDL.h>
+#else
+#include <emscripten.h>
+#include <SDL2/SDL.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -71,7 +76,7 @@ static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char *str, int64_t i) {
-  printf("%s:%ld\n", str, i);
+  printf("%s:%lld\n", str, i);
 }
 static void PrintF(char *str, double f) {
   printf("%s:%lf\n", str, f);
@@ -80,7 +85,7 @@ static void PrintPtr(char *str, void *f) {
   printf("%s:%p\n", str, f);
 }
 static int64_t STK_PrintI(int64_t *);
-static int64_t STK_PrintF(double *);
+static int64_t STK_PrintF(int64_t *);
 static int64_t STK_PrintPtr(int64_t *stk) {
   PrintPtr((char *)(stk[0]), (void *)stk[1]);
 }
@@ -103,8 +108,8 @@ static int64_t STK_DolDocDumpIR(int64_t *stk) {
   A_FREE(array);
   return len;
 }
-static void ExitAiwnios(int64_t *);
-static void PrsAddSymbol(char *name, void *ptr, int64_t arity) {
+static int64_t ExitAiwnios(int64_t *);
+static void PrsAddSymbol(char *name, int64_t (*ptr)(int64_t*), int64_t arity) {
   PrsBindCSymbol(name, ptr, arity);
 }
 static void PrsAddSymbolNaked(char *name, void *ptr, int64_t arity) {
@@ -354,10 +359,10 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
   }
   return dst;
 }
-static void STK_AiwniosSetVolume(double *stk) {
-  AiwniosSetVolume(*stk);
+static int64_t STK_AiwniosSetVolume(int64_t *stk) {
+  AiwniosSetVolume(*(double*)stk);
 }
-static int64_t STK_AiwniosGetVolume(double *stk) {
+static int64_t STK_AiwniosGetVolume(int64_t *stk) {
   dbl2u64 un;
   un.d=AiwniosGetVolume();
   return un.i;
@@ -372,7 +377,7 @@ static void PutS(char *s) {
   fprintf(stdout, "%s", s);
   fflush(stdout);
 }
-static uint64_t STK_60fps(uint64_t *stk) {
+static int64_t STK_60fps(int64_t *stk) {
   return sixty_fps->count != 0;
 }
 extern int64_t GetTicksHP();
@@ -566,6 +571,9 @@ static double Arg(double x, double y) {
   return atan2(y, x);
 }
 static char *AiwniosGetClipboard() {
+	#if defined(__EMSCRIPTEN__)
+	return A_STRDUP("TODO",NULL);
+	#else
   char *has, *ret;
   if (!SDL_HasClipboardText())
     return A_STRDUP("", NULL);
@@ -573,10 +581,14 @@ static char *AiwniosGetClipboard() {
   ret = A_STRDUP(has, NULL);
   SDL_free(has);
   return ret;
+  #endif
 }
 static void AiwniosSetClipboard(char *c) {
+	#if defined(__EMSCRIPTEN__)
+	#else
   if (c)
     SDL_SetClipboardText(c);
+    #endif
 }
 
 static void TaskContextSetRIP(int64_t *ctx, void *p) {
@@ -587,45 +599,49 @@ static void TaskContextSetRIP(int64_t *ctx, void *p) {
 #endif
 }
 
-static STK_TaskContextSetRIP(int64_t *stk) {
+static int64_t STK_TaskContextSetRIP(int64_t *stk) {
   TaskContextSetRIP((int64_t *)(stk[0]), (void *)stk[1]);
 }
 
-static int64_t STK_GenerateFFIForFun(void **stk) {
-  TaskContextSetRIP(stk[0], (void *)stk[1]);
+static int64_t STK_GenerateFFIForFun(int64_t *stk) {
+  TaskContextSetRIP((void*)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_AIWNIOS_makecontext(void **stk) {
-  return AIWNIOS_makecontext(stk[0], stk[1], stk[2]);
+static int64_t STK_AIWNIOS_makecontext(int64_t *stk) {
+  return AIWNIOS_makecontext((void*)stk[0], (void*)stk[1], (void*)stk[2]);
 }
 
-static int64_t STK___HC_SetAOTRelocBeforeRIP(void **stk) {
-  __HC_SetAOTRelocBeforeRIP(stk[0], (int64_t)stk[1]);
+static int64_t STK___HC_SetAOTRelocBeforeRIP(int64_t *stk) {
+  __HC_SetAOTRelocBeforeRIP((void*)stk[0], (int64_t)stk[1]);
 }
 
-static int64_t STK___HC_CodeMiscIsUsed(void **stk) {
+static int64_t STK___HC_CodeMiscIsUsed(int64_t *stk) {
   __HC_CodeMiscIsUsed((CCodeMisc *)stk[0]);
 }
 
-static int64_t STK_AiwniosSetClipboard(void **stk) {
+static int64_t STK_AiwniosSetClipboard(int64_t *stk) {
   AiwniosSetClipboard((char *)stk[0]);
+  return 0;
 }
 
-static int64_t STK_AiwniosGetClipboard(void **stk) {
+static int64_t STK_AiwniosGetClipboard(int64_t *stk) {
   return (int64_t)AiwniosGetClipboard();
 }
 
-static int64_t STK_CmpCtrlDel(void **stk) {
+static int64_t STK_CmpCtrlDel(int64_t *stk) {
   CmpCtrlDel((CCmpCtrl *)stk[0]);
+  return 0;
 }
 
 _Static_assert(sizeof(double) == sizeof(uint64_t));
 #define MATHFUNDEF(x)                                                          \
-  static uint64_t STK_##x(double *stk) {                                       \
+  static int64_t STK_##x(int64_t *_stk) {                                       \
+	  double *stk=(double*)_stk;\
     return ((dbl2u64)x(stk[0])).i;                                             \
   }
 #define MATHFUNDEF2(x)                                                         \
-  static uint64_t STK_##x(double *stk) {                                       \
+  static int64_t STK_##x(int64_t *_stk) {                                       \
+	  double *stk=(double*)_stk;\
     return ((dbl2u64)x(stk[0], stk[1])).i;                                     \
   }
 
@@ -701,12 +717,12 @@ static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
 }
 
-static void *STK_MemCpy(void **stk) {
-  return memmove(stk[0], stk[1], (size_t)stk[2]);
+static int64_t STK_MemCpy(int64_t*stk) {
+  return (int64_t)memmove(stk[0], stk[1], (size_t)stk[2]);
 }
 
-static void *STK_MemSet(int64_t *stk) {
-  return memset((void *)stk[0], stk[1], stk[2]);
+static int64_t STK_MemSet(int64_t *stk) {
+  return (int64_t)memset((void *)stk[0], stk[1], stk[2]);
 }
 
 static int64_t STK_MemSetU16(int64_t *stk) {
@@ -725,41 +741,41 @@ static int64_t STK_MemSetI64(int64_t *stk) {
   return (int64_t)MemSetU64((void *)stk[0], stk[1], stk[2]);
 }
 
-static size_t STK_StrLen(char **stk) {
-  return strlen(stk[0]);
+static int64_t STK_StrLen(int64_t *stk) {
+  return strlen((char*)stk[0]);
 }
 
-static int64_t STK_StrCmp(char **stk) {
+static int64_t STK_StrCmp(int64_t *stk) {
   // dont cast, sign extend
-  return strcmp(stk[0], stk[1]);
+  return strcmp((char*)stk[0], (char*)stk[1]);
 }
 
-static char *STK_StrCpy(char **stk) {
-  return memmove(stk[0], stk[1], strlen(stk[1]) + 1);
+static int64_t STK_StrCpy(int64_t *stk) {
+  return (int64_t)memmove((char*)stk[0], (char*)stk[1], strlen((char*)stk[1]) + 1);
 }
 
-static int64_t STK_StrNCmp(char **stk) {
-  return __builtin_strncmp(stk[0], stk[1], (size_t)stk[2]);
+static int64_t STK_StrNCmp(int64_t *stk) {
+  return __builtin_strncmp((char*)stk[0], (char*)stk[1], (size_t)stk[2]);
 }
 
-static int64_t STK_StrICmp(char **stk) {
-  return __builtin_strcasecmp(stk[0], stk[1]);
+static int64_t STK_StrICmp(int64_t *stk) {
+  return __builtin_strcasecmp((char*)stk[0], (char*)stk[1]);
 }
 
-static int64_t STK_StrNICmp(char **stk) {
-  return __builtin_strncasecmp(stk[0], stk[1], (size_t)stk[2]);
+static int64_t STK_StrNICmp(int64_t *stk) {
+  return __builtin_strncasecmp((char*)stk[0], (char*)stk[1], (size_t)stk[2]);
 }
 
-static char *STK_StrMatch(char **stk) {
-  return __builtin_strstr(stk[1], stk[0]);
+static int64_t STK_StrMatch(int64_t *stk) {
+  return (int64_t)__builtin_strstr((char*)stk[1], (char*)stk[0]);
 }
 
-static char *STK_StrIMatch(char **stk) {
+static int64_t STK_StrIMatch(int64_t *stk) {
 #ifndef _WIN64
-  return strcasestr(stk[1], stk[0]);
+  return strcasestr((char*)stk[1], (char*)stk[0]);
 #else
   // SDL forces UTF8,so roll our own
-  char *heystack = stk[1], *needle = stk[0];
+  char *heystack = (char*)stk[1], *needle = (char*)stk[0];
   int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
   if (len > len2)
     return 0;
@@ -784,8 +800,9 @@ static int64_t STK_PrintI(int64_t *stk) {
   PrintI((char *)stk[0], stk[1]);
 }
 
-static int64_t STK_PrintF(double *stk) {
-  PrintF(((char **)stk)[0], stk[1]);
+static int64_t STK_PrintF(int64_t *stk) {
+  PrintF(((char **)stk)[0], ((double*)stk)[1]);
+  return 0;
 }
 
 static int64_t STK_memcmp(int64_t *stk) {
@@ -818,7 +835,7 @@ static int64_t STK_PutS(int64_t *stk) {
   fflush(stdout);
 }
 
-static void STK_PutS2(int64_t *stk) {
+static int64_t STK_PutS2(int64_t *stk) {
   fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
 }
@@ -829,6 +846,9 @@ static int64_t STK_SetHolyFs(int64_t *stk) {
 
 static int64_t STK_GetHolyFs(int64_t *stk) {
   return (int64_t)GetHolyFs();
+}
+static int64_t STK_GetHolyGs(int64_t *stk) {
+  return (int64_t)GetHolyGs();
 }
 
 static int64_t STK_SpawnCore(int64_t *stk) {
@@ -855,7 +875,11 @@ static int64_t STK___GetTicks(int64_t *stk) {
 }
 
 static int64_t STK___Sleep(int64_t *stk) {
+	#ifdef __EMSCRIPTEN__
+	SDL_Delay(stk[0]);
+	#else
   MPSleepHP(stk[0] * 1e3);
+  #endif
 }
 
 static int64_t STK_ImportSymbolsToHolyC(int64_t *stk) {
@@ -870,7 +894,11 @@ static int64_t STK_AIWNIOS_setcontext(int64_t *stk) {
 }
 
 static int64_t STK_IsValidPtr(int64_t *stk) {
+	#ifdef __EMSCRIPTEN__
+	return 1; //Whoops
+	#else
   return IsValidPtr((char *)stk[0]);
+  #endif
 }
 static int64_t STK___HC_CmpCtrl_SetAOT(int64_t *stk) {
   __HC_CmpCtrl_SetAOT((CCmpCtrl *)stk[0]);
@@ -1205,7 +1233,11 @@ static int64_t STK___HC_ICAdd_ShortAddr(int64_t *stk) {
   return (int64_t)__HC_ICAdd_ShortAddr(stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK_Misc_Caller(int64_t *stk) {
+	#ifdef USE_BYTECODE
+	return NULL;
+	#else
   return (int64_t)Misc_Caller(stk[0]);
+  #endif
 }
 static int64_t STK_VFsSetPwd(int64_t *stk) {
   VFsSetPwd(stk[0]);
@@ -1237,7 +1269,7 @@ static int64_t STK_VFsBlkWrite(int64_t *stk) {
 static int64_t STK_VFsFOpen(int64_t *stk) {
   return VFsFOpen(stk[0], stk[1]);
 }
-static void STK_VFsFClose(int64_t *stk) {
+static int64_t STK_VFsFClose(int64_t *stk) {
   VFsFClose(stk[0]);
 }
 static int64_t STK_VFsFSeek(int64_t *stk) {
@@ -1265,7 +1297,9 @@ static int64_t STK_GrPaletteColorSet(int64_t *stk) {
   GrPaletteColorSet(stk[0], stk[1]);
 }
 static int64_t STK_DrawWindowNew(int64_t *stk) {
+	#ifndef __EMSCRIPTEN__
   DrawWindowNew();
+  #endif
 }
 static int64_t STK_SetKBCallback(int64_t *stk) {
   SetKBCallback(stk[0]);
@@ -1294,7 +1328,7 @@ static int64_t STK_NetPollForHangup(int64_t *stk) {
   return NetPollForHangup(stk[0], stk[1]);
 }
 
-static int64_t STK_NetIP4ByHost(char **stk) {
+static int64_t STK_NetIP4ByHost(int64_t *stk) {
   return NetIP4ByHost(stk[0]);
 }
 
@@ -1346,6 +1380,10 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
   return NetAddrNew(stk[0], stk[1], stk[2]);
 }
 
+static int64_t STK_AiwniosTUIEnable(int64_t*) {
+	AiwniosTUIEnable();
+	return 0;
+}
 static int64_t STK_NetUDPAddrNew(int64_t *stk) {
   return NetUDPAddrNew(stk[0], stk[1], stk[2]);
 }
@@ -1392,6 +1430,21 @@ static int64_t STK_BCRun(int64_t *stk) {
 	return ABCRun((void*)stk[0]);
 }
 
+static int64_t STK_VFsDir(int64_t *) {
+	char **ass=VFsDir();
+	if(!ass)
+		return 0;
+	int64_t cnt=0,*ret;
+	while(ass[cnt])
+		++cnt;
+		++cnt;
+	ret=A_CALLOC(8*cnt,NULL);
+	for(cnt=0;ass[cnt];++cnt)
+		ret[cnt]=(int64_t)ass[cnt];
+	A_FREE(ass);
+	return ret;
+}
+
 int64_t IsCmdLineMode() {
   return arg_bootstrap_bin->count != 0 || arg_cmd_line->count != 0;
 }
@@ -1401,7 +1454,13 @@ int64_t IsCmdLineMode2() {
     return 0;
   return arg_cmd_line2->count != 0;
 }
+static int64_t STK_IsCmdLineMode(int64_t*) {
+	return IsCmdLineMode();
+}
 
+static int64_t STK_IsCmdLineMode2(int64_t*) {
+	return IsCmdLineMode2();
+}
 int64_t STK_TermSize(int64_t *stk) {
   TermSize((int64_t *)(stk[0]), (int64_t *)(stk[1]));
   return 0;
@@ -1411,18 +1470,24 @@ static void _freestr(void *p) {
   free(*(void **)p);
 }
 
-static char *CmdLineGetStr(char **stk) {
+static int64_t CmdLineGetStr(int64_t *stk) {
   char __attribute__((cleanup(_freestr))) *s = ic_readline(*stk);
   return A_STRDUP(s ?: "", 0);
 }
 
-char **CmdLineBootFiles() {
+int64_t CmdLineBootFiles(int64_t *) {
+	#ifdef __EMSCRIPTEN__
+	return NULL;
+	#endif
   return arg_boot_files->filename;
 }
-int64_t CmdLineBootFileCnt() {
+int64_t CmdLineBootFileCnt(int64_t*) {
+	#if defined(__EMSCRIPTEN__)
+	return 0;
+	#endif
   return arg_boot_files->count;
 }
-static int64_t STK__HC_ICAdd_ToBool(void **stk) {
+static int64_t STK__HC_ICAdd_ToBool(int64_t *stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
 static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
@@ -1430,7 +1495,7 @@ static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
   int64_t r = (int64_t)WriteProtectMemCpy(ptr, (char *)stk[1], stk[2]);
 #if defined(__APPLE__)
   sys_icache_invalidate(ptr, stk[2]);
-#else
+#elif ! defined(USE_BYTECODE)
   __builtin___clear_cache(ptr, stk[0] + stk[2]);
 #endif
   return r;
@@ -1439,12 +1504,21 @@ static int64_t is_fast_fail = 0;
 int64_t IsFastFail() {
   return is_fast_fail;
 }
-static char *AiwniosPackRamDiskPtr(int64_t **);
-static char *AiwniosPackBootCommand(int64_t **);
-static int64_t STK_AiwnBCCall(int64_t **stk) {
+int64_t STK_IsFastFail(int64_t*) {
+  return IsFastFail();
+}
+static int64_t AiwniosPackRamDiskPtr(int64_t *);
+static int64_t AiwniosPackBootCommand(int64_t *);
+static int64_t STK_AiwniosPackRamDiskPtr(int64_t *s) {
+	return AiwniosPackRamDiskPtr(s);
+}
+static int64_t STK_AiwniosPackBootCommand(int64_t *s) {
+	return AiwniosPackBootCommand(s);
+}
+static int64_t STK_AiwnBCCall(int64_t *stk) {
 	return AiwnBCCall((void*)stk[0]);
 }
-static int64_t STK_AiwnBCCallArgs(int64_t **stk) {
+static int64_t STK_AiwnBCCallArgs(int64_t *stk) {
 	return AiwnBCCallArgs((void*)stk[0],stk[0],(void*)stk[1]);
 }
 static void BootAiwnios(char *bootstrap_text) {
@@ -1470,7 +1544,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("BCCtxDel",&STK_BCCtxDel,1);
     PrsAddSymbol("BCCtxNew",&STK_BCCtxNew,4);
 	PrsAddSymbol("BCRun",&STK_BCRun,1);
-	PrsAddSymbol("BCDel",&STK_BCRun,1);
+	PrsAddSymbol("BCDel",&STK_BCDel,1);
     PrsAddSymbol("DolDocDumpIR", STK_DolDocDumpIR, 3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
@@ -1506,7 +1580,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("Tan", STK_tan, 1);
     PrsAddSymbol("Arg", STK_Arg, 2);
     PrsAddSymbol("ACos", STK_acos, 1);
-    PrsAddSymbol("IsFastFail", IsFastFail, 0);
+    PrsAddSymbol("IsFastFail", STK_IsFastFail, 0);
     PrsAddSymbol("ASin", STK_asin, 1);
     PrsAddSymbol("ATan", STK_atan, 1);
     PrsAddSymbol("Exp", STK_exp, 1);
@@ -1521,8 +1595,8 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__SleepHP", STK___SleepHP, 1);
     PrsAddSymbol("__GetTicksHP", STK___GetTicksHP, 0);
     PrsAddSymbol("__StrNew", STK___AIWNIOS_StrDup, 2);
-    PrsAddSymbol("AiwniosPackRamDisk", AiwniosPackRamDiskPtr, 1);
-    PrsAddSymbol("AiwniosPackBootCommand", AiwniosPackBootCommand, 0);
+    PrsAddSymbol("AiwniosPackRamDisk", STK_AiwniosPackRamDiskPtr, 1);
+    PrsAddSymbol("AiwniosPackBootCommand", STK_AiwniosPackBootCommand, 0);
 #define X(a, b) PrsAddSymbol(#a, STK_##a, b)
     X(MemCpy, 3);
     X(MemSet, 3);
@@ -1577,7 +1651,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("PutS", STK_PutS, 1);
     PrsAddSymbol("PutS2", STK_PutS2, 1);
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
-    PrsAddSymbol("Fs", GetHolyFs, 0);
+    PrsAddSymbol("Fs", STK_GetHolyFs, 0);
     PrsAddSymbol("WriteProtectMemCpy", STK_WriteProtectMemCpy, 3);
     #ifdef USE_BYTECODE
 		PrsAddSymbolNaked("GetRBP", &AiwnBC_FP, 0);
@@ -1587,11 +1661,13 @@ static void BootAiwnios(char *bootstrap_text) {
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
+    #if !defined(__EMSCRIPTEN__)
     ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyFsPtr();
     PrsAddSymbolNaked("__Gs", NULL, 0);
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
+    #endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
@@ -1599,7 +1675,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
     PrsAddSymbol("MPAwake", STK_MPAwake, 1);
     PrsAddSymbol("mp_cnt", STK_mp_cnt, 0);
-    PrsAddSymbol("Gs", GetHolyGs, 0); // Gs just calls Thread local storage on
+    PrsAddSymbol("Gs", STK_GetHolyGs, 0); // Gs just calls Thread local storage on
                                       // linux(not mutations in saved registers)
     PrsAddSymbol("SetGs", STK_SetHolyGs, 1);
     PrsAddSymbol("__GetTicks", STK___GetTicks, 0);
@@ -1725,7 +1801,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("VFsFRead", STK_VFsFileRead, 2);
     PrsAddSymbol("VFsFWrite", STK_VFsFileWrite, 3);
     PrsAddSymbol("VFsDel", STK_VFsDel, 1);
-    PrsAddSymbol("VFsDir", VFsDir, 0);
+    PrsAddSymbol("VFsDir", STK_VFsDir, 0);
     PrsAddSymbol("VFsDirMk", STK_VFsDirMk, 1);
     PrsAddSymbol("VFsFBlkRead", STK_VFsBlkRead, 4);
     PrsAddSymbol("VFsFBlkWrite", STK_VFsBlkWrite, 4);
@@ -1767,9 +1843,9 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("NetAddrNew", STK_NetAddrNew, 3);
     PrsAddSymbol("NetConnect", STK_NetConnect, 2);
     PrsAddSymbol("_SixtyFPS", STK_60fps, 0);
-    PrsAddSymbol("IsCmdLineMode", IsCmdLineMode, 0);
-    PrsAddSymbol("AiwniosTUIEnable", AiwniosTUIEnable, 0);
-    PrsAddSymbol("IsCmdLineMode2", IsCmdLineMode2, 0); // Sexy text mode
+    PrsAddSymbol("IsCmdLineMode", STK_IsCmdLineMode, 0);
+    PrsAddSymbol("AiwniosTUIEnable", STK_AiwniosTUIEnable, 0);
+    PrsAddSymbol("IsCmdLineMode2", STK_IsCmdLineMode2, 0); // Sexy text mode
     PrsAddSymbol("TermSize", STK_TermSize, 2);
     PrsAddSymbol("AIWNIOS_SetCaptureMouse", STK_SetCaptureMouse, 1);
     PrsAddSymbol("CSPRNG", STK_CSPRNG, 2);
@@ -1783,14 +1859,14 @@ static char *ramdisk_ptr = NULL;
 static int64_t ramdisk_size = 0;
 static char *boot_command = NULL;
 // See Src/AiwniosPack
-static char *AiwniosPackRamDiskPtr(int64_t **stk) {
+static int64_t AiwniosPackRamDiskPtr(int64_t *stk) {
   int64_t *sz = stk[0];
   if (sz)
     *sz = ramdisk_size;
   return ramdisk_ptr;
 }
 // See Src/AiwniosPack
-static char *AiwniosPackBootCommand(int64_t **stk) {
+static int64_t AiwniosPackBootCommand(int64_t *stk) {
   return boot_command;
 }
 
@@ -1803,7 +1879,9 @@ typedef struct CAiwniosPack {
   char boot_command[144];
   char save_directory[144];
 } CAiwniosPack;
-static void Boot() {
+static char *loaded_hcrt,*loaded_hcrt_ptr=NULL;
+static int64_t Boot(int64_t*) {
+	puts("noade");
   int64_t len, size, hcrt_size;
   char *fbuf, *hcrt;
   Fs = calloc(sizeof(CTask), 1);
@@ -1903,8 +1981,10 @@ static void Boot() {
   } else
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
+  printf("HCRT:%p\n",hcrt);
   if (hcrt)
-    Load(hcrt, hcrt_size);
+    loaded_hcrt=Load(hcrt, hcrt_size);
+    printf("AS:%p\n",loaded_hcrt);;
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {
@@ -1916,7 +1996,7 @@ static void AiwniosBye() {
     SDL_Quit();
   }
 }
-static void ExitAiwnios(int64_t *stk) {
+static int64_t ExitAiwnios(int64_t *stk) {
   quit = 1, quit_code = stk[0];
   if (arg_cmd_line->count || arg_bootstrap_bin->count) {
     AiwniosBye();
@@ -1929,6 +2009,7 @@ static void ExitAiwnios(int64_t *stk) {
   }
 }
 static int64_t IsAiwniosPackApp() {
+	#if ! defined(__EMSCRIPTEN__)
   char signature[9];
   signature[8] = 0;
   if (exe_name) {
@@ -1939,11 +2020,26 @@ static int64_t IsAiwniosPackApp() {
     if (!strcmp(signature, "AiwnPack"))
       return 1;
   }
+  #endif
   return 0;
 }
+#if defined(__EMSCRIPTEN__)
+extern void EMInputLoopRun(int64_t*);
+static void EMMainLoop() {
+	if(loaded_hcrt) {
+		loaded_hcrt_ptr=LoadMainsWasm(loaded_hcrt_ptr,loaded_hcrt);
+	}
+	EMInputLoopRun(&quit);
+	if(quit) {
+		emscripten_cancel_main_loop	();
+	}
+}
+#endif
 int main(int argc, char **argv) {
   SDL_SetMainReady();
+#if !defined(__EMSCRIPTEN__)
   exe_name = argv[0];
+#endif
   setlocale(LC_ALL, "C");
   atexit(&AiwniosBye);
 #ifndef _WIN64
@@ -2115,20 +2211,34 @@ int main(int argc, char **argv) {
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
+	  puts("ass");
     InitSound();
+	  puts("ass2");
     if (0 > SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
+	  puts("ass3");
       char *p = SDL_GetError();
       if (!p)
         p = "???";
       int64_t l = snprintf(NULL, 0, "Failed to init SDL(%s)", p);
       char buf[l + 1];
       sprintf(buf, "Failed to init SDL(%s)", p);
+      #if defined(__EMSCRIPTEN__) 
+      fprintf(stderr,"%s",buf);
+      #else
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS", buf, NULL);
+      #endif
       exit(EXIT_FAILURE);
     }
     user_ev_num = SDL_RegisterEvents(1);
-    SpawnCore(GenFFIBinding(&Boot,0), argv[0], 0);
+    #if defined(__EMSCRIPTEN__)
+    DrawWindowNew();
+    Boot(NULL);
+    emscripten_set_main_loop(EMMainLoop,0,1);
+    return 0;
+    #else
+    SpawnCore(GenFFIBinding(&Boot,0),argv[0],0);
     InputLoop(&quit);
+    #endif
   } else {
     if (arg_s->count)
       InitSound();

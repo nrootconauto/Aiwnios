@@ -2,7 +2,6 @@
 #─────────────────────────────────────────────────────────────────────┘
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/generated.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/generated.h" @ONLY)
-
 set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/aiwn.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/bungis.c"
@@ -29,6 +28,8 @@ set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/w_bytecode.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows.c")
 if(USE_BYTECODE)
+  list(APPEND C_SOURCES
+	wasm_misc.c)
 elseif (ARCH STREQUAL "riscv64")
   list(APPEND C_SOURCES
     riscv_asm.c
@@ -42,20 +43,17 @@ elseif (ARCH STREQUAL "arm64")
   list(APPEND C_SOURCES
     arm64_asm.c 
     arm_backend.c)
-endif()
+endif ()
 
 add_executable(aiwnios ${C_SOURCES})
-if(USE_BYTECODE)
-  target_compile_definitions(aiwnios PRIVATE  USE_BYTECODE=21)
-endif()
-target_compile_options(aiwnios PRIVATE -Wno-all -Werror-implicit-function-declaration)
+target_compile_options(aiwnios PRIVATE -Wstrict-prototypes -Werror-implicit-function-declaration -fno-rtti -fno-exceptions)
 set(COMP_OPTS
   -w
   -Wno-all
   -Wno-int-conversion
   -Wno-incompatible-function-pointer-types
-  -Wno-incompatible-pointer-types
-  -fno-math-errno
+  -Wno-incompatible-pointer-types 
+ -fno-math-errno
   -fno-trapping-math
   -fno-exceptions
   -fno-omit-frame-pointer
@@ -65,10 +63,15 @@ set(COMP_OPTS
   -fno-asynchronous-unwind-tables
   -fcf-protection=none)
 target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
-if (ARCH STREQUAL "x86_64")
+if(USE_BYTECODE)
+  if(DEFINED EMSCRIPTEN)
+    list(APPEND COMP_OPTS  -sUSE_SDL=2 -sWASM=1)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  endif()
+  target_compile_definitions(aiwnios PRIVATE  USE_BYTECODE=21)  
+elseif (ARCH STREQUAL "x86_64")
   list(APPEND COMP_OPTS -mno-shstk -fno-plt -mno-red-zone)
-endif ()
-if (ARCH STREQUAL "arm64")
+elseif (ARCH STREQUAL "arm64")
   list(APPEND COMP_OPTS -ffixed-x28)
 endif ()
 if (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")

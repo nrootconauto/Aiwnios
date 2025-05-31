@@ -61,7 +61,7 @@ typedef struct __attribute__((packed)) CMemUnused {
   struct CMemUnused *next;
   struct CMemUnused *last; // Used for used memory only
   CHeapCtrl *hc;
-  void *caller1, *caller2; // Used for used memory only
+  int64_t caller1,caller2; // Used for used memory only
   int64_t which_bucket;
   int64_t sz; // MUST BE LAST MEMBER FOR MAllocAligned
 } CMemUnused;

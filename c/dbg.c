@@ -1,3 +1,28 @@
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <stdint.h>
+#include "c/aiwn_asm.h"
+#include "c/aiwn_except.h"
+#include "c/aiwn_hash.h"
+#include "c/aiwn_mem.h"
+#include "c/aiwn_multic.h"
+#include "c/aiwn_que.h"
+#include "c/aiwn_bytecode.h"
+#include <string.h>
+void DebuggerClientSetGreg(void *task, int64_t which, int64_t v) {
+}
+void DebuggerClientStart(void *task, void **write_regs_to) {
+	memcpy(write_regs_to,AiwnBCDbgCurContext(),sizeof(ABCFrame));
+}
+void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
+}
+void DebuggerClientWatchThisTID() {
+}
+void DebuggerBegin()  {
+}
+void InstallDbgSignalsForThread() {
+}
+#else
 #include "c/aiwn_asm.h"
 #include "c/aiwn_except.h"
 #include "c/aiwn_hash.h"
@@ -41,7 +66,7 @@
 #    include <sys/uio.h>
 #    include <sys/user.h>
 #  endif
-#else
+#elif defined(WIN32) || defined(_WIN32) ||defined(_WIN64) || defined(WIN64)
 #  include <windows.h>
 #  include <errhandlingapi.h>
 #  include <handleapi.h>
@@ -1026,4 +1051,5 @@ void DebuggerClientEnd(void *task, int64_t wants_singlestep) {
   WriteMsg(DBG_MSG_RESUME, task, gettid(), wants_singlestep);
   GrabDebugger(SIGCONT);
 }
+#endif
 #endif

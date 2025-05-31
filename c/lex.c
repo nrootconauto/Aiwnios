@@ -759,12 +759,16 @@ re_enter:;
             sprintf(buf, "%s/%s", actual_file->dir, lex->string);
             dir = __AIWNIOS_StrDup(buf, NULL);
             *strrchr(dir, '/') = 0;
+            puts(buf);
             f = fopen(buf, "rb");
+            printf("F:%p\n",f);
           } else
             goto normal;
         } else {
         normal:
+        puts(lex->string);
           f = fopen(lex->string, "rb");
+            printf("F:%p\n",f);
           if (!strrchr(lex->string, '/')) {
             dir = __AIWNIOS_StrDup(".", NULL);
           } else {
@@ -784,7 +788,7 @@ re_enter:;
         new_file = A_MALLOC(sizeof(CLexFile), NULL);
         new_file->text = A_MALLOC(idx + 1, NULL);
         new_file->text[idx] = 0;
-        new_file->dir = dir;
+			new_file->dir = dir;
         fread(new_file->text, 1, idx, f);
         fclose(f);
         new_file->is_file = 1;

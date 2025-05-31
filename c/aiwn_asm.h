@@ -67,7 +67,10 @@ int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
 int64_t TempleOS_Call(void (*fptr)(void));
 int64_t TempleOS_CallVaArgs(void (*fptr)(void), int64_t argc, int64_t *argv);
 
-#if defined(_M_ARM64) || defined(__aarch64__)
+#if defined(__EMSCRIPTEN__)
+int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr,int64_t iterations);
+#  define PAUSE ;	
+#elif defined(_M_ARM64) || defined(__aarch64__)
 #  define PAUSE asm("yield ");
 #elif defined(__x86_64__)
 #  define PAUSE asm("pause ");

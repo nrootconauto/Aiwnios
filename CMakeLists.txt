@@ -4,6 +4,10 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 option(BUILD_HCRT "Build kernel" ON)
 option(USE_BYTECODE "Use bytecode" OFF)
+if (DEFINED EMSCRIPTEN)
+	set (USE_BYTECODE ON)
+	set(BUILD_HCRT OFF)
+endif()
 
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
@@ -38,7 +42,9 @@ include (DetectArch)
 target_architecture(ARCH)
 
 add_subdirectory(c)
-add_subdirectory(asm)
+if (NOT DEFINED EMSCRIPTEN)
+  add_subdirectory(asm)
+endif()
 
 set_target_properties(aiwnios
   PROPERTIES
@@ -50,6 +56,8 @@ set_target_properties(aiwnios
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+
+if(NOT DEFINED EMSCRIPTEN)
 find_package(SDL2 REQUIRED)
 if (NOT SDL2_FOUND)
   message(FATAL_ERROR "Please install SDL2")
@@ -70,6 +78,15 @@ elseif (ARCH STREQUAL x86_64)
     target_link_libraries(aiwnios PRIVATE SDL2::SDL2-static)
   endif ()
 endif ()
+else()
+target_link_options(aiwnios PRIVATE 
+        "-sUSE_SDL=2"
+        "-sALLOW_MEMORY_GROWTH=1" 
+        "-sASYNCIFY"
+        "-sWASM=1"
+        --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/wasmStage@/
+)
+endif()
 
 add_subdirectory(vendor)
 
@@ -106,7 +123,7 @@ else()
   endif ()
 endif()
 
-if (BUILD_HCRT)
+if (BUILD_HCRT AND NOT DEFINED EMSCRIPTEN)
   set(USE_WINE NO)
   if ((NOT CMAKE_SYSTEM MATCHES Windows) AND WIN32)
     set(USE_WINE YES)

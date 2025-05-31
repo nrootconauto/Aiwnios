@@ -28,8 +28,9 @@ U0 GrUpdateTaskWin(CTask *task)
     TextRect(task->win_left,task->win_right,
 	  task->win_top,task->win_bottom,task->text_attr<<8);
     if (task==sys_winmgr_task) {
-      if (gr.fp_wall_paper)
+      if (gr.fp_wall_paper) {
 	(*gr.fp_wall_paper)(task);
+	}
     } else if (!(task->win_inhibit&WIF_SELF_DOC))
       DocUpdateTaskDocs(task);
     if (TaskValidate(task)) {

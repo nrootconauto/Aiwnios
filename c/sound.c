@@ -1,4 +1,10 @@
+#if !defined(__EMSCRIPTEN__)
 #include <SDL.h>
+#else
+#include <emscripten.h>
+#include <SDL2/SDL.h>
+#endif
+
 #include <math.h>
 
 static SDL_AudioDeviceID output;
@@ -60,7 +66,7 @@ static int8_t *WriteSample(int8_t *out, int8_t v) {
   out += bitsz;
   return out;
 }
-static void AudioCB(void *ul, int8_t *out, int64_t len) {
+static void AudioCB(void *ul, int8_t *out, int len) {
   unsigned int i, i2;
   int64_t fpb = len / have.channels / (SDL_AUDIO_BITSIZE(have.format) / 8);
   for (i = 0; i < fpb; i++) {

@@ -1,7 +1,11 @@
 #include "aiwn_except.h"
 #include "aiwn_fs.h"
 #include "aiwn_mem.h"
+#if !defined(__EMSCRIPTEN__)
 #include <SDL_messagebox.h>
+#else
+#include <SDL2/SDL.h>
+#endif
 #include <ctype.h>
 #include <dirent.h>
 #include <stdbool.h>
@@ -506,18 +510,28 @@ static int __FIsNewer(char *fn, char *fn2) {
 
 int64_t IsCmdLineMode();
 
+#if defined(__EMSCRIPTEN__)
 #define DUMB_MESSAGE(FMT, ...)                                                 \
   do {                                                                         \
     int64_t l = snprintf(NULL, 0, FMT, __VA_ARGS__);                           \
     char buffer3[l];                                                           \
     snprintf(buffer3, l, FMT, __VA_ARGS__);                                    \
-    if (!IsCmdLineMode()) {                                                    \
+      fprintf(AIWNIOS_OSTREAM, "%s", buffer3);                                 \
+  } while(0);
+#else
+#define DUMB_MESSAGE(FMT, ...)                                                 \
+  do {                                                                         \
+    int64_t l = snprintf(NULL, 0, FMT, __VA_ARGS__);                           \
+    char buffer3[l];                                                           \
+    snprintf(buffer3, l, FMT, __VA_ARGS__);                                    \
+    if (!IsCmdLineMode()) {                                   	                 \
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Aiwnios", buffer3, \
                                NULL);                                          \
     } else {                                                                   \
       fprintf(AIWNIOS_OSTREAM, "%s", buffer3);                                 \
     }                                                                          \
   } while (0)
+  #endif
 int CreateTemplateBootDrv(char *to, char *template) {
   char buffer[1024], drvl[16], buffer2[1024];
   if (!__FExists(template)) {
@@ -584,6 +598,7 @@ int CreateTemplateBootDrv(char *to, char *template) {
 
 const char *ResolveBootDir(char *use, int make_new_dir,
                            const char *template_dir) {
+							   printf("%d\n",	__FExists("/HCRT2.BIN"));
   if (!make_new_dir && __FExists("HCRT2.BIN"))
     return ".";
   if (!make_new_dir && __FExists("T/HCRT2.BIN"))

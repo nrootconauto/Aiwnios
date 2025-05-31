@@ -1,6 +1,14 @@
 /* See https://viewsourcecode.org/snaptoken/kilo/
  *
  **/
+ #if defined(__EMSCRIPTEN__)
+ #include "aiwn_tui.h"
+	void TermSetKbCb(void *fptr, void *) {}
+void AiwniosTUIEnable() {}
+void TermSize(int64_t *a, int64_t *b) {}
+void TermSetMsCb(void *) {}
+void TUIInputLoop(int64_t *ul) {};
+ #else
 #include "c/aiwn_asm.h"
 #include "c/aiwn_mem.h"
 #include <ctype.h>
@@ -575,4 +583,5 @@ void TUIInputLoop(int64_t *ul) {
     }
   }
 };
+#endif
 #endif

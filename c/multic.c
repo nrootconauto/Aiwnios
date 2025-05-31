@@ -4,7 +4,12 @@
 #include "c/aiwn_hash.h"
 #include "c/aiwn_mem.h"
 #include "c/aiwn_multic.h"
+#if !defined(__EMSCRIPTEN__)
 #include <SDL.h>
+#else
+#include <SDL2/SDL.h>
+#endif
+
 #include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -100,6 +105,9 @@ void *GetHolyGsPtr() {
 void *GetHolyFsPtr() {
   return (void *)FS_OFF;
 }
+#elif defined (__EMSCRIPTEN__)
+static void *ThreadFs;
+static void *ThreadGs;
 #else
 
 #  error This isn't an architecture that's supported yet. Check again later.
@@ -118,6 +126,42 @@ void *GetHolyFs() {
 void *GetHolyGs() {
   return ThreadGs;
 }
+
+#ifdef __EMSCRIPTEN__
+int64_t mp_cnt();
+CHashTable *glbl_table;
+int64_t mp_cnt() {
+	return 1;
+}
+void MPSetProfilerInt(void *fp,int c,int64_t feq) {
+}
+typedef struct {
+	void *fp,*gs;
+} CThreadPair;
+static int threadrt(void *p) {
+	CThreadPair *_pair=p;
+	SetHolyGs(_pair->gs);
+	FFI_CALL_TOS_0(_pair->fp);
+	free(_pair);
+	return 0;
+}
+void SpawnCore(void *fp, void *gs, int64_t core) {
+	//IMPORTANT emscriptens threads are ass
+	SetHolyGs(gs);
+	printf("analbeads\n");
+	FFI_CALL_TOS_0(fp);
+	printf("21\n");
+	
+}
+void __bootstrap_tls() {
+}
+void MPSleepHP(int64_t ns) {
+}
+void MPAwake(int64_t core) {
+}
+void InteruptCore(int64_t core) {
+}
+#else
 
 #ifdef __aarch64__
 void __bootstrap_tls(void) {
@@ -745,4 +789,5 @@ void MPSetProfilerInt(void *fp, int c, int64_t f) {
     }
   }
 }
+#endif
 #endif

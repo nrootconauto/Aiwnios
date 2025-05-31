@@ -8,7 +8,7 @@ CCmpGlbls	cmp;
 #include "PrsLib.HC"
 #include "PrsVar.HC"
 #include "CMisc.HC"
-CmpLoadDefines;
+CmpLoadDefines;		
 CmpFillTables;
 CMiscInit;
 #include "AIWNIOS_PrsExp.HC"

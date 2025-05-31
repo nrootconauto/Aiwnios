@@ -95,7 +95,8 @@ void AiwnBCWrite(char *dst, char *src, int64_t rt) {
   case RT_F64:
   case RT_PTR:
   case RT_FUNC:
-    *(uint64_t *)dst = *(uint64_t *)src;
+    *(uint32_t*)dst=*(uint32_t *)src;
+    ((uint32_t*)dst)[1]=((uint32_t *)src)[1];
     break;
   default:
     abort();
@@ -118,14 +119,14 @@ int64_t AiwnBCReadI64(char *src, int64_t rt) {
   case RT_U32i:
     return *(uint32_t *)src;
   case RT_I64i:
-    return *(int64_t *)src;
+    return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
   case RT_U64i:
-    return *(uint64_t *)src;
+		return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
   case RT_F64:
     return *(double *)src;
   case RT_PTR:
   case RT_FUNC:
-    return *(uint64_t *)src;
+    return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
     break;
   }
   abort();
@@ -160,9 +161,15 @@ double AiwnBCReadF64(char *src, int64_t rt) {
 #define puts(...)
 #define printf(...)
 
+#ifndef __EMSCRIPTEN__
 static _Thread_local ABCState *cur_bcstate;
 static _Thread_local ABCState cur_dbgstate;
 static _Thread_local jmp_buf except_to;
+#else
+static ABCState *cur_bcstate;
+static ABCState cur_dbgstate;
+static jmp_buf except_to;
+#endif
 typedef char *ABC_PTR;
 static int64_t AiwnBCAddCode(ABC_PTR ptr, uint32_t v, int64_t len) {
   if (ptr) {
@@ -275,7 +282,7 @@ int64_t AiwnRunBC(ABCState *state) {
       af = AiwnBCReadF64((void *)state->_sp, RT_F64);
       abcf->fstk[++abcf->sp] = af;
     } else {
-      ai = AiwnBCReadF64((void *)state->_sp, RT_I64i);
+      ai = AiwnBCReadI64((void *)state->_sp, RT_I64i);
       abcf->istk[++abcf->sp] = ai;
     }
     state->_sp += 8;
@@ -1620,16 +1627,50 @@ uint64_t AiwnBCContextSet(ABCState **to_stk) {
   return 1;
 }
 // to_stk as its a "naked" function
-uint64_t AiwnBCMakeContext(int64_t *to_stk) {
+int64_t AiwnBCMakeContext(int64_t *to_stk) {
 	ABCState *s=ABCStateNew((void*)to_stk[1],(void*)to_stk[2],0,NULL);
 	memcpy((void*)to_stk[0],s,sizeof(ABCState));
 	free(s);
 }
-int64_t AiwnBC_FP() {
+int64_t AiwnBC_FP(int64_t *) {
   return cur_bcstate->fp;
 }
 
 #if defined(USE_BYTECODE)
+int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr,int64_t iterations) {
+	static int64_t active=0; 
+	static char *stk=NULL;
+	int64_t ret;
+	static ABCState *state;
+	if(!active) {
+		active=1;
+	  size_t stk_sz = 0x20000;
+	  stk = calloc(1, stk_sz);
+	  stk += stk_sz;
+	  state = ABCStateNew(fptr, stk, 0, NULL);
+  setjmp(except_to);
+      while (1) {
+		AiwnRunBC(state);
+	     if(--iterations<0||!state->ip)
+				break;
+	}
+  } else {
+		fptr=(void*)state->ip;
+  setjmp(except_to);
+	        while (1) {
+        AiwnRunBC(state);
+        if(--iterations<0)
+				break;
+			}
+  }
+  if(!state->ip) {
+	free(state);
+	state=NULL;
+	active=0;
+	free(stk);
+  }
+  return active;
+}
 int64_t FFI_CALL_TOS_0(void *fptr) {
   size_t stk_sz = 0x20000;
   int64_t ret;
@@ -1712,16 +1753,17 @@ int64_t FFI_CALL_TOS_CUSTOM_BP(uint64_t bp, void *fp, uint64_t ip) {
   return FFI_CALL_TOS_0(bp); // whoops
 }
 
-void AiwnBCTaskContextSetRIP(uint64_t **stk) {
+int64_t AiwnBCTaskContextSetRIP(int64_t *stk) {
 	ABCState *st=(ABCState*)stk[0];
 	st->ip=stk[1];
+	return 0;
 }
 
-int64_t AiwnBCTaskContextGetRBP(uint64_t *stk) {
+int64_t AiwnBCTaskContextGetRBP(int64_t *stk) {
 	ABCState *st=(ABCState*)stk[0];
 	return st->fp;
 }
-int64_t AiwnBCTaskContextGetRIP(uint64_t *stk) {
+int64_t AiwnBCTaskContextGetRIP(int64_t *stk) {
 	ABCState *st=(ABCState*)stk[0];
 	return st->ip;
 }

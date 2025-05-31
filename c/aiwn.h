@@ -1,6 +1,6 @@
 #pragma once
 #include "generated.h" //See CMakeLists.txt
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <assert.h>
 #include <signal.h>
 #include <stdbool.h>

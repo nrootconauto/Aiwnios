@@ -5,11 +5,19 @@
 #include "c/aiwn_tui.h"
 #include "c/aiwn_windows.h"
 #include "c/lzw.h"
+#if !defined(__EMSCRIPTEN__)
 #include <SDL.h>
 #include <SDL_pixels.h>
 #include <SDL_render.h>
 #include <SDL_surface.h>
 #include <SDL_video.h>
+#else
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_video.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 static SDL_Palette *sdl_p;
@@ -33,7 +41,9 @@ void DeinitVideo() {
     SDL_DestroyWindow(window);
 }
 static void _DrawWindowNew() {
-  int64_t row;
+printf("N-1\n");
+  #ifndef __EMSCRIPTEN__
+    int64_t row;
   uint8_t logo[0x10000];
   lzw_decompress(aiwnios_logo.compressed_pixel_data,        //
                  sizeof aiwnios_logo.compressed_pixel_data, //
@@ -51,14 +61,19 @@ static void _DrawWindowNew() {
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
+  printf("N0\n");
   if (!window_icon) {
   err_wincon:
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
                              "Failed to make window icon.", NULL);
     exit(EXIT_FAILURE);
   }
-
   SDL_FreeSurface(window_icon_proto);
+  #endif
+screen_mutex = SDL_CreateMutex();
+  screen_mutex2 = SDL_CreateMutex();
+  SDL_LockMutex(screen_mutex);
+  
   SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0",
                           SDL_HINT_OVERRIDE);
    SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "linear",
@@ -66,18 +81,20 @@ static void _DrawWindowNew() {
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
-  screen_mutex = SDL_CreateMutex();
-  screen_mutex2 = SDL_CreateMutex();
-  SDL_LockMutex(screen_mutex);
+  printf("N1\n");
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
-                            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                            SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  printf("N2\n");
   if (!window) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
                              "Failed to create window.", NULL);
     exit(EXIT_FAILURE);
   }
+  printf("N3\n");
+  #ifndef __EMSCRIPTEN__
   SDL_SetWindowIcon(window, window_icon);
+  #endif
   SDL_SetWindowKeyboardGrab(window,
                             sdl_window_grab_enable ? SDL_TRUE : SDL_FALSE);
   screen = SDL_CreateRGBSurface(0, 640, 480, 8, 0, 0, 0, 0);
@@ -88,13 +105,17 @@ static void _DrawWindowNew() {
   }
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
-  renderer = SDL_CreateRenderer(window, -1, 0);
+#ifdef __EMSCRIPTEN__
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+#else
+    renderer = SDL_CreateRenderer(window, -1, 0);
+#endif
   if (!renderer) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
                              "Failed to create renderer.", NULL);
     exit(EXIT_FAILURE);
   }
-  SDL_UnlockMutex(screen_mutex);
+  SDL_UnlockMutex(screen_mutex);	
   LBts(&screen_ready, 0);
 }
 
@@ -118,6 +139,9 @@ static void UpdateViewPort() {
 }
 
 void DrawWindowNew() {
+	#ifdef __EMSCRIPTEN__
+	_DrawWindowNew();
+	#else
   SDL_Event event;
   memset(&event, 0, sizeof event);
   event.user.code = USER_CODE_DRAW_WIN_NEW;
@@ -126,8 +150,16 @@ void DrawWindowNew() {
   while (!Bt(&screen_ready, 0))
     SDL_Delay(1);
   return;
+  #endif
 }
+static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal);
 void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
+	#ifdef __EMSCRIPTEN__
+	_UpdateScreen(px,w,h,w_internal);
+	#else
+  if (!Bt(&screen_ready, 0))
+    return ;
+
   SDL_Event event;
   LBts(&screen_update_in_progress, 0);
   memset(&event, 0, sizeof event);
@@ -139,8 +171,9 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   SDL_PushEvent(&event);
   SDL_UnlockMutex(screen_mutex);
   return;
+  #endif
 }
-int64_t ScreenUpdateInProgress() {
+int64_t ScreenUpdateInProgress(int64_t*) {
   return Bt(&screen_update_in_progress, 0);
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
@@ -182,8 +215,9 @@ void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
   SDL_Color c = {r, g, b, 0};
   SDL_LockSurface(screen);
   // I will repeat the color to simulate ignoring the upper 4 bits
-  for (int i2 = 0; i2 < 16; i2++)
+  for (int i2 = 0; i2 < 16; i2++) {
     SDL_SetPaletteColors(screen->format->palette, &c, i2 * 16 + i, 1);
+  }
   SDL_UnlockSurface(screen);
 }
 
@@ -549,7 +583,7 @@ static int SDLCALL KBCallback(void *d, SDL_Event *e) {
 }
 void SetKBCallback(void *fptr) {
   kb_cb = fptr;
-  static init;
+  static int init=0;
   if (!init) {
     init = 1;
     if (IsCmdLineMode2()) {
@@ -647,6 +681,31 @@ void InputLoop(void *ul) {
     }
   }
 }
+#if defined(__EMSCRIPTEN__)
+void EMInputLoopRun(void *ul) {
+  SDL_Event e;
+  if (IsCmdLineMode2()) {
+    TUIInputLoop(ul);
+  } else {
+	  again:;
+      if (!SDL_PollEvent(&e))
+        return;
+      switch (e.type) {
+      case SDL_QUIT:
+        return;
+      case SDL_USEREVENT:
+        switch (e.user.code) {
+        case USER_CODE_UPDATE:
+          _UpdateScreen(e.user.data1, 640, 480, e.user.data2);
+          break;
+        case USER_CODE_DRAW_WIN_NEW:
+          _DrawWindowNew();
+        }
+      }
+      goto again;
+    }
+}
+#endif
 void WaitForSDLQuit() {
   SDL_WaitThread(sdl_main_thread, NULL);
 }
