@@ -893,8 +893,7 @@ static int64_t STK___GetTicks(int64_t *stk) {
 
 static int64_t STK___Sleep(int64_t *stk) {
 	#ifdef __EMSCRIPTEN__
-	PrintI("delay",stk[0]);
-	//SDL_Delay(stk[0]);
+	BCAwake();
 	#else
   MPSleepHP(stk[0] * 1e3);
   #endif
@@ -1304,6 +1303,7 @@ static int64_t STK_VFsTrunc(int64_t *stk) {
 }
 static int64_t STK_UpdateScreen(int64_t *stk) {
   UpdateScreen(stk[0], stk[1], stk[2], stk[3]);
+  BCAwake();
 }
 static int64_t STK_VFsFSize(int64_t *stk) {
   return VFsFSize(stk[0]);

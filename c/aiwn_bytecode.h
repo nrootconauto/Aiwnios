@@ -36,3 +36,4 @@ int64_t AiwnBCTaskContextGetRIP(int64_t *stk);
 int64_t AiwnBCTaskContextGetRBP(int64_t *stk);
 void *AiwnBCDbgCurContext();
 void AiwnBCDbgFault(int sigh);
+int64_t BCAwake() ;

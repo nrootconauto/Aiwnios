@@ -3,7 +3,7 @@
 #ifdef _WIN32
 extern void Misc_ForceYield();
 #endif
-#ifndef __x86_64__
+#if !defined(__x86_64__) || defined(USE_BYTECODE)
 extern int64_t Bt(void *ptr, int64_t);
 extern int64_t Btc(void *ptr, int64_t);
 extern int64_t Btr(void *ptr, int64_t);
