@@ -795,7 +795,22 @@ MATHFUNDEF(round);
 MATHFUNDEF(log);
 MATHFUNDEF(floor);
 MATHFUNDEF(ceil);
-
+#ifdef __EMSCRIPTEN__
+char *getstkptr() {
+  char *ret;
+  asm("global.get __stack_pointer\n\t"
+          "local.set %0\n\t" : "=r"(ret));
+  return ret;
+}
+char *setstkptr(char *ret) {
+  asm volatile (
+	"local.get %0\n\t"
+	"global.set __stack_pointer\n\t" :: "r"(ret));
+  asm		 ("global.get __stack_pointer\n\t"
+          "local.set %0\n\t" : "=r"(ret));
+  return ret;
+}
+#endif
 static int64_t STK_PrintI(int64_t *stk) {
   PrintI((char *)stk[0], stk[1]);
 }
@@ -845,6 +860,8 @@ static int64_t STK_SetHolyFs(int64_t *stk) {
 }
 
 static int64_t STK_GetHolyFs(int64_t *stk) {
+
+
   return (int64_t)GetHolyFs();
 }
 static int64_t STK_GetHolyGs(int64_t *stk) {

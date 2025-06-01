@@ -716,10 +716,8 @@ sp_out_e:
 	  }
 sp_out_eng: //Engineering notation
 	  if (d==inf) goto sp_out_inf;
-  PrintF("ass",Floor(Log10(d)));
 	  if (d) {
 	    n=FloorI64(Floor(Log10(d)),3);
-	    PrintF("ddd",d);
 	  }else
 	    n=0;
 	  d/=Pow10I64(n);

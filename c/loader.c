@@ -469,9 +469,9 @@ char *LoadMainsWasm(char *src, char *module_base) {
     switch (etype) {
     case IET_MAIN:	
       fptr = (i + module_base);
-      if(FFI_CALL_TOS_0_FEW_INSTS(fptr,8000000))
+      if(FFI_CALL_TOS_0_FEW_INSTS(fptr,1<<27))
 		return osrc;
-	  goto again;
+		goto again;
       break;
     case IET_ABS_ADDR:
       src += sizeof(int32_t) * i;

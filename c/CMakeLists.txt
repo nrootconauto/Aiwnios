@@ -2,6 +2,8 @@
 #─────────────────────────────────────────────────────────────────────┘
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/generated.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/generated.h" @ONLY)
+
+set(CMAKE_C_FLAGS_RELEASE "-Ofast")
 set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/aiwn.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/bungis.c"
@@ -65,7 +67,7 @@ set(COMP_OPTS
 target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
 if(USE_BYTECODE)
   if(DEFINED EMSCRIPTEN)
-    list(APPEND COMP_OPTS  -sUSE_SDL=2 -sWASM=1)
+    list(APPEND COMP_OPTS  -sUSE_SDL=2 -sWASM=1 -Wl,--export-all	)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
   endif()
   target_compile_definitions(aiwnios PRIVATE  USE_BYTECODE=21)  

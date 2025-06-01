@@ -106,7 +106,7 @@ screen_mutex = SDL_CreateMutex();
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
 #ifdef __EMSCRIPTEN__
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    renderer = SDL_CreateRenderer(window, -1, 0);
 #else
     renderer = SDL_CreateRenderer(window, -1, 0);
 #endif

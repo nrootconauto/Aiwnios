@@ -84,6 +84,7 @@ target_link_options(aiwnios PRIVATE
         "-sALLOW_MEMORY_GROWTH=1" 
         "-sASYNCIFY"
         "-sWASM=1"
+        -Wl,--export-all		
         --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/wasmStage@/
 )
 endif()

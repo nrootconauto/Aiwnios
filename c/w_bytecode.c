@@ -2,11 +2,11 @@
 #include "aiwn_hash.h"
 #include "aiwn_lexparser.h"
 #include <math.h>
+#include <setjmp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <setjmp.h>
 enum {
   ABC_NOP,
   ABC_SWAP,
@@ -76,88 +76,113 @@ enum {
   ABC_CNT,      // MUST BE THE LAST ITEM
 };
 
-void AiwnBCWrite(char *dst, char *src, int64_t rt) {
-  switch (rt) {
-  case RT_I8i:
-  case RT_U8i:
-    *dst = *src;
-    break;
-  case RT_I16i:
-  case RT_U16i:
-    *(uint16_t *)dst = *(uint16_t *)src;
-    break;
-  case RT_I32i:
-  case RT_U32i:
-    *(uint32_t *)dst = *(uint32_t *)src;
-    break;
-  case RT_I64i:
-  case RT_U64i:
-  case RT_F64:
-  case RT_PTR:
-  case RT_FUNC:
-    *(uint32_t*)dst=*(uint32_t *)src;
-    ((uint32_t*)dst)[1]=((uint32_t *)src)[1];
-    break;
-  default:
-    abort();
-    break;
-  }
-}
+#define AiwnBCWrite(_dst, _src, rt)                                            \
+  ({                                                                           \
+    char *dst = _dst;                                                          \
+    char *src = _src;                                                          \
+    switch (rt) {                                                              \
+    case RT_I8i:                                                               \
+    case RT_U8i:                                                               \
+      *dst = *src;                                                             \
+      break;                                                                   \
+    case RT_I16i:                                                              \
+    case RT_U16i:                                                              \
+      *(uint16_t *)dst = *(uint16_t *)src;                                     \
+      break;                                                                   \
+    case RT_I32i:                                                              \
+    case RT_U32i:                                                              \
+      *(uint32_t *)dst = *(uint32_t *)src;                                     \
+      break;                                                                   \
+    case RT_I64i:                                                              \
+    case RT_U64i:                                                              \
+    case RT_F64:                                                               \
+    case RT_PTR:                                                               \
+    case RT_FUNC:                                                              \
+      *(uint64_t *)dst = *(uint64_t *)src;                                     \
+      break;                                                                   \
+    default:                                                                   \
+    fprintf(stdout,"%d\n",rt); \
+      abort();                                                                 \
+      break;                                                                   \
+    }                                                                          \
+    0;                                                                         \
+  })
 
-int64_t AiwnBCReadI64(char *src, int64_t rt) {
-  switch (rt) {
-  case RT_I8i:
-    return *(int8_t *)src;
-  case RT_U8i:
-    return *(uint8_t *)src;
-  case RT_I16i:
-    return *(int16_t *)src;
-  case RT_U16i:
-    return *(uint16_t *)src;
-  case RT_I32i:
-    return *(int32_t *)src;
-  case RT_U32i:
-    return *(uint32_t *)src;
-  case RT_I64i:
-    return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
-  case RT_U64i:
-		return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
-  case RT_F64:
-    return *(double *)src;
-  case RT_PTR:
-  case RT_FUNC:
-    return ((uint32_t *)src)[0]|(int64_t)((uint32_t *)src)[1]<<32;
-    break;
-  }
-  abort();
-}
-double AiwnBCReadF64(char *src, int64_t rt) {
-  switch (rt) {
-  case RT_I8i:
-    return *(int8_t *)src;
-  case RT_U8i:
-    return *(uint8_t *)src;
-  case RT_I16i:
-    return *(int16_t *)src;
-  case RT_U16i:
-    return *(uint16_t *)src;
-  case RT_I32i:
-    return *(int32_t *)src;
-  case RT_U32i:
-    return *(uint32_t *)src;
-  case RT_I64i:
-    return *(int64_t *)src;
-  case RT_U64i:
-    return *(uint64_t *)src;
-  case RT_F64:
-    return *(double *)src;
-  case RT_PTR:
-  case RT_FUNC:
-    return *(uint64_t *)src;
-    break;
-  }
-  abort();
-}
+#define AiwnBCReadI64(_src, rt)                                                \
+  ({                                                                           \
+    char *src = (char *)(_src);                                                \
+    int64_t r;                                                                 \
+    switch (rt) {                                                              \
+      break;                                                                   \
+    case RT_I8i:                                                               \
+      r = (int64_t)*(int8_t *)src;                                             \
+      break;                                                                   \
+    case RT_U8i:                                                               \
+      r = (int64_t)*(uint8_t *)src;                                            \
+      break;                                                                   \
+    case RT_I16i:                                                              \
+      r = (int64_t)*(int16_t *)src;                                            \
+      break;                                                                   \
+    case RT_U16i:                                                              \
+      r = (int64_t)*(uint16_t *)src;                                           \
+      break;                                                                   \
+    case RT_I32i:                                                              \
+      r = (int64_t)*(int32_t *)src;                                            \
+      break;                                                                   \
+    case RT_U32i:                                                              \
+      r = (int64_t)*(uint32_t *)src;                                           \
+      break;                                                                   \
+    case RT_I64i:                                                              \
+    case RT_U64i:                                                              \
+      r = (int64_t)*(int64_t *)src;                                            \
+      break;                                                                   \
+    case RT_F64:                                                               \
+      r = (int64_t)*(double *)src;                                             \
+      break;                                                                   \
+    case RT_PTR:                                                               \
+    case RT_FUNC:                                                              \
+      r = (int64_t)*(int64_t *)src;                                            \
+      break;                                                                   \
+    }                                                                          \
+    r;                                                                         \
+  })
+#define AiwnBCReadF64(src, rt)                                                 \
+  ({                                                                           \
+    double r;                                                                  \
+    switch (rt) {                                                              \
+    case RT_I8i:                                                               \
+      r = (double)*(int8_t *)src;                                              \
+      break;                                                                   \
+    case RT_U8i:                                                               \
+      r = (double)*(uint8_t *)src;                                             \
+      break;                                                                   \
+    case RT_I16i:                                                              \
+      r = (double)*(int16_t *)src;                                             \
+      break;                                                                   \
+    case RT_U16i:                                                              \
+      r = (double)*(uint16_t *)src;                                            \
+      break;                                                                   \
+    case RT_I32i:                                                              \
+      r = (double)*(int32_t *)src;                                             \
+      break;                                                                   \
+    case RT_U32i:                                                              \
+      r = (double)*(uint32_t *)src;                                            \
+      break;                                                                   \
+    case RT_I64i:                                                              \
+      r = (double)*(int64_t *)src;                                             \
+      break;                                                                   \
+    case RT_U64i:                                                              \
+      r = (double)*(uint64_t *)src;                                            \
+      break;                                                                   \
+    case RT_F64:                                                               \
+      r = *(double *)src;                                                      \
+      break;                                                                   \
+    case RT_PTR:                                                               \
+    case RT_FUNC:                                                              \
+      r = (double)*(uint64_t *)src;                                            \
+    }                                                                          \
+    r;                                                                         \
+  })
 #define puts(...)
 #define printf(...)
 
@@ -178,437 +203,513 @@ static int64_t AiwnBCAddCode(ABC_PTR ptr, uint32_t v, int64_t len) {
   return len += 4;
 }
 
-static int64_t ForceType(char *ptr,CRPN *a,int64_t to,int64_t len) {
-	if((a->raw_type==RT_F64)!=(to==RT_F64)) {
-		if(to==RT_F64&&a->type!=IC_F64)
-			len=AiwnBCAddCode(ptr,ABC_TO_F64,len);
-		else if(to!=RT_F64&&a->type!=IC_I64)
-			len=AiwnBCAddCode(ptr,ABC_TO_I64,len);
-	}
-	return len;
+static int64_t ForceType(char *ptr, CRPN *a, int64_t to, int64_t len) {
+  if ((a->raw_type == RT_F64) != (to == RT_F64)) {
+    if (to == RT_F64 && a->type != IC_F64)
+      len = AiwnBCAddCode(ptr, ABC_TO_F64, len);
+    else if (to != RT_F64 && a->type != IC_I64)
+      len = AiwnBCAddCode(ptr, ABC_TO_I64, len);
+  }
+  return len;
 }
-
 
 int64_t AiwnRunBC(ABCState *state) {
   cur_bcstate = state;
   uint32_t *bc = (void *)state->ip;
   if (!bc)
     return 0;
-  int64_t i64, ai, bi, old_fp, old_addr, ret, t = ((*bc >> 16) & 0xffFF);
-  uint64_t bu;
+  int64_t i64, ai, bi, old_fp, old_addr, ret, t = ((*bc >> 8) & 0xffFF);
+  uint64_t bu, au;
   int64_t retval = 0;
   double f64, af, bf;
   ABCFrame *abcf = state->fun_frame, *new;
-  int64_t is_f64 = t == RT_F64;
-  int64_t is_u64 = t == RT_U64i;
+  int64_t is_f64 = 0;
+  int64_t is_u64 = 0;
   int64_t (*fun_ptr)(int64_t *stk);
   int64_t dft;
   int64_t *table;
   printf("IP:%p(%s),FP:%p,SP:%p\n", bc, WhichFun(bc), state->fp, state->_sp);
-  // printf("BTTM:%p,TOP:%p,PR:(%p)\n", abcf->istk[abcf->sp - 1],
+  //   printf("BTTM:%p,	%p,PR:(%p)\n", abcf->istk[abcf->sp - 1],
   //        abcf->istk[abcf->sp], abcf->sp);
-  printf("%d,%d\n", t, *bc & 0xffFF);
-  switch (*bc++ & 0xffFF) {
-  case ABC_PRE_INC:
-    puts("PREINC");
-    bi = abcf->istk[abcf->sp];
-    if (is_f64) {
-      af = *(double *)bc;
-      bc += 2;
-      af += AiwnBCReadF64(bi, t);
-      AiwnBCWrite((void *)bi, &af, t);
-      abcf->fstk[abcf->sp] = af;
-    } else {
-      ai = *(int64_t *)bc;
-      bc += 2;
-      ai += AiwnBCReadI64(bi, t);
-      AiwnBCWrite((void *)bi, &ai, t);
-      abcf->istk[abcf->sp] = ai;
-    }
+  printf("%d,%d\n", t, *bc & 0xff);
+  switch (*bc++ & 0xff) {
+  default:
+    printf("FUCK:%d\n", bc[-1] & 0xff);
+    break;
+#define CASE_BALLER(cs, code)                                                  \
+  break;                                                                       \
+  case cs: {                                                                   \
+    t = (bc[-1] >> 8)&0xff;                                                         \
+    if (t == -1)                                                               \
+      t = RT_I64i;                                                             \
+    is_f64 = t == RT_F64;                                                      \
+    is_u64 = t == RT_U64i;                                                     \
+    code;                                                                      \
+    break;                                                                     \
+  }
+    /*
+#define CASE_BALLER(cs, code)                                                  \
+  break;                                                                       \
+  case cs:                                                                     \
+  case (cs | (-1 << 8)) & 0xffff: {                                 \
+    \
+    const int64_t t = RT_I64i;                                                 \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_I8i << 8): {                                                   \
+    const int64_t t = RT_I8i;                                                  \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_F64 << 8): {                                                   \
+    const int64_t t = RT_F64;                                                  \
+    is_f64 = 1;                                                                \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_U8i << 8): {                                                   \
+    const int64_t t = RT_U8i;                                                  \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_I16i << 8): {                                                  \
+    const int64_t t = RT_I16i;                                                 \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_U16i << 8): {                                                  \
+    const int64_t t = RT_U16i;                                                 \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_I32i << 8): {                                                  \
+    const int64_t t = RT_I32i;                                                 \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_U32i << 8): {                                                  \
+    const int64_t t = RT_U32i;                                                 \
+    code;                                                                      \
+    \
+                                                                           \
+  } break;                                                                     \
+  case cs | (RT_I64i << 8): {                                                  \
+    const int64_t t = RT_I64i;                                                 \
+    code;                                                                      \
+  } break;                                                                     \
+  case cs | (RT_U64i << 8): {                                                  \
+    const int64_t t = RT_U64i;                                                 \
+    code;                                                                      \
+    is_u64 = 1;                                                                \
+  } break;                                                                     \
+  case cs | (RT_PTR << 8):                                                     \
+  case cs | (RT_FUNC << 8): {                                                  \
+    const int64_t t = RT_I64i;                                                 \
+    code;                                                                      \
+  } break;
+*/
+    CASE_BALLER(ABC_PRE_INC, {
+      bi = abcf->istk[abcf->sp];
+      if (is_f64) {
+        af = *(double *)bc;
+        bc += 2;
+        af += AiwnBCReadF64(bi, RT_F64);
+        AiwnBCWrite((void *)bi, &af, t);
+        abcf->fstk[abcf->sp] = af;
+      } else {
+        ai = *(int64_t *)bc;
+        bc += 2;
+        ai += AiwnBCReadI64(bi, t);
+        AiwnBCWrite((void *)bi, &ai, t);
+        abcf->istk[abcf->sp] = ai;
+      }
+    })
+    CASE_BALLER(ABC_POST_INC, {
+      puts("POST_ICN");
+      bi = abcf->istk[abcf->sp];
 
-    break;
-  case ABC_POST_INC:
-    puts("POST_ICN");
-    bi = abcf->istk[abcf->sp];
-
-    if (is_f64) {
-      af = *(double *)bc;
-      abcf->fstk[abcf->sp] = AiwnBCReadF64(bi, t);
-      bc += 2;
-      af += AiwnBCReadF64(bi, t);
-      AiwnBCWrite((void *)bi, &af, t);
-      abcf->fstk[abcf->sp] = af;
-    } else {
-      ai = *(int64_t *)bc;
-      abcf->istk[abcf->sp] = AiwnBCReadI64(bi, t);
-      bc += 2;
-      ai += AiwnBCReadI64(bi, t);
-      AiwnBCWrite((void *)bi, &ai, t);
-    }
+      if (is_f64) {
+        af = *(double *)bc;
+        abcf->fstk[abcf->sp] = AiwnBCReadF64(bi, t);
+        bc += 2;
+        af += AiwnBCReadF64(bi, t);
+        AiwnBCWrite((void *)bi, &af, t);
+        abcf->fstk[abcf->sp] = af;
+      } else {
+        ai = *(int64_t *)bc;
+        abcf->istk[abcf->sp] = AiwnBCReadI64(bi, t);
+        bc += 2;
+        ai += AiwnBCReadI64(bi, t);
+        AiwnBCWrite((void *)bi, &ai, t);
+      }
+    })
     break;
 
-  case ABC_NOP:
-    puts("NOP");
-    break;
-  case ABC_INTERN:
-    puts("INTERN");
-    fun_ptr = *(void **)bc;
-    bc += 2;
-    state->ip=(int64_t)bc;
-    ret = (*fun_ptr)((int64_t *)((char *)state->_sp + 16 + sizeof(ABCFrame)));
-    abcf=state->fun_frame;
-    abcf->istk[++abcf->sp] = ret;
-    goto fin;
-  case ABC_DUP:
-    puts("DUO");
-    ai = abcf->istk[abcf->sp];
-    abcf->istk[++abcf->sp] = ai;
-    break;
-  case ABC_PUSH:
-    puts("PUSH");
-
-    state->_sp -= 8;
-    if (is_f64) {
-      af = abcf->fstk[abcf->sp--];
-      AiwnBCWrite((void *)state->_sp, (void *)&af, RT_F64);
-    } else {
-      ai = abcf->istk[abcf->sp--];
-      AiwnBCWrite((void *)state->_sp, (void *)&ai, RT_I64i);
-    }
-    break;
-  case ABC_POP:
-    puts("POP");
-    if (is_f64) {
-      af = AiwnBCReadF64((void *)state->_sp, RT_F64);
-      abcf->fstk[++abcf->sp] = af;
-    } else {
-      ai = AiwnBCReadI64((void *)state->_sp, RT_I64i);
-      abcf->istk[++abcf->sp] = ai;
-    }
-    state->_sp += 8;
-    break;
-  case ABC_SET_FRAME_SIZE:
-    puts("SET_FRAME_SIZE");
-    state->_sp -= *bc++;
-    break;
-  case ABC_SUB_RET:
-    AiwnBCWrite(&state->ip, (void *)state->_sp, RT_I64i);
-    state->_sp += 8;
-    goto fin;
-  case ABC_SUB_CALL:
-    old_addr = (int64_t)(bc - 1);
-
-    bc += 2;
-    state->_sp -= 8;
-    AiwnBCWrite((void *)state->_sp, &bc, RT_I64i);
-    state->ip = ((uint64_t *)bc)[-1] + old_addr;
-    goto fin;
-  case ABC_CALL:
-    puts("CALL");
-    if (abcf->istk[abcf->sp] != INVALID_PTR) {
-      old_fp = state->fp;
-      state->fp = state->_sp -= 16 + sizeof(ABCFrame);
-      new = state->fp + 16;
-      new->next = abcf;
-      new->sp = 0;
-      printf("TO::%p,ME:%p\n", abcf->istk[abcf->sp], bc);
-      AiwnBCWrite((void *)(state->fp + 0), (void *)&old_fp, RT_I64i);
-      AiwnBCWrite((void *)(state->fp + 8), (void *)&bc, RT_I64i);
-      state->ip = abcf->istk[abcf->sp--];
-      printf("FROM::%p\n", state->fun_frame);
-      state->fun_frame = new;
-      printf("INTO:%p\n", new);
-      goto fin;
-
-    } else {
-      abcf->istk[abcf->sp] = 0;
+    CASE_BALLER(ABC_NOP, {
+      puts("NOP");
       break;
-    }
-    break;
-  case ABC_RET:
-    puts("RET");
-    ret = abcf->istk[abcf->sp];
-    printf("FP:%p\n", state->fp);
-    printf("RETAT:%p\n", state->fun_frame);
-    old_fp = AiwnBCReadI64((void *)(state->fp), RT_I64i);
-    old_addr = AiwnBCReadI64((void *)(state->fp + 8), RT_I64i);
-    printf("RETTO:%p\n", old_addr);
-    state->_sp = state->fp + 16 + sizeof(ABCFrame);
-    printf("ASS:%p\n", state->fun_frame);
-    state->fp = old_fp;
-    state->ip = old_addr;
-    if (state->fp) {
-      abcf = state->fun_frame = (ABCFrame *)(state->fp + 16);
+    })
+    CASE_BALLER(ABC_INTERN, {
+      puts("INTERN");
+      fun_ptr = *(void **)bc;
+      bc += 2;
+      state->ip = (int64_t)bc;
+      ret = (*fun_ptr)((int64_t *)((char *)state->_sp + 16 + sizeof(ABCFrame)));
+      abcf = state->fun_frame;
       abcf->istk[++abcf->sp] = ret;
-    } else
-      state->fun_frame = NULL;
-    retval = ret;
-    goto fin;
+      printf("aSS:%p\n", ret);
+      goto fin;
+    })
+    CASE_BALLER(ABC_DUP, {
+      puts("DUO");
+      ai = abcf->istk[abcf->sp];
+      abcf->istk[++abcf->sp] = ai;
+    });
+    CASE_BALLER(ABC_PUSH, {
+      puts("push");
+      state->_sp -= 8;
+      if (is_f64) {
+        af = abcf->fstk[abcf->sp--];
+        AiwnBCWrite((void *)state->_sp, (void *)&af, RT_F64);
+      } else {
+        ai = abcf->istk[abcf->sp--];
+        printf("%p\n", ai);
+        AiwnBCWrite((void *)state->_sp, (void *)&ai, RT_I64i);
+      }
+    })
+    CASE_BALLER(ABC_POP, {
+      puts("POP");
+      if (is_f64) {
+        af = AiwnBCReadF64((void *)state->_sp, RT_F64);
+        abcf->fstk[++abcf->sp] = af;
+      } else {
+        ai = AiwnBCReadI64((void *)state->_sp, RT_I64i);
+        abcf->istk[++abcf->sp] = ai;
+      }
+      state->_sp += 8;
+    });
     break;
-  case ABC_GOTO:
-    old_addr = (int64_t)(bc - 1);
-    puts("GOTO");
-    i64 = *(uint64_t *)bc;
-    bc += 2;
-    state->ip = i64 + old_addr;
-    goto fin;
-    break;
-  case ABC_END_EXPR:
-    puts("END_EXPR");
+    CASE_BALLER(ABC_SET_FRAME_SIZE, {
+      puts("SET_FRAME_SIZE");
+      state->_sp -= *bc++;
+    })
+    CASE_BALLER(ABC_SUB_RET, {
+      AiwnBCWrite(&state->ip, (void *)state->_sp, RT_I64i);
+      state->_sp += 8;
+      goto fin;
+    })
+    CASE_BALLER(ABC_SUB_CALL, {
+      old_addr = (int64_t)(bc - 1);
 
-    abcf->sp = 0;
-    break;
-  case ABC_GOTO_IF:
-    puts("ABC_GOTO_IF");
-    old_addr = (int64_t)(bc - 1);
-    i64 = *(uint64_t *)bc;
-    bc += 2;
-    if (is_f64) {
-      if (abcf->fstk[abcf->sp--]!=0.) {
-        state->ip = i64 + old_addr;
+      bc += 2;
+      state->_sp -= 8;
+      AiwnBCWrite((void *)state->_sp, &bc, RT_I64i);
+      state->ip = ((uint64_t *)bc)[-1] + old_addr;
+      goto fin;
+    })
+    CASE_BALLER(ABC_CALL, {
+      puts("CALL");
+      if (abcf->istk[abcf->sp] != INVALID_PTR) {
+        old_fp = state->fp;
+        state->fp = state->_sp -= 16 + sizeof(ABCFrame);
+        new = state->fp + 16;
+        new->next = abcf;
+        new->sp = 0;
+        printf("TO::%p,ME:%p\n", abcf->istk[abcf->sp], bc);
+        AiwnBCWrite((void *)(state->fp + 0), (void *)&old_fp, RT_I64i);
+        AiwnBCWrite((void *)(state->fp + 8), (void *)&bc, RT_I64i);
+        state->ip = abcf->istk[abcf->sp--];
+        printf("FROM::%p\n", state->fun_frame);
+        state->fun_frame = new;
+        printf("INTO:%p\n", new);
         goto fin;
+
+      } else {
+        abcf->istk[abcf->sp] = 0;
+        break;
       }
-    } else {
-      if (abcf->istk[abcf->sp--]) {
-        state->ip = i64 + old_addr;
-        goto fin;
+      break;
+    })
+    CASE_BALLER(ABC_RET, {
+      puts("RET");
+      ret = abcf->istk[abcf->sp];
+      printf("FP:%p\n", state->fp);
+      printf("RETAT:%p\n", state->fun_frame);
+      old_fp = AiwnBCReadI64((void *)(state->fp), RT_I64i);
+      old_addr = AiwnBCReadI64((void *)(state->fp + 8), RT_I64i);
+      printf("RETTO:%p\n", old_addr);
+      state->_sp = state->fp + 16 + sizeof(ABCFrame);
+      printf("ASS:%p\n", state->fun_frame);
+      state->fp = old_fp;
+      state->ip = old_addr;
+      if (state->fp) {
+        abcf = state->fun_frame = (ABCFrame *)(state->fp + 16);
+        abcf->istk[++abcf->sp] = ret;
+      } else
+        state->fun_frame = NULL;
+      retval = ret;
+      goto fin;
+    })
+    CASE_BALLER(ABC_GOTO, {
+      old_addr = (int64_t)(bc - 1);
+      puts("GOTO");
+      i64 = *(uint64_t *)bc;
+      bc += 2;
+      state->ip = i64 + old_addr;
+      goto fin;
+    })
+    CASE_BALLER(ABC_END_EXPR, {
+      puts("END_EXPR");
+
+      abcf->sp = 0;
+    })
+    CASE_BALLER(ABC_GOTO_IF, {
+      puts("ABC_GOTO_IF");
+      old_addr = (int64_t)(bc - 1);
+      i64 = *(uint64_t *)bc;
+      bc += 2;
+      if (is_f64) {
+        if (abcf->fstk[abcf->sp--] != 0.) {
+          state->ip = i64 + old_addr;
+          goto fin;
+        }
+      } else {
+        if (abcf->istk[abcf->sp--]) {
+          state->ip = i64 + old_addr;
+          goto fin;
+        }
       }
-    }
-    break;
-  case ABC_TO_I64:
-    puts("ABC_2I64");
-    f64 = abcf->fstk[abcf->sp];
-    abcf->istk[abcf->sp] = f64;
-    break;
-  case ABC_TYPECAST:
-  //Things are unioned
-  break;
-  case ABC_TO_F64:
-    puts("ABC_2F64");
-    i64 = abcf->istk[abcf->sp];
-    abcf->fstk[abcf->sp] = i64;
-    break;
-  case ABC_TO_BOOL:
-    puts("ABC_2Bool");
-    if (is_f64) {
+    })
+    CASE_BALLER(ABC_TO_I64, {
+      puts("ABC_2I64");
       f64 = abcf->fstk[abcf->sp];
-      abcf->fstk[abcf->sp] = !!f64;
-    } else {
+      abcf->istk[abcf->sp] = f64;
+      break;
+    })
+  case ABC_TYPECAST:
+    // Things are unioned
+    break;
+    CASE_BALLER(ABC_TO_F64, {
+      puts("ABC_2F64");
       i64 = abcf->istk[abcf->sp];
-      abcf->istk[abcf->sp] = !!i64;
-    }
+      abcf->fstk[abcf->sp] = i64;
+      break;
+    })
+    CASE_BALLER(ABC_TO_BOOL, {
+      puts("ABC_2Bool");
+      if (is_f64) {
+        f64 = abcf->fstk[abcf->sp];
+        abcf->fstk[abcf->sp] = !!f64;
+      } else {
+        i64 = abcf->istk[abcf->sp];
+        abcf->istk[abcf->sp] = !!i64;
+      }
+    })
     break;
-  case ABC_FS:
-    puts("ABC_FS");
-    abcf->istk[++abcf->sp] = (int64_t)GetHolyFs();
-    break;
-  case ABC_GS:
-    puts("ABC_GS");
-    abcf->istk[++abcf->sp] = (int64_t)GetHolyGs();
-    break;
-  case ABC_READ_PTR:
-    puts("READ_PTR");
+    CASE_BALLER(ABC_FS, {
+      puts("ABC_FS");
+      abcf->istk[++abcf->sp] = (int64_t)GetHolyFs();
+    })
+    CASE_BALLER(ABC_GS, {
+      puts("ABC_GS");
+      abcf->istk[++abcf->sp] = (int64_t)GetHolyGs();
+    })
+    CASE_BALLER(ABC_READ_PTR, {
+      puts("READ_PTR");
 
-    i64 = 0;
-    t = bc[-1] >> 16;
-  read_style:
-    if (is_f64)
-      abcf->fstk[abcf->sp] =
-          AiwnBCReadF64((void *)(abcf->istk[abcf->sp] + i64), t);
-    else
-      abcf->istk[abcf->sp] =
-          AiwnBCReadI64((void *)(abcf->istk[abcf->sp] + i64), t);
-    break;
-  case ABC_READ_PTRO:
-    puts("READPTRO");
+      i64 = 0;
+      if (is_f64)
+        abcf->fstk[abcf->sp] =
+            AiwnBCReadF64((void *)(abcf->istk[abcf->sp] + i64), t);
+      else
+        abcf->istk[abcf->sp] =
+            AiwnBCReadI64((void *)(abcf->istk[abcf->sp] + i64), t);
+      break;
+    })
+    CASE_BALLER(ABC_READ_PTRO, {
+      i64 = *(int32_t *)bc;
+      bc += 1;
 
-    t = bc[-1] >> 16;
-    i64 = *(int32_t *)bc;
-    bc += 1;
-    goto read_style;
-    break;
-  case ABC_NEG:
-    puts("NEG");
-    if (is_f64) {
-      abcf->fstk[abcf->sp] = -abcf->fstk[abcf->sp];
-    } else {
-      abcf->istk[abcf->sp] = -abcf->istk[abcf->sp];
-    }
-    break;
-  case ABC_POS:
-    puts("POS");
-    if (is_f64) {
-      abcf->fstk[abcf->sp] = abcf->fstk[abcf->sp];
-    } else {
-      abcf->istk[abcf->sp] = abcf->istk[abcf->sp];
-    }
-    break;
-  case ABC_IMM_F64:
-    puts("FG64");
-    f64 = *(double *)bc;
-    bc += 2;
-    abcf->fstk[++abcf->sp] = f64;
-    break;
-  case ABC_FRAME_ADDR:
-    puts("FRAME_ADDR");
-    abcf->istk[++abcf->sp] = state->fp;
-    break;
-  case ABC_PCREL:
-    i64 = *(int64_t *)bc;
-    bc += 2;
-    abcf->istk[++abcf->sp] = i64 + (int64_t)(bc - 3);
-    break;
-  case ABC_IMM_I64:
-    puts("I64");
-    i64 = *(int64_t *)bc;
-    bc += 2;
-    abcf->istk[++abcf->sp] = i64;
-    break;
-  case ABC_SWITCH:
-    old_addr = (int64_t)(bc - 1);
-    i64 = *bc;
-    ++bc;
-    table = *(int64_t *)bc + old_addr;
-    bc += 2;
-    dft = *(int64_t *)bc + old_addr;
-    bc += 2;
-    ai = abcf->istk[abcf->sp--];
-    if (ai < 0) {
-      state->ip = dft;
-    } else if (ai >= i64) {
-      state->ip = dft;
-    } else {
-      state->ip = table[ai];
-    }
-    goto fin;
-  case ABC_ADD:
+      if (is_f64)
+        abcf->fstk[abcf->sp] =
+            AiwnBCReadF64((void *)(abcf->istk[abcf->sp] + i64), t);
+      else
+        abcf->istk[abcf->sp] =
+            AiwnBCReadI64((void *)(abcf->istk[abcf->sp] + i64), t);
+      break;
+    })
+    CASE_BALLER(ABC_NEG, {
+      puts("NEG");
+      if (is_f64) {
+        abcf->fstk[abcf->sp] = -abcf->fstk[abcf->sp];
+      } else {
+        abcf->istk[abcf->sp] = -abcf->istk[abcf->sp];
+      }
+    })
+    CASE_BALLER(ABC_POS, {
+      puts("POS");
+      if (is_f64) {
+        abcf->fstk[abcf->sp] = abcf->fstk[abcf->sp];
+      } else {
+        abcf->istk[abcf->sp] = abcf->istk[abcf->sp];
+      }
+    })
+    CASE_BALLER(ABC_IMM_F64, {
+      puts("FG64");
+      f64 = *(double *)bc;
+      bc += 2;
+      abcf->fstk[++abcf->sp] = f64;
+    })
+    CASE_BALLER(ABC_FRAME_ADDR, {
+      puts("FRAME_ADDR");
+      abcf->istk[++abcf->sp] = state->fp;
+    });
+    CASE_BALLER(ABC_PCREL, {
+      i64 = *(int64_t *)bc;
+      bc += 2;
+      abcf->istk[++abcf->sp] = i64 + (int64_t)(bc - 3);
+    });
+    CASE_BALLER(ABC_IMM_I64, {
+      puts("I64");
+      i64 = *(int64_t *)bc;
+      bc += 2;
+      abcf->istk[++abcf->sp] = i64;
+    });
+    CASE_BALLER(ABC_SWITCH, {
+      old_addr = (int64_t)(bc - 1);
+      i64 = *bc;
+      ++bc;
+      table = *(int64_t *)bc + old_addr;
+      bc += 2;
+      dft = *(int64_t *)bc + old_addr;
+      bc += 2;
+      ai = abcf->istk[abcf->sp--];
+      if (ai < 0) {
+        state->ip = dft;
+      } else if (ai >= i64) {
+        state->ip = dft;
+      } else {
+        state->ip = table[ai];
+      }
+      goto fin;
+    })
+    CASE_BALLER(ABC_ADD, {
 #define ABC_OP(op)                                                             \
   if (is_f64) {                                                                \
-    bf = abcf->fstk[abcf->sp--];                                               \
-    abcf->fstk[abcf->sp] op bf;                                                \
+    af = abcf->fstk[abcf->sp--];                                               \
+    bf = abcf->fstk[abcf->sp];                                                 \
+    af op bf;                                                                  \
+    abcf->fstk[abcf->sp] = af;                                                 \
   } else if (is_u64) {                                                         \
-    bu = abcf->ustk[abcf->sp--];                                               \
-    abcf->ustk[abcf->sp] op bu;                                                \
+    au = abcf->ustk[abcf->sp--];                                               \
+    bu = abcf->ustk[abcf->sp];                                                 \
+    abcf->ustk[abcf->sp] = au op bu;                                           \
   } else {                                                                     \
-    bi = abcf->istk[abcf->sp--];                                               \
-    abcf->istk[abcf->sp] op bi;                                                \
+    ai = abcf->ustk[abcf->sp--];                                               \
+    bi = abcf->istk[abcf->sp];                                                 \
+    abcf->istk[abcf->sp] = ai op bi;                                           \
   }
-    ABC_OP(+=);
-    break;
-  case ABC_WRITE_PTR:
-    puts("WRITE_PTR");
-    i64 = 0;
-    t = bc[-1] >> 16;
-  write_style:
-    i64 += abcf->istk[abcf->sp--];
-    AiwnBCWrite((void *)i64, (void *)&abcf->istk[abcf->sp], t);
-    break;
-  case ABC_WRITE_PTRO:
-    puts("WRITE_PTRO");
-    i64 = *(int32_t *)bc;
-    t = bc[-1] >> 16;
-    bc++;
-    goto write_style;
-    break;
-  case ABC_DIV:
-    ABC_OP(/=);
-    break;
-  case ABC_MUL:
-    ABC_OP(*=);
-    break;
-  case ABC_AND:
-    puts("AND");
-    bi = abcf->istk[abcf->sp--];
-    abcf->istk[abcf->sp] &= bi;
-    break;
-  case ABC_SKIP_ON_FAIL:
-    puts("SKOF");
-    if (is_f64) {
-      bf = abcf->fstk[abcf->sp];
-      i64 = *bc++;
-      if (!bf) {
-        state->ip = (uint64_t)(bc - 2) + i64;
-        goto fin;
-      }
-      abcf->istk[abcf->sp] = 1;
-    } else {
-      bi = abcf->istk[abcf->sp];
-      i64 = *bc++;
-      if (!bi) {
-        state->ip = (uint64_t)(bc - 2) + i64;
-        goto fin;
-      }
-      abcf->istk[abcf->sp] = 1;
-    }
-    break;
-  case ABC_DISCARD:
-    puts("DISCARD");
-    i64 = *bc++;
-    abcf->sp -= i64;
-    break;
-  case ABC_DISCARD_STK: {
-    puts("DISARD_STK");
-
-    i64 = *bc++;
-    state->_sp += i64;
-  } break;
-  case ABC_SKIP_ON_PASS:
-    puts("SKOP");
-    if (is_f64) {
-      bf = abcf->fstk[abcf->sp];
-      i64 = *bc++;
-      if (bf) {
-        state->ip = (uint64_t)(bc - 2) + i64;
-        goto fin;
-      }
-      abcf->istk[abcf->sp] = 0;
-    } else {
-      bi = abcf->istk[abcf->sp];
-      i64 = *bc++;
-      if (bi) {
-        state->ip = (uint64_t)(bc - 2) + i64;
-        goto fin;
-      }
-      abcf->istk[abcf->sp] = 0;
-    }
-    break;
-  case ABC_SWAP:
-    puts("swap");
-    ai = abcf->istk[abcf->sp - 1];
-    bi = abcf->istk[abcf->sp];
-    abcf->istk[abcf->sp - 1] = bi;
-    abcf->istk[abcf->sp] = ai;
-    break;
-  case ABC_SUB:
-    ABC_OP(-=);
-    break;
-  case ABC_XOR:
-    puts("XOIR");
-    bi = abcf->istk[abcf->sp--];
-    abcf->istk[abcf->sp] ^= bi;
-
-    break;
-  case ABC_MOD:
-    puts("MOD");
-    if (is_f64) {
-      bf = abcf->fstk[abcf->sp--];
-      af = abcf->fstk[abcf->sp];
-      abcf->fstk[abcf->sp] = fmod(af, bf);
-    } else if (is_u64) {
-      bu = abcf->ustk[abcf->sp--];
-      abcf->ustk[abcf->sp] %= bu;
-    } else {
+      ABC_OP(+=);
+    });
+    CASE_BALLER(ABC_WRITE_PTR, {
+      i64 = 0;
+      i64 += abcf->istk[abcf->sp--];
+      AiwnBCWrite((void *)i64, (void *)&abcf->istk[abcf->sp], t);
+    })
+    CASE_BALLER(ABC_WRITE_PTRO, {
+      i64 = *(int32_t *)bc;
+      bc++;
+      i64 += abcf->istk[abcf->sp--];
+      AiwnBCWrite((void *)i64, (void *)&abcf->istk[abcf->sp], t);
+    })
+    CASE_BALLER(ABC_DIV, { ABC_OP(/=); });
+    CASE_BALLER(ABC_MUL, { ABC_OP(*=); });
+    CASE_BALLER(ABC_AND, {
+      puts("AND");
       bi = abcf->istk[abcf->sp--];
-      abcf->istk[abcf->sp] %= bi;
-    }
-    break;
-  case ABC_OR:
-    puts("OR");
+      abcf->istk[abcf->sp] &= bi;
+    });
+    CASE_BALLER(ABC_SKIP_ON_FAIL, {
+      puts("SKOF");
+      if (is_f64) {
+        bf = abcf->fstk[abcf->sp];
+        i64 = *bc++;
+        if (!bf) {
+          state->ip = (uint64_t)(bc - 2) + i64;
+          goto fin;
+        }
+        abcf->istk[abcf->sp] = 1;
+      } else {
+        bi = abcf->istk[abcf->sp];
+        i64 = *bc++;
+        if (!bi) {
+          state->ip = (uint64_t)(bc - 2) + i64;
+          goto fin;
+        }
+        abcf->istk[abcf->sp] = 1;
+      }
+    });
+    CASE_BALLER(ABC_DISCARD, {
+      puts("DISCARD");
+      i64 = *bc++;
+      abcf->sp -= i64;
+    });
+    CASE_BALLER(ABC_DISCARD_STK, {
+      puts("DISARD_STK");
 
-    bi = abcf->istk[abcf->sp--];
-    abcf->istk[abcf->sp] |= bi;
-    break;
-  case ABC_LT:
+      i64 = *bc++;
+      state->_sp += i64;
+    });
+    CASE_BALLER(ABC_SKIP_ON_PASS, {
+      puts("SKOP");
+      if (is_f64) {
+        bf = abcf->fstk[abcf->sp];
+        i64 = *bc++;
+        if (bf) {
+          state->ip = (uint64_t)(bc - 2) + i64;
+          goto fin;
+        }
+        abcf->istk[abcf->sp] = 0;
+      } else {
+        bi = abcf->istk[abcf->sp];
+        i64 = *bc++;
+        if (bi) {
+          state->ip = (uint64_t)(bc - 2) + i64;
+          goto fin;
+        }
+        abcf->istk[abcf->sp] = 0;
+      }
+    });
+    CASE_BALLER(ABC_SWAP, {
+      puts("swap");
+      ai = abcf->istk[abcf->sp - 1];
+      bi = abcf->istk[abcf->sp];
+      abcf->istk[abcf->sp - 1] = bi;
+      abcf->istk[abcf->sp] = ai;
+    });
+    CASE_BALLER(ABC_SUB, { ABC_OP(-=); });
+    CASE_BALLER(ABC_XOR, {
+      puts("XOIR");
+      bi = abcf->istk[abcf->sp--];
+      abcf->istk[abcf->sp] ^= bi;
+    });
+    CASE_BALLER(ABC_MOD, {
+      puts("MOD");
+      if (is_f64) {
+        af = abcf->fstk[abcf->sp--];
+        bf = abcf->fstk[abcf->sp];
+        abcf->fstk[abcf->sp] = fmod(af, bf);
+      } else if (is_u64) {
+        au = abcf->ustk[abcf->sp--];
+        bu = abcf->ustk[abcf->sp];
+        abcf->ustk[abcf->sp] = au %= bu;
+      } else {
+        ai = abcf->ustk[abcf->sp--];
+        bi = abcf->ustk[abcf->sp];
+        abcf->istk[abcf->sp] = ai %= bi;
+      }
+    });
+    CASE_BALLER(ABC_OR, {
+      puts("OR");
+
+      bi = abcf->istk[abcf->sp--];
+      abcf->istk[abcf->sp] |= bi;
+    });
+    CASE_BALLER(ABC_LT, {
 #define ABC_OP2(op)                                                            \
   if (is_f64) {                                                                \
     bf = abcf->fstk[abcf->sp--];                                               \
@@ -620,19 +721,12 @@ int64_t AiwnRunBC(ABCState *state) {
     bi = abcf->istk[abcf->sp--];                                               \
     abcf->istk[abcf->sp] = abcf->istk[abcf->sp] op bi;                         \
   }
-
-    ABC_OP2(<);
-    break;
-  case ABC_GT:
-    ABC_OP2(>);
-    break;
-  case ABC_LE:
-    ABC_OP2(<=);
-    break;
-  case ABC_GE:
-    ABC_OP2(>=);
-    break;
-  case ABC_LNOT:
+      ABC_OP2(<);
+    });
+    CASE_BALLER(ABC_GT, { ABC_OP2(>); });
+    CASE_BALLER(ABC_LE, { ABC_OP2(<=); });
+    CASE_BALLER(ABC_GE, { ABC_OP2(>=); });
+    CASE_BALLER(ABC_LNOT, {
 #define ABC_UNOP(op)                                                           \
   if (is_f64) {                                                                \
     bf = abcf->fstk[abcf->sp];                                                 \
@@ -641,46 +735,45 @@ int64_t AiwnRunBC(ABCState *state) {
     bi = abcf->istk[abcf->sp];                                                 \
     abcf->istk[abcf->sp] = op bi;                                              \
   }
-    ABC_UNOP(!);
-    break;
-  case ABC_BNOT:
-    puts("BNOT");
-    bi = abcf->istk[abcf->sp];
-    abcf->istk[abcf->sp] = ~bi;
-    break;
-  case ABC_XOR_XOR:
-    puts("XXOR");
-    if (is_f64) {
-      bf = abcf->fstk[abcf->sp--];
-      af = abcf->fstk[abcf->sp];
-      abcf->fstk[abcf->sp] = !!af ^ !!bf;
-    } else {
-      bi = abcf->istk[abcf->sp--];
-      ai = abcf->istk[abcf->sp];
-      abcf->istk[abcf->sp] = !!ai ^ !!bi;
-    }
-    break;
-  case ABC_NE:
-    ABC_OP2(!=);
-    break;
-  case ABC_EQ_EQ:
-    ABC_OP2(==);
-    break;
-  case ABC_LSH:
-    puts("LSH");
-    bi = abcf->istk[abcf->sp--];
-    if (is_u64) {
-      abcf->ustk[abcf->sp] <<= bi;
-    } else
-      abcf->istk[abcf->sp] <<= bi;
-    break;
-  case ABC_RSH:
-    puts("RSH");
-    bi = abcf->istk[abcf->sp--];
-    if (is_u64) {
-      abcf->ustk[abcf->sp] >>= (uint64_t)bi;
-    } else
-      abcf->istk[abcf->sp] >>= bi;
+      ABC_UNOP(!);
+    });
+    CASE_BALLER(ABC_BNOT, {
+      puts("BNOT");
+      bi = abcf->istk[abcf->sp];
+      abcf->istk[abcf->sp] = ~bi;
+    });
+    CASE_BALLER(ABC_XOR_XOR, {
+      puts("XXOR");
+      if (is_f64) {
+        bf = abcf->fstk[abcf->sp--];
+        af = abcf->fstk[abcf->sp];
+        abcf->fstk[abcf->sp] = !!af ^ !!bf;
+      } else {
+        bi = abcf->istk[abcf->sp--];
+        ai = abcf->istk[abcf->sp];
+        abcf->istk[abcf->sp] = !!ai ^ !!bi;
+      }
+    });
+    CASE_BALLER(ABC_NE, { ABC_OP2(!=); });
+    CASE_BALLER(ABC_EQ_EQ, { ABC_OP2(==); });
+    CASE_BALLER(ABC_LSH, {
+      puts("LSH");
+      ai = au = abcf->istk[abcf->sp--];
+      bi = bu = abcf->istk[abcf->sp];
+      if (is_u64) {
+        abcf->ustk[abcf->sp] = ai <<= bi;
+      } else
+        abcf->istk[abcf->sp] = au <<= bu;
+    });
+    CASE_BALLER(ABC_RSH, {
+      puts("RSH");
+      ai = au = abcf->istk[abcf->sp--];
+      bi = bu = abcf->istk[abcf->sp];
+      if (is_u64) {
+        abcf->ustk[abcf->sp] = au >>= bu;
+      } else
+        abcf->istk[abcf->sp] = ai >>= bi;
+    })
   }
   state->ip = (int64_t)bc;
 fin:;
@@ -704,11 +797,41 @@ static CCodeMiscRef *CodeMiscAddRefBC(CCodeMisc *misc, int32_t *addr) {
   misc->refs = ref;
   return ref;
 }
+static CRPN *DerefOffset(CRPN *rpn, int64_t *off) {
+  int64_t o = 0;
+  CRPN *a, *b;
+again:;
+  if (rpn->type == IC_ADD) {
+    a = ICArgN(rpn, 0);
+    b = ICArgN(rpn, 1);
+    if (a->type == IC_I64) {
+      o += a->integer;
+      rpn = b;
+      goto again;
+    }
+    if (b->type == IC_I64) {
+      o += b->integer;
+      rpn = a;
+      goto again;
+    }
+  } else if (rpn->type == IC_SUB) {
+    a = ICArgN(rpn, 0);
+    b = ICArgN(rpn, 1);
+    if (a->type == IC_I64) {
+      o -= a->integer;
+      rpn = b;
+      goto again;
+    }
+  }
+  if (off)
+    *off = o;
+  return rpn;
+}
 static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
   CCodeMiscRef *cmr;
   CRPN *arg0 = ICArgN(rpn, 0), *arg1 = ICArgN(rpn, 1);
   CRPN *head;
-  int64_t t, a, enter_addr, ienter_addr;
+  int64_t t, a, enter_addr, ienter_addr, off;
   switch (rpn->type) {
   case IC_GOTO:
     len = AiwnBCAddCode(ptr, ABC_GOTO, len);
@@ -720,7 +843,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     break;
   case IC_GOTO_IF:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_GOTO_IF | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_GOTO_IF | (arg0->raw_type << 8), len);
     if (ptr) {
       cmr = CodeMiscAddRefBC(rpn->code_misc, (void *)(ptr + len));
       cmr->offset = 4;
@@ -753,20 +876,19 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
       cmr = CodeMiscAddRefBC(rpn->code_misc, (void *)(ptr + len - 8));
       cmr->offset = rpn->integer;
     }
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 8), len);
     break;
   case IC_NOP:
-    len = AiwnBCAddCode(ptr, ABC_NOP, len);
     break;
   case IC_NEG:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_NEG | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_NEG | (rpn->raw_type << 8), len);
     break;
   case IC_POS:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_POS | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_POS | (rpn->raw_type << 8), len);
     break;
   case IC_STR:
     len = AiwnBCAddCode(ptr, ABC_PCREL, len);
@@ -784,18 +906,18 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, rpn->integer >> 32ull, len);
     break;
   case IC_POW:
-    len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_POW | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_POW | (rpn->raw_type << 8), len);
     break;
   case IC_ADD:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_ADD | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_ADD | (rpn->raw_type << 8), len);
     break;
   case IC_EQ:
     len = CompileToBC0(cc, ptr, arg0, len);
@@ -804,21 +926,24 @@ len = CompileToBC0(cc, ptr, arg1, len);
       arg1 = ICArgN(arg1, 0);
     } else
       t = arg1->raw_type;
-    len=ForceType(ptr,arg0,t,len);
+    len = ForceType(ptr, arg0, t, len);
     if (arg1->type == IC_STATIC) {
       len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
       len = AiwnBCAddCode(ptr, arg1->integer, len);
       len = AiwnBCAddCode(ptr, arg1->integer >> 32, len);
-      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);
+      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);
       len = AiwnBCAddCode(ptr, arg1->integer, len);
     } else if (arg1->type == IC_BASE_PTR) {
       len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
-      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);
+      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);
       len = AiwnBCAddCode(ptr, -arg1->integer, len);
     } else if (arg1->type == IC_DEREF) {
-      len = CompileToBC0(cc, ptr, ICArgN(arg1, 0), len);
-      len=ForceType(ptr,ICArgN(arg1, 0),RT_PTR,len);
-      len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);
+      arg1 = arg1->base.next;
+      arg1 = DerefOffset(arg1, &off);
+      len = CompileToBC0(cc, ptr, arg1, len);
+      len = ForceType(ptr, arg1, RT_PTR, len);
+      len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);
+      len = AiwnBCAddCode(ptr, off, len);
     } else if (arg1->type == IC_GLOBAL) {
 #define GLOB_PTR(rpn)                                                          \
   if (rpn->global_var->base.type & HTT_GLBL_VAR) {                             \
@@ -832,49 +957,52 @@ len = CompileToBC0(cc, ptr, arg1, len);
   len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                  \
   len = AiwnBCAddCode(ptr, ienter_addr, len);                                  \
   len = AiwnBCAddCode(ptr, ienter_addr >> 32ul, len);                          \
-  len = AiwnBCAddCode(ptr, ABC_READ_PTR | (RT_I64i << 16), len);
+  len = AiwnBCAddCode(ptr, ABC_READ_PTR | (RT_I64i << 8), len);
 
       GLOB_PTR((arg1));
 
-      len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);
+      len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 8), len);
     } else
       abort();
     break;
   case IC_SUB:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_SUB | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_SUB | (rpn->raw_type << 8), len);
     break;
   case IC_DIV:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_DIV | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_DIV | (rpn->raw_type << 8), len);
     break;
   case IC_MUL:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_MUL | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_MUL | (rpn->raw_type << 8), len);
     break;
   case IC_DEREF:
+    arg0 = DerefOffset(arg0, &off);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,RT_I64i,len);
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, RT_I64i, len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (rpn->raw_type << 8), len);
+    len = AiwnBCAddCode(ptr, off, len);
     break;
   case IC_AND:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_AND | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_AND | (rpn->raw_type << 8), len);
     break;
   case IC_ADDR_OF:
 #define GET_PTR                                                                \
+  off = 0;                                                                     \
   if (arg0->type == IC_TYPECAST) {                                             \
     t = arg0->raw_type;                                                        \
     arg0 = ICArgN(arg0, 0);                                                    \
@@ -889,10 +1017,11 @@ len = CompileToBC0(cc, ptr, arg1, len);
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, -arg0->integer, len);                             \
     len = AiwnBCAddCode(ptr, -arg0->integer >> 32, len);                       \
-    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);                  \
+    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 8), len);                   \
   } else if (arg0->type == IC_DEREF) {                                         \
-    len = CompileToBC0(cc, ptr, arg0->base.next, len);                         \
-    len=ForceType(ptr,arg0->base.next,RT_PTR,len);\
+    arg0 = arg0->base.next;                                                    \
+    len = CompileToBC0(cc, ptr, arg0, len);                                    \
+    len = ForceType(ptr, arg0, RT_PTR, len);                                   \
   } else if (arg0->type == IC_GLOBAL) {                                        \
     GLOB_PTR((arg0));                                                          \
   } else                                                                       \
@@ -900,31 +1029,31 @@ len = CompileToBC0(cc, ptr, arg1, len);
     GET_PTR;
     break;
   case IC_XOR:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_XOR | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_XOR | (rpn->raw_type << 8), len);
     break;
   case IC_GLOBAL:
     GLOB_PTR((rpn));
     if (rpn->global_var->base.type & HTT_FUN)
       break;
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (rpn->raw_type << 8), len);
     break;
   case IC_MOD:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_MOD | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_MOD | (rpn->raw_type << 8), len);
     break;
   case IC_OR:
-len = CompileToBC0(cc, ptr, arg1, len);
-    len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-        len = AiwnBCAddCode(ptr, ABC_OR | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_OR | (rpn->raw_type << 8), len);
     break;
   case IC_LT:
     goto cmp_style;
@@ -932,23 +1061,23 @@ len = CompileToBC0(cc, ptr, arg1, len);
     goto cmp_style;
   case IC_LNOT:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_LNOT | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_LNOT | (arg0->raw_type << 8), len);
     break;
   case IC_BNOT:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_BNOT | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_BNOT | (rpn->raw_type << 8), len);
     break;
   case IC_AND_AND: {
     int64_t skipo;
     len = CompileToBC0(cc, ptr, arg1, len);
     skipo = len;
-    len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (arg1->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (arg1->raw_type << 8), len);
     len = AiwnBCAddCode(ptr, 0, len);
     len = AiwnBCAddCode(ptr, ABC_DISCARD, len);
     len = AiwnBCAddCode(ptr, 1, len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_TO_BOOL | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_TO_BOOL | (arg0->raw_type << 8), len);
     if (ptr)
       *(uint32_t *)(&ptr[skipo + 4]) = len - skipo;
   } break;
@@ -956,28 +1085,28 @@ len = CompileToBC0(cc, ptr, arg1, len);
     int64_t skipo;
     len = CompileToBC0(cc, ptr, arg1, len);
     skipo = len;
-    len = AiwnBCAddCode(ptr, ABC_SKIP_ON_PASS | (arg1->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_SKIP_ON_PASS | (arg1->raw_type << 8), len);
     len = AiwnBCAddCode(ptr, 0, len);
     len = AiwnBCAddCode(ptr, ABC_DISCARD, len);
     len = AiwnBCAddCode(ptr, 1, len);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_TO_BOOL | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_TO_BOOL | (arg0->raw_type << 8), len);
     if (ptr)
       *(uint32_t *)(&ptr[skipo + 4]) = len - skipo;
   } break;
   case IC_EQ_EQ:
-    len = CompileToBC0(cc, ptr, arg1, len);
-  len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-  len=ForceType(ptr,arg0,rpn->raw_type,len);
-    len = AiwnBCAddCode(ptr, ABC_EQ_EQ | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_EQ_EQ | (rpn->raw_type << 8), len);
     break;
   case IC_NE:
-  len = CompileToBC0(cc, ptr, arg1, len);
-  len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-  len=ForceType(ptr,arg0,rpn->raw_type,len);
-      len = AiwnBCAddCode(ptr, ABC_NE | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_NE | (rpn->raw_type << 8), len);
     break;
   case IC_LE:
   cmp_style: {
@@ -1017,34 +1146,34 @@ len = CompileToBC0(cc, ptr, arg1, len);
     arg1 = range_args[cnt];
     len = CompileToBC0(cc, ptr, arg1, len);
     if (t == RT_F64 && arg1->raw_type != RT_F64)
-      len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 16), len);
+      len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 8), len);
     i = cnt;
     while (--cnt >= 0) {
       arg0 = range_args[cnt];
       len = CompileToBC0(cc, ptr, arg0, len);
       if (t == RT_F64 && arg0->raw_type != RT_F64)
-        len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 16), len);
-      len = AiwnBCAddCode(ptr, ABC_DUP | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 8), len);
+      len = AiwnBCAddCode(ptr, ABC_DUP | (t << 8), len);
       len = AiwnBCAddCode(ptr, ABC_PUSH, len);
       switch (range[cnt]) {
         break;
       case IC_LT:
-        len = AiwnBCAddCode(ptr, ABC_LT | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_LT | (t << 8), len);
         break;
       case IC_LE:
-        len = AiwnBCAddCode(ptr, ABC_LE | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_LE | (t << 8), len);
         break;
       case IC_GE:
-        len = AiwnBCAddCode(ptr, ABC_GE | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_GE | (t << 8), len);
         break;
       case IC_GT:
-        len = AiwnBCAddCode(ptr, ABC_GT | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_GT | (t << 8), len);
       }
       if (cnt) {
         skipos[cnt] = len;
-        len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (RT_I64i << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (RT_I64i << 8), len);
         len = AiwnBCAddCode(ptr, 0, len);
-        len = AiwnBCAddCode(ptr, ABC_POP | (t << 16), len);
+        len = AiwnBCAddCode(ptr, ABC_POP | (t << 8), len);
       }
     }
 
@@ -1059,18 +1188,18 @@ len = CompileToBC0(cc, ptr, arg1, len);
   case IC_GE:
     goto cmp_style;
   case IC_LSH:
-  len = CompileToBC0(cc, ptr, arg1, len);
-  len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-  len=ForceType(ptr,arg0,rpn->raw_type,len);
-      len = AiwnBCAddCode(ptr, ABC_LSH | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_LSH | (rpn->raw_type << 8), len);
     break;
   case IC_RSH:
-  len = CompileToBC0(cc, ptr, arg1, len);
-  len=ForceType(ptr,arg1,rpn->raw_type,len);
     len = CompileToBC0(cc, ptr, arg0, len);
-  len=ForceType(ptr,arg0,rpn->raw_type,len);
-      len = AiwnBCAddCode(ptr, ABC_RSH | (rpn->raw_type << 16), len);
+    len = ForceType(ptr, arg0, rpn->raw_type, len);
+    len = CompileToBC0(cc, ptr, arg1, len);
+    len = ForceType(ptr, arg1, rpn->raw_type, len);
+    len = AiwnBCAddCode(ptr, ABC_RSH | (rpn->raw_type << 8), len);
     break;
   case IC_ADD_EQ:
 #define ASSIGN_OP(xxx)                                                         \
@@ -1080,15 +1209,14 @@ len = CompileToBC0(cc, ptr, arg1, len);
     arg1 = ICArgN(arg1, 0);                                                    \
   } else                                                                       \
     t = arg1->raw_type;                                                        \
-  len=ForceType(ptr,arg0,t,len); \
+  len = ForceType(ptr, arg0, t, len);                                          \
   if (arg1->type == IC_STATIC) {                                               \
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, arg1->integer, len);                              \
     len = AiwnBCAddCode(ptr, arg1->integer >> 32, len);                        \
-    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 16), len);                  \
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 8), len);                   \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
-    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
-    len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
+    len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, 0, len);                                          \
     len = AiwnBCAddCode(ptr, 0, len);                                          \
@@ -1096,36 +1224,36 @@ len = CompileToBC0(cc, ptr, arg1, len);
       cmr = CodeMiscAddRefBC(cc->statics_label, ptr + len - 8);                \
       cmr->offset = arg1->integer;                                             \
     }                                                                          \
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);                 \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);                  \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
   } else if (arg1->type == IC_BASE_PTR) {                                      \
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);                             \
-    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 16), len);                  \
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 8), len);                   \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
-    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
-    len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
+    len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);                             \
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 16), len);                 \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8 ), len);             \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
   } else if (arg1->type == IC_DEREF) {                                         \
-    len = CompileToBC0(cc, ptr, ICArgN(arg1, 0), len);                         \
-    len=ForceType(ptr, ICArgN(arg1, 0), RT_PTR,len);\
+    arg1 = DerefOffset(arg1->base.next, &off);                                 \
+    len = CompileToBC0(cc, ptr, arg1, len);                                    \
+    len = ForceType(ptr, arg1, RT_PTR, len);                                   \
     len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_PUSH, len);                                   \
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 16), len);                   \
-    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
-    len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 8), len);                   \
+    len = AiwnBCAddCode(ptr, off, len);                                        \
+    len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_POP, len);                                    \
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);                  \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);                  \
+    len = AiwnBCAddCode(ptr, off, len);                                        \
   } else if (arg1->type == IC_GLOBAL) {                                        \
     GLOB_PTR(arg1);                                                            \
     len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_PUSH, len);                                   \
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 16), len);                   \
-    len = AiwnBCAddCode(ptr, ABC_SWAP, len);                                   \
-    len = AiwnBCAddCode(ptr, xxx | (t << 16), len);                            \
+    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 8), len);                    \
+    len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_POP, len);                                    \
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 16), len);                  \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 8), len);                   \
                                                                                \
   } else                                                                       \
     abort();
@@ -1170,7 +1298,7 @@ len = CompileToBC0(cc, ptr, arg1, len);
     break;
   case IC_RET:
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_RET | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_RET | (arg0->raw_type << 8), len);
     break;
   case __IC_CALL:
   case IC_CALL:
@@ -1183,11 +1311,15 @@ len = CompileToBC0(cc, ptr, arg1, len);
         ++t;
       len = CompileToBC0(cc, ptr, arg1, len);
       if (arg1->type != __IC_VARGS)
-        len = AiwnBCAddCode(ptr, ABC_PUSH | ((arg1->raw_type==RT_F64?RT_F64:RT_I64i) << 16), len);
+        len = AiwnBCAddCode(
+            ptr,
+            ABC_PUSH | ((arg1->raw_type == RT_F64 ? RT_F64 : RT_I64i) << 8),
+            len);
     }
     arg0 = ICArgN(rpn, rpn->length);
     len = CompileToBC0(cc, ptr, arg0, len);
-    len = AiwnBCAddCode(ptr, ABC_CALL | (rpn->raw_type << 16), len);
+    printf("CALL:%d\n", rpn->raw_type);
+    len = AiwnBCAddCode(ptr, ABC_CALL | (rpn->raw_type << 8), len);
     len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
     len = AiwnBCAddCode(ptr, t * 8, len);
     break;
@@ -1202,7 +1334,7 @@ len = CompileToBC0(cc, ptr, arg1, len);
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
     len = AiwnBCAddCode(ptr, -rpn->code_misc->lo, len);
     len = AiwnBCAddCode(ptr, -rpn->code_misc->lo >> 32, len);
-    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 8), len);
     len = AiwnBCAddCode(ptr, ABC_SWITCH, len);
     len =
         AiwnBCAddCode(ptr, (rpn->code_misc->hi - rpn->code_misc->lo + 1), len);
@@ -1240,30 +1372,31 @@ len = CompileToBC0(cc, ptr, arg1, len);
     break;
   case IC_TYPECAST:
     t = rpn->raw_type == RT_F64 ? RT_F64 : RT_I64i;
-    len=CompileToBC0(cc,ptr,arg0,len);
+    len = CompileToBC0(cc, ptr, arg0, len);
     if (arg0->raw_type == t)
       ; // do nothing
     else
-      len = AiwnBCAddCode(ptr, ABC_TYPECAST | (t << 16), len);
+      // the things are unioned,no need to typecasst
+      ; // len = AiwnBCAddCode(ptr, ABC_TYPECAST | (t << 8), len);
     break;
   case IC_BASE_PTR:
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
-    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (rpn->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (rpn->raw_type << 8), len);
     len = AiwnBCAddCode(ptr, -rpn->integer, len);
     break;
   case __IC_VARGS:
     for (a = 0; a < rpn->length; ++a) {
       arg1 = ICArgN(rpn, a);
       len = CompileToBC0(cc, ptr, arg1, len);
-      len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 16), len);
+      len = AiwnBCAddCode(ptr, ABC_PUSH | (arg1->raw_type << 8), len);
     }
     break;
   case __IC_ARG:
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
-    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (RT_I64i << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (RT_I64i << 8), len);
     len = AiwnBCAddCode(ptr, sizeof(ABCFrame) + 16 + 8 * rpn->integer, len);
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (arg0->raw_type << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (arg0->raw_type << 8), len);
     len = AiwnBCAddCode(ptr, -arg0->integer, len);
 
     break;
@@ -1276,7 +1409,7 @@ len = CompileToBC0(cc, ptr, arg1, len);
       cmr->is_rel = 1;
       cmr->offset = 4;
     }
-    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (RT_I64i << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_READ_PTR | (RT_I64i << 8), len);
     break;
   case __IC_SET_FRAME_SIZE:
     len = AiwnBCAddCode(ptr, ABC_SET_FRAME_SIZE, len);
@@ -1309,14 +1442,14 @@ len = CompileToBC0(cc, ptr, arg1, len);
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
     len = AiwnBCAddCode(ptr, (16 + sizeof(ABCFrame) + 8 * t), len);
     len = AiwnBCAddCode(ptr, (16 + sizeof(ABCFrame) + 8 * t) >> 32, len);
-    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_ADD | (RT_I64i << 8), len);
     len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
-    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO| (RT_I64i << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (RT_I64i << 8), len);
     len = AiwnBCAddCode(ptr, -arg0->integer, len);
     break;
   case IC_TO_BOOL:
-    len=CompileToBC0(cc,ptr,arg0,len);
-    len = AiwnBCAddCode(ptr, ABC_TO_BOOL|(arg0->raw_type<<16), len);
+    len = CompileToBC0(cc, ptr, arg0, len);
+    len = AiwnBCAddCode(ptr, ABC_TO_BOOL | (arg0->raw_type << 8), len);
     break;
   case IC_FS:
     len = AiwnBCAddCode(ptr, ABC_FS, len);
@@ -1326,25 +1459,25 @@ len = CompileToBC0(cc, ptr, arg1, len);
     break;
   case IC_POST_DEC:;
     GET_PTR;
-    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 8), len);
     len = AiwnBCAddCode(ptr, -rpn->integer, len);
     len = AiwnBCAddCode(ptr, -rpn->integer >> 32, len);
     break;
   case IC_POST_INC:
     GET_PTR;
-    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_POST_INC | (t << 8), len);
     len = AiwnBCAddCode(ptr, rpn->integer, len);
     len = AiwnBCAddCode(ptr, rpn->integer >> 32, len);
     break;
   case IC_PRE_DEC:
     GET_PTR;
-    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 8), len);
     len = AiwnBCAddCode(ptr, -rpn->integer, len);
     len = AiwnBCAddCode(ptr, -rpn->integer >> 32, len);
     break;
   case IC_PRE_INC:
     GET_PTR;
-    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 16), len);
+    len = AiwnBCAddCode(ptr, ABC_PRE_INC | (t << 8), len);
     len = AiwnBCAddCode(ptr, rpn->integer, len);
     len = AiwnBCAddCode(ptr, rpn->integer >> 32, len);
   }
@@ -1379,11 +1512,11 @@ again:;
     for (i = 0; i != cctrl->cur_fun->argc; i++) {
       len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
       len = AiwnBCAddCode(
-          bin, ABC_READ_PTRO | (lst->member_class->raw_type << 16), len);
+          bin, ABC_READ_PTRO | (lst->member_class->raw_type << 8), len);
       len = AiwnBCAddCode(bin, sizeof(ABCFrame) + 16 + 8 * i, len);
       len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
       len = AiwnBCAddCode(
-          bin, ABC_WRITE_PTRO | (lst->member_class->raw_type << 16), len);
+          bin, ABC_WRITE_PTRO | (lst->member_class->raw_type << 8), len);
       len = AiwnBCAddCode(bin, -lst->off, len);
       if ((cctrl->cur_fun->base.flags & CLSF_VARGS) &&
           !strcmp("argv", lst->str)) {
@@ -1391,9 +1524,9 @@ again:;
         len = AiwnBCAddCode(bin, ABC_IMM_I64, len);
         len = AiwnBCAddCode(bin, sizeof(ABCFrame) + 16 + 8 * i, len);
         len = AiwnBCAddCode(bin, (sizeof(ABCFrame) + 16 + 8 * i) >> 32ul, len);
-        len = AiwnBCAddCode(bin, ABC_ADD | (RT_I64i << 16), len);
+        len = AiwnBCAddCode(bin, ABC_ADD | (RT_I64i << 8), len);
         len = AiwnBCAddCode(bin, ABC_FRAME_ADDR, len);
-        len = AiwnBCAddCode(bin, ABC_WRITE_PTRO | (RT_I64i << 16), len);
+        len = AiwnBCAddCode(bin, ABC_WRITE_PTRO | (RT_I64i << 8), len);
         len = AiwnBCAddCode(bin, -lst->off, len);
       }
       lst = lst->next;
@@ -1512,7 +1645,7 @@ ABCState *ABCStateNew(void *bc_addr, void *stk_ptr, int64_t argc,
   ABCState *state = calloc(1, sizeof(ABCState));
   stk_ptr -= sizeof(ABCFrame);
   ABCFrame *dummy = (void *)stk_ptr;
-	
+
   int64_t *args = stk_ptr;
   args -= argc;
   while (--argc >= 0) {
@@ -1608,13 +1741,13 @@ uint32_t *BCGenerateFFICall(void *fcall) {
 uint64_t AiwnBCContextGet(ABCState **to_stk) {
   ABCState *to = to_stk[0];
   ABCState *state = cur_bcstate;
-  int64_t old_fp=*(int64_t*)state->fp;
-  int64_t old_ip=((int64_t*)state->fp)[1];
-  ABCFrame *fr=(ABCFrame*)(old_fp+16);
-  to->_sp=(int64_t)state->fp+16+sizeof(ABCFrame);
-  to->fp=old_fp;
-  to->ip=old_ip;
-  to->fun_frame=fr;
+  int64_t old_fp = *(int64_t *)state->fp;
+  int64_t old_ip = ((int64_t *)state->fp)[1];
+  ABCFrame *fr = (ABCFrame *)(old_fp + 16);
+  to->_sp = (int64_t)state->fp + 16 + sizeof(ABCFrame);
+  to->fp = old_fp;
+  to->ip = old_ip;
+  to->fun_frame = fr;
   return 0;
 }
 // to_stk as its a "naked" function
@@ -1628,46 +1761,47 @@ uint64_t AiwnBCContextSet(ABCState **to_stk) {
 }
 // to_stk as its a "naked" function
 int64_t AiwnBCMakeContext(int64_t *to_stk) {
-	ABCState *s=ABCStateNew((void*)to_stk[1],(void*)to_stk[2],0,NULL);
-	memcpy((void*)to_stk[0],s,sizeof(ABCState));
-	free(s);
+  ABCState *s = ABCStateNew((void *)to_stk[1], (void *)to_stk[2], 0, NULL);
+  memcpy((void *)to_stk[0], s, sizeof(ABCState));
+  free(s);
 }
 int64_t AiwnBC_FP(int64_t *) {
   return cur_bcstate->fp;
 }
 
 #if defined(USE_BYTECODE)
-int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr,int64_t iterations) {
-	static int64_t active=0; 
-	static char *stk=NULL;
-	int64_t ret;
-	static ABCState *state;
-	if(!active) {
-		active=1;
-	  size_t stk_sz = 0x20000;
-	  stk = calloc(1, stk_sz);
-	  stk += stk_sz;
-	  state = ABCStateNew(fptr, stk, 0, NULL);
-  setjmp(except_to);
-      while (1) {
-		AiwnRunBC(state);
-	     if(--iterations<0||!state->ip)
-				break;
-	}
+int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
+  static int64_t active = 0;
+  static char *stk = NULL;
+  int64_t ret;
+  static ABCState *state;
+  if (!active) {
+    active = 1;
+    size_t stk_sz = 0x20000;
+    stk = calloc(1, stk_sz);
+    stk += stk_sz;
+    state = ABCStateNew(fptr, stk, 0, NULL);
+    setjmp(except_to);
+    while (1) {
+      AiwnRunBC(state);
+      if (--iterations < 0 || !state->ip)
+        break;
+    }
   } else {
-		fptr=(void*)state->ip;
-  setjmp(except_to);
-	        while (1) {
-        AiwnRunBC(state);
-        if(--iterations<0)
-				break;
-			}
+    fptr = (void *)state->ip;
+    fprintf(stdout, "%s\n", WhichFun(fptr));
+    setjmp(except_to);
+    while (1) {
+      AiwnRunBC(state);
+      if (--iterations < 0)
+        break;
+    }
   }
-  if(!state->ip) {
-	free(state);
-	state=NULL;
-	active=0;
-	free(stk);
+  if (!state->ip) {
+    free(state);
+    state = NULL;
+    active = 0;
+    free(stk);
   }
   return active;
 }
@@ -1754,44 +1888,44 @@ int64_t FFI_CALL_TOS_CUSTOM_BP(uint64_t bp, void *fp, uint64_t ip) {
 }
 
 int64_t AiwnBCTaskContextSetRIP(int64_t *stk) {
-	ABCState *st=(ABCState*)stk[0];
-	st->ip=stk[1];
-	return 0;
+  ABCState *st = (ABCState *)stk[0];
+  st->ip = stk[1];
+  return 0;
 }
 
 int64_t AiwnBCTaskContextGetRBP(int64_t *stk) {
-	ABCState *st=(ABCState*)stk[0];
-	return st->fp;
+  ABCState *st = (ABCState *)stk[0];
+  return st->fp;
 }
 int64_t AiwnBCTaskContextGetRIP(int64_t *stk) {
-	ABCState *st=(ABCState*)stk[0];
-	return st->ip;
+  ABCState *st = (ABCState *)stk[0];
+  return st->ip;
 }
 
 void *AiwnBCDbgCurContext() {
-	return &cur_dbgstate;
+  return &cur_dbgstate;
 }
 void AiwnBCDbgFault(int sig) {
-	CHashExport *exp;
-	ABCFrame *ff;
-	int64_t *prolog,*args;
-	exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1);
-	memcpy(&cur_dbgstate,cur_bcstate,sizeof(ABCState));
-	if(!exp)
-		exit(1);
-	
-	cur_bcstate->_sp-=16+sizeof(ABCFrame)-16;
-	prolog=(int64_t*)cur_bcstate->_sp;
-	prolog[0]=cur_bcstate->fp;
-	prolog[1]=cur_bcstate->ip;
-	ff=(void*)&prolog[2];
-	args=(void*)(ff+1);
-	args[0]=sig;
-	args[1]=&cur_dbgstate;
-	cur_bcstate->fun_frame=ff;
-	ff->sp=0;
-	cur_bcstate->ip=exp->val;
-	cur_bcstate->fp=(int64_t)prolog;
-	longjmp(except_to,1);
-} 
+  CHashExport *exp;
+  ABCFrame *ff;
+  int64_t *prolog, *args;
+  exp = HashFind("AiwniosDbgCB", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1);
+  memcpy(&cur_dbgstate, cur_bcstate, sizeof(ABCState));
+  if (!exp)
+    exit(1);
+
+  cur_bcstate->_sp -= 16 + sizeof(ABCFrame) - 16;
+  prolog = (int64_t *)cur_bcstate->_sp;
+  prolog[0] = cur_bcstate->fp;
+  prolog[1] = cur_bcstate->ip;
+  ff = (void *)&prolog[2];
+  args = (void *)(ff + 1);
+  args[0] = sig;
+  args[1] = &cur_dbgstate;
+  cur_bcstate->fun_frame = ff;
+  ff->sp = 0;
+  cur_bcstate->ip = exp->val;
+  cur_bcstate->fp = (int64_t)prolog;
+  longjmp(except_to, 1);
+}
 #endif
