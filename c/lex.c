@@ -759,16 +759,12 @@ re_enter:;
             sprintf(buf, "%s/%s", actual_file->dir, lex->string);
             dir = __AIWNIOS_StrDup(buf, NULL);
             *strrchr(dir, '/') = 0;
-            puts(buf);
             f = fopen(buf, "rb");
-            printf("F:%p\n",f);
           } else
             goto normal;
         } else {
         normal:
-        puts(lex->string);
           f = fopen(lex->string, "rb");
-            printf("F:%p\n",f);
           if (!strrchr(lex->string, '/')) {
             dir = __AIWNIOS_StrDup(".", NULL);
           } else {
