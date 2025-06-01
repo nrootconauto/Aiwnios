@@ -3,7 +3,7 @@
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/generated.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/generated.h" @ONLY)
 
-set(CMAKE_C_FLAGS_RELEASE "-Ofast")
+set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/aiwn.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/bungis.c"

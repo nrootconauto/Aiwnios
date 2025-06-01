@@ -9,7 +9,6 @@
 #include <string.h>
 enum {
   ABC_NOP,
-  ABC_SWAP,
   ABC_INTERN,
   ABC_GOTO,
   ABC_GOTO_IF,
@@ -73,6 +72,7 @@ enum {
   ABC_PRE_INC,  // next u64 is amount to add
   ABC_POST_INC, // next u64 is amount to add
   ABC_DISCARD,  // next u32 is amount to discard
+  ABC_MISC_START,
   ABC_CNT,      // MUST BE THE LAST ITEM
 };
 
@@ -218,90 +218,84 @@ int64_t AiwnRunBC(ABCState *state) {
   uint32_t *bc = (void *)state->ip;
   if (!bc)
     return 0;
-  int64_t i64, ai, bi, old_fp, old_addr, ret, t = ((*bc >> 8) & 0xffFF);
+  int64_t i64, ai, bi, old_fp, old_addr, ret;
   uint64_t bu, au;
   int64_t retval = 0;
   double f64, af, bf;
   ABCFrame *abcf = state->fun_frame, *new;
-  int64_t is_f64 = 0;
-  int64_t is_u64 = 0;
   int64_t (*fun_ptr)(int64_t *stk);
   int64_t dft;
   int64_t *table;
   printf("IP:%p(%s),FP:%p,SP:%p\n", bc, WhichFun(bc), state->fp, state->_sp);
   //   printf("BTTM:%p,	%p,PR:(%p)\n", abcf->istk[abcf->sp - 1],
   //        abcf->istk[abcf->sp], abcf->sp);
-  printf("%d,%d\n", t, *bc & 0xff);
-  switch (*bc++ & 0xff) {
+  printf("%d,%d,%d\n", (*bc>>8)&0xff,*bc & 0xff,*bc);
+  switch (*bc++ & 0xffff) {
   default:
     printf("FUCK:%d\n", bc[-1] & 0xff);
     break;
-#define CASE_BALLER(cs, code)                                                  \
-  break;                                                                       \
-  case cs: {                                                                   \
-    t = (bc[-1] >> 8)&0xff;                                                         \
-    if (t == -1)                                                               \
-      t = RT_I64i;                                                             \
-    is_f64 = t == RT_F64;                                                      \
-    is_u64 = t == RT_U64i;                                                     \
-    code;                                                                      \
-    break;                                                                     \
-  }
-    /*
+    //Pray that your optimizer is good
 #define CASE_BALLER(cs, code)                                                  \
   break;                                                                       \
   case cs:                                                                     \
   case (cs | (-1 << 8)) & 0xffff: {                                 \
-    \
     const int64_t t = RT_I64i;                                                 \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I8i << 8): {                                                   \
-    const int64_t t = RT_I8i;                                                  \
+    const int64_t t = RT_I8i;               	                                   \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_F64 << 8): {                                                   \
     const int64_t t = RT_F64;                                                  \
-    is_f64 = 1;                                                                \
+    const int64_t is_f64=1,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U8i << 8): {                                                   \
     const int64_t t = RT_U8i;                                                  \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I16i << 8): {                                                  \
     const int64_t t = RT_I16i;                                                 \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U16i << 8): {                                                  \
     const int64_t t = RT_U16i;                                                 \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I32i << 8): {                                                  \
+    const int64_t is_f64=0,is_u64=0; \
     const int64_t t = RT_I32i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U32i << 8): {                                                  \
+    const int64_t is_f64=0,is_u64=0; \
     const int64_t t = RT_U32i;                                                 \
     code;                                                                      \
-    \
-                                                                           \
   } break;                                                                     \
   case cs | (RT_I64i << 8): {                                                  \
+    const int64_t is_f64=0,is_u64=0; \
     const int64_t t = RT_I64i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U64i << 8): {                                                  \
+    const int64_t is_f64=0,is_u64=1; \
     const int64_t t = RT_U64i;                                                 \
     code;                                                                      \
-    is_u64 = 1;                                                                \
   } break;                                                                     \
   case cs | (RT_PTR << 8):                                                     \
   case cs | (RT_FUNC << 8): {                                                  \
     const int64_t t = RT_I64i;                                                 \
+    const int64_t is_f64=0,is_u64=0; \
     code;                                                                      \
   } break;
-*/
+
+
     CASE_BALLER(ABC_PRE_INC, {
       bi = abcf->istk[abcf->sp];
       if (is_f64) {
@@ -436,11 +430,14 @@ int64_t AiwnRunBC(ABCState *state) {
       printf("ASS:%p\n", state->fun_frame);
       state->fp = old_fp;
       state->ip = old_addr;
+      printf("N1I:%p\n", state->fun_frame);
       if (state->fp) {
         abcf = state->fun_frame = (ABCFrame *)(state->fp + 16);
         abcf->istk[++abcf->sp] = ret;
+      printf("NI2:%p\n", state->fun_frame);
       } else
         state->fun_frame = NULL;
+      printf("NI:%p\n", state->fun_frame);
       retval = ret;
       goto fin;
     })
@@ -677,13 +674,6 @@ int64_t AiwnRunBC(ABCState *state) {
         }
         abcf->istk[abcf->sp] = 0;
       }
-    });
-    CASE_BALLER(ABC_SWAP, {
-      puts("swap");
-      ai = abcf->istk[abcf->sp - 1];
-      bi = abcf->istk[abcf->sp];
-      abcf->istk[abcf->sp - 1] = bi;
-      abcf->istk[abcf->sp] = ai;
     });
     CASE_BALLER(ABC_SUB, { ABC_OP(-=); });
     CASE_BALLER(ABC_XOR, {
@@ -1552,7 +1542,11 @@ again:;
       len = AiwnBCAddCode(bin, ABC_END_EXPR, len);
     }
   }
+  len = AiwnBCAddCode(bin, ABC_IMM_I64,len);
+  len = AiwnBCAddCode(bin, 0,len);
+  len = AiwnBCAddCode(bin, 0,len);
   len = AiwnBCAddCode(bin, ABC_RET, len);
+  len = AiwnBCAddCode(bin, ABC_MISC_START, len);
   for (cm = (CCodeMisc *)cctrl->code_ctrl->code_misc->next;
        cm != (CCodeMisc *)cctrl->code_ctrl->code_misc;
        cm = (CCodeMisc *)cm->base.next) {
@@ -1611,8 +1605,11 @@ again:;
     case CMT_STRING:
       if (cctrl->flags & CCF_STRINGS_ON_HEAP) {
         cm->addr = A_CALLOC(cm->str_len + 1, NULL);
-      } else
+      } else {
+		  len+=4;
+		  if(bin) *(int32_t*)(bin+len)=cm->str_len;
         cm->addr = bin + len;
+	  }
       if (bin) {
         memcpy((char *)cm->addr, cm->str, cm->str_len);
         ((char *)cm->addr)[cm->str_len] = 0;
@@ -1931,5 +1928,149 @@ void AiwnBCDbgFault(int sig) {
   cur_bcstate->ip = exp->val;
   cur_bcstate->fp = (int64_t)prolog;
   longjmp(except_to, 1);
+}
+#endif
+
+#ifdef dasdsaff__EMSCRIPTEN__
+static char *ToCType() {
+  switch (rt) {
+  case RT_I8i:
+    return "int8_t";
+  case RT_U8i:
+    return "uint8_t";
+  case RT_I16i:
+    return "int16_t";
+  case RT_U16i:
+    return "uint16_t";
+  case RT_I32i:
+    return "int32_t";
+  case RT_U32i:
+    return "uint32_t";
+  case RT_I64i:
+     return "int64_t";
+  case RT_U64i:
+     return "uint64_t";
+  case RT_F64:
+    return "double";
+  case RT_PTR:
+  case RT_FUNC:
+    return "int64_t";
+    break;
+  }
+	abort();
+}
+int64_t ToC(FILE *f,char *fun,int64_t rt,int32_t *start,int32_t *end,int64_t s) {
+	int64_t i=0,i64;
+	int stk=0;
+	fprintf(f,"int64_t STK_%s(int64_t *args) {\n",fun);
+	for(i=0;i!=IM_STK_SIZE;++i) {
+	  fprintf(f," int64_t vari%d;\n",i);
+      fprintf(f," uint64_t varu%d;\n",i);
+      fprintf(f," double varf%d;\n",i);
+    }
+	fprintf(f,"int64_t (*fptr)(int64_t *);\n")
+	while(start!=end) {
+		int64_t t=*start>>8;
+		switch(*start++) {
+    break; case ABC_NOP:
+  break; case ABC_INTERN:
+  //TODO
+  break; case ABC_GOTO:
+        i64 = *(uint64_t *)start;
+    start += 2;
+    fprintf(f,"goto L%p;\n",(char*)(start-1)+i64);
+  break; case ABC_GOTO_IF:
+        i64 = *(uint64_t *)start;
+    start += 2;
+    if(t==RT_F64)
+    fprintf(f,"if(var%d.f)goto L%p;\n",stk,(char*)(start-1)+i64);
+    else
+    fprintf(f,"if(var%d.i)goto L%p;\n",stk,(char*)(start-1)+i64);
+    stk=0;
+  break; case ABC_TO_I64:
+  fprintf(f,"var%d.i=var%d.f;\n",stk,stk);
+  break; case ABC_TO_F64:
+  fprintf(f,"var%d.f=var%d.i;\n",stk,stk);
+  break; case ABC_LABEL:
+  fprintf(f,"L%p:\n",start-1);
+  break; case ABC_STATIC:
+  break; case ABC_READ_PTRO: // offset
+        i64 = *(uint64_t *)start;
+    start += 2;
+    read_style:;
+    if(t==RT_F64)
+    fprintf(f,"var%d.f=*(%s*)(var%d.i+%lld);\n",++stk,ToCType(t),i64);
+  else
+  fprintf(f,"var%d.i=*(%s*)(var%d.i+%lld);\n",++stk,ToCType(t),i64);
+  break; case ABC_READ_PTR:
+  i64=0;
+  goto read_style
+  break; case ABC_NEG:
+  if(t==RT_F64)
+    fprintf(f,"stk.d[%d]=-stk.d[%d]",stk);
+  else
+    fprintf(f,"stk.d[%d]=-var%d.f",stk);
+
+  break; case ABC_POS:
+  //DO NOTHING
+  break; case ABC_PCREL:
+  i64 = *(int64_t *)start;
+  start += 2;
+
+  break; case ABC_IMM_I64:
+  break; case ABC_IMM_F64:
+  break; case ABC_POW:
+  break; case ABC_ADD:
+  break; case ABC_WRITE_PTR:
+  break; case ABC_WRITE_PTRO: // offset
+  break; case ABC_DIV:
+  break; case ABC_MUL:
+  break; case ABC_AND:
+  break; case ABC_SUB:
+  break; case ABC_FRAME_ADDR:
+  break; case ABC_XOR:
+  break; case ABC_MOD:
+  break; case ABC_OR:
+  break; case ABC_LT:
+  break; case ABC_GT:
+  break; case ABC_LNOT:
+  break; case ABC_BNOT:
+  break; case ABC_AND_AND:
+  break; case ABC_XOR_XOR:
+  break; case ABC_OR_OR:
+  break; case ABC_NE:
+  break; case ABC_EQ_EQ:
+  break; case ABC_LE:
+  break; case ABC_GE:
+  break; case ABC_LSH:
+  break; case ABC_RSH:
+  break; case ABC_RET:
+  break; case ABC_CALL:
+  break; case ABC_COMMA:
+  break; case ABC_SWITCH:
+  break; case ABC_SUB_PROLOG:
+  break; case ABC_SUB_RET:
+  break; case ABC_SUB_CALL:
+  break; case ABC_TYPECAST:
+  break; case ABC_RELOC:
+  break; case ABC_SET_FRAME_SIZE:
+    fprintf(f,"\t char frame[%i];\n",*start++);
+  break; case ABC_DUP:
+  break; case ABC_END_EXPR:
+  break; case ABC_DISCARD_STK: // next u32 is amount to discard
+  break; case ABC_PUSH:
+  break; case ABC_POP:
+  break; case ABC_TO_BOOL:
+  break; case ABC_SKIP_ON_PASS: // next u32 is amt of u32's to skip
+  break; case ABC_SKIP_ON_FAIL: // next u32 is amt of u32's to skip
+  break; case ABC_GS:
+  break; case ABC_FS:
+  break; case ABC_PRE_INC:  // next u64 is amount to add
+  break; case ABC_POST_INC: // next u64 is amount to add
+  break; case ABC_DISCARD:  // next u32 is amount to discard
+  break; case ABC_CNT:      // MUST BE THE LAST ITEM
+}
+	}
+	fprintf(f,"}\n");
 }
 #endif

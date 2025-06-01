@@ -81,10 +81,10 @@ endif ()
 else()
 target_link_options(aiwnios PRIVATE 
         "-sUSE_SDL=2"
-        "-sALLOW_MEMORY_GROWTH=1" 
-        "-sASYNCIFY"
         "-sWASM=1"
-        -Wl,--export-all		
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sMEMORY_GROWTH_GEOMETRIC_STEP=1"
+		-Wl,--export-all		
         --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/wasmStage@/
 )
 endif()

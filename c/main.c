@@ -893,7 +893,8 @@ static int64_t STK___GetTicks(int64_t *stk) {
 
 static int64_t STK___Sleep(int64_t *stk) {
 	#ifdef __EMSCRIPTEN__
-	SDL_Delay(stk[0]);
+	PrintI("delay",stk[0]);
+	//SDL_Delay(stk[0]);
 	#else
   MPSleepHP(stk[0] * 1e3);
   #endif

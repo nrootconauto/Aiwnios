@@ -450,8 +450,9 @@ if(!IsCmdLineMode) {
   if (_SixtyFPS)
     SetFPS(60.);
 
+#ifndef TARGET_BYTECODE
   ACInit("~:/Src/*.HC*;*.HH*");
-
+#endif
   OnceExe;
   if(FileFind("~/HomeKeyPlugIns.HC"))
     ExeFile("~/HomeKeyPlugIns.HC");
