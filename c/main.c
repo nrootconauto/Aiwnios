@@ -1942,6 +1942,13 @@ static int64_t Boot(int64_t*) {
   }
   InstallDbgSignalsForThread();
   VFsMountDrive('T', t_drive);
+#if defined(__EMSCRIPTEN__)
+  EM_ASM(
+    FS.mkdir('/persist');
+    FS.mount(IDBFS, {}, '/persist');
+    FS.syncfs(true);
+  );
+#endif
   /*  FuzzTest1();
     FuzzTest2();
     FuzzTest3();*/
@@ -1999,10 +2006,8 @@ static int64_t Boot(int64_t*) {
   } else
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
-  printf("HCRT:%p\n",hcrt);
   if (hcrt)
     loaded_hcrt=Load(hcrt, hcrt_size);
-    printf("AS:%p\n",loaded_hcrt);;
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {

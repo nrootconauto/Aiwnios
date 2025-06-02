@@ -84,6 +84,8 @@ target_link_options(aiwnios PRIVATE
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sMEMORY_GROWTH_GEOMETRIC_STEP=1"
+        "-sSINGLE_FILE=1"
+        "-lidbfs.js"
 		-Wl,--export-all		
         --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/wasmStage@/
 )

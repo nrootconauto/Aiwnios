@@ -41,7 +41,6 @@ void DeinitVideo() {
     SDL_DestroyWindow(window);
 }
 static void _DrawWindowNew() {
-printf("N-1\n");
   #ifndef __EMSCRIPTEN__
     int64_t row;
   uint8_t logo[0x10000];
@@ -61,7 +60,6 @@ printf("N-1\n");
   SDL_UnlockSurface(window_icon_proto);
   window_icon =
       SDL_ConvertSurfaceFormat(window_icon_proto, SDL_PIXELFORMAT_RGB888, 0);
-  printf("N0\n");
   if (!window_icon) {
   err_wincon:
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
@@ -81,17 +79,14 @@ screen_mutex = SDL_CreateMutex();
   SDL_SetHintWithPriority(SDL_HINT_ALLOW_ALT_TAB_WHILE_GRABBED, "1",
                           SDL_HINT_OVERRIDE);
   SDL_RendererInfo info;
-  printf("N1\n");
   window = SDL_CreateWindow("AIWNIOS", SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED, 640, 480,
                             SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  printf("N2\n");
   if (!window) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
                              "Failed to create window.", NULL);
     exit(EXIT_FAILURE);
   }
-  printf("N3\n");
   #ifndef __EMSCRIPTEN__
   SDL_SetWindowIcon(window, window_icon);
   #endif
@@ -105,11 +100,7 @@ screen_mutex = SDL_CreateMutex();
   }
   SDL_SetWindowMinimumSize(window, 640, 480);
   SDL_ShowCursor(SDL_DISABLE);
-#ifdef __EMSCRIPTEN__
-    renderer = SDL_CreateRenderer(window, -1, 0);
-#else
-    renderer = SDL_CreateRenderer(window, -1, 0);
-#endif
+  renderer = SDL_CreateRenderer(window, -1, 0);
   if (!renderer) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS",
                              "Failed to create renderer.", NULL);

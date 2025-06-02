@@ -3,8 +3,15 @@
 #include "aiwn_mem.h"
 #if !defined(__EMSCRIPTEN__)
 #include <SDL_messagebox.h>
+#define FS_SYNC(...)
 #else
+#include <emscripten.h>
 #include <SDL2/SDL.h>
+static void FS_SYNC() {
+	EM_ASM(
+	    FS.syncfs(false,function(err){console.log(err);	});
+  );
+}
 #endif
 #include <ctype.h>
 #include <dirent.h>
@@ -355,6 +362,7 @@ int64_t VFsFileWrite(char *name, char *data, int64_t len) {
     close(fd);
   } else
     throw(*(uint64_t *)"OpenFile");
+  FS_SYNC();
   return !!res;
 }
 
@@ -404,7 +412,9 @@ int64_t VFsFBlkRead(void *d, int64_t sz, int f) {
 }
 
 int64_t VFsFBlkWrite(void *d, int64_t sz, int f) {
-  return sz == write(f, d, sz);
+  int64_t ret=sz == write(f, d, sz);
+  FS_SYNC();
+  return ret;
 }
 
 int64_t VFsFSeek(int64_t off, int f) {
@@ -419,6 +429,7 @@ int64_t VFsTrunc(char *fn, int64_t sz) {
     return 0;
   int fail = truncate(fn, sz);
   free(fn);
+  FS_SYNC();
   return 1;
 }
 
@@ -482,6 +493,7 @@ static void CopyDir(char *dst, char *src) {
       fclose(write);
     }
   }
+  FS_SYNC();
   closedir(d);
 }
 

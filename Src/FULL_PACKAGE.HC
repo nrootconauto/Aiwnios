@@ -453,6 +453,9 @@ if(!IsCmdLineMode) {
 #ifndef TARGET_BYTECODE
   ACInit("~:/Src/*.HC*;*.HH*");
 #endif
+#ifdef TARGET_BYTECODE
+  ACInit("~:/Src/Kernel*.HH*;*.HH*");
+#endif
   OnceExe;
   if(FileFind("~/HomeKeyPlugIns.HC"))
     ExeFile("~/HomeKeyPlugIns.HC");
