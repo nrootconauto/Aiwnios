@@ -3,6 +3,7 @@
 #define AIWNIOS_TESTS
 #include "argtable3.h"
 #include "c/aiwn_asm.h"
+#include "c/aiwn_bytecode.h"
 #include "c/aiwn_except.h"
 #include "c/aiwn_fs.h"
 #include "c/aiwn_lexparser.h"
@@ -13,13 +14,12 @@
 #include "c/aiwn_sock.h"
 #include "c/aiwn_tui.h"
 #include "c/aiwn_windows.h"
-#include "c/aiwn_bytecode.h"
 #include "isocline.h"
 #if !defined(__EMSCRIPTEN__)
-#include <SDL.h>
+#  include <SDL.h>
 #else
-#include <emscripten.h>
-#include <SDL2/SDL.h>
+#  include <SDL2/SDL.h>
+#  include <emscripten.h>
 #endif
 #include <assert.h>
 #include <errno.h>
@@ -40,8 +40,8 @@ void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
 #if defined(WIN32) || defined(_WIN32)
+#  include <bcrypt.h>
 #  include <shlobj.h>
-#include <bcrypt.h>
 #else
 #  include <pwd.h>
 #  include <sys/types.h>
@@ -62,7 +62,7 @@ extern int64_t user_ev_num;
 #  include <windows.h>
 #  include <processthreadsapi.h>
 #endif
- typedef union {
+typedef union {
   double d;
   uint64_t i;
 } dbl2u64;
@@ -109,7 +109,7 @@ static int64_t STK_DolDocDumpIR(int64_t *stk) {
   return len;
 }
 static int64_t ExitAiwnios(int64_t *);
-static void PrsAddSymbol(char *name, int64_t (*ptr)(int64_t*), int64_t arity) {
+static void PrsAddSymbol(char *name, int64_t (*ptr)(int64_t *), int64_t arity) {
   PrsBindCSymbol(name, ptr, arity);
 }
 static void PrsAddSymbolNaked(char *name, void *ptr, int64_t arity) {
@@ -360,11 +360,11 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
   return dst;
 }
 static int64_t STK_AiwniosSetVolume(int64_t *stk) {
-  AiwniosSetVolume(*(double*)stk);
+  AiwniosSetVolume(*(double *)stk);
 }
 static int64_t STK_AiwniosGetVolume(int64_t *stk) {
   dbl2u64 un;
-  un.d=AiwniosGetVolume();
+  un.d = AiwniosGetVolume();
   return un.i;
 }
 static void *MemSetU64(int64_t *dst, int64_t with, int64_t cnt) {
@@ -477,7 +477,7 @@ static uint64_t __aiwn_in(uint64_t ul1, uint64_t ul2) {
   return -1ull;
 }
 #  endif
-#if !(__NetBSD__ + __OpenBSD__ > 0)
+#  if !(__NetBSD__ + __OpenBSD__ > 0)
 static void STK_OutU8(uint64_t *stk) {
   __aiwn_out(stk[1], stk[0], 1);
 }
@@ -496,7 +496,7 @@ static uint64_t STK_InU16(uint64_t *stk) {
 static uint64_t STK_InU32(uint64_t *stk) {
   return __aiwn_in(stk[0], 4);
 }
-#endif
+#  endif
 #  ifdef _WIN32
 #    define RepIn(n)                                                           \
       static void STK_RepInU##n(uint64_t *) __attribute__((alias("STK_"        \
@@ -519,9 +519,9 @@ static uint64_t STK_InU32(uint64_t *stk) {
         for (uint64_t i = 0; i < cnt; i++)                                     \
           __aiwn_out(buf[i] & ((1ull << n) - 1), port, n / 8);                 \
       }
-#else
-  #define RepOut(x)
-  #define RepIn(x)
+#  else
+#    define RepOut(x)
+#    define RepIn(x)
 #  endif
 RepIn(8);
 RepIn(16);
@@ -534,9 +534,10 @@ RepOut(32);
 #endif
 #ifdef _WIN32
 #  define Initrand(h) h = 0
-#  define Getrand(h, b, i) BCRYPT_SUCCESS(BCryptGenRandom(h, b, i, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+#  define Getrand(h, b, i)                                                     \
+    BCRYPT_SUCCESS(BCryptGenRandom(h, b, i, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
 #else
-#  define Initrand(h) h = open("/dev/urandom", O_RDONLY)
+#  define Initrand(h)      h = open("/dev/urandom", O_RDONLY)
 #  define Getrand(h, b, i) (i == read(h, b, i))
 #endif
 static int64_t STK_CSPRNG(int64_t *stk) {
@@ -571,9 +572,6 @@ static double Arg(double x, double y) {
   return atan2(y, x);
 }
 static char *AiwniosGetClipboard() {
-	#if defined(__EMSCRIPTEN__)
-	return A_STRDUP("TODO",NULL);
-	#else
   char *has, *ret;
   if (!SDL_HasClipboardText())
     return A_STRDUP("", NULL);
@@ -581,14 +579,10 @@ static char *AiwniosGetClipboard() {
   ret = A_STRDUP(has, NULL);
   SDL_free(has);
   return ret;
-  #endif
 }
 static void AiwniosSetClipboard(char *c) {
-	#if defined(__EMSCRIPTEN__)
-	#else
   if (c)
     SDL_SetClipboardText(c);
-    #endif
 }
 
 static void TaskContextSetRIP(int64_t *ctx, void *p) {
@@ -604,15 +598,15 @@ static int64_t STK_TaskContextSetRIP(int64_t *stk) {
 }
 
 static int64_t STK_GenerateFFIForFun(int64_t *stk) {
-  TaskContextSetRIP((void*)stk[0], (void *)stk[1]);
+  TaskContextSetRIP((void *)stk[0], (void *)stk[1]);
 }
 
 static int64_t STK_AIWNIOS_makecontext(int64_t *stk) {
-  return AIWNIOS_makecontext((void*)stk[0], (void*)stk[1], (void*)stk[2]);
+  return AIWNIOS_makecontext((void *)stk[0], (void *)stk[1], (void *)stk[2]);
 }
 
 static int64_t STK___HC_SetAOTRelocBeforeRIP(int64_t *stk) {
-  __HC_SetAOTRelocBeforeRIP((void*)stk[0], (int64_t)stk[1]);
+  __HC_SetAOTRelocBeforeRIP((void *)stk[0], (int64_t)stk[1]);
 }
 
 static int64_t STK___HC_CodeMiscIsUsed(int64_t *stk) {
@@ -635,13 +629,13 @@ static int64_t STK_CmpCtrlDel(int64_t *stk) {
 
 _Static_assert(sizeof(double) == sizeof(uint64_t));
 #define MATHFUNDEF(x)                                                          \
-  static int64_t STK_##x(int64_t *_stk) {                                       \
-	  double *stk=(double*)_stk;\
+  static int64_t STK_##x(int64_t *_stk) {                                      \
+    double *stk = (double *)_stk;                                              \
     return ((dbl2u64)x(stk[0])).i;                                             \
   }
 #define MATHFUNDEF2(x)                                                         \
-  static int64_t STK_##x(int64_t *_stk) {                                       \
-	  double *stk=(double*)_stk;\
+  static int64_t STK_##x(int64_t *_stk) {                                      \
+    double *stk = (double *)_stk;                                              \
     return ((dbl2u64)x(stk[0], stk[1])).i;                                     \
   }
 
@@ -717,7 +711,7 @@ static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
   return (int64_t)__AIWNIOS_StrDup((char *)stk[0], (void *)stk[1]);
 }
 
-static int64_t STK_MemCpy(int64_t*stk) {
+static int64_t STK_MemCpy(int64_t *stk) {
   return (int64_t)memmove(stk[0], stk[1], (size_t)stk[2]);
 }
 
@@ -742,40 +736,41 @@ static int64_t STK_MemSetI64(int64_t *stk) {
 }
 
 static int64_t STK_StrLen(int64_t *stk) {
-  return strlen((char*)stk[0]);
+  return strlen((char *)stk[0]);
 }
 
 static int64_t STK_StrCmp(int64_t *stk) {
   // dont cast, sign extend
-  return strcmp((char*)stk[0], (char*)stk[1]);
+  return strcmp((char *)stk[0], (char *)stk[1]);
 }
 
 static int64_t STK_StrCpy(int64_t *stk) {
-  return (int64_t)memmove((char*)stk[0], (char*)stk[1], strlen((char*)stk[1]) + 1);
+  return (int64_t)memmove((char *)stk[0], (char *)stk[1],
+                          strlen((char *)stk[1]) + 1);
 }
 
 static int64_t STK_StrNCmp(int64_t *stk) {
-  return __builtin_strncmp((char*)stk[0], (char*)stk[1], (size_t)stk[2]);
+  return __builtin_strncmp((char *)stk[0], (char *)stk[1], (size_t)stk[2]);
 }
 
 static int64_t STK_StrICmp(int64_t *stk) {
-  return __builtin_strcasecmp((char*)stk[0], (char*)stk[1]);
+  return __builtin_strcasecmp((char *)stk[0], (char *)stk[1]);
 }
 
 static int64_t STK_StrNICmp(int64_t *stk) {
-  return __builtin_strncasecmp((char*)stk[0], (char*)stk[1], (size_t)stk[2]);
+  return __builtin_strncasecmp((char *)stk[0], (char *)stk[1], (size_t)stk[2]);
 }
 
 static int64_t STK_StrMatch(int64_t *stk) {
-  return (int64_t)__builtin_strstr((char*)stk[1], (char*)stk[0]);
+  return (int64_t)__builtin_strstr((char *)stk[1], (char *)stk[0]);
 }
 
 static int64_t STK_StrIMatch(int64_t *stk) {
 #ifndef _WIN64
-  return strcasestr((char*)stk[1], (char*)stk[0]);
+  return strcasestr((char *)stk[1], (char *)stk[0]);
 #else
   // SDL forces UTF8,so roll our own
-  char *heystack = (char*)stk[1], *needle = (char*)stk[0];
+  char *heystack = (char *)stk[1], *needle = (char *)stk[0];
   int64_t i = 0, len = strlen(needle), len2 = strlen(heystack);
   if (len > len2)
     return 0;
@@ -799,15 +794,16 @@ MATHFUNDEF(ceil);
 char *getstkptr() {
   char *ret;
   asm("global.get __stack_pointer\n\t"
-          "local.set %0\n\t" : "=r"(ret));
+      "local.set %0\n\t"
+      : "=r"(ret));
   return ret;
 }
 char *setstkptr(char *ret) {
-  asm volatile (
-	"local.get %0\n\t"
-	"global.set __stack_pointer\n\t" :: "r"(ret));
-  asm		 ("global.get __stack_pointer\n\t"
-          "local.set %0\n\t" : "=r"(ret));
+  asm volatile("local.get %0\n\t"
+               "global.set __stack_pointer\n\t" ::"r"(ret));
+  asm("global.get __stack_pointer\n\t"
+      "local.set %0\n\t"
+      : "=r"(ret));
   return ret;
 }
 #endif
@@ -816,7 +812,7 @@ static int64_t STK_PrintI(int64_t *stk) {
 }
 
 static int64_t STK_PrintF(int64_t *stk) {
-  PrintF(((char **)stk)[0], ((double*)stk)[1]);
+  PrintF(((char **)stk)[0], ((double *)stk)[1]);
   return 0;
 }
 
@@ -861,7 +857,6 @@ static int64_t STK_SetHolyFs(int64_t *stk) {
 
 static int64_t STK_GetHolyFs(int64_t *stk) {
 
-
   return (int64_t)GetHolyFs();
 }
 static int64_t STK_GetHolyGs(int64_t *stk) {
@@ -892,11 +887,11 @@ static int64_t STK___GetTicks(int64_t *stk) {
 }
 
 static int64_t STK___Sleep(int64_t *stk) {
-	#ifdef __EMSCRIPTEN__
-	BCAwake();
-	#else
+#ifdef __EMSCRIPTEN__
+  BCAwake();
+#else
   MPSleepHP(stk[0] * 1e3);
-  #endif
+#endif
 }
 
 static int64_t STK_ImportSymbolsToHolyC(int64_t *stk) {
@@ -911,11 +906,11 @@ static int64_t STK_AIWNIOS_setcontext(int64_t *stk) {
 }
 
 static int64_t STK_IsValidPtr(int64_t *stk) {
-	#ifdef __EMSCRIPTEN__
-	return 1; //Whoops
-	#else
+#ifdef __EMSCRIPTEN__
+  return 1; // Whoops
+#else
   return IsValidPtr((char *)stk[0]);
-  #endif
+#endif
 }
 static int64_t STK___HC_CmpCtrl_SetAOT(int64_t *stk) {
   __HC_CmpCtrl_SetAOT((CCmpCtrl *)stk[0]);
@@ -944,7 +939,6 @@ static int64_t STK___HC_ICAdd_Sqrt(int64_t *stk) {
 static int64_t STK___HC_ICAdd_Sqr(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Sqr((CCodeCtrl *)stk[0]);
 }
-
 
 static int64_t STK___HC_ICAdd_SubProlog(int64_t *stk) {
   return (int64_t)__HC_ICAdd_SubProlog((CCodeCtrl *)stk[0]);
@@ -1250,11 +1244,11 @@ static int64_t STK___HC_ICAdd_ShortAddr(int64_t *stk) {
   return (int64_t)__HC_ICAdd_ShortAddr(stk[0], stk[1], stk[2], stk[3]);
 }
 static int64_t STK_Misc_Caller(int64_t *stk) {
-	#ifdef USE_BYTECODE
-	return NULL;
-	#else
+#ifdef USE_BYTECODE
+  return NULL;
+#else
   return (int64_t)Misc_Caller(stk[0]);
-  #endif
+#endif
 }
 static int64_t STK_VFsSetPwd(int64_t *stk) {
   VFsSetPwd(stk[0]);
@@ -1303,7 +1297,9 @@ static int64_t STK_VFsTrunc(int64_t *stk) {
 }
 static int64_t STK_UpdateScreen(int64_t *stk) {
   UpdateScreen(stk[0], stk[1], stk[2], stk[3]);
+  #ifdef __EMSCRIPTEN__
   BCAwake();
+  #endif
 }
 static int64_t STK_VFsFSize(int64_t *stk) {
   return VFsFSize(stk[0]);
@@ -1315,9 +1311,9 @@ static int64_t STK_GrPaletteColorSet(int64_t *stk) {
   GrPaletteColorSet(stk[0], stk[1]);
 }
 static int64_t STK_DrawWindowNew(int64_t *stk) {
-	#ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
   DrawWindowNew();
-  #endif
+#endif
 }
 static int64_t STK_SetKBCallback(int64_t *stk) {
   SetKBCallback(stk[0]);
@@ -1398,9 +1394,9 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
   return NetAddrNew(stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_AiwniosTUIEnable(int64_t*) {
-	AiwniosTUIEnable();
-	return 0;
+static int64_t STK_AiwniosTUIEnable(int64_t *) {
+  AiwniosTUIEnable();
+  return 0;
 }
 static int64_t STK_NetUDPAddrNew(int64_t *stk) {
   return NetUDPAddrNew(stk[0], stk[1], stk[2]);
@@ -1428,39 +1424,41 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
 }
 
 extern char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
-              CHeapCtrl *heap);
+                       CHeapCtrl *heap);
 static int64_t STK_BCCompile(int64_t *stk) {
-	return (int64_t)CompileBC((void*)stk[0],(void*)stk[1],(void*)stk[2],(void*)stk[3]);
+  return (int64_t)CompileBC((void *)stk[0], (void *)stk[1], (void *)stk[2],
+                            (void *)stk[3]);
 }
 static int64_t STK_BCCtxNew(int64_t *stk) {
-	return (int64_t)ABCStateNew((void*)stk[0],(void*)stk[1],stk[2],(void*)stk[3]);
+  return (int64_t)ABCStateNew((void *)stk[0], (void *)stk[1], stk[2],
+                              (void *)stk[3]);
 }
 static int64_t STK_BCCtxDel(int64_t *stk) {
-	ABCStateDel((void*)stk);
-	return 0;
+  ABCStateDel((void *)stk);
+  return 0;
 }
 
 static int64_t STK_BCDel(int64_t *stk) {
-	AiwnBCDel((void*)stk);
-	return 0;
+  AiwnBCDel((void *)stk);
+  return 0;
 }
 static int64_t STK_BCRun(int64_t *stk) {
-	return ABCRun((void*)stk[0]);
+  return ABCRun((void *)stk[0]);
 }
 
 static int64_t STK_VFsDir(int64_t *) {
-	char **ass=VFsDir();
-	if(!ass)
-		return 0;
-	int64_t cnt=0,*ret;
-	while(ass[cnt])
-		++cnt;
-		++cnt;
-	ret=A_CALLOC(8*cnt,NULL);
-	for(cnt=0;ass[cnt];++cnt)
-		ret[cnt]=(int64_t)ass[cnt];
-	A_FREE(ass);
-	return ret;
+  char **ass = VFsDir();
+  if (!ass)
+    return 0;
+  int64_t cnt = 0, *ret;
+  while (ass[cnt])
+    ++cnt;
+  ++cnt;
+  ret = A_CALLOC(8 * cnt, NULL);
+  for (cnt = 0; ass[cnt]; ++cnt)
+    ret[cnt] = (int64_t)ass[cnt];
+  A_FREE(ass);
+  return ret;
 }
 
 int64_t IsCmdLineMode() {
@@ -1472,12 +1470,12 @@ int64_t IsCmdLineMode2() {
     return 0;
   return arg_cmd_line2->count != 0;
 }
-static int64_t STK_IsCmdLineMode(int64_t*) {
-	return IsCmdLineMode();
+static int64_t STK_IsCmdLineMode(int64_t *) {
+  return IsCmdLineMode();
 }
 
-static int64_t STK_IsCmdLineMode2(int64_t*) {
-	return IsCmdLineMode2();
+static int64_t STK_IsCmdLineMode2(int64_t *) {
+  return IsCmdLineMode2();
 }
 int64_t STK_TermSize(int64_t *stk) {
   TermSize((int64_t *)(stk[0]), (int64_t *)(stk[1]));
@@ -1494,15 +1492,15 @@ static int64_t CmdLineGetStr(int64_t *stk) {
 }
 
 int64_t CmdLineBootFiles(int64_t *) {
-	#ifdef __EMSCRIPTEN__
-	return NULL;
-	#endif
+#ifdef __EMSCRIPTEN__
+  return NULL;
+#endif
   return arg_boot_files->filename;
 }
-int64_t CmdLineBootFileCnt(int64_t*) {
-	#if defined(__EMSCRIPTEN__)
-	return 0;
-	#endif
+int64_t CmdLineBootFileCnt(int64_t *) {
+#if defined(__EMSCRIPTEN__)
+  return 0;
+#endif
   return arg_boot_files->count;
 }
 static int64_t STK__HC_ICAdd_ToBool(int64_t *stk) {
@@ -1513,7 +1511,7 @@ static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
   int64_t r = (int64_t)WriteProtectMemCpy(ptr, (char *)stk[1], stk[2]);
 #if defined(__APPLE__)
   sys_icache_invalidate(ptr, stk[2]);
-#elif ! defined(USE_BYTECODE)
+#elif !defined(USE_BYTECODE)
   __builtin___clear_cache(ptr, stk[0] + stk[2]);
 #endif
   return r;
@@ -1522,22 +1520,22 @@ static int64_t is_fast_fail = 0;
 int64_t IsFastFail() {
   return is_fast_fail;
 }
-int64_t STK_IsFastFail(int64_t*) {
+int64_t STK_IsFastFail(int64_t *) {
   return IsFastFail();
 }
 static int64_t AiwniosPackRamDiskPtr(int64_t *);
 static int64_t AiwniosPackBootCommand(int64_t *);
 static int64_t STK_AiwniosPackRamDiskPtr(int64_t *s) {
-	return AiwniosPackRamDiskPtr(s);
+  return AiwniosPackRamDiskPtr(s);
 }
 static int64_t STK_AiwniosPackBootCommand(int64_t *s) {
-	return AiwniosPackBootCommand(s);
+  return AiwniosPackBootCommand(s);
 }
 static int64_t STK_AiwnBCCall(int64_t *stk) {
-	return AiwnBCCall((void*)stk[0]);
+  return AiwnBCCall((void *)stk[0]);
 }
 static int64_t STK_AiwnBCCallArgs(int64_t *stk) {
-	return AiwnBCCallArgs((void*)stk[0],stk[0],(void*)stk[1]);
+  return AiwnBCCallArgs((void *)stk[0], stk[0], (void *)stk[1]);
 }
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
@@ -1558,11 +1556,11 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
-    PrsAddSymbol("BCCompile",&STK_BCCompile,4);
-    PrsAddSymbol("BCCtxDel",&STK_BCCtxDel,1);
-    PrsAddSymbol("BCCtxNew",&STK_BCCtxNew,4);
-	PrsAddSymbol("BCRun",&STK_BCRun,1);
-	PrsAddSymbol("BCDel",&STK_BCDel,1);
+    PrsAddSymbol("BCCompile", &STK_BCCompile, 4);
+    PrsAddSymbol("BCCtxDel", &STK_BCCtxDel, 1);
+    PrsAddSymbol("BCCtxNew", &STK_BCCtxNew, 4);
+    PrsAddSymbol("BCRun", &STK_BCRun, 1);
+    PrsAddSymbol("BCDel", &STK_BCDel, 1);
     PrsAddSymbol("DolDocDumpIR", STK_DolDocDumpIR, 3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
@@ -1578,15 +1576,15 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("CmdLineGetStr", CmdLineGetStr, 1);
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
-    #ifdef USE_BYTECODE
+#ifdef USE_BYTECODE
     PrsAddSymbol("MakeContext", AiwnBCMakeContext, 3);
     PrsAddSymbol("TaskContextSetRIP", AiwnBCTaskContextSetRIP, 2);
     PrsAddSymbol("TaskContextGetRIP", AiwnBCTaskContextGetRIP, 1);
     PrsAddSymbol("TaskContextGetRBP", AiwnBCTaskContextGetRBP, 1);
-    #else
+#else
     PrsAddSymbol("TaskContextSetRIP", STK_TaskContextSetRIP, 2);
     PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
-    #endif
+#endif
     PrsAddSymbol("__HC_ICAdd_RawBytes", STK__HC_ICAdd_RawBytes, 3);
     PrsAddSymbol("__HC_SetAOTRelocBeforeRIP", STK___HC_SetAOTRelocBeforeRIP, 2);
     PrsAddSymbol("__HC_CodeMiscIsUsed", STK___HC_CodeMiscIsUsed, 1);
@@ -1671,21 +1669,21 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("SetFs", STK_SetHolyFs, 1);
     PrsAddSymbol("Fs", STK_GetHolyFs, 0);
     PrsAddSymbol("WriteProtectMemCpy", STK_WriteProtectMemCpy, 3);
-    #ifdef USE_BYTECODE
-		PrsAddSymbolNaked("GetRBP", &AiwnBC_FP, 0);
-	#else
-		PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
-	#endif
+#ifdef USE_BYTECODE
+    PrsAddSymbolNaked("GetRBP", &AiwnBC_FP, 0);
+#else
+    PrsAddSymbolNaked("GetRBP", &Misc_BP, 0);
+#endif
     //__Fs is special
     //__Gs is special then so add the RESULT OF THE function
     PrsAddSymbolNaked("__Fs", NULL, 0);
-    #if !defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__)
     ((CHashExport *)HashFind("__Fs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyFsPtr();
     PrsAddSymbolNaked("__Gs", NULL, 0);
     ((CHashExport *)HashFind("__Gs", Fs->hash_table, HTT_EXPORT_SYS_SYM, 1))
         ->val = GetHolyGsPtr();
-    #endif
+#endif
     PrsAddSymbol("DebuggerClientSetGreg", STK_DebuggerClientSetGreg, 3);
     PrsAddSymbol("DebuggerClientStart", STK_DebuggerClientStart, 2);
     PrsAddSymbol("DebuggerClientEnd", STK_DebuggerClientEnd, 2);
@@ -1693,25 +1691,26 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MPSleepHP", STK_MPSleepHP, 1);
     PrsAddSymbol("MPAwake", STK_MPAwake, 1);
     PrsAddSymbol("mp_cnt", STK_mp_cnt, 0);
-    PrsAddSymbol("Gs", STK_GetHolyGs, 0); // Gs just calls Thread local storage on
-                                      // linux(not mutations in saved registers)
+    PrsAddSymbol("Gs", STK_GetHolyGs,
+                 0); // Gs just calls Thread local storage on
+                     // linux(not mutations in saved registers)
     PrsAddSymbol("SetGs", STK_SetHolyGs, 1);
     PrsAddSymbol("__GetTicks", STK___GetTicks, 0);
     PrsAddSymbol("__Sleep", STK___Sleep, 1);
     PrsAddSymbol("ImportSymbolsToHolyC", STK_ImportSymbolsToHolyC, 1);
     // These dudes will expected to return to a location on the stack,SO DONT
     // MUDDY THE STACK WITH ABI "translations"
-	#ifdef USE_BYTECODE
-		PrsAddSymbolNaked("AIWNIOS_SetJmp", AiwnBCContextGet, 1);
-		PrsAddSymbolNaked("AIWNIOS_LongJmp", AiwnBCContextSet, 1);
-		PrsAddSymbol("Call", STK_AiwnBCCall, 1);
-		PrsAddSymbol("CallArgs", STK_AiwnBCCallArgs, 3);
-	#else
-		PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
-		PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
-		PrsAddSymbolNaked("Call", TempleOS_Call, 1);
-		PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
-	#endif
+#ifdef USE_BYTECODE
+    PrsAddSymbolNaked("AIWNIOS_SetJmp", AiwnBCContextGet, 1);
+    PrsAddSymbolNaked("AIWNIOS_LongJmp", AiwnBCContextSet, 1);
+    PrsAddSymbol("Call", STK_AiwnBCCall, 1);
+    PrsAddSymbol("CallArgs", STK_AiwnBCCallArgs, 3);
+#else
+    PrsAddSymbolNaked("AIWNIOS_SetJmp", AIWNIOS_getcontext, 1);
+    PrsAddSymbolNaked("AIWNIOS_LongJmp", AIWNIOS_setcontext, 1);
+    PrsAddSymbolNaked("Call", TempleOS_Call, 1);
+    PrsAddSymbolNaked("CallArgs", TempleOS_CallN, 3);
+#endif
     /*PrsAddSymbolNaked("CallVaArgs", TempleOS_CallVaArgs,
                       5); // fptr,argc1,argv1,argc,argv but argpop so ignored
                           //(this is for parser.c checks)
@@ -1897,9 +1896,8 @@ typedef struct CAiwniosPack {
   char boot_command[144];
   char save_directory[144];
 } CAiwniosPack;
-static char *loaded_hcrt,*loaded_hcrt_ptr=NULL;
-static int64_t Boot(int64_t*) {
-	puts("noade");
+static char *loaded_hcrt, *loaded_hcrt_ptr = NULL;
+static int64_t Boot(int64_t *) {
   int64_t len, size, hcrt_size;
   char *fbuf, *hcrt;
   Fs = calloc(sizeof(CTask), 1);
@@ -1943,11 +1941,8 @@ static int64_t Boot(int64_t*) {
   InstallDbgSignalsForThread();
   VFsMountDrive('T', t_drive);
 #if defined(__EMSCRIPTEN__)
-  EM_ASM(
-    FS.mkdir('/persist');
-    FS.mount(IDBFS, {}, '/persist');
-    FS.syncfs(true);
-  );
+  EM_ASM(FS.mkdir('/persist'); FS.mount(IDBFS, {}, '/persist');
+         FS.syncfs(true, function(err){}););
 #endif
   /*  FuzzTest1();
     FuzzTest2();
@@ -1966,12 +1961,12 @@ static int64_t Boot(int64_t*) {
   "#define BOOTSTRAP 1\n"                                                      \
   "#define PAUSE ;\n" /*Bootstrap compiler doesnt do ASM*/                     \
   "#define HOST_ABI '%s'\n"                                                    \
-  "%s\n" \
+  "%s\n"                                                                       \
   "#include \"Src/FULL_PACKAGE.HC\";;\n"
 #if defined(USE_BYTECODE)
-  host_abi="ABC";
-  extra="";
-     len = snprintf(NULL, 0, BOOTSTRAP_FMT, "BYTECODE", host_abi, extra);
+    host_abi = "ABC";
+    extra = "";
+    len = snprintf(NULL, 0, BOOTSTRAP_FMT, "BYTECODE", host_abi, extra);
     char buf[len + 1];
     sprintf(buf, BOOTSTRAP_FMT, "BYTECODE", host_abi, extra);
 #elif defined(__aarch64__) || defined(_M_ARM64)
@@ -2007,7 +2002,7 @@ static int64_t Boot(int64_t*) {
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
   if (hcrt)
-    loaded_hcrt=Load(hcrt, hcrt_size);
+    loaded_hcrt = Load(hcrt, hcrt_size);
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {
@@ -2032,7 +2027,7 @@ static int64_t ExitAiwnios(int64_t *stk) {
   }
 }
 static int64_t IsAiwniosPackApp() {
-	#if ! defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__)
   char signature[9];
   signature[8] = 0;
   if (exe_name) {
@@ -2043,19 +2038,19 @@ static int64_t IsAiwniosPackApp() {
     if (!strcmp(signature, "AiwnPack"))
       return 1;
   }
-  #endif
+#endif
   return 0;
 }
 #if defined(__EMSCRIPTEN__)
-extern void EMInputLoopRun(int64_t*);
+extern void EMInputLoopRun(int64_t *);
 static void EMMainLoop() {
-	if(loaded_hcrt) {
-		loaded_hcrt_ptr=LoadMainsWasm(loaded_hcrt_ptr,loaded_hcrt);
-	}
-	EMInputLoopRun(&quit);
-	if(quit) {
-		emscripten_cancel_main_loop	();
-	}
+  if (loaded_hcrt) {
+    loaded_hcrt_ptr = LoadMainsWasm(loaded_hcrt_ptr, loaded_hcrt);
+  }
+  EMInputLoopRun(&quit);
+  if (quit) {
+    emscripten_cancel_main_loop();
+  }
 }
 #endif
 int main(int argc, char **argv) {
@@ -2234,34 +2229,31 @@ int main(int argc, char **argv) {
   if (arg_new_boot_dir->count)
     exit(EXIT_SUCCESS);
   if (!(arg_cmd_line->count || arg_bootstrap_bin->count)) {
-	  puts("ass");
     InitSound();
-	  puts("ass2");
     if (0 > SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
-	  puts("ass3");
       char *p = SDL_GetError();
       if (!p)
         p = "???";
       int64_t l = snprintf(NULL, 0, "Failed to init SDL(%s)", p);
       char buf[l + 1];
       sprintf(buf, "Failed to init SDL(%s)", p);
-      #if defined(__EMSCRIPTEN__) 
-      fprintf(stderr,"%s",buf);
-      #else
+#if defined(__EMSCRIPTEN__)
+      fprintf(stderr, "%s", buf);
+#else
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "AIWNIOS", buf, NULL);
-      #endif
+#endif
       exit(EXIT_FAILURE);
     }
     user_ev_num = SDL_RegisterEvents(1);
-    #if defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__)
     DrawWindowNew();
     Boot(NULL);
-    emscripten_set_main_loop(EMMainLoop,0,1);
+    emscripten_set_main_loop(EMMainLoop, 0, 1);
     return 0;
-    #else
-    SpawnCore(GenFFIBinding(&Boot,0),argv[0],0);
+#else
+    SpawnCore(GenFFIBinding(&Boot, 0), argv[0], 0);
     InputLoop(&quit);
-    #endif
+#endif
   } else {
     if (arg_s->count)
       InitSound();

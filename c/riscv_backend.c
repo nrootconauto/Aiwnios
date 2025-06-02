@@ -1388,7 +1388,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(RISCV_FMV_X_D(10 + i, 10 + i));                       \
       }                                                                        \
       \		 
-                                                                                                                                            \
+                                                                                                                                                                                                                 \
     }                                                                          \
   }
   int64_t mutated = 0;

@@ -95,27 +95,27 @@ static void LoadOneImport(char **_src, char *module_base, int64_t ld_flags) {
 // same thing as above(avoiding strict aliaing stuff).
 #define OFF(T) (i - (int64_t)ptr2 - sizeof(T))
 #ifndef __EMSCRIPTEN__
-#define REL(T)                                                                 \
-  {                                                                            \
-    size_t off = OFF(T);                                                       \
-    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                             \
-    __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
-  }
-#define IMM(T)                                                                 \
-  {                                                                            \
-    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                               \
-    __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                           \
-  }
+#  define REL(T)                                                               \
+    {                                                                          \
+      size_t off = OFF(T);                                                     \
+      memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                           \
+      __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                         \
+    }
+#  define IMM(T)                                                               \
+    {                                                                          \
+      memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                             \
+      __builtin___clear_cache(ptr2, ptr2 + sizeof(T));                         \
+    }
 #else
-#define REL(T)                                                                 \
-  {                                                                            \
-    size_t off = OFF(T);                                                       \
-    memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                             \
-  }
-#define IMM(T)                                                                 \
-  {                                                                            \
-    memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                               \
-  }
+#  define REL(T)                                                               \
+    {                                                                          \
+      size_t off = OFF(T);                                                     \
+      memcpy(MemGetWritePtr(ptr2), &off, sizeof(T));                           \
+    }
+#  define IMM(T)                                                               \
+    {                                                                          \
+      memcpy(MemGetWritePtr(ptr2), &i, sizeof(T));                             \
+    }
 
 #endif
     if (tmpex) {
@@ -291,7 +291,6 @@ static void LoadPass1(char *src, char *module_base, int64_t ld_flags) {
   }
 }
 
-
 static void LoadPass2(char *src, char *module_base) {
   char *st_ptr;
   int64_t i, etype, cnt2;
@@ -355,7 +354,8 @@ typedef struct __attribute__((packed)) CBinFile {
   char data[];
 } CBinFile;
 
-#if !defined(USE_BYTECODE) && defined(__x86_64__) && (__NetBSD__ + __OpenBSD__ > 0)
+#if !defined(USE_BYTECODE) && defined(__x86_64__) &&                           \
+    (__NetBSD__ + __OpenBSD__ > 0)
 typedef char xmm __attribute__((vector_size(16), aligned(1)));
 _Static_assert('e' == 0x65);
 
@@ -411,7 +411,8 @@ char *Load(char *fbuf, int64_t size) {
   bfh = A_MALLOC(size, hc);
   memcpy(MemGetWritePtr(bfh), fbuf, size); // MemGetWritePtr(obfh) for
 
-#if !defined(USE_BYTECODE) && defined(__x86_64__) && (__OpenBSD__ + __NetBSD__ > 0)
+#if !defined(USE_BYTECODE) && defined(__x86_64__) &&                           \
+    (__OpenBSD__ + __NetBSD__ > 0)
   // OX86, gcc multicharacter literals are big endian
   if (bfh->bin_signature != '68XO')
     RewriteSegments(MemGetWritePtr(bfh));
@@ -427,9 +428,9 @@ char *Load(char *fbuf, int64_t size) {
 
 lo_skip:
   LoadPass1((char *)bfh_addr + bfh_addr->patch_table_offset, bfh_addr->data, 0);
-  #if !defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__)
   LoadPass2((char *)bfh_addr + bfh_addr->patch_table_offset, bfh_addr->data);
-  #endif
+#endif
   return bfh_addr;
 }
 
@@ -451,11 +452,11 @@ char *LoadMainsWasm(char *src, char *module_base) {
   char *st_ptr;
   int64_t i, etype, cnt2;
   void (*fptr)();
-  if(!src)
-	src=module_base + ((CBinFile*)module_base)->patch_table_offset;
-	module_base=((CBinFile*)module_base)->data;
-	again:;
-  char *osrc=src;
+  if (!src)
+    src = module_base + ((CBinFile *)module_base)->patch_table_offset;
+  module_base = ((CBinFile *)module_base)->data;
+again:;
+  char *osrc = src;
   if (etype = *src++) {
     i = READ_NUM(src, int32_t);
     src += 4;
@@ -467,11 +468,11 @@ char *LoadMainsWasm(char *src, char *module_base) {
     st_ptr = src;
     src += strlen(st_ptr) + 1;
     switch (etype) {
-    case IET_MAIN:	
+    case IET_MAIN:
       fptr = (i + module_base);
-      if(FFI_CALL_TOS_0_FEW_INSTS(fptr,1<<17))
-		return osrc;
-		goto again;
+      if (FFI_CALL_TOS_0_FEW_INSTS(fptr, 1 << 21 /* Savage*/ ))
+        return osrc;
+      goto again;
       break;
     case IET_ABS_ADDR:
       src += sizeof(int32_t) * i;
@@ -489,7 +490,7 @@ char *LoadMainsWasm(char *src, char *module_base) {
       src += 8 + sizeof(int32_t) * i * 2 + cnt2;
       break;
     default:
-    goto again;
+      goto again;
     }
   }
   return src;

@@ -1,6 +1,7 @@
 #include "aiwn_bytecode.h"
 #include "aiwn_hash.h"
 #include "aiwn_lexparser.h"
+#include <SDL.h>
 #include <math.h>
 #include <setjmp.h>
 #include <stdint.h>
@@ -18,7 +19,7 @@ enum {
   ABC_STATIC,
   ABC_READ_PTRO, // offset
   ABC_READ_PTR,
-  ABC_READ_FRAME, //offset
+  ABC_READ_FRAME, // offset
   ABC_NEG,
   ABC_POS,
   ABC_STR,
@@ -28,8 +29,8 @@ enum {
   ABC_POW,
   ABC_ADD,
   ABC_WRITE_PTR,
-  ABC_WRITE_PTRO, // offset
-  ABC_WRITE_FRAME, //offset
+  ABC_WRITE_PTRO,  // offset
+  ABC_WRITE_FRAME, // offset
   ABC_DIV,
   ABC_MUL,
   ABC_AND,
@@ -75,11 +76,15 @@ enum {
   ABC_POST_INC, // next u64 is amount to add
   ABC_DISCARD,  // next u32 is amount to discard
   ABC_MISC_START,
-  ABC_CNT,      // MUST BE THE LAST ITEM
+  ABC_CNT, // MUST BE THE LAST ITEM
 };
-static int64_t bc_awake=0;
+//
+// bc_awake is will cause a "yield"
+// bit 0 of bc_interupt means a pedning interupt
+// bit 1 of bc_interupt meeans interupts are enabled
+static int64_t bc_awake = 0, bc_interupt = 0;
 int64_t BCAwake() {
-	bc_awake=1;
+  bc_awake = 1;
 }
 
 #define AiwnBCWrite(_dst, _src, rt)                                            \
@@ -107,7 +112,7 @@ int64_t BCAwake() {
       *(uint64_t *)dst = *(uint64_t *)src;                                     \
       break;                                                                   \
     default:                                                                   \
-    fprintf(stdout,"%d\n",rt); \
+      fprintf(stdout, "%d\n", rt);                                             \
       abort();                                                                 \
       break;                                                                   \
     }                                                                          \
@@ -219,13 +224,17 @@ static int64_t ForceType(char *ptr, CRPN *a, int64_t to, int64_t len) {
   return len;
 }
 
+static void DoPendingInterupt();
 int64_t AiwnRunBC(ABCState *state) {
   cur_bcstate = state;
+  DoPendingInterupt();
   uint32_t *bc = (void *)state->ip;
-  again:;
+  static int64_t cnt = 2048;
+  int64_t t = SDL_GetTicks64();
+again:;
   if (!bc)
     return 0;
-  int64_t i64, ai, bi, old_fp, old_addr, ret,fp=state->fp;
+  int64_t i64, ai, bi, old_fp, old_addr, ret, fp = state->fp;
   uint64_t bu, au;
   int64_t retval = 0;
   double f64, af, bf;
@@ -236,72 +245,71 @@ int64_t AiwnRunBC(ABCState *state) {
   printf("IP:%p(%s),FP:%p,SP:%p\n", bc, WhichFun(bc), state->fp, state->_sp);
   //   printf("BTTM:%p,	%p,PR:(%p)\n", abcf->istk[abcf->sp - 1],
   //        abcf->istk[abcf->sp], abcf->sp);
-  printf("%d,%d,%d\n", (*bc>>8)&0xff,*bc & 0xff,*bc);
+  printf("%d,%d,%d\n", (*bc >> 8) & 0xff, *bc & 0xff, *bc);
   switch (*bc++ & 0xffff) {
   default:
     printf("FUCK:%d\n", bc[-1] & 0xff);
     break;
-    //Pray that your optimizer is good
+    // Pray that your optimizer is good
 #define CASE_BALLER(cs, code)                                                  \
   break;                                                                       \
   case cs:                                                                     \
-  case (cs | (-1 << 8)) & 0xffff: {                                 \
+  case (cs | (-1 << 8)) & 0xffff: {                                            \
     const int64_t t = RT_I64i;                                                 \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I8i << 8): {                                                   \
-    const int64_t t = RT_I8i;               	                                   \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t t = RT_I8i;                                                  \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_F64 << 8): {                                                   \
     const int64_t t = RT_F64;                                                  \
-    const int64_t is_f64=1,is_u64=0; \
+    const int64_t is_f64 = 1, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U8i << 8): {                                                   \
     const int64_t t = RT_U8i;                                                  \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I16i << 8): {                                                  \
     const int64_t t = RT_I16i;                                                 \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U16i << 8): {                                                  \
     const int64_t t = RT_U16i;                                                 \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I32i << 8): {                                                  \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     const int64_t t = RT_I32i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U32i << 8): {                                                  \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     const int64_t t = RT_U32i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_I64i << 8): {                                                  \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     const int64_t t = RT_I64i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_U64i << 8): {                                                  \
-    const int64_t is_f64=0,is_u64=1; \
+    const int64_t is_f64 = 0, is_u64 = 1;                                      \
     const int64_t t = RT_U64i;                                                 \
     code;                                                                      \
   } break;                                                                     \
   case cs | (RT_PTR << 8):                                                     \
   case cs | (RT_FUNC << 8): {                                                  \
     const int64_t t = RT_I64i;                                                 \
-    const int64_t is_f64=0,is_u64=0; \
+    const int64_t is_f64 = 0, is_u64 = 0;                                      \
     code;                                                                      \
   } break;
-
 
     CASE_BALLER(ABC_PRE_INC, {
       bi = abcf->istk[abcf->sp];
@@ -406,7 +414,7 @@ int64_t AiwnRunBC(ABCState *state) {
       puts("CALL");
       if (abcf->istk[abcf->sp] != INVALID_PTR) {
         old_fp = fp;
-        state->fp=fp = state->_sp -= 16 + sizeof(ABCFrame);
+        state->fp = fp = state->_sp -= 16 + sizeof(ABCFrame);
         new = fp + 16;
         new->next = abcf;
         new->sp = 0;
@@ -435,13 +443,13 @@ int64_t AiwnRunBC(ABCState *state) {
       printf("RETTO:%p\n", old_addr);
       state->_sp = fp + 16 + sizeof(ABCFrame);
       printf("ASS:%p\n", state->fun_frame);
-      fp=state->fp = old_fp;
+      fp = state->fp = old_fp;
       state->ip = old_addr;
       printf("N1I:%p\n", state->fun_frame);
       if (fp) {
         abcf = state->fun_frame = (ABCFrame *)(fp + 16);
         abcf->istk[++abcf->sp] = ret;
-      printf("NI2:%p\n", state->fun_frame);
+        printf("NI2:%p\n", state->fun_frame);
       } else
         state->fun_frame = NULL;
       printf("NI:%p\n", state->fun_frame);
@@ -467,7 +475,7 @@ int64_t AiwnRunBC(ABCState *state) {
       bc += 2;
       if (is_f64) {
         if (abcf->fstk[abcf->sp--] != 0.) {
-         bc  = i64 + old_addr;
+          bc = i64 + old_addr;
         }
       } else {
         if (abcf->istk[abcf->sp--]) {
@@ -534,17 +542,14 @@ int64_t AiwnRunBC(ABCState *state) {
       break;
     })
 
-
     CASE_BALLER(ABC_READ_FRAME, {
       i64 = *(int32_t *)bc;
       bc += 1;
 
       if (is_f64)
-        abcf->fstk[++abcf->sp] =
-            AiwnBCReadF64((void *)(fp + i64), t);
+        abcf->fstk[++abcf->sp] = AiwnBCReadF64((void *)(fp + i64), t);
       else
-        abcf->istk[++abcf->sp] =
-			AiwnBCReadI64((void *)(fp + i64), t);
+        abcf->istk[++abcf->sp] = AiwnBCReadI64((void *)(fp + i64), t);
       break;
     })
 
@@ -622,23 +627,23 @@ int64_t AiwnRunBC(ABCState *state) {
     });
     CASE_BALLER(ABC_WRITE_PTR, {
       i64 = 0;
-      i64 += abcf->istk[abcf->sp-1];
-      au= abcf->istk[abcf->sp];
+      i64 += abcf->istk[abcf->sp - 1];
+      au = abcf->istk[abcf->sp];
       AiwnBCWrite((void *)i64, (void *)&au, t);
-      abcf->istk[--abcf->sp]=au;
+      abcf->istk[--abcf->sp] = au;
     })
     CASE_BALLER(ABC_WRITE_PTRO, {
       i64 = *(int32_t *)bc;
       bc++;
-      i64+=abcf->ustk[abcf->sp-1];
-      au= abcf->istk[abcf->sp];
+      i64 += abcf->ustk[abcf->sp - 1];
+      au = abcf->istk[abcf->sp];
       AiwnBCWrite((void *)i64, (void *)&au, t);
-      abcf->istk[--abcf->sp]=au;
+      abcf->istk[--abcf->sp] = au;
     })
     CASE_BALLER(ABC_WRITE_FRAME, {
-      i64 = fp+*(int32_t *)bc;
+      i64 = fp + *(int32_t *)bc;
       bc++;
-      au= abcf->istk[abcf->sp];
+      au = abcf->istk[abcf->sp];
       AiwnBCWrite((void *)i64, (void *)&au, t);
     })
     CASE_BALLER(ABC_DIV, { ABC_OP(/=); });
@@ -793,11 +798,20 @@ int64_t AiwnRunBC(ABCState *state) {
         abcf->istk[abcf->sp] = ai >>= bi;
     })
   }
-  if(bc_awake) {
-	  state->ip=bc;
-	  return 0;
+
+  if (--cnt <= 0) {
+    cnt = 2048;
+    printf("%lld\n", SDL_GetTicks64() - t);
+    if (SDL_GetTicks64() - t > 100) {
+      goto soft_fin;
+    }
   }
-  if(state->ip)
+  if (bc_awake) {
+  soft_fin:
+    state->ip = bc;
+    return 0;
+  }
+  if (state->ip)
     goto again;
 fin:;
   return retval;
@@ -823,7 +837,7 @@ static CCodeMiscRef *CodeMiscAddRefBC(CCodeMisc *misc, int32_t *addr) {
 static CRPN *DerefOffset(CRPN *rpn, int64_t *off) {
   int64_t o = 0;
   CRPN *a, *b;
-  CRPN *orpn=rpn;
+  CRPN *orpn = rpn;
 again:;
   if (rpn->type == IC_ADD) {
     a = ICArgN(rpn, 0);
@@ -847,9 +861,9 @@ again:;
       goto again;
     }
   }
-  if(off<INT32_MIN||off>INT32_MAX) {
-	o=0;
-	rpn=orpn;
+  if (off < INT32_MIN || off > INT32_MAX) {
+    o = 0;
+    rpn = orpn;
   }
   if (off)
     *off = o;
@@ -948,13 +962,13 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_ADD | (rpn->raw_type << 8), len);
     break;
   case IC_EQ:
-  t=arg1->raw_type;
-      if (arg1->type == IC_TYPECAST) {
+    t = arg1->raw_type;
+    if (arg1->type == IC_TYPECAST) {
       arg1 = ICArgN(arg1, 0);
     }
-  #define ASN_DO  \
-      len = CompileToBC0(cc, ptr, arg0, len); \
-    len = ForceType(ptr, arg0, t, len);
+#define ASN_DO                                                                 \
+  len = CompileToBC0(cc, ptr, arg0, len);                                      \
+  len = ForceType(ptr, arg0, t, len);
 
     if (arg1->type == IC_STATIC) {
       len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
@@ -992,7 +1006,7 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
 
       GLOB_PTR((arg1));
 
-ASN_DO;
+      ASN_DO;
       len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 8), len);
     } else
       abort();
@@ -1235,9 +1249,9 @@ ASN_DO;
     break;
   case IC_ADD_EQ:
 #define ASSIGN_OP(xxx)                                                         \
-      t = arg1->raw_type; \
-      if(arg1->type==IC_TYPECAST) \
-		arg1=arg1->base.next; \
+  t = arg1->raw_type;                                                          \
+  if (arg1->type == IC_TYPECAST)                                               \
+    arg1 = arg1->base.next;                                                    \
   if (arg1->type == IC_STATIC) {                                               \
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, 0, len);                                          \
@@ -1245,21 +1259,22 @@ ASN_DO;
     if (ptr) {                                                                 \
       cmr = CodeMiscAddRefBC(cc->statics_label, ptr + len - 8);                \
       cmr->offset = arg1->integer;                                             \
-    }                 len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
+    }                                                                          \
+    len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);                                \
     len = AiwnBCAddCode(ptr, arg1->integer, len);                              \
     len = AiwnBCAddCode(ptr, arg1->integer >> 32, len);                        \
     len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 8), len);                   \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
-    ASN_DO; \
+    ASN_DO;                                                                    \
     len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);                  \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
   } else if (arg1->type == IC_BASE_PTR) {                                      \
-    len = AiwnBCAddCode(ptr, ABC_READ_FRAME | (t << 8), len);                   \
+    len = AiwnBCAddCode(ptr, ABC_READ_FRAME | (t << 8), len);                  \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
-    ASN_DO; \
+    ASN_DO;                                                                    \
     len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
-    len = AiwnBCAddCode(ptr, ABC_WRITE_FRAME | (t << 8 ), len);             \
+    len = AiwnBCAddCode(ptr, ABC_WRITE_FRAME | (t << 8), len);                 \
     len = AiwnBCAddCode(ptr, -arg1->integer, len);                             \
   } else if (arg1->type == IC_DEREF) {                                         \
     arg1 = DerefOffset(arg1->base.next, &off);                                 \
@@ -1268,15 +1283,15 @@ ASN_DO;
     len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_READ_PTRO | (t << 8), len);                   \
     len = AiwnBCAddCode(ptr, off, len);                                        \
-    ASN_DO; \
+    ASN_DO;                                                                    \
     len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTRO | (t << 8), len);                  \
     len = AiwnBCAddCode(ptr, off, len);                                        \
   } else if (arg1->type == IC_GLOBAL) {                                        \
     GLOB_PTR(arg1);                                                            \
-		len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
+    len = AiwnBCAddCode(ptr, ABC_DUP, len);                                    \
     len = AiwnBCAddCode(ptr, ABC_READ_PTR | (t << 8), len);                    \
-    ASN_DO; \
+    ASN_DO;                                                                    \
     len = AiwnBCAddCode(ptr, xxx | (t << 8), len);                             \
     len = AiwnBCAddCode(ptr, ABC_WRITE_PTR | (t << 8), len);                   \
                                                                                \
@@ -1460,7 +1475,7 @@ ASN_DO;
         ++t;
     }
     arg0 = ICArgN(rpn, 0);
-    len=AiwnBCAddCode(ptr,ABC_FRAME_ADDR,len);
+    len = AiwnBCAddCode(ptr, ABC_FRAME_ADDR, len);
     len = AiwnBCAddCode(ptr, ABC_IMM_I64, len);
     len = AiwnBCAddCode(ptr, (16 + sizeof(ABCFrame) + 8 * t), len);
     len = AiwnBCAddCode(ptr, (16 + sizeof(ABCFrame) + 8 * t) >> 32, len);
@@ -1566,9 +1581,9 @@ again:;
       len = AiwnBCAddCode(bin, ABC_END_EXPR, len);
     }
   }
-  len = AiwnBCAddCode(bin, ABC_IMM_I64,len);
-  len = AiwnBCAddCode(bin, 0,len);
-  len = AiwnBCAddCode(bin, 0,len);
+  len = AiwnBCAddCode(bin, ABC_IMM_I64, len);
+  len = AiwnBCAddCode(bin, 0, len);
+  len = AiwnBCAddCode(bin, 0, len);
   len = AiwnBCAddCode(bin, ABC_RET, len);
   len = AiwnBCAddCode(bin, ABC_MISC_START, len);
   for (cm = (CCodeMisc *)cctrl->code_ctrl->code_misc->next;
@@ -1615,7 +1630,7 @@ again:;
     case CMT_JMP_TAB:
       to = 0;
       cm->addr = bin + len;
-      for (i = 0; i != cm->hi - cm->lo + 1; ++i) {
+      for (i = 0; i <= cm->hi - cm->lo ; ++i) {
         if (bin) {
           to = cm->jmp_tab[i];
           if (!to)
@@ -1623,17 +1638,18 @@ again:;
           ((uint64_t *)(bin + len))[i] = (uint64_t)to->addr;
         }
       }
-      len += 8 * i;
+      len += 8 * (i+1);
       goto fill_in_refs;
       break;
     case CMT_STRING:
       if (cctrl->flags & CCF_STRINGS_ON_HEAP) {
         cm->addr = A_CALLOC(cm->str_len + 1, NULL);
       } else {
-		  len+=4;
-		  if(bin) *(int32_t*)(bin+len)=cm->str_len;
+        len += 4;
+        if (bin)
+          *(int32_t *)(bin + len) = cm->str_len;
         cm->addr = bin + len;
-	  }
+      }
       if (bin) {
         memcpy((char *)cm->addr, cm->str, cm->str_len);
         ((char *)cm->addr)[cm->str_len] = 0;
@@ -1791,11 +1807,37 @@ int64_t AiwnBCMakeContext(int64_t *to_stk) {
   free(s);
 }
 #if defined(USE_BYTECODE)
+extern CHashTable *glbl_table;
+static void DoPendingInterupt() {
+  if (bc_interupt==3) {
+	  bc_interupt=0;
+    CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
+    ABCFrame *ff;
+    if (y) {
+      memcpy(&cur_dbgstate, cur_bcstate, sizeof(ABCState));
+
+      cur_bcstate->_sp -= 16 + sizeof(ABCFrame) + 16;
+      int64_t *prolog = (int64_t *)cur_bcstate->_sp;
+      prolog[0] = cur_bcstate->fp;
+      prolog[1] = cur_bcstate->ip;
+      ff = (void *)&prolog[2];
+      int64_t *args = (void *)(ff + 1);
+      args[0] = cur_bcstate->ip;
+      args[1] = cur_bcstate->fp;
+      cur_bcstate->fun_frame = ff;
+      ff->sp = 0;
+      cur_bcstate->ip = y->val;
+      cur_bcstate->fp = (int64_t)prolog;
+    }
+  }
+}
 int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
   static int64_t active = 0;
   static char *stk = NULL;
   int64_t ret;
   static ABCState *state;
+  int64_t t = SDL_GetTicks64();
+    LBts(&bc_interupt,1); //Bit 1 is interrupts enable
   if (!active) {
     active = 1;
     size_t stk_sz = 0x20000;
@@ -1805,7 +1847,9 @@ int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
     setjmp(except_to);
     while (1) {
       AiwnRunBC(state);
-      if (--iterations < 0 || !state->ip)
+      if (SDL_GetTicks64() - t > 100)
+        break;
+      if (--iterations < 0 || !state->ip || bc_awake)
         break;
     }
   } else {
@@ -1813,17 +1857,23 @@ int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
     setjmp(except_to);
     while (1) {
       AiwnRunBC(state);
+      if (!state->ip || bc_awake)
+        break;
+      if (SDL_GetTicks64() - t > 100)
+        break;
       if (--iterations < 0)
         break;
     }
   }
+ LBtr(&bc_interupt,1); //Bit 1 is interrupts enable
+    
   if (!state->ip) {
     free(state);
     state = NULL;
     active = 0;
     free(stk);
   }
-  bc_awake=0;
+  bc_awake = 0;
   return active;
 }
 int64_t FFI_CALL_TOS_0(void *fptr) {
@@ -1929,6 +1979,11 @@ int64_t AiwnBC_FP(int64_t *) {
 void *AiwnBCDbgCurContext() {
   return &cur_dbgstate;
 }
+void BCInterupt() {
+#  ifdef __EMSCRIPTEN__
+  LBts(&bc_interupt, 0); // bit 0 is psending interupt 
+#  endif
+}
 void AiwnBCDbgFault(int sig) {
   CHashExport *exp;
   ABCFrame *ff;
@@ -1970,9 +2025,9 @@ static char *ToCType() {
   case RT_U32i:
     return "uint32_t";
   case RT_I64i:
-     return "int64_t";
+    return "int64_t";
   case RT_U64i:
-     return "uint64_t";
+    return "uint64_t";
   case RT_F64:
     return "double";
   case RT_PTR:
@@ -1980,120 +2035,183 @@ static char *ToCType() {
     return "int64_t";
     break;
   }
-	abort();
+  abort();
 }
-int64_t ToC(FILE *f,char *fun,int64_t rt,int32_t *start,int32_t *end,int64_t s) {
-	int64_t i=0,i64;
-	int stk=0;
-	fprintf(f,"int64_t STK_%s(int64_t *args) {\n",fun);
-	for(i=0;i!=IM_STK_SIZE;++i) {
-	  fprintf(f," int64_t vari%d;\n",i);
-      fprintf(f," uint64_t varu%d;\n",i);
-      fprintf(f," double varf%d;\n",i);
-    }
-	fprintf(f,"int64_t (*fptr)(int64_t *);\n")
-	while(start!=end) {
-		int64_t t=*start>>8;
-		switch(*start++) {
-    break; case ABC_NOP:
-  break; case ABC_INTERN:
-  //TODO
-  break; case ABC_GOTO:
-        i64 = *(uint64_t *)start;
-    start += 2;
-    fprintf(f,"goto L%p;\n",(char*)(start-1)+i64);
-  break; case ABC_GOTO_IF:
-        i64 = *(uint64_t *)start;
-    start += 2;
-    if(t==RT_F64)
-    fprintf(f,"if(var%d.f)goto L%p;\n",stk,(char*)(start-1)+i64);
-    else
-    fprintf(f,"if(var%d.i)goto L%p;\n",stk,(char*)(start-1)+i64);
-    stk=0;
-  break; case ABC_TO_I64:
-  fprintf(f,"var%d.i=var%d.f;\n",stk,stk);
-  break; case ABC_TO_F64:
-  fprintf(f,"var%d.f=var%d.i;\n",stk,stk);
-  break; case ABC_LABEL:
-  fprintf(f,"L%p:\n",start-1);
-  break; case ABC_STATIC:
-  break; case ABC_READ_PTRO: // offset
-        i64 = *(uint64_t *)start;
-    start += 2;
+int64_t ToC(FILE *f, char *fun, int64_t rt, int32_t *start, int32_t *end,
+            int64_t s) {
+  int64_t i = 0, i64;
+  int stk = 0;
+  fprintf(f, "int64_t STK_%s(int64_t *args) {\n", fun);
+  for (i = 0; i != IM_STK_SIZE; ++i) {
+    fprintf(f, " int64_t vari%d;\n", i);
+    fprintf(f, " uint64_t varu%d;\n", i);
+    fprintf(f, " double varf%d;\n", i);
+  }
+  fprintf(f, "int64_t (*fptr)(int64_t *);\n") while (start != end) {
+    int64_t t = *start >> 8;
+    switch (*start++) {
+      break;
+    case ABC_NOP:
+      break;
+    case ABC_INTERN:
+      // TODO
+      break;
+    case ABC_GOTO:
+      i64 = *(uint64_t *)start;
+      start += 2;
+      fprintf(f, "goto L%p;\n", (char *)(start - 1) + i64);
+      break;
+    case ABC_GOTO_IF:
+      i64 = *(uint64_t *)start;
+      start += 2;
+      if (t == RT_F64)
+        fprintf(f, "if(var%d.f)goto L%p;\n", stk, (char *)(start - 1) + i64);
+      else
+        fprintf(f, "if(var%d.i)goto L%p;\n", stk, (char *)(start - 1) + i64);
+      stk = 0;
+      break;
+    case ABC_TO_I64:
+      fprintf(f, "var%d.i=var%d.f;\n", stk, stk);
+      break;
+    case ABC_TO_F64:
+      fprintf(f, "var%d.f=var%d.i;\n", stk, stk);
+      break;
+    case ABC_LABEL:
+      fprintf(f, "L%p:\n", start - 1);
+      break;
+    case ABC_STATIC:
+      break;
+    case ABC_READ_PTRO: // offset
+      i64 = *(uint64_t *)start;
+      start += 2;
     read_style:;
-    if(t==RT_F64)
-    fprintf(f,"var%d.f=*(%s*)(var%d.i+%lld);\n",++stk,ToCType(t),i64);
-  else
-  fprintf(f,"var%d.i=*(%s*)(var%d.i+%lld);\n",++stk,ToCType(t),i64);
-  break; case ABC_READ_PTR:
-  i64=0;
-  goto read_style
-  break; case ABC_NEG:
-  if(t==RT_F64)
-    fprintf(f,"stk.d[%d]=-stk.d[%d]",stk);
-  else
-    fprintf(f,"stk.d[%d]=-var%d.f",stk);
+      if (t == RT_F64)
+        fprintf(f, "var%d.f=*(%s*)(var%d.i+%lld);\n", ++stk, ToCType(t), i64);
+      else
+        fprintf(f, "var%d.i=*(%s*)(var%d.i+%lld);\n", ++stk, ToCType(t), i64);
+      break;
+    case ABC_READ_PTR:
+      i64 = 0;
+      goto read_style break;
+    case ABC_NEG:
+      if (t == RT_F64)
+        fprintf(f, "stk.d[%d]=-stk.d[%d]", stk);
+      else
+        fprintf(f, "stk.d[%d]=-var%d.f", stk);
 
-  break; case ABC_POS:
-  //DO NOTHING
-  break; case ABC_PCREL:
-  i64 = *(int64_t *)start;
-  start += 2;
+      break;
+    case ABC_POS:
+      // DO NOTHING
+      break;
+    case ABC_PCREL:
+      i64 = *(int64_t *)start;
+      start += 2;
 
-  break; case ABC_IMM_I64:
-  break; case ABC_IMM_F64:
-  break; case ABC_POW:
-  break; case ABC_ADD:
-  break; case ABC_WRITE_PTR:
-  break; case ABC_WRITE_PTRO: // offset
-  break; case ABC_DIV:
-  break; case ABC_MUL:
-  break; case ABC_AND:
-  break; case ABC_SUB:
-  break; case ABC_FRAME_ADDR:
-  break; case ABC_XOR:
-  break; case ABC_MOD:
-  break; case ABC_OR:
-  break; case ABC_LT:
-  break; case ABC_GT:
-  break; case ABC_LNOT:
-  break; case ABC_BNOT:
-  break; case ABC_AND_AND:
-  break; case ABC_XOR_XOR:
-  break; case ABC_OR_OR:
-  break; case ABC_NE:
-  break; case ABC_EQ_EQ:
-  break; case ABC_LE:
-  break; case ABC_GE:
-  break; case ABC_LSH:
-  break; case ABC_RSH:
-  break; case ABC_RET:
-  break; case ABC_CALL:
-  break; case ABC_COMMA:
-  break; case ABC_SWITCH:
-  break; case ABC_SUB_PROLOG:
-  break; case ABC_SUB_RET:
-  break; case ABC_SUB_CALL:
-  break; case ABC_TYPECAST:
-  break; case ABC_RELOC:
-  break; case ABC_SET_FRAME_SIZE:
-    fprintf(f,"\t char frame[%i];\n",*start++);
-  break; case ABC_DUP:
-  break; case ABC_END_EXPR:
-  break; case ABC_DISCARD_STK: // next u32 is amount to discard
-  break; case ABC_PUSH:
-  break; case ABC_POP:
-  break; case ABC_TO_BOOL:
-  break; case ABC_SKIP_ON_PASS: // next u32 is amt of u32's to skip
-  break; case ABC_SKIP_ON_FAIL: // next u32 is amt of u32's to skip
-  break; case ABC_GS:
-  break; case ABC_FS:
-  break; case ABC_PRE_INC:  // next u64 is amount to add
-  break; case ABC_POST_INC: // next u64 is amount to add
-  break; case ABC_DISCARD:  // next u32 is amount to discard
-  break; case ABC_CNT:      // MUST BE THE LAST ITEM
-}
-	}
-	fprintf(f,"}\n");
+      break;
+    case ABC_IMM_I64:
+      break;
+    case ABC_IMM_F64:
+      break;
+    case ABC_POW:
+      break;
+    case ABC_ADD:
+      break;
+    case ABC_WRITE_PTR:
+      break;
+    case ABC_WRITE_PTRO: // offset
+      break;
+    case ABC_DIV:
+      break;
+    case ABC_MUL:
+      break;
+    case ABC_AND:
+      break;
+    case ABC_SUB:
+      break;
+    case ABC_FRAME_ADDR:
+      break;
+    case ABC_XOR:
+      break;
+    case ABC_MOD:
+      break;
+    case ABC_OR:
+      break;
+    case ABC_LT:
+      break;
+    case ABC_GT:
+      break;
+    case ABC_LNOT:
+      break;
+    case ABC_BNOT:
+      break;
+    case ABC_AND_AND:
+      break;
+    case ABC_XOR_XOR:
+      break;
+    case ABC_OR_OR:
+      break;
+    case ABC_NE:
+      break;
+    case ABC_EQ_EQ:
+      break;
+    case ABC_LE:
+      break;
+    case ABC_GE:
+      break;
+    case ABC_LSH:
+      break;
+    case ABC_RSH:
+      break;
+    case ABC_RET:
+      break;
+    case ABC_CALL:
+      break;
+    case ABC_COMMA:
+      break;
+    case ABC_SWITCH:
+      break;
+    case ABC_SUB_PROLOG:
+      break;
+    case ABC_SUB_RET:
+      break;
+    case ABC_SUB_CALL:
+      break;
+    case ABC_TYPECAST:
+      break;
+    case ABC_RELOC:
+      break;
+    case ABC_SET_FRAME_SIZE:
+      fprintf(f, "\t char frame[%i];\n", *start++);
+      break;
+    case ABC_DUP:
+      break;
+    case ABC_END_EXPR:
+      break;
+    case ABC_DISCARD_STK: // next u32 is amount to discard
+      break;
+    case ABC_PUSH:
+      break;
+    case ABC_POP:
+      break;
+    case ABC_TO_BOOL:
+      break;
+    case ABC_SKIP_ON_PASS: // next u32 is amt of u32's to skip
+      break;
+    case ABC_SKIP_ON_FAIL: // next u32 is amt of u32's to skip
+      break;
+    case ABC_GS:
+      break;
+    case ABC_FS:
+      break;
+    case ABC_PRE_INC: // next u64 is amount to add
+      break;
+    case ABC_POST_INC: // next u64 is amount to add
+      break;
+    case ABC_DISCARD: // next u32 is amount to discard
+      break;
+    case ABC_CNT: // MUST BE THE LAST ITEM
+    }
+  }
+  fprintf(f, "}\n");
 }
 #endif

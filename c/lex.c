@@ -281,7 +281,7 @@ re_enter:;
       lex->flags &= ~LEXF_UNTIL_NEWLINE;
       return lex->cur_tok = '\n';
     }
-  case 0x1f/*^_*/:
+  case 0x1f /*^_*/:
   case ' ':
   case '\t':
     goto re_enter;
@@ -784,7 +784,7 @@ re_enter:;
         new_file = A_MALLOC(sizeof(CLexFile), NULL);
         new_file->text = A_MALLOC(idx + 1, NULL);
         new_file->text[idx] = 0;
-			new_file->dir = dir;
+        new_file->dir = dir;
         fread(new_file->text, 1, idx, f);
         fclose(f);
         new_file->is_file = 1;

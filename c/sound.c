@@ -1,8 +1,8 @@
 #if !defined(__EMSCRIPTEN__)
-#include <SDL.h>
+#  include <SDL.h>
 #else
-#include <emscripten.h>
-#include <SDL2/SDL.h>
+#  include <SDL2/SDL.h>
+#  include <emscripten.h>
 #endif
 
 #include <math.h>

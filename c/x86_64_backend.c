@@ -2932,25 +2932,26 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
       if (!spilled && GetSIBParts(orig, &i, &b, &idx, &i2, 0)) {
         if (b) {
           if (IsRBPDeref(b) && idx) {
-			  if(idx->type==IC_IREG&&idx->integer!=13)
-            if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 >= 0) {
-          CRPN *next = b->base.next;
-			  i -= next->integer;
-              PushTmpDepthFirst(cctrl, idx, 0);
-              PopTmp(cctrl, idx);
-              orig->flags |= ICF_INDIR_REG;
-              orig->res.mode = __MD_X86_64_LEA_SIB;
-              orig->res.__SIB_scale = idx ? i2 : -1;
-              orig->res.off = i;
-              orig->res.__sib_idx_rpn = idx;
-              orig->res.__sib_base_rpn = b;
-              orig->res.reg = RBP;
-              orig->res.reg2 = idx->res.reg;
-              orig->res.raw_type = r->raw_type;
-              orig->res.pop_n_tmp_regs = 1;
-              orig->res.fallback_reg = TmpRegToReg(cctrl->backend_user_data2++);
-              return 1;
-            }
+            if (idx->type == IC_IREG && idx->integer != 13)
+              if (AIWNIOS_TMP_IREG_CNT - cctrl->backend_user_data2 - 1 >= 0) {
+                CRPN *next = b->base.next;
+                i -= next->integer;
+                PushTmpDepthFirst(cctrl, idx, 0);
+                PopTmp(cctrl, idx);
+                orig->flags |= ICF_INDIR_REG;
+                orig->res.mode = __MD_X86_64_LEA_SIB;
+                orig->res.__SIB_scale = idx ? i2 : -1;
+                orig->res.off = i;
+                orig->res.__sib_idx_rpn = idx;
+                orig->res.__sib_base_rpn = b;
+                orig->res.reg = RBP;
+                orig->res.reg2 = idx->res.reg;
+                orig->res.raw_type = r->raw_type;
+                orig->res.pop_n_tmp_regs = 1;
+                orig->res.fallback_reg =
+                    TmpRegToReg(cctrl->backend_user_data2++);
+                return 1;
+              }
           }
           PushTmpDepthFirst(cctrl, b, 0);
         }
@@ -2997,7 +2998,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
             // Watch out for  SetKeepTmps
             if (!IsGoodIReg(orig->res.reg))
               goto add_dft;
-          }else
+          } else
             orig->res.reg = -1;
 
           orig->res.pop_n_tmp_regs = 1;

@@ -1262,7 +1262,7 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
     if (mv[i].m->reg == REG_MAYBE || mv[i].m->reg == REG_ALLOC) {
       if (mv[i].m->member_class->raw_type == RT_F64) {
         if (freg - AIWNIOS_FREG_START < AIWNIOS_FREG_CNT) {
-#if defined(__riscv__) || defined(__riscv)
+#  if defined(__riscv__) || defined(__riscv)
           switch (freg++ - AIWNIOS_FREG_START) {
             break;
           case 0:
@@ -1304,16 +1304,16 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
           default:
             abort();
           }
-#else
+#  else
           mv[i].m->reg = freg++;
-#endif
+#  endif
         } else
           mv[i].m->reg = REG_NONE;
       } else if (RT_I8i <= mv[i].m->member_class->raw_type &&
                  mv[i].m->member_class->raw_type <= RT_PTR &&
                  !mv[i].m->dim.next) {
         if (ireg - AIWNIOS_IREG_START < AIWNIOS_IREG_CNT) {
-#if defined(__riscv__) || defined(__riscv)
+#  if defined(__riscv__) || defined(__riscv)
           switch (ireg++ - AIWNIOS_IREG_START) {
             break;
           case 0:
@@ -1352,8 +1352,8 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
           default:
             abort();
           }
-#endif
-#if defined(__x86_64__)
+#  endif
+#  if defined(__x86_64__)
           switch (ireg++ - AIWNIOS_IREG_START) {
             break;
           case 0:
@@ -1381,10 +1381,10 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
           default:
             abort();
           }
-#endif
-#if defined(__aarch64__) || defined(_M_ARM64)
+#  endif
+#  if defined(__aarch64__) || defined(_M_ARM64)
           mv[i].m->reg = ireg++;
-#endif
+#  endif
           mv[i].m->reg = REG_NONE;
         } else
           mv[i].m->reg = REG_NONE;
@@ -1436,7 +1436,8 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       sz = mv[i].m->member_class->sz;
       sz *= mv[i].m->dim.total_cnt;
       mv[i].m->off = off;
-#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) || defined(USE_BYTECODE)
+#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) ||           \
+    defined(USE_BYTECODE)
       // In X86_64 the base pointer above of the  stack's bottom,
       // I will move the items down by thier size so they are at the bottom
       //
@@ -1605,7 +1606,8 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
           break;
         case IC_BASE_PTR:
 // Stack grows down
-#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) || defined(USE_BYTECODE)
+#if defined(__x86_64__) || defined(__riscv) || defined(__riscv__) ||           \
+    defined(USE_BYTECODE)
           base->integer -= off->integer;
 #else
           base->integer += off->integer;
@@ -1661,7 +1663,7 @@ char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
 
 #include "aiwn_bytecode.h"
 char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
-              CHeapCtrl *heap) {
+                CHeapCtrl *heap) {
   CRPN *r;
   int64_t old_flags = cctrl->flags;
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;

@@ -1,20 +1,24 @@
 /* See https://viewsourcecode.org/snaptoken/kilo/
  *
  **/
- #if defined(__EMSCRIPTEN__)
- #include "aiwn_tui.h"
-	void TermSetKbCb(void *fptr, void *) {}
-void AiwniosTUIEnable() {}
-void TermSize(int64_t *a, int64_t *b) {}
-void TermSetMsCb(void *) {}
+#if defined(__EMSCRIPTEN__)
+#  include "aiwn_tui.h"
+void TermSetKbCb(void *fptr, void *) {
+}
+void AiwniosTUIEnable() {
+}
+void TermSize(int64_t *a, int64_t *b) {
+}
+void TermSetMsCb(void *) {
+}
 void TUIInputLoop(int64_t *ul) {};
- #else
-#include "c/aiwn_asm.h"
-#include "c/aiwn_mem.h"
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#else
+#  include "c/aiwn_asm.h"
+#  include "c/aiwn_mem.h"
+#  include <ctype.h>
+#  include <stdio.h>
+#  include <stdlib.h>
+#  include <string.h>
 
 static void (*kb_cb)(int64_t, void *);
 static void *kb_cb_data;
@@ -23,110 +27,110 @@ static void SendOut(int64_t c, int64_t sc) {
   if (kb_cb)
     FFI_CALL_TOS_2(kb_cb, c, sc);
 }
-#define CH_CTRLA       0x01
-#define CH_CTRLB       0x02
-#define CH_CTRLC       0x03
-#define CH_CTRLD       0x04
-#define CH_CTRLE       0x05
-#define CH_CTRLF       0x06
-#define CH_CTRLG       0x07
-#define CH_CTRLH       0x08
-#define CH_CTRLI       0x09
-#define CH_CTRLJ       0x0A
-#define CH_CTRLK       0x0B
-#define CH_CTRLL       0x0C
-#define CH_CTRLM       0x0D
-#define CH_CTRLN       0x0E
-#define CH_CTRLO       0x0F
-#define CH_CTRLP       0x10
-#define CH_CTRLQ       0x11
-#define CH_CTRLR       0x12
-#define CH_CTRLS       0x13
-#define CH_CTRLT       0x14
-#define CH_CTRLU       0x15
-#define CH_CTRLV       0x16
-#define CH_CTRLW       0x17
-#define CH_CTRLX       0x18
-#define CH_CTRLY       0x19
-#define CH_CTRLZ       0x1A
-#define CH_CURSOR      0x05
-#define CH_BACKSPACE   0x08
-#define CH_ESC         0x1B
-#define CH_SHIFT_ESC   0x1C
-#define CH_SHIFT_SPACE 0x1F
-#define CH_SPACE       0x20
+#  define CH_CTRLA        0x01
+#  define CH_CTRLB        0x02
+#  define CH_CTRLC        0x03
+#  define CH_CTRLD        0x04
+#  define CH_CTRLE        0x05
+#  define CH_CTRLF        0x06
+#  define CH_CTRLG        0x07
+#  define CH_CTRLH        0x08
+#  define CH_CTRLI        0x09
+#  define CH_CTRLJ        0x0A
+#  define CH_CTRLK        0x0B
+#  define CH_CTRLL        0x0C
+#  define CH_CTRLM        0x0D
+#  define CH_CTRLN        0x0E
+#  define CH_CTRLO        0x0F
+#  define CH_CTRLP        0x10
+#  define CH_CTRLQ        0x11
+#  define CH_CTRLR        0x12
+#  define CH_CTRLS        0x13
+#  define CH_CTRLT        0x14
+#  define CH_CTRLU        0x15
+#  define CH_CTRLV        0x16
+#  define CH_CTRLW        0x17
+#  define CH_CTRLX        0x18
+#  define CH_CTRLY        0x19
+#  define CH_CTRLZ        0x1A
+#  define CH_CURSOR       0x05
+#  define CH_BACKSPACE    0x08
+#  define CH_ESC          0x1B
+#  define CH_SHIFT_ESC    0x1C
+#  define CH_SHIFT_SPACE  0x1F
+#  define CH_SPACE        0x20
 
 // Scan code flags
-#define SCf_E0_PREFIX 7
-#define SCf_KEY_UP    8
-#define SCf_SHIFT     9
-#define SCf_CTRL      10
-#define SCf_ALT       11
-#define SCf_CAPS      12
-#define SCf_NUM       13
-#define SCf_SCROLL    14
-#define SCf_NEW_KEY   15
-#define SCf_MS_L_DOWN 16
-#define SCf_MS_R_DOWN 17
-#define SCf_DELETE    18
-#define SCf_INS       19
-#define SCf_NO_SHIFT  30
-#define SCf_KEY_DESC  31
-#define SCF_E0_PREFIX (1 << SCf_E0_PREFIX)
-#define SCF_KEY_UP    (1 << SCf_KEY_UP)
-#define SCF_SHIFT     (1 << SCf_SHIFT)
-#define SCF_CTRL      (1 << SCf_CTRL)
-#define SCF_ALT       (1 << SCf_ALT)
-#define SCF_CAPS      (1 << SCf_CAPS)
-#define SCF_NUM       (1 << SCf_NUM)
-#define SCF_SCROLL    (1 << SCf_SCROLL)
-#define SCF_NEW_KEY   (1 << SCf_NEW_KEY)
-#define SCF_MS_L_DOWN (1 << SCf_MS_L_DOWN)
-#define SCF_MS_R_DOWN (1 << SCf_MS_R_DOWN)
-#define SCF_DELETE    (1 << SCf_DELETE)
-#define SCF_INS       (1 << SCf_INS)
-#define SCF_NO_SHIFT  (1 << SCf_NO_SHIFT)
-#define SCF_KEY_DESC  (1 << SCf_KEY_DESC)
+#  define SCf_E0_PREFIX   7
+#  define SCf_KEY_UP      8
+#  define SCf_SHIFT       9
+#  define SCf_CTRL        10
+#  define SCf_ALT         11
+#  define SCf_CAPS        12
+#  define SCf_NUM         13
+#  define SCf_SCROLL      14
+#  define SCf_NEW_KEY     15
+#  define SCf_MS_L_DOWN   16
+#  define SCf_MS_R_DOWN   17
+#  define SCf_DELETE      18
+#  define SCf_INS         19
+#  define SCf_NO_SHIFT    30
+#  define SCf_KEY_DESC    31
+#  define SCF_E0_PREFIX   (1 << SCf_E0_PREFIX)
+#  define SCF_KEY_UP      (1 << SCf_KEY_UP)
+#  define SCF_SHIFT       (1 << SCf_SHIFT)
+#  define SCF_CTRL        (1 << SCf_CTRL)
+#  define SCF_ALT         (1 << SCf_ALT)
+#  define SCF_CAPS        (1 << SCf_CAPS)
+#  define SCF_NUM         (1 << SCf_NUM)
+#  define SCF_SCROLL      (1 << SCf_SCROLL)
+#  define SCF_NEW_KEY     (1 << SCf_NEW_KEY)
+#  define SCF_MS_L_DOWN   (1 << SCf_MS_L_DOWN)
+#  define SCF_MS_R_DOWN   (1 << SCf_MS_R_DOWN)
+#  define SCF_DELETE      (1 << SCf_DELETE)
+#  define SCF_INS         (1 << SCf_INS)
+#  define SCF_NO_SHIFT    (1 << SCf_NO_SHIFT)
+#  define SCF_KEY_DESC    (1 << SCf_KEY_DESC)
 
 // TempleOS places a 1 in bit 7 for
 // keys with an E0 prefix.
 // See \dLK,"::/Doc/CharOverview.DD"\d and \dLK,"KbdHndlr",A="MN:KbdHndlr"\d().
-#define SC_ESC          0x01
-#define SC_BACKSPACE    0x0E
-#define SC_TAB          0x0F
-#define SC_ENTER        0x1C
-#define SC_SHIFT        0x2A
-#define SC_CTRL         0x1D
-#define SC_ALT          0x38
-#define SC_CAPS         0x3A
-#define SC_NUM          0x45
-#define SC_SCROLL       0x46
-#define SC_CURSOR_UP    0x48
-#define SC_CURSOR_DOWN  0x50
-#define SC_CURSOR_LEFT  0x4B
-#define SC_CURSOR_RIGHT 0x4D
-#define SC_PAGE_UP      0x49
-#define SC_PAGE_DOWN    0x51
-#define SC_HOME         0x47
-#define SC_END          0x4F
-#define SC_INS          0x52
-#define SC_DELETE       0x53
-#define SC_F1           0x3B
-#define SC_F2           0x3C
-#define SC_F3           0x3D
-#define SC_F4           0x3E
-#define SC_F5           0x3F
-#define SC_F6           0x40
-#define SC_F7           0x41
-#define SC_F8           0x42
-#define SC_F9           0x43
-#define SC_F10          0x44
-#define SC_F11          0x57
-#define SC_F12          0x58
-#define SC_PAUSE        0x61
-#define SC_GUI          0xDB
-#define SC_PRTSCRN1     0xAA
-#define SC_PRTSCRN2     0xB7
+#  define SC_ESC          0x01
+#  define SC_BACKSPACE    0x0E
+#  define SC_TAB          0x0F
+#  define SC_ENTER        0x1C
+#  define SC_SHIFT        0x2A
+#  define SC_CTRL         0x1D
+#  define SC_ALT          0x38
+#  define SC_CAPS         0x3A
+#  define SC_NUM          0x45
+#  define SC_SCROLL       0x46
+#  define SC_CURSOR_UP    0x48
+#  define SC_CURSOR_DOWN  0x50
+#  define SC_CURSOR_LEFT  0x4B
+#  define SC_CURSOR_RIGHT 0x4D
+#  define SC_PAGE_UP      0x49
+#  define SC_PAGE_DOWN    0x51
+#  define SC_HOME         0x47
+#  define SC_END          0x4F
+#  define SC_INS          0x52
+#  define SC_DELETE       0x53
+#  define SC_F1           0x3B
+#  define SC_F2           0x3C
+#  define SC_F3           0x3D
+#  define SC_F4           0x3E
+#  define SC_F5           0x3F
+#  define SC_F6           0x40
+#  define SC_F7           0x41
+#  define SC_F8           0x42
+#  define SC_F9           0x43
+#  define SC_F10          0x44
+#  define SC_F11          0x57
+#  define SC_F12          0x58
+#  define SC_PAUSE        0x61
+#  define SC_GUI          0xDB
+#  define SC_PRTSCRN1     0xAA
+#  define SC_PRTSCRN2     0xB7
 
 // http://www.rohitab.com/discuss/topic/39438-keyboard-driver/
 static char keys[] = {
@@ -156,12 +160,12 @@ static int64_t K2SC(char ch) {
   return -1;
 }
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) ||        \
-    defined(__OpenBSD__) || defined(__NetBSD__)
-#  include <SDL.h>
-#  include <sys/ioctl.h>
-#  include <termios.h>
-#  include <unistd.h>
+#  if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) ||      \
+      defined(__OpenBSD__) || defined(__NetBSD__)
+#    include <SDL.h>
+#    include <sys/ioctl.h>
+#    include <termios.h>
+#    include <unistd.h>
 static struct termios orig_termios;
 static void enableRawMode() {
   struct termios raw;
@@ -419,9 +423,9 @@ void TermSize(int64_t *a, int64_t *b) {
   if (b)
     *b = wsz.ws_row;
 }
-#else
-#  include <windows.h>
-#  include <stdio.h>
+#  else
+#    include <windows.h>
+#    include <stdio.h>
 static DWORD old_stdin_mode, old_stdout_mode;
 static HANDLE stdin_handle = NULL;
 static HANDLE stdout_handle = NULL;
@@ -583,5 +587,5 @@ void TUIInputLoop(int64_t *ul) {
     }
   }
 };
-#endif
+#  endif
 #endif

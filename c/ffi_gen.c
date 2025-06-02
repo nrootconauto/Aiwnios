@@ -2,16 +2,16 @@
 #include "aiwn_multic.h"
 #include <string.h>
 #ifdef USE_BYTECODE
-#include "aiwn_bytecode.h"
+#  include "aiwn_bytecode.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
-	return BCGenerateFFICall(fptr);
+  return BCGenerateFFICall(fptr);
 }
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
-	return BCGenerateFFICall(fptr);
+  return BCGenerateFFICall(fptr);
 }
 #else
-#if defined( __x86_64__)
-#  include "aiwn_lexparser.h" //For reigster names
+#  if defined(__x86_64__)
+#    include "aiwn_lexparser.h" //For reigster names
 int64_t X86PushReg(char *to, int64_t reg);
 int64_t X86MovRegReg(char *to, int64_t reg, int64_t);
 int64_t X86AndImm(char *to, int64_t reg, int64_t);
@@ -20,8 +20,8 @@ int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off);
 int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index,
                           int64_t base, int64_t off);
-#  define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
-#  ifdef _WIN64
+#    define A(f, a...) code_off += f(bin ? bin + code_off : NULL, a)
+#    ifdef _WIN64
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
   uint8_t *bin = NULL;
@@ -61,7 +61,8 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   }
   return bin;
 }
-#  elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#    elif defined(__linux__) || defined(__FreeBSD__) ||                        \
+        defined(__OpenBSD__) || defined(__NetBSD__)
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int64_t code_off = 0;
   uint8_t *bin = NULL, *xbin = NULL;
@@ -114,11 +115,11 @@ void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   }
   return xbin;
 }
+#    endif
 #  endif
-#endif
 
-#if defined(__aarch64__) || defined(_M_ARM64)
-#  include "aiwn_arm.h"
+#  if defined(__aarch64__) || defined(_M_ARM64)
+#    include "aiwn_arm.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int32_t *Xblob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
   int32_t *blob = MemGetWritePtr(Xblob); // OpenBSD sexy mapping
@@ -145,7 +146,7 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
   blob[ptr++] = ARM_ldpPostImmX(29, 30, 31, 16);
   if (pop)
     blob[ptr++] = ARM_addImmX(31, 31, pop);
-  blob[ptr++]=ARM_fmovF64I64(0,0);
+  blob[ptr++] = ARM_fmovF64I64(0, 0);
   blob[ptr++] = ARM_ret();
   if (ptr & 1)
     ptr++;                       // Align to 8
@@ -157,9 +158,9 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;
 }
-#endif
-#if defined(__riscv__) || defined(__riscv)
-#  include "aiwn_riscv.h"
+#  endif
+#  if defined(__riscv__) || defined(__riscv)
+#    include "aiwn_riscv.h"
 void *GenFFIBinding(void *fptr, int64_t arity) {
   int32_t *blob = A_MALLOC(8 * 21 + arity * 4, Fs->code_heap), ptr = 0;
   int64_t arg, fill;
@@ -198,5 +199,5 @@ void *GenFFIBinding(void *fptr, int64_t arity) {
 void *GenFFIBindingNaked(void *fptr, int64_t arity) {
   return fptr;
 }
-#endif
+#  endif
 #endif

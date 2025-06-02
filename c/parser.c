@@ -2669,9 +2669,9 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   int64_t (*bin)();
   double (*binf)();
   union {
-	  int64_t i;
-	  double f;
-  }_if;
+    int64_t i;
+    double f;
+  } _if;
   CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
   ccmp->cur_fun = NULL;
@@ -2685,10 +2685,9 @@ int64_t PrsI64(CCmpCtrl *ccmp) {
   int old = SetWriteNP(1);
   if (AssignRawTypeToNode(ccmp, ir_code->base.next) != RT_F64) {
     res = FFI_CALL_TOS_0(binf);
-  }
-  else {
+  } else {
     _if.i = FFI_CALL_TOS_0(binf);
-    res=_if.f;
+    res = _if.f;
   }
   SetWriteNP(old);
   CodeCtrlPop(ccmp);
@@ -2701,8 +2700,8 @@ double PrsF64(CCmpCtrl *ccmp) {
   int64_t (*bin)();
   double (*binf)();
   union {
-	  int64_t i;
-	  double f;
+    int64_t i;
+    double f;
   } _if;
   CRPN *ir_code;
   CHashFun *fun = ccmp->cur_fun;
@@ -2719,8 +2718,8 @@ double PrsF64(CCmpCtrl *ccmp) {
     res = FFI_CALL_TOS_0(bin);
   } else {
     _if.i = FFI_CALL_TOS_0(bin);
-    res=_if.f;
-}
+    res = _if.f;
+  }
   SetWriteNP(old);
   CodeCtrlPop(ccmp);
   ccmp->cur_fun = fun;
@@ -3004,11 +3003,11 @@ int64_t PrsDecl(CCmpCtrl *ccmp, CHashClass *base, CHashClass *add_to,
                                },
                            .raw_type = RT_FUNC,
                        },
-                    #ifdef USE_BYTECODE
+#ifdef USE_BYTECODE
                    .fun_ptr = INVALID_PTR,
-                    #else   
+#else
                    .fun_ptr = DoNothing,
-                   #endif
+#endif
                    .return_class = cls};
     HashAdd(fun, Fs->hash_table);
     if (flags & (PRSF_EXTERN | PRSF__EXTERN)) {
@@ -4378,7 +4377,8 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
       if (fun->argc != arity) {
         abort();
       }
-      if (!fun->fun_ptr || fun->fun_ptr == &DoNothing||fun->fun_ptr==INVALID_PTR) {
+      if (!fun->fun_ptr || fun->fun_ptr == &DoNothing ||
+          fun->fun_ptr == INVALID_PTR) {
         fun->base.base.type &= ~HTF_EXTERN;
         if (naked)
           fun->fun_ptr = GenFFIBindingNaked(ptr, arity);
@@ -4390,16 +4390,15 @@ static void __PrsBindCSymbol(char *name, void *ptr, int64_t naked,
   }
   if (!HashFind(name, Fs->hash_table, HTT_EXPORT_SYS_SYM, 1)) {
     // Here's the deal,for Load(in arm_loader.c),we can use HTT_EXPORT_SYS_SYM
-    *(exp = A_CALLOC(sizeof(CHashExport), NULL)) = (CHashExport){
-        .base =
-            {
-                .str = A_STRDUP(name, NULL),
-                .type = HTT_EXPORT_SYS_SYM,
-            },
-        .val =
-            naked ? GenFFIBindingNaked(ptr, arity) : GenFFIBinding(ptr, arity),
-        .oval=ptr
-    };
+    *(exp = A_CALLOC(sizeof(CHashExport), NULL)) =
+        (CHashExport){.base =
+                          {
+                              .str = A_STRDUP(name, NULL),
+                              .type = HTT_EXPORT_SYS_SYM,
+                          },
+                      .val = naked ? GenFFIBindingNaked(ptr, arity)
+                                   : GenFFIBinding(ptr, arity),
+                      .oval = ptr};
     HashAdd(exp, Fs->hash_table);
   }
 }
@@ -4902,8 +4901,8 @@ CCodeMisc *__HC_CodeMiscStrNew(CCmpCtrl *ccmp, char *str, int64_t sz) {
 CCodeMisc *__HC_CodeMiscJmpTableNew(CCmpCtrl *ccmp, CCodeMisc *labels,
                                     void **table_address, int64_t hi) {
   CCodeMisc *misc = CodeMiscNew(ccmp, CMT_JMP_TAB);
-  misc->jmp_tab = A_CALLOC((hi - 0) * sizeof(CCodeMisc *), NULL);
-  memcpy(misc->jmp_tab, labels, (hi - 0) * sizeof(CCodeMisc *));
+  misc->jmp_tab = A_CALLOC((hi - 0) * 8, NULL);
+  memcpy(misc->jmp_tab, labels, (hi - 0) * 8);
   misc->hi = hi - 1;
   misc->lo = 0;
   misc->patch_addr = table_address;

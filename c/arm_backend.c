@@ -959,7 +959,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         AIWNIOS_ADD_CODE(ARM_fmovI64F64(i, i));                                \
       }                                                                        \
       \		 
-                                                                                                                                                                                                                                                                                                                                                           \
+                                                                                                                                                                                                                                                                                                                                                                                                                                \
     }                                                                          \
   }
   // Arm mandates 16 byte align
