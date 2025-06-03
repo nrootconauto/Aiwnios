@@ -10,6 +10,8 @@
 FFI_CALL_TOS_0:
   push rbp
   mov rbp,rsp
+  AND RSP,-0x10
+  push 0
   push rbx
   call rdi
   pop rbx
@@ -20,6 +22,7 @@ FFI_CALL_TOS_0:
 FFI_CALL_TOS_1:
   push rbp
   mov rbp,rsp
+  AND RSP,-0x10
   push rbx
   push rsi
   call rdi
@@ -30,6 +33,8 @@ FFI_CALL_TOS_1:
 FFI_CALL_TOS_2:
   push rbp
   mov rbp,rsp
+  AND RSP,-0x10
+  push 0
   push rbx
   push rdx
   push rsi
@@ -41,6 +46,7 @@ FFI_CALL_TOS_2:
 FFI_CALL_TOS_3:
   push rbp
   mov rbp,rsp
+  AND RSP,-0x10
   push rbx
   push rcx
   push rdx
@@ -53,6 +59,8 @@ FFI_CALL_TOS_3:
 FFI_CALL_TOS_4:
   push rbp
   mov rbp,rsp
+  AND RSP,-0x10
+  push 0
   push rbx
   push r8
   push rcx

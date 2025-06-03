@@ -11,6 +11,7 @@ FFI_CALL_TOS_0:
   push rbp
   mov rbp,rsp
   and rsp,-0x10
+  push 0
   push rbx
   call rcx
   pop rbx
@@ -32,6 +33,7 @@ FFI_CALL_TOS_2:
   push rbp
   mov rbp,rsp
   and rsp,-0x10
+  push 0
   push rbx
   push r8
   push rdx
@@ -65,6 +67,7 @@ FFI_CALL_TOS_4:
   push rbp
   mov rbp,rsp
   and rsp,-0x10
+  push 0
   push rbx
   push qword ptr [rbp+0x30]
   push r9

@@ -150,9 +150,7 @@ static int threadrt(void *p) {
 void SpawnCore(void *fp, void *gs, int64_t core) {
   // IMPORTANT emscriptens threads are ass
   SetHolyGs(gs);
-  printf("analbeads\n");
   FFI_CALL_TOS_0(fp);
-  printf("21\n");
 }
 void __bootstrap_tls() {
 }
