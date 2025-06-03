@@ -1495,14 +1495,10 @@ skip_convert:;
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
 	  //16 to offset [PC,RBP] pair at base 
-	  #ifdef TARGET_AARCH64
-	  //ARM now uses a native SysV ABI srot of
-	  goto no_farg;
-	  #endif
 	  #ifdef TARGET_RISCV
 	  //RISCV now uses a native SysV ABI srot of
 	  goto no_farg;
-	  #else
+	  #endif
 	  #ifdef TARGET_BYTECODE
 	  //RISCV now uses a native SysV ABI srot of
 	  goto no_farg;
@@ -1526,8 +1522,8 @@ skip_convert:;
           mlst->offset=foff;
           foff_lookup[idx].i32[1]=foff;
 	}
-        #endif
-      } else {
+#endif
+      } else {
 //Assign  them a spot on the stack for debugging purposes
 	foff+=8;
         if(foff&7)
@@ -2223,7 +2219,7 @@ break;case IC_ASM:
             tmpaie->offset=misc->offset;
             QueIns(tmpaie,cc->aot->last_ie);
 	  }
-        }
+        }
       } else {
         if(misc->addr!=INVALID_PTR) {
           h=CAlloc(sizeof CHashImport);

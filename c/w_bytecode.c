@@ -227,7 +227,9 @@ static int64_t ForceType(char *ptr, CRPN *a, int64_t to, int64_t len) {
 static void DoPendingInterupt();
 int64_t AiwnRunBC(ABCState *state) {
   cur_bcstate = state;
+#ifdef __EMSCRIPTEN__
   DoPendingInterupt();
+#endif
   uint32_t *bc = (void *)state->ip;
   static int64_t cnt = 2048;
   int64_t t = SDL_GetTicks64();

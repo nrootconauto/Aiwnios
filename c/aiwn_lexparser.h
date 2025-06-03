@@ -161,7 +161,11 @@ typedef struct CCodeMisc {
   };
   void **patch_addr;
   union {
+	  #ifdef __EMSCRIPTEN__
     uint64_t *jmp_tab;
+    #else
+    struct CCodeMisc **jmp_tab;
+    #endif
     double flt;
     int64_t integer;
   };

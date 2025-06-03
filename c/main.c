@@ -2251,7 +2251,12 @@ int main(int argc, char **argv) {
     emscripten_set_main_loop(EMMainLoop, 0, 1);
     return 0;
 #else
+#ifdef USE_BYTECODE
     SpawnCore(GenFFIBinding(&Boot, 0), argv[0], 0);
+#else
+//This is ok,ask nroot why if you care to know
+    SpawnCore(&Boot, argv[0], 0);
+#endif
     InputLoop(&quit);
 #endif
   } else {
