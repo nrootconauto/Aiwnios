@@ -40,6 +40,7 @@ void InputLoop(void *ul);
 extern CHashTable *glbl_table;
 extern int64_t user_ev_num;
 #if defined(WIN32) || defined(_WIN32)
+#  include <windows.h>
 #  include <bcrypt.h>
 #  include <shlobj.h>
 #else

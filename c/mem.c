@@ -11,11 +11,12 @@
 #include <string.h>
 #define ERR         0x7fFFffFFffFFffFF
 #define INVALID_PTR ERR
-#if defined(_WIN64) && !defined(USE_BYTECODE)
+#if defined(_WIN64) || defined(_WIN32)
 #  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
 #  include <windows.h>
 #  include <memoryapi.h>
 #  include <sysinfoapi.h>
+#  include <processthreadsapi.h>
 #else
 #  include <fcntl.h>
 #  include <sys/mman.h>
@@ -41,6 +42,22 @@
 // relic that https://blog.plover.com/2017/11/12/ - a feeble attempt at
 // defending the infalliability of compilers - must forever be ridiculed for its
 // naivety.
+#if defined(_WIN32) || defined(_WIN64)
+typedef BOOL (*fp_GetProcessMitigationPolicy_t)(HANDLE,
+                                                PROCESS_MITIGATION_POLICY,
+                                                PVOID, size_t);
+fp_GetProcessMitigationPolicy_t *DynamicFptr_GetProcessMitigationPolicy() {
+  static int init = 0;
+  static fp_GetProcessMitigationPolicy_t ret = NULL;
+  if (!init) {
+    HANDLE *k32_dll = GetModuleHandleA("kernel32.dll");
+    ret = GetProcAddress(k32_dll, "GetProcessMitigationPolicy");
+    init = 1;
+  }
+  return ret;
+}
+
+#endif
 #if !defined(__clang__) && __GNUC__ < 14 // we only use either gcc or clang
 static volatile int64_t bc_enable = 0, *volatile bc_enablep = &bc_enable;
 #  define bc_enable (*bc_enablep)
@@ -70,23 +87,23 @@ static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
   if (!hc)
     hc = Fs->heap;
   int64_t b;
-  static int64_t ps = 4096;
+  static int64_t ps = MEM_PAG_SIZE;
   int64_t pag = -1;
   CMemBlk *ret;
   CMemBlk *rw = 0, *rx = 0;
-  b = (pags * 4096 + ps - 1) & ~(ps - 1);
+  b = (pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
   ret = malloc(b);
   memset(ret, 0, sizeof(CMemBlk));
   rw = rx = ret;
 
   QueIns(&rw->base, hc->mem_blks.last);
   rw->pags = pags;
-  hc->alloced_u8s += pags * 4096;
+  hc->alloced_u8s += pags * MEM_PAG_SIZE;
   return ret;
 }
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
   QueRem(&blk->base);
-  hc->alloced_u8s -= blk->pags * 4096;
+  hc->alloced_u8s -= blk->pags * MEM_PAG_SIZE;
   free(blk);
 }
 #else
@@ -523,21 +540,6 @@ static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
 static void *GetAvailRegion32(int64_t b);
 #  else
 static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec);
-#  endif
-#  ifdef _WIN64
-typedef BOOL (*fp_GetProcessMitigationPolicy_t)(HANDLE,
-                                                PROCESS_MITIGATION_POLICY,
-                                                PVOID, size_t);
-fp_GetProcessMitigationPolicy_t *DynamicFptr_GetProcessMitigationPolicy() {
-  static int init = 0;
-  static fp_GetProcessMitigationPolicy_t ret = NULL;
-  if (!init) {
-    HANDLE *k32_dll = GetModuleHandleA("kernel32.dll");
-    ret = GetProcAddress(k32_dll, "GetProcessMitigationPolicy");
-    init = 1;
-  }
-  return ret;
-}
 #  endif
 #  if defined(__OpenBSD__) && !defined(USE_BYTECODE)
 static CMemBlk *MemPagTaskAlloc(int64_t pags, CHeapCtrl *hc) {
@@ -982,21 +984,19 @@ void HeapCtrlDel(CHeapCtrl *ct) {
     PAUSE;
   for (m = ct->mem_blks.next; m != &ct->mem_blks; m = next) {
     next = m->base.next;
-#if defined(_WIN32) || defined(WIN32) && !defined(USE_BYTECODE)
+#if (defined(_WIN32) || defined(WIN32)) && !defined(USE_BYTECODE)
     VirtualFree(m, 0, MEM_RELEASE);
-#else
-    static int64_t ps;
+#elif !(defined(_WIN32) || defined(WIN32)) && !defined(USE_BYTECODE)
+    static int64_t ps;	
     int64_t b;
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);
     b = (m->pags * MEM_PAG_SIZE + ps - 1) & ~(ps - 1);
     if (m->base2.next)
       QueRem(&m->base2);
-#  if !defined(USE_BYTECODE)
     munmap(m, b);
-#  else
+#else
     free(m);
-#  endif
 #endif
   }
 #if defined(__OpenBSD__) && !defined(USE_BYTECODE)
@@ -1017,7 +1017,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   return ret;
 }
 
-#if defined(_WIN64) && !defined(USE_BYTECODE)
+#if defined(_WIN64) 
 int64_t IsValidPtr(char *chk) {
   MEMORY_BASIC_INFORMATION mbi;
   if (!VirtualQuery(chk, &mbi, sizeof mbi))
@@ -1028,13 +1028,14 @@ int64_t IsValidPtr(char *chk) {
        PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
   return !!(mbi.Protect & mask);
 }
+#endif 
 
+#if defined(_WIN64) || defined(_WIN32) 
 #  define MEM MEM_RESERVE | MEM_COMMIT
 #  define VALLOC(addr, sz, memflags, pagflags)                                 \
     VirtualAlloc((void *)addr, sz, memflags, pagflags)
 // requirement: popcnt(to) == 1
 #  define ALIGNNUM(x, to) ((x + to - 1) & ~(to - 1))
-
 static void *NewVirtualChunk(uint64_t sz, bool low32, bool exec) {
   static bool running, init, topdown;
   static uint64_t ag, cur = 0x10000, max = (1ull << 31) - 1;

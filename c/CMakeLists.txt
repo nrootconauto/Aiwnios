@@ -53,7 +53,6 @@ set(COMP_OPTS
   -w
   -Wno-all
   -Wno-int-conversion
-  -Wno-incompatible-function-pointer-types
   -Wno-incompatible-pointer-types 
  -fno-math-errno
   -fno-trapping-math

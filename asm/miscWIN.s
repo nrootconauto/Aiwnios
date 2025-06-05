@@ -1,57 +1,8 @@
 .intel_syntax noprefix
-.global Btc
-.global LBtc
-.global Bt
-.global Bts
-.global Btr
-.global LBtr
-.global LBts
 .global Misc_Caller
 .global Misc_ForceYield
 .global Misc_BP
 .extern ForceYield0
-Btc:
-  btc qword ptr [rcx],rsi
-  setc al
-  movzx rax,al
-  ret 
-
-LBtc:
-  lock btc qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret 
-
-Bt:
-  bt qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret 
-
-Bts:
-  bts qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret 
-
-Btr:
-  btr qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret 
-
-LBtr:
-  lock btr qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret
-
-LBts:
-  lock bts qword ptr [rcx],rdx
-  setc al
-  movzx rax,al
-  ret 
-
 Misc_Caller:
   push rbp
   mov rbp,rsp
