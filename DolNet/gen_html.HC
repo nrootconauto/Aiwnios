@@ -37,6 +37,7 @@ U0 FileGet(CServer *srv,I64 stream,CURL *url,CHTTPRequest *req) {
 found:
     if(!StrICmp(dot,".GIF")||!StrICmp(dot,".GIF.Z")) mime="image/gif";
     else if(!StrICmp(dot,".JPEG")||!StrICmp(dot,".JPEG.Z")) mime="image/jpeg";
+    else if(!StrICmp(dot,".HTML")||!StrICmp(dot,".HTML.Z")) mime="text/html";
     else if(!StrICmp(dot,".JPG")||!StrICmp(dot,".JPG.Z")) mime="image/jpg";
     else if(!StrICmp(dot,".PNG")||!StrICmp(dot,".PNG.Z"))  mime="image/png";
     else if(!StrICmp(dot,".BMP")||!StrICmp(dot,".BMP.Z"))  mime="image/bmp";
@@ -63,7 +64,7 @@ found:
       con->want_range_start=0;
     }
     if(con->want_range_end<=0) {
-      con->want_range_end=ClampI64(con->want_range_start+10*1024*1024,con->want_range_start,len);
+      con->want_range_end=ClampI64(con->want_range_start+10*1024*1024,con->want_range_start,len);
     }
     Free(f);
   } else if(StrIMatch("Videos",url->abs_path)) {
