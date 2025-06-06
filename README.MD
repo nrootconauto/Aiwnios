@@ -1,8 +1,8 @@
 
 # Welcome to Aiwnios
 
-This is a HolyC Compiler/Runtime written for 64bit x86, aarch64 (includes ***MacOS***) and RISC-V
-machines,although other architectures are planned for the future. This project is largely complete (aside from adding support for other architectures) so stay tuned.
+This is a HolyC Compiler/Runtime written for 64bit x86, aarch64 (includes ***MacOS***) ,RISC-V
+machines,and WebAssembly,although other architectures are planned for the future. This project is largely complete (aside from adding support for other architectures) so stay tuned.
 
 ## Support table
 
@@ -11,6 +11,7 @@ machines,although other architectures are planned for the future. This project i
 | x86_64 | Windows, Linux and FreeBSD |
 | aarch64 | Linux, FreeBSD and ***MacOS*** |
 | rv64 (RISC-V 64) | Linux |
+| wasm | On the internet(slow) |
 
 ## Screenshot
 <div align="center">
@@ -77,6 +78,54 @@ cd ..
 
 Your on your own. Use homebrew to install packages, rest is same as FreeBSD
 
+### Web Assembly
+
+  First build a valid (bytecode) HCRT2.BIN by doing this.
+```sh
+mkdir bytecode
+cd bytecode
+cmake -DUSE_BYTECODE=on ..
+make -j8
+```
+  Now you will need to make a `wasmStage` directory with your files in it.
+
+```sh
+mkdir wasmStage
+cp HCRT2.BIN wasmStage
+cp HCRT2.DBG.Z wasmStage
+cp PersonalMenu.DD wasmStage
+cp -r Src wasmStage/Src
+cp -r Doc wasmStage/Doc
+cp -r Demo wasmStage/Demo
+cp -r Apps wasmStage/Apps
+```
+
+ **You might want to compress the Src/Demo/Doc/Apps** directories before the next step.(Dont compress HCRT2.BIN).
+
+	
+```
+./aiwnios -c 
+	Del("wasmStage/Src/ACDefs.DATA");
+	Del("wasmStage/Src/ACWords.DATA");
+	Zip("wasmStage/Src");
+	Zip("wasmStage/Demo");
+	Zip("wasmStage/Doc");
+	Zip("wasmStage/Apps");
+	Exit;
+```
+
+
+  Now build wasmAiwnios (you will need emscripten).
+
+```sh
+mkdir wasmAiwn
+cd wasmAiwn
+# Activate emscripten SDK or something before this
+emcmake cmake -DUSE_BYTECODE=on ..
+emmake make
+cd ..
+emrun ./aiwnios.html
+```
 
 # TUI Mode
 
@@ -284,3 +333,4 @@ PrsAddSymbol("__HC_ICAdd_Sqr", STK___HC_ICAdd_Sqr, 1);
 # Developer manual
 
 If you want something saucier and want to understand the sauce, look at [the developer manual](DEVMAN.MD)
+
